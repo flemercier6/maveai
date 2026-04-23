@@ -622,7 +622,7 @@ Deno.serve(async (req) => {
       ? {
         role: "system",
         content:
-          "Mémoire persistante de l'utilisateur (faits, préférences, contexte) — utilise-la implicitement pour personnaliser tes réponses, sans la répéter mot pour mot :\n" +
+          "Persistent user memory (facts, preferences, context) — use it implicitly to personalize your responses, without repeating it verbatim:\n" +
           memoryBlock,
       }
       : null;
