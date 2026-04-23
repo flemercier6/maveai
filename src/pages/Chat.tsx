@@ -318,6 +318,18 @@ export default function Chat() {
                   return next;
                 });
               }
+            } else if (j.type === "clarify") {
+              const qs = Array.isArray(j.questions) ? (j.questions as ClarifyQuestion[]) : [];
+              if (qs.length) {
+                // Remove the empty assistant placeholder — no answer was generated yet.
+                setMessages((prev) => {
+                  if (prev.length && prev[prev.length - 1].role === "assistant" && !prev[prev.length - 1].content) {
+                    return prev.slice(0, -1);
+                  }
+                  return prev;
+                });
+                setClarify(qs);
+              }
             } else if (j.type === "error") {
               throw new Error(j.error);
             }
