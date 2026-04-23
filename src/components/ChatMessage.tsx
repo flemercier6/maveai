@@ -6,7 +6,9 @@ import { ProviderBadge } from "./ProviderBadge";
 import type { Provider } from "@/lib/models";
 import { useSmoothText } from "@/hooks/useSmoothText";
 
-type ToolUse = { tool: "scrape" | "search"; label: string };
+type ToolStatus = "running" | "done" | "failed";
+type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
+type Phase = "analyzing" | "generating";
 
 type Props = {
   role: "user" | "assistant";
@@ -16,6 +18,7 @@ type Props = {
   model?: string;
   memory?: { added: number; updated: number };
   tool?: ToolUse;
+  phase?: Phase;
   onRetry?: () => void;
   onDelete?: () => void;
 };
