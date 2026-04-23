@@ -704,8 +704,8 @@ Deno.serve(async (req) => {
           let messagesForLLM = finalMessages;
           if (webContext) {
             const header = webContext.kind === "scrape"
-              ? `Contenu de la page web demandée (${webContext.label}). Utilise-le comme source principale et cite l'URL si pertinent :`
-              : `Résultats de recherche web pour "${webContext.label}". Utilise ces sources pour répondre, et cite les URLs pertinentes :`;
+              ? `Content of the requested web page (${webContext.label}). Use it as the primary source and cite the URL when relevant:`
+              : `Web search results for "${webContext.label}". Use these sources to answer, and cite the relevant URLs:`;
             const webSystem: Msg = {
               role: "system",
               content: `${header}\n\n${webContext.content}`,
