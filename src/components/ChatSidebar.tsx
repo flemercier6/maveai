@@ -111,9 +111,8 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
             >
               <button
                 onClick={() => onSelect(c.id)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left min-w-0"
+                className="w-full flex items-center px-3 py-2 text-left min-w-0"
               >
-                <MessageSquare className="w-4 h-4 shrink-0 opacity-70" />
                 <span className="flex-1 truncate pr-6">{c.title}</span>
               </button>
               {(hovered === c.id || activeId === c.id) && (
