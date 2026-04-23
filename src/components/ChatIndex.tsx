@@ -74,14 +74,16 @@ export function ChatIndex({ items, scrollContainer }: Props) {
 
   return (
     <div
-      className="fixed top-1/2 -translate-y-1/2 right-4 z-30"
+      className="fixed top-4 right-4 z-30"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <div
         className={cn(
-          "flex flex-col items-end justify-center gap-2 rounded-full bg-[hsl(0_0%_97%)] py-3 px-2 transition-all duration-200",
-          hovered && "rounded-2xl shadow-md py-[30px] px-[2px] gap-[8px]",
+          "flex flex-col items-center justify-center bg-[hsl(0_0%_97%)] transition-[padding,gap,border-radius,box-shadow] duration-300 ease-out",
+          hovered
+            ? "rounded-2xl shadow-md py-[30px] px-[14px] gap-[8px]"
+            : "rounded-full py-3 px-2 gap-2",
         )}
       >
         {items.map((it) => {
@@ -91,22 +93,21 @@ export function ChatIndex({ items, scrollContainer }: Props) {
               key={it.id}
               type="button"
               onClick={() => scrollTo(it.id)}
-              className="group flex items-center gap-2 outline-none"
+              className="group flex items-center gap-2 outline-none self-stretch justify-end"
               aria-label={`Jump to: ${it.preview}`}
             >
-              {hovered && (
-                <span
-                  className={cn(
-                    "max-w-[200px] truncate text-xs whitespace-nowrap",
-                    isActive ? "text-foreground" : "text-muted-foreground",
-                  )}
-                >
-                  {it.preview}
-                </span>
-              )}
               <span
                 className={cn(
-                  "block h-[2px] rounded-full transition-all duration-150",
+                  "max-w-[200px] truncate text-sm font-medium whitespace-nowrap transition-[opacity,max-width] duration-300 ease-out",
+                  hovered ? "opacity-100 max-w-[200px]" : "opacity-0 max-w-0",
+                  isActive ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {it.preview}
+              </span>
+              <span
+                className={cn(
+                  "block h-[3px] rounded-full transition-all duration-300 ease-out shrink-0",
                   isActive
                     ? "bg-foreground w-[32px]"
                     : "bg-muted-foreground/40 w-[25px] group-hover:bg-muted-foreground/70",
