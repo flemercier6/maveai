@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Brain } from "lucide-react";
-import { cn } from "@/lib/utils";
+// cn no longer needed here
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
@@ -60,10 +60,12 @@ function ChatMessageImpl({ role, content, streaming, provider, model, memory }: 
             <ProviderBadge provider={provider} model={model} />
           </div>
         )}
-        <div className={cn("chat-prose break-words", streaming && "typing-cursor")}>
+        <div className="chat-prose break-words">
           {display ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{display}</ReactMarkdown>
-          ) : streaming ? "" : " "}
+          ) : streaming ? (
+            <span className="text-shimmer text-sm font-medium">Thinking...</span>
+          ) : " "}
         </div>
       </div>
     </div>
