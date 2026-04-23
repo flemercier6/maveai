@@ -43,8 +43,8 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 0 0% 88%;              /* #E0E0E0 — all strokes */
+    --input: 0 0% 88%;
     --ring: 158 64% 32%;
 
     --bubble-user: 0 0% 97%;            /* #F8F8F8 */
