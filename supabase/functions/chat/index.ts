@@ -373,11 +373,12 @@ async function firecrawlScrape(apiKey: string, url: string): Promise<string | nu
 }
 
 type WebSource = { title: string; url: string };
+type WebImage = { url: string; title?: string; sourceUrl?: string };
 
 async function linkupSearch(
   apiKey: string,
   query: string,
-): Promise<{ content: string; sources: WebSource[] } | null> {
+): Promise<{ content: string; sources: WebSource[]; images: WebImage[] } | null> {
   try {
     const r = await fetch("https://api.linkup.so/v1/search", {
       method: "POST",
@@ -389,7 +390,7 @@ async function linkupSearch(
         q: query,
         depth: "standard",
         outputType: "searchResults",
-        includeImages: false,
+        includeImages: true,
       }),
     });
     const j = await r.json();
@@ -399,11 +400,25 @@ async function linkupSearch(
     }
     const results: any[] = j?.results ?? [];
     if (!Array.isArray(results) || !results.length) return null;
-    const top = results.slice(0, 8);
+    // Linkup mixes text and image entries; separate them.
+    const textResults = results.filter((res) => {
+      const t = (res.type ?? "").toString().toLowerCase();
+      return t !== "image" && (res.content || res.snippet || res.description);
+    });
+    const imageResults = results.filter((res) => {
+      const t = (res.type ?? "").toString().toLowerCase();
+      return t === "image" || /\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(res.url ?? "");
+    });
+    const top = textResults.slice(0, 8);
     const sources: WebSource[] = top.map((res) => ({
       title: (res.name ?? res.title ?? "Untitled").toString(),
       url: (res.url ?? "").toString(),
     }));
+    const images: WebImage[] = imageResults.slice(0, 6).map((res) => ({
+      url: (res.url ?? "").toString(),
+      title: (res.name ?? res.title ?? "").toString() || undefined,
+      sourceUrl: (res.sourceUrl ?? res.referrer ?? undefined) as string | undefined,
+    })).filter((im) => /^https?:\/\//.test(im.url));
     const blocks = top.map((res, i) => {
       const title = sources[i].title;
       const url = sources[i].url;
@@ -413,6 +428,7 @@ async function linkupSearch(
     return {
       content: blocks.join("\n\n---\n\n").slice(0, 15000),
       sources,
+      images,
     };
   } catch (e) {
     console.error("linkup search exception", e);
@@ -756,7 +772,7 @@ Deno.serve(async (req) => {
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     const linkupKey = Deno.env.get("LINKUP_API_KEY");
     let webContext:
-      | { kind: "scrape" | "search"; label: string; content: string; sources?: WebSource[] }
+      | { kind: "scrape" | "search"; label: string; content: string; sources?: WebSource[]; images?: WebImage[] }
       | null = null;
 
     const stream = new ReadableStream({
@@ -795,6 +811,7 @@ Deno.serve(async (req) => {
                   label: decision.query,
                   content: res.content,
                   sources: res.sources,
+                  images: res.images,
                 };
                 controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "done" }));
                 controller.enqueue(enc({ type: "sources", sources: res.sources }));
@@ -818,9 +835,19 @@ Deno.serve(async (req) => {
                 `- Do NOT add a "Sources" list at the end — markers alone are enough; the UI renders them.\n` +
                 `- Place markers naturally in the flow, e.g. "Paris is the capital of France [source:1]."`
               : "";
+            const imagesBlock = webContext.images && webContext.images.length
+              ? `\n\nAVAILABLE IMAGES (from the web search) — use them WHEN VISUALLY RELEVANT:\n` +
+                webContext.images.map((im, i) => `${i + 1}. ${im.url}${im.title ? ` — ${im.title}` : ""}`).join("\n") +
+                `\n\nIMAGE RULES:\n` +
+                `- If — and only if — an image meaningfully illustrates the topic (a person, place, product, artwork, diagram, event, etc.), embed it inline with standard Markdown: ![short alt](https://exact-url).\n` +
+                `- Use ONLY URLs from the list above, copied EXACTLY. Never invent or modify image URLs.\n` +
+                `- Maximum 2–3 images per answer. Place each image near the paragraph it illustrates.\n` +
+                `- For purely conversational, code, math, or abstract answers: do NOT include any image.\n` +
+                `- Never wrap the image in a link, never add a caption line — the alt text is enough.`
+              : "";
             const webSystem: Msg = {
               role: "system",
-              content: `${header}${citationRule}\n\n${webContext.content}`,
+              content: `${header}${citationRule}${imagesBlock}\n\n${webContext.content}`,
             };
             messagesForLLM = [webSystem, ...finalMessages];
           }

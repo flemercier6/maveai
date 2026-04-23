@@ -273,6 +273,34 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
         )}
       </a>
     ),
+    img: ({ node, src, alt, ...props }: any) => {
+      if (!src || typeof src !== "string" || !/^https?:\/\//.test(src)) return null;
+      return (
+        <a
+          href={src}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block my-4 rounded-xl overflow-hidden border border-border bg-muted no-underline max-w-md"
+        >
+          <img
+            src={src}
+            alt={alt || ""}
+            loading="lazy"
+            className="w-full h-auto block max-h-80 object-cover"
+            onError={(e) => {
+              const a = (e.currentTarget.parentElement as HTMLAnchorElement | null);
+              if (a) a.style.display = "none";
+            }}
+            {...props}
+          />
+          {alt ? (
+            <span className="block text-xs text-muted-foreground px-3 py-2 border-t border-border">
+              {alt}
+            </span>
+          ) : null}
+        </a>
+      );
+    },
     p: ({ node, children, ...props }: any) => renderBlock("p", children, props),
     li: ({ node, children, ...props }: any) => renderBlock("li", children, props),
     blockquote: ({ node, children, ...props }: any) => renderBlock("blockquote", children, props),
