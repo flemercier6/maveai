@@ -661,13 +661,50 @@ Deno.serve(async (req) => {
     const enc = sseEncoder();
     let assistantText = "";
 
+    // ---------- Web tools: detect & fetch BEFORE streaming ----------
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    const lastUserText = lastUserMsg?.content ?? "";
+    const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+    let webContext: { kind: "scrape" | "search"; label: string; content: string } | null = null;
+
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // Run web tool detection + fetch (notify client of progress)
+          if (firecrawlKey && lastUserText) {
+            const decision = await decideWebTool({
+              googleKey: Deno.env.get("GOOGLE_API_KEY"),
+              openaiKey: Deno.env.get("OPENAI_API_KEY"),
+              anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+              userText: lastUserText,
+            });
+            if (decision.action === "scrape") {
+              controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url }));
+              const md = await firecrawlScrape(firecrawlKey, decision.url);
+              if (md) webContext = { kind: "scrape", label: decision.url, content: md };
+            } else if (decision.action === "search") {
+              controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query }));
+              const md = await firecrawlSearch(firecrawlKey, decision.query);
+              if (md) webContext = { kind: "search", label: decision.query, content: md };
+            }
+          }
+
+          let messagesForLLM = finalMessages;
+          if (webContext) {
+            const header = webContext.kind === "scrape"
+              ? `Contenu de la page web demandée (${webContext.label}). Utilise-le comme source principale et cite l'URL si pertinent :`
+              : `Résultats de recherche web pour "${webContext.label}". Utilise ces sources pour répondre, et cite les URLs pertinentes :`;
+            const webSystem: Msg = {
+              role: "system",
+              content: `${header}\n\n${webContext.content}`,
+            };
+            messagesForLLM = [webSystem, ...finalMessages];
+          }
+
           let iter: AsyncGenerator<string>;
-          if (provider === "openai") iter = streamOpenAI(apiKey, model, finalMessages);
-          else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, finalMessages);
-          else iter = streamGemini(apiKey, model, finalMessages);
+          if (provider === "openai") iter = streamOpenAI(apiKey, model, messagesForLLM);
+          else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, messagesForLLM);
+          else iter = streamGemini(apiKey, model, messagesForLLM);
 
           for await (const chunk of iter) {
             assistantText += chunk;
