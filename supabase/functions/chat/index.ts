@@ -120,7 +120,14 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
     try {
       const j = JSON.parse(data);
       const txt = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("");
-      if (txt) yield txt as string;
+      if (txt) {
+        // Gemini often delivers large chunks at once which kills the streaming feel.
+        // Split into smaller word-sized pieces so the client sees a steady flow.
+        const pieces = txt.match(/\S+\s*|\s+/g) ?? [txt];
+        for (const piece of pieces) {
+          yield piece as string;
+        }
+      }
     } catch { /* partial */ }
   }
 }
