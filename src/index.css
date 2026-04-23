@@ -109,8 +109,11 @@
   .chat-prose h1 + *, .chat-prose h2 + *, .chat-prose h3 + * { @apply mt-0; }
   .chat-prose hr { @apply my-8 border-0 border-t border-border; }
   .chat-prose blockquote { @apply border-l-2 border-border pl-4 my-5 text-muted-foreground italic; }
-  .chat-prose a { @apply underline underline-offset-2 break-words; color: hsl(var(--link)); }
-  .chat-prose a:hover { @apply opacity-80; }
+  .chat-prose a { @apply underline underline-offset-2 break-words text-foreground; }
+  .chat-prose a:hover { @apply opacity-70; }
+  /* Blue links only inside the user bubble */
+  .bg-bubble-user .chat-prose a,
+  .bg-bubble-user.chat-prose a { color: hsl(var(--link)); }
   .chat-prose strong { @apply font-semibold; }
 
   .typing-cursor::after {
