@@ -141,11 +141,12 @@ export default function Chat() {
     abortRef.current?.abort();
   };
 
-  const send = async (overrideText?: string, overrideAttachments?: Attachment[]) => {
+  const send = async (overrideText?: string, overrideAttachments?: Attachment[], opts?: { skipClarify?: boolean }) => {
     const text = (overrideText ?? input).trim();
     const atts = overrideAttachments ?? attachments;
     if ((!text && atts.length === 0) || sending) return;
     setSending(true);
+    setClarify(null);
     lastSentRef.current = text;
     lastAttachmentsRef.current = atts;
     if (overrideText === undefined) {
