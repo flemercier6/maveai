@@ -154,16 +154,16 @@ function ChatMessageImpl({
         </div>
         {!streaming && content && (
           <div className="mt-2 flex items-center gap-1 -ml-1.5">
-            <ActionButton onClick={handleCopy} ariaLabel={copied ? "Copié" : "Copier"}>
+            <ActionButton onClick={handleCopy} ariaLabel={copied ? "Copied" : "Copy"}>
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </ActionButton>
             {onRetry && (
-              <ActionButton onClick={onRetry} ariaLabel="Régénérer">
+              <ActionButton onClick={onRetry} ariaLabel="Retry">
                 <RotateCcw className="w-4 h-4" />
               </ActionButton>
             )}
             {onDelete && (
-              <ActionButton onClick={onDelete} ariaLabel="Supprimer">
+              <ActionButton onClick={onDelete} ariaLabel="Delete">
                 <Trash2 className="w-4 h-4" />
               </ActionButton>
             )}
