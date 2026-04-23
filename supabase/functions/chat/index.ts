@@ -807,11 +807,12 @@ Deno.serve(async (req) => {
     }
     const user = { id: userData.user.id };
 
-    const { conversationId, provider, model, messages } = await req.json() as {
+    const { conversationId, provider, model, messages, skipClarify } = await req.json() as {
       conversationId: string;
       provider: "openai" | "anthropic" | "google";
       model: string;
       messages: Msg[];
+      skipClarify?: boolean;
     };
 
     if (!conversationId || !provider || !model || !Array.isArray(messages)) {
