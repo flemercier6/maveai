@@ -79,10 +79,10 @@ export function ChatIndex({ items, scrollContainer }: Props) {
     >
       <div
         className={cn(
-          "flex flex-col bg-foreground select-none transition-[padding,border-radius,gap,min-width] duration-300 ease-out",
+          "flex flex-col bg-foreground select-none transition-[padding,border-radius,min-width,max-width] duration-300 ease-out gap-1",
           hovered
-            ? "rounded-2xl shadow-md py-3 pl-3 pr-3 gap-1 min-w-[220px] max-w-[300px] items-stretch"
-            : "rounded-xl py-2 px-2 gap-1.5 items-start",
+            ? "rounded-2xl shadow-md py-3 pl-3 pr-3 min-w-[220px] max-w-[300px] items-stretch"
+            : "rounded-xl py-3 px-3 items-start",
         )}
       >
         {items.map((it) => {
@@ -94,10 +94,10 @@ export function ChatIndex({ items, scrollContainer }: Props) {
               onClick={() => scrollTo(it.id)}
               aria-label={`Jump to: ${it.preview}`}
               className={cn(
-                "group flex items-center gap-2 outline-none rounded-md transition-colors",
+                "group flex items-center gap-2 outline-none rounded-md transition-colors h-5",
                 hovered
                   ? cn(
-                      "self-stretch justify-start px-2 py-1",
+                      "self-stretch justify-start px-2",
                       isActive ? "bg-white/15" : "hover:bg-white/10",
                     )
                   : "",
@@ -113,7 +113,7 @@ export function ChatIndex({ items, scrollContainer }: Props) {
               />
               <span
                 className={cn(
-                  "truncate whitespace-nowrap text-left transition-[opacity,max-width] duration-300 ease-out text-xs font-sans font-semibold",
+                  "truncate whitespace-nowrap text-left transition-[opacity,max-width] duration-300 ease-out text-xs font-sans font-semibold leading-5",
                   hovered
                     ? "opacity-100 max-w-[240px]"
                     : "opacity-0 max-w-0",
