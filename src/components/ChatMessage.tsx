@@ -9,9 +9,10 @@ type Props = {
   content: string;
   streaming?: boolean;
   provider?: Provider;
+  model?: string;
 };
 
-export function ChatMessage({ role, content, streaming, provider }: Props) {
+export function ChatMessage({ role, content, streaming, provider, model }: Props) {
   const isUser = role === "user";
 
   if (isUser) {
@@ -31,7 +32,7 @@ export function ChatMessage({ role, content, streaming, provider }: Props) {
       <div className="max-w-3xl mx-auto px-4">
         {provider && (
           <div className="mb-1.5">
-            <ProviderBadge provider={provider} />
+            <ProviderBadge provider={provider} model={model} />
           </div>
         )}
         <div className={cn("chat-prose break-words", streaming && "typing-cursor")}>
