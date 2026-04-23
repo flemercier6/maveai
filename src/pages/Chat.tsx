@@ -284,7 +284,7 @@ export default function Chat() {
 
         <div className="bg-background p-4 pb-[5px] pt-[5px]">
           <div className="max-w-3xl mx-auto">
-            <div className="bg-card border border-border rounded-2xl shadow-soft focus-within:border-primary/50 transition">
+            <div className="bg-card border border-border rounded-2xl transition-shadow focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)]">
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
