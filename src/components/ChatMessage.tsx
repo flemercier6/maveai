@@ -74,6 +74,25 @@ function ToolBadge({ tool, label }: ToolUse) {
   );
 }
 
+function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined): string {
+  if (tool) {
+    const short = tool.label.length > 50 ? tool.label.slice(0, 47) + "…" : tool.label;
+    if (tool.status === "done") {
+      return tool.tool === "scrape" ? "Synthèse de la page…" : "Synthèse des résultats…";
+    }
+    if (tool.status === "failed") {
+      return "Outil indisponible, je continue sans…";
+    }
+    // running
+    return tool.tool === "scrape"
+      ? `Lecture de ${short}…`
+      : `Recherche : « ${short} »…`;
+  }
+  if (phase === "analyzing") return "Analyse de ta demande…";
+  if (phase === "generating") return "Réflexion…";
+  return "Réflexion…";
+}
+
 function ChatMessageImpl({
   role,
   content,
@@ -82,6 +101,7 @@ function ChatMessageImpl({
   model,
   memory,
   tool,
+  phase,
   onRetry,
   onDelete,
 }: Props) {
