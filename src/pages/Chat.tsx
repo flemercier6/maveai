@@ -21,6 +21,7 @@ import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provide
 import { loadAttachment, type Attachment } from "@/lib/attachments";
 import { SlashCommandMenu, filterSlashItems, type SlashItem } from "@/components/SlashCommandMenu";
 import { getTextareaCaretCoords } from "@/lib/caret";
+import { ClarifyCard, type ClarifyQuestion } from "@/components/ClarifyCard";
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
