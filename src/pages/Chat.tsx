@@ -354,6 +354,34 @@ export default function Chat() {
     setTimeout(() => { void send(text); }, 0);
   };
 
+  // ---- Attachments ----
+  const openFilePicker = () => fileInputRef.current?.click();
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setAttachLoading(true);
+    try {
+      const loaded: Attachment[] = [];
+      for (const f of Array.from(files)) {
+        try {
+          loaded.push(await loadAttachment(f));
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : String(e));
+        }
+      }
+      if (loaded.length) {
+        setAttachments((prev) => [...prev, ...loaded].slice(0, 8));
+      }
+    } finally {
+      setAttachLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeAttachment = (idx: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
