@@ -311,9 +311,7 @@ export default function Chat() {
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground text-center mt-[5px]">
-              {model === AUTO_MODEL_ID
-                ? "Auto picks the best model for each message."
-                : `Responses come directly from ${provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : "Google"} using your key.`}
+              AI can make mistakes. Always use your own judgment.
             </p>
           </div>
         </div>
