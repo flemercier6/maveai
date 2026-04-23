@@ -8,9 +8,16 @@ import { ModelPicker } from "@/components/ModelPicker";
 
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Square } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
+import { loadAttachment, type Attachment } from "@/lib/attachments";
 
 type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number } };
 
@@ -28,11 +35,15 @@ export default function Chat() {
   const [model, setModel] = useState<string>(AUTO_MODEL_ID);
   const [sending, setSending] = useState(false);
   const [streaming, setStreaming] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachLoading, setAttachLoading] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const lastSentRef = useRef<string>("");
+  const lastAttachmentsRef = useRef<Attachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-resize textarea height based on content
   useEffect(() => {
@@ -115,34 +126,51 @@ export default function Chat() {
     abortRef.current?.abort();
   };
 
-  const send = async (overrideText?: string) => {
+  const send = async (overrideText?: string, overrideAttachments?: Attachment[]) => {
     const text = (overrideText ?? input).trim();
-    if (!text || sending) return;
+    const atts = overrideAttachments ?? attachments;
+    if ((!text && atts.length === 0) || sending) return;
     setSending(true);
     lastSentRef.current = text;
-    if (overrideText === undefined) setInput("");
+    lastAttachmentsRef.current = atts;
+    if (overrideText === undefined) {
+      setInput("");
+      setAttachments([]);
+    }
 
     // Resolve Auto → concrete provider/model for this turn (Auto preference is preserved)
     const userPickedAuto = model === AUTO_MODEL_ID;
-    const resolved = userPickedAuto ? routeAuto(text) : { provider, model };
+    const hasImage = atts.some((a) => a.kind === "image");
+    // Force a vision-capable model when images are attached and the user is on Auto
+    const resolved = userPickedAuto
+      ? (hasImage ? { provider: "google" as Provider, model: "gemini-3.5-pro" } : routeAuto(text))
+      : { provider, model };
     const sendProvider = resolved.provider;
     const sendModel = resolved.model;
     // What we persist on the conversation: keep Auto if the user picked Auto
     const convProvider = userPickedAuto ? provider : sendProvider;
     const convModel = userPickedAuto ? AUTO_MODEL_ID : sendModel;
 
-    const convId = await ensureConversation(text);
+    // Build the textual portion of the user message (visible in history)
+    const attachmentSummary = atts.length
+      ? "\n\n" + atts.map((a) =>
+          a.kind === "image" ? `📎 Image: ${a.name}` : `📎 Fichier: ${a.name}`
+        ).join("\n")
+      : "";
+    const displayContent = text + attachmentSummary;
+
+    const convId = await ensureConversation(text || atts[0]?.name || "Attachment");
     if (!convId) { setSending(false); return; }
 
     // Update conversation provider/model in case it changed
     await supabase.from("conversations").update({ provider: convProvider, model: convModel }).eq("id", convId);
 
-    // Persist user message
+    // Persist user message (text only — we don't store binary attachments)
     const { data: userMsg } = await supabase.from("messages").insert({
-      conversation_id: convId, user_id: user!.id, role: "user", content: text,
+      conversation_id: convId, user_id: user!.id, role: "user", content: displayContent,
     }).select().single();
 
-    const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: text }];
+    const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: displayContent }];
     setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel }]);
     setStreaming(true);
 
@@ -161,7 +189,15 @@ export default function Chat() {
           conversationId: convId,
           provider: sendProvider,
           model: sendModel,
-          messages: baseMsgs.map((m) => ({ role: m.role, content: m.content })),
+          messages: baseMsgs.map((m, i) => {
+            // Only the LAST user message carries the live attachments
+            const isLast = i === baseMsgs.length - 1;
+            return {
+              role: m.role,
+              content: m.content,
+              attachments: isLast && m.role === "user" ? atts : undefined,
+            };
+          }),
         }),
         signal: controller.signal,
       });
@@ -256,8 +292,11 @@ export default function Chat() {
     } catch (e) {
       const aborted = (e as any)?.name === "AbortError" || controller.signal.aborted;
       if (aborted) {
-        // Restore the prompt the user was sending so they can edit/resend
+        // Restore the prompt + attachments the user was sending
         setInput(lastSentRef.current);
+        if (lastAttachmentsRef.current.length) {
+          setAttachments(lastAttachmentsRef.current);
+        }
         // Remove the (empty) assistant placeholder and the persisted user message
         setMessages((prev) => {
           const trimmed = prev.slice(0, -1); // drop assistant placeholder
@@ -315,6 +354,34 @@ export default function Chat() {
     setTimeout(() => { void send(text); }, 0);
   };
 
+  // ---- Attachments ----
+  const openFilePicker = () => fileInputRef.current?.click();
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setAttachLoading(true);
+    try {
+      const loaded: Attachment[] = [];
+      for (const f of Array.from(files)) {
+        try {
+          loaded.push(await loadAttachment(f));
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : String(e));
+        }
+      }
+      if (loaded.length) {
+        setAttachments((prev) => [...prev, ...loaded].slice(0, 8));
+      }
+    } finally {
+      setAttachLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeAttachment = (idx: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
@@ -368,7 +435,46 @@ export default function Chat() {
             className="pointer-events-none absolute left-0 right-0 -top-20 h-20 bg-gradient-to-t from-background to-transparent"
           />
           <div className="max-w-2xl mx-auto">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,application/pdf,text/*,.md,.json,.csv,.yml,.yaml"
+              className="hidden"
+              onChange={(e) => handleFiles(e.target.files)}
+            />
             <div className="bg-card border border-border rounded-2xl transition-shadow focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)]">
+              {(attachments.length > 0 || attachLoading) && (
+                <div className="flex flex-wrap gap-2 px-3 pt-3">
+                  {attachments.map((a, i) => (
+                    <div
+                      key={i}
+                      className="group relative flex items-center gap-2 rounded-lg border border-border bg-background pl-2 pr-7 py-1.5 text-xs"
+                    >
+                      {a.kind === "image" ? (
+                        <img src={a.dataUrl} alt={a.name} className="w-7 h-7 rounded object-cover" />
+                      ) : (
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                      )}
+                      <span className="max-w-[160px] truncate">{a.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(i)}
+                        aria-label="Retirer"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 inline-flex items-center justify-center h-5 w-5 rounded text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {attachLoading && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 py-1.5">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Lecture du fichier...
+                    </div>
+                  )}
+                </div>
+              )}
               <Textarea
                 ref={textareaRef}
                 value={input}
@@ -378,33 +484,54 @@ export default function Chat() {
                 rows={1}
                 className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
               />
-              <div className="flex items-center justify-end gap-[15px] px-2 pb-2">
-                <ModelPicker
-                  provider={provider}
-                  model={model}
-                  onChange={(p, m) => { setProvider(p); setModel(m); }}
-                  disabled={streaming}
-                />
-                {sending ? (
-                  <Button
-                    size="icon"
-                    onClick={stop}
-                    className="h-9 w-9 rounded-full"
-                    aria-label="Stop generation"
-                  >
-                    <Square className="w-4 h-4 fill-current" />
-                  </Button>
-                ) : (
-                  <Button
-                    size="icon"
-                    onClick={() => send()}
-                    disabled={!input.trim()}
-                    className="h-9 w-9 rounded-full"
-                    aria-label="Send message"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                )}
+              <div className="flex items-center justify-between gap-[15px] px-2 pb-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
+                      aria-label="Add attachment"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuItem onClick={openFilePicker}>
+                      <Paperclip className="w-4 h-4 mr-2" />
+                      Attach files or images
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <div className="flex items-center gap-[15px]">
+                  <ModelPicker
+                    provider={provider}
+                    model={model}
+                    onChange={(p, m) => { setProvider(p); setModel(m); }}
+                    disabled={streaming}
+                  />
+                  {sending ? (
+                    <Button
+                      size="icon"
+                      onClick={stop}
+                      className="h-9 w-9 rounded-full"
+                      aria-label="Stop generation"
+                    >
+                      <Square className="w-4 h-4 fill-current" />
+                    </Button>
+                  ) : (
+                    <Button
+                      size="icon"
+                      onClick={() => send()}
+                      disabled={!input.trim() && attachments.length === 0}
+                      className="h-9 w-9 rounded-full"
+                      aria-label="Send message"
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground text-center mt-[5px]">

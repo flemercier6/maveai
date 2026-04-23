@@ -8,7 +8,31 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-type Msg = { role: "user" | "assistant" | "system"; content: string };
+type Attachment =
+  | { kind: "image"; name: string; mime: string; dataUrl: string }
+  | { kind: "text"; name: string; mime: string; text: string };
+
+type Msg = {
+  role: "user" | "assistant" | "system";
+  content: string;
+  attachments?: Attachment[];
+};
+
+// Strip data URL prefix → return [mediaType, base64]
+function splitDataUrl(dataUrl: string): { mediaType: string; base64: string } {
+  const m = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+  if (!m) return { mediaType: "image/png", base64: "" };
+  return { mediaType: m[1], base64: m[2] };
+}
+
+// Inline text-only attachments (PDF text, .md, etc.) directly into the textual content.
+function mergeTextAttachments(content: string, atts: Attachment[] | undefined): string {
+  if (!atts?.length) return content;
+  const textParts = atts
+    .filter((a): a is Extract<Attachment, { kind: "text" }> => a.kind === "text")
+    .map((a) => `\n\n--- Fichier joint: ${a.name} (${a.mime}) ---\n${a.text}\n--- fin ${a.name} ---`);
+  return content + textParts.join("");
+}
 
 function sseEncoder() {
   const encoder = new TextEncoder();
@@ -34,13 +58,27 @@ async function* parseSSELines(reader: ReadableStreamDefaultReader<Uint8Array>) {
 
 // ---------- OpenAI ----------
 async function* streamOpenAI(apiKey: string, model: string, messages: Msg[]) {
+  const oaiMessages = messages.map((m) => {
+    const text = mergeTextAttachments(m.content, m.attachments);
+    const images = (m.attachments ?? []).filter((a) => a.kind === "image") as Extract<Attachment, { kind: "image" }>[];
+    if (m.role === "user" && images.length) {
+      return {
+        role: "user",
+        content: [
+          { type: "text", text },
+          ...images.map((img) => ({ type: "image_url", image_url: { url: img.dataUrl } })),
+        ],
+      };
+    }
+    return { role: m.role, content: text };
+  });
   const r = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model, messages, stream: true }),
+    body: JSON.stringify({ model, messages: oaiMessages, stream: true }),
   });
   if (!r.ok || !r.body) {
     const t = await r.text();
@@ -74,7 +112,23 @@ async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]) 
       max_tokens: 4096,
       stream: true,
       system: system || undefined,
-      messages: conv.map((m) => ({ role: m.role, content: m.content })),
+      messages: conv.map((m) => {
+        const text = mergeTextAttachments(m.content, m.attachments);
+        const images = (m.attachments ?? []).filter((a) => a.kind === "image") as Extract<Attachment, { kind: "image" }>[];
+        if (m.role === "user" && images.length) {
+          return {
+            role: "user",
+            content: [
+              ...images.map((img) => {
+                const { mediaType, base64 } = splitDataUrl(img.dataUrl);
+                return { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } };
+              }),
+              { type: "text", text },
+            ],
+          };
+        }
+        return { role: m.role, content: text };
+      }),
     }),
   });
   if (!r.ok || !r.body) {
@@ -98,10 +152,21 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
   const sys = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   const contents = messages
     .filter((m) => m.role !== "system")
-    .map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
+    .map((m) => {
+      const text = mergeTextAttachments(m.content, m.attachments);
+      const images = (m.attachments ?? []).filter((a) => a.kind === "image") as Extract<Attachment, { kind: "image" }>[];
+      const parts: any[] = [];
+      if (text) parts.push({ text });
+      for (const img of images) {
+        const { mediaType, base64 } = splitDataUrl(img.dataUrl);
+        parts.push({ inlineData: { mimeType: mediaType, data: base64 } });
+      }
+      if (!parts.length) parts.push({ text: "" });
+      return {
+        role: m.role === "assistant" ? "model" : "user",
+        parts,
+      };
+    });
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
   const body: any = { contents };
   if (sys) body.systemInstruction = { parts: [{ text: sys }] };
