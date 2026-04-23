@@ -68,7 +68,7 @@ export default function Memory() {
   };
 
   const clearAll = async () => {
-    if (!confirm("Effacer toute la mémoire ?")) return;
+    if (!confirm("Erase all memory?")) return;
     const { error } = await supabase.from("user_memories").delete().eq("user_id", user!.id);
     if (error) return toast.error(error.message);
     setMemories([]);
@@ -116,7 +116,7 @@ export default function Memory() {
   const importMemories = async () => {
     const items = parseImport(importText);
     if (items.length === 0) {
-      toast.error("Aucun souvenir détecté dans le texte collé.");
+      toast.error("No memories detected in the pasted text.");
       return;
     }
     setImporting(true);
@@ -128,7 +128,7 @@ export default function Memory() {
     const { error } = await supabase.from("user_memories").insert(rows);
     setImporting(false);
     if (error) return toast.error(error.message);
-    toast.success(`${rows.length} souvenir${rows.length > 1 ? "s" : ""} importé${rows.length > 1 ? "s" : ""}.`);
+    toast.success(`${rows.length} memor${rows.length > 1 ? "ies" : "y"} imported.`);
     setImportText("");
     setImportOpen(false);
     load();
@@ -143,30 +143,30 @@ export default function Memory() {
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <Brain className="w-5 h-5 text-primary" />
-        <h1 className="font-semibold">Mémoire</h1>
+        <h1 className="font-semibold">Memory</h1>
       </header>
 
       <main className="max-w-3xl mx-auto p-6 space-y-6">
         <p className="text-sm text-muted-foreground">
-          Ces souvenirs sont injectés automatiquement dans toutes tes conversations, peu importe le modèle ou
-          le fournisseur (OpenAI, Anthropic, Google).
+          These memories are automatically injected into all your conversations, no matter the model or
+          provider (OpenAI, Anthropic, Google).
         </p>
 
         <Card className="p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">Ajouter un souvenir</h2>
+            <h2 className="text-sm font-medium">Add a memory</h2>
             <Dialog open={importOpen} onOpenChange={setImportOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <Upload className="w-4 h-4 mr-1" /> Importer depuis un autre AI
+                  <Upload className="w-4 h-4 mr-1" /> Import from another AI
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Importer la mémoire d'un autre AI</DialogTitle>
+                  <DialogTitle>Import memory from another AI</DialogTitle>
                   <DialogDescription>
-                    Colle ici la mémoire exportée depuis ChatGPT, Claude, Gemini, etc. Formats acceptés : un
-                    souvenir par ligne, liste à puces/numérotée, ou JSON (tableau de chaînes ou d'objets
+                    Paste here the memory exported from ChatGPT, Claude, Gemini, etc. Accepted formats: one
+                    memory per line, bullet/numbered list, or JSON (array of strings or of objects
                     {" "}
                     <code>{`{content, kind}`}</code>).
                   </DialogDescription>
@@ -174,23 +174,23 @@ export default function Memory() {
                 <Textarea
                   value={importText}
                   onChange={(e) => setImportText(e.target.value)}
-                  placeholder={`- Je travaille comme développeur full-stack\n- Je préfère TypeScript et React\n- J'habite à Paris`}
+                  placeholder={`- I work as a full-stack developer\n- I prefer TypeScript and React\n- I live in Paris`}
                   rows={10}
                   className="font-mono text-xs"
                 />
                 <p className="text-xs text-muted-foreground">
-                  {parseImport(importText).length} souvenir(s) détecté(s).
+                  {parseImport(importText).length} memor{parseImport(importText).length === 1 ? "y" : "ies"} detected.
                 </p>
                 <DialogFooter>
                   <Button variant="ghost" onClick={() => setImportOpen(false)}>
-                    Annuler
+                    Cancel
                   </Button>
                   <Button
                     onClick={importMemories}
                     disabled={importing || parseImport(importText).length === 0}
                   >
                     <Upload className="w-4 h-4 mr-1" />
-                    Importer {parseImport(importText).length || ""}
+                    Import {parseImport(importText).length || ""}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -199,21 +199,21 @@ export default function Memory() {
           <Textarea
             value={newContent}
             onChange={(e) => setNewContent(e.target.value)}
-            placeholder="Ex: Je préfère les explications concises et le code en TypeScript."
+            placeholder="E.g. I prefer concise explanations and TypeScript code."
             rows={2}
           />
           <div className="flex justify-end">
             <Button onClick={add} disabled={!newContent.trim()} size="sm">
-              <Plus className="w-4 h-4 mr-1" /> Ajouter
+              <Plus className="w-4 h-4 mr-1" /> Add
             </Button>
           </div>
         </Card>
 
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium">{memories.length} souvenir{memories.length > 1 ? "s" : ""}</h2>
+          <h2 className="text-sm font-medium">{memories.length} memor{memories.length === 1 ? "y" : "ies"}</h2>
           {memories.length > 0 && (
             <Button variant="ghost" size="sm" onClick={clearAll} className="text-destructive">
-              Tout effacer
+              Clear all
             </Button>
           )}
         </div>
@@ -221,7 +221,7 @@ export default function Memory() {
         <div className="space-y-2">
           {memories.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-8">
-              Aucun souvenir pour l'instant. Ils seront créés automatiquement au fil des conversations.
+              No memories yet. They will be created automatically as you chat.
             </p>
           )}
           {memories.map((m) => (

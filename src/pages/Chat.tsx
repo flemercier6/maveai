@@ -74,11 +74,11 @@ export default function Chat() {
 
   const ensureConversation = async (firstUserContent: string): Promise<string | null> => {
     if (activeId) return activeId;
-    const title = firstUserContent.slice(0, 60).trim() || "Nouvelle conversation";
+    const title = firstUserContent.slice(0, 60).trim() || "New conversation";
     const { data, error } = await supabase.from("conversations").insert({
       user_id: user!.id, title, provider, model,
     }).select().single();
-    if (error || !data) { toast.error(error?.message ?? "Erreur"); return null; }
+    if (error || !data) { toast.error(error?.message ?? "Error"); return null; }
     setConversations((prev) => [data as Conversation, ...prev]);
     setActiveId(data.id);
     return data.id;
@@ -188,7 +188,7 @@ export default function Chat() {
   };
 
   if (loading || !user) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Chargement...</div>;
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
 
   return (
@@ -212,9 +212,9 @@ export default function Chat() {
               <div className="w-14 h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center mb-4">
                 <Sparkles className="w-7 h-7" />
               </div>
-              <h2 className="text-2xl font-semibold mb-2">Comment puis-je t'aider ?</h2>
+              <h2 className="text-2xl font-semibold mb-2">How can I help you?</h2>
               <p className="text-muted-foreground max-w-md">
-                Choisis un fournisseur et un modèle, puis pose ta question. Pense à ajouter tes clés API dans les paramètres.
+                Pick a provider and a model, then ask your question. Remember to add your API keys in the settings.
               </p>
             </div>
           ) : (
@@ -239,7 +239,7 @@ export default function Chat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKey}
-                placeholder="Envoie un message..."
+                placeholder="Send a message..."
                 rows={1}
                 className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 max-h-48 py-3.5 px-4"
               />
@@ -261,7 +261,7 @@ export default function Chat() {
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground text-center mt-2">
-              Les réponses viennent directement de {provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : "Google"} avec ta clé.
+              Responses come directly from {provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : "Google"} using your key.
             </p>
           </div>
         </div>

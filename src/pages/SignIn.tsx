@@ -35,8 +35,8 @@ export default function SignIn() {
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-8 shadow-soft">
-          <h2 className="text-2xl font-semibold mb-1">Se connecter</h2>
-          <p className="text-muted-foreground text-sm mb-6">Bon retour parmi nous.</p>
+          <h2 className="text-2xl font-semibold mb-1">Sign in</h2>
+          <p className="text-muted-foreground text-sm mb-6">Welcome back.</p>
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -44,17 +44,17 @@ export default function SignIn() {
               <Input id="email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Connexion..." : "Se connecter"}
+              {loading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
 
           <p className="text-sm text-muted-foreground text-center mt-6">
-            Pas encore de compte ?{" "}
-            <Link to="/signup" className="text-primary hover:underline">Créer un compte</Link>
+            No account yet?{" "}
+            <Link to="/signup" className="text-primary hover:underline">Create an account</Link>
           </p>
         </div>
       </div>

@@ -88,14 +88,14 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
           <span className="font-semibold text-sidebar-foreground">Polychat</span>
         </div>
         <Button onClick={onNew} className="w-full mt-2 justify-start gap-2" variant="default">
-          <Plus className="w-4 h-4" /> Nouvelle conversation
+          <Plus className="w-4 h-4" /> New conversation
         </Button>
       </div>
 
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-0.5">
           {conversations.length === 0 && (
-            <p className="text-xs text-muted-foreground px-3 py-4">Pas encore de conversation.</p>
+            <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet.</p>
           )}
           {conversations.map((c) => (
             <button
@@ -132,13 +132,13 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
           to="/memory"
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-sidebar-accent/60 text-sidebar-foreground"
         >
-          <Brain className="w-4 h-4 opacity-70" /> Mémoire
+          <Brain className="w-4 h-4 opacity-70" /> Memory
         </Link>
         <button
           onClick={signOut}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-sidebar-accent/60 text-sidebar-foreground"
         >
-          <LogOut className="w-4 h-4 opacity-70" /> Se déconnecter
+          <LogOut className="w-4 h-4 opacity-70" /> Sign out
         </button>
       </div>
 
@@ -151,7 +151,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
           "hover:bg-primary/40 transition-colors",
           resizing && "bg-primary/60"
         )}
-        title="Glisser pour redimensionner — double-clic pour réinitialiser"
+        title="Drag to resize — double-click to reset"
       />
     </aside>
   );
