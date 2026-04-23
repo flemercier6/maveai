@@ -79,7 +79,10 @@ export default function Chat() {
   }, [activeId]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: streaming ? "auto" : "smooth",
+    });
   }, [messages, streaming]);
 
   const newConversation = () => {
@@ -164,6 +167,24 @@ export default function Chat() {
       let buf = "";
       let acc = "";
 
+      // Coalesce delta updates onto a single rAF tick so React renders
+      // smoothly (~60fps) instead of once per token.
+      let pending = false;
+      const flush = () => {
+        pending = false;
+        const snapshot = acc;
+        setMessages((prev) => {
+          const next = prev.slice();
+          next[next.length - 1] = { role: "assistant", content: snapshot, provider: sendProvider, model: sendModel };
+          return next;
+        });
+      };
+      const scheduleFlush = () => {
+        if (pending) return;
+        pending = true;
+        requestAnimationFrame(flush);
+      };
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -177,11 +198,7 @@ export default function Chat() {
             const j = JSON.parse(line.slice(6));
             if (j.type === "delta") {
               acc += j.text;
-              setMessages((prev) => {
-                const next = [...prev];
-                next[next.length - 1] = { role: "assistant", content: acc, provider: sendProvider, model: sendModel };
-                return next;
-              });
+              scheduleFlush();
             } else if (j.type === "title" && j.title) {
               setConversations((prev) =>
                 prev.map((c) => (c.id === convId ? { ...c, title: j.title } : c)),
@@ -194,6 +211,16 @@ export default function Chat() {
             throw e;
           }
         }
+      }
+
+      // Final flush to make sure we render the very last delta
+      if (pending || acc) {
+        pending = false;
+        setMessages((prev) => {
+          const next = prev.slice();
+          next[next.length - 1] = { role: "assistant", content: acc, provider: sendProvider, model: sendModel };
+          return next;
+        });
       }
 
       // refresh conversation list ordering
