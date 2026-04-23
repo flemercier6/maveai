@@ -456,11 +456,33 @@ Deno.serve(async (req) => {
             .update({ updated_at: new Date().toISOString() })
             .eq("id", conversationId);
 
+          // ---------- Auto-generate title if this is the first user message ----------
+          const userMessagesCount = messages.filter((m) => m.role === "user").length;
+          const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+          if (userMessagesCount <= 1 && lastUser) {
+            try {
+              const title = await generateTitle({
+                openaiKey: Deno.env.get("OPENAI_API_KEY"),
+                googleKey: Deno.env.get("GOOGLE_API_KEY"),
+                anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+                userText: lastUser,
+              });
+              if (title) {
+                await supabase
+                  .from("conversations")
+                  .update({ title })
+                  .eq("id", conversationId);
+                controller.enqueue(enc({ type: "title", title }));
+              }
+            } catch (err) {
+              console.error("title update failed:", err);
+            }
+          }
+
           controller.enqueue(enc({ type: "done" }));
           controller.close();
 
           // ---------- Fire-and-forget: extract memorable facts ----------
-          const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
           extractAndSaveMemory({
             supabase,
             userId: user.id,
