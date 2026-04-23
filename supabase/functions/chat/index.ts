@@ -304,36 +304,37 @@ async function firecrawlScrape(apiKey: string, url: string): Promise<string | nu
   }
 }
 
-async function firecrawlSearch(apiKey: string, query: string): Promise<string | null> {
+async function linkupSearch(apiKey: string, query: string): Promise<string | null> {
   try {
-    const r = await fetch("https://api.firecrawl.dev/v2/search", {
+    const r = await fetch("https://api.linkup.so/v1/search", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        query,
-        limit: 5,
-        scrapeOptions: { formats: ["markdown"] },
+        q: query,
+        depth: "standard",
+        outputType: "searchResults",
+        includeImages: false,
       }),
     });
     const j = await r.json();
     if (!r.ok) {
-      console.error("firecrawl search error", r.status, j);
+      console.error("linkup search error", r.status, j);
       return null;
     }
-    const results: any[] = j?.data?.web ?? j?.data ?? j?.results ?? [];
+    const results: any[] = j?.results ?? [];
     if (!Array.isArray(results) || !results.length) return null;
-    const blocks = results.slice(0, 5).map((res, i) => {
-      const title = res.title ?? res.metadata?.title ?? "(sans titre)";
-      const url = res.url ?? res.metadata?.sourceURL ?? "";
-      const content = (res.markdown ?? res.description ?? "").toString().slice(0, 2000);
+    const blocks = results.slice(0, 8).map((res, i) => {
+      const title = res.name ?? res.title ?? "(no title)";
+      const url = res.url ?? "";
+      const content = (res.content ?? res.snippet ?? res.description ?? "").toString().slice(0, 2000);
       return `### Result ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
     });
     return blocks.join("\n\n---\n\n").slice(0, 15000);
   } catch (e) {
-    console.error("firecrawl search exception", e);
+    console.error("linkup search exception", e);
     return null;
   }
 }
