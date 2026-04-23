@@ -7,33 +7,27 @@ export const PROVIDERS: { id: Provider; label: string }[] = [
   { id: "google", label: "Gemini" },
 ];
 
-export const MODELS: Record<Provider, { id: string; label: string }[]> = {
+export type ModelOption = { id: string; label: string; description: string };
+
+export const MODELS: Record<Provider, ModelOption[]> = {
   openai: [
-    { id: "gpt-5.4", label: "GPT-5.4 (latest)" },
-    { id: "gpt-5", label: "GPT-5" },
-    { id: "gpt-4o", label: "GPT-4o" },
-    { id: "gpt-4o-mini", label: "GPT-4o mini" },
-    { id: "gpt-4-turbo", label: "GPT-4 Turbo" },
+    { id: "gpt-5.4", label: "GPT 5.4", description: "OpenAI's latest model" },
+    { id: "gpt-4o-mini", label: "GPT-4o mini", description: "OpenAI's fastest model" },
   ],
   anthropic: [
-    { id: "claude-opus-4-7", label: "Claude Opus 4.7 (latest)" },
-    { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
-    { id: "claude-3-5-sonnet-latest", label: "Claude 3.5 Sonnet" },
-    { id: "claude-3-5-haiku-latest", label: "Claude 3.5 Haiku" },
+    { id: "claude-opus-4-7", label: "Opus 4.7", description: "Anthropic's most capable model" },
+    { id: "claude-sonnet-4-6", label: "Sonnet 4.6", description: "Anthropic's fastest model" },
   ],
   google: [
-    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro (latest)" },
-    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-    { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" },
-    { id: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
-    { id: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
+    { id: "gemini-3.5-pro", label: "Gemini 3.5 Pro", description: "Google's latest model" },
+    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", description: "Google's fastest model" },
   ],
 };
 
 export const DEFAULT_MODEL: Record<Provider, string> = {
   openai: "gpt-5.4",
   anthropic: "claude-opus-4-7",
-  google: "gemini-2.5-flash",
+  google: "gemini-3.5-pro",
 };
 
 export const PROVIDER_LABEL: Record<Provider, string> = {
@@ -41,3 +35,11 @@ export const PROVIDER_LABEL: Record<Provider, string> = {
   anthropic: "Claude",
   google: "Gemini",
 };
+
+// Helper: find provider for a model id
+export function providerForModel(modelId: string): Provider {
+  for (const p of PROVIDERS) {
+    if (MODELS[p.id].some((m) => m.id === modelId)) return p.id;
+  }
+  return "openai";
+}
