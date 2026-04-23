@@ -114,13 +114,13 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
         <div className="mt-2 space-y-0.5">
           <button
             onClick={onNew}
-            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-xs text-sidebar-foreground hover:bg-sidebar-accent"
+            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-sm"
           >
             <Plus className="w-4 h-4 opacity-70" /> New chat
           </button>
           <button
             type="button"
-            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-xs text-sidebar-foreground hover:bg-sidebar-accent"
+            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-sm"
           >
             <Search className="w-4 h-4 opacity-70" /> Search chats
           </button>
