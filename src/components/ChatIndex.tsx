@@ -79,10 +79,10 @@ export function ChatIndex({ items, scrollContainer }: Props) {
     >
       <div
         className={cn(
-          "flex flex-col bg-foreground select-none transition-[padding,border-radius,gap] duration-300 ease-out",
+          "flex flex-col bg-foreground select-none transition-[padding,border-radius,gap,min-width] duration-300 ease-out",
           hovered
-            ? "rounded-2xl shadow-md py-3 pl-3 pr-3 gap-1 min-w-[220px] max-w-[300px]"
-            : "rounded-full py-2.5 px-1.5 gap-1.5 items-center",
+            ? "rounded-2xl shadow-md py-3 pl-3 pr-3 gap-1 min-w-[220px] max-w-[300px] items-stretch"
+            : "rounded-xl py-2 px-2 gap-1.5 items-start",
         )}
       >
         {items.map((it) => {
@@ -105,10 +105,10 @@ export function ChatIndex({ items, scrollContainer }: Props) {
             >
               <span
                 className={cn(
-                  "block rounded-full shrink-0 transition-all duration-200",
+                  "block rounded-full shrink-0 h-[2px] transition-all duration-200",
                   isActive
-                    ? "bg-background w-2 h-2"
-                    : "bg-background/40 group-hover:bg-background/70 w-1.5 h-1.5",
+                    ? "bg-background w-5"
+                    : "bg-background/40 group-hover:bg-background/70 w-[15px]",
                 )}
               />
               <span
