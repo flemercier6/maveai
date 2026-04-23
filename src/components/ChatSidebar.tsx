@@ -166,9 +166,9 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
                     <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 pr-1">
                       <button
                         onClick={() => onSelect(c.id)}
-                        className="min-w-0 overflow-hidden text-left text-xs py-[6px] pl-[10px] pr-[4px]"
+                        className="min-w-0 overflow-hidden text-left text-xs pl-[10px] pr-[4px] py-[5px]"
                       >
-                        <span className="block truncate">
+                        <span className="block truncate text-sm">
                           {c.title}
                         </span>
                       </button>
