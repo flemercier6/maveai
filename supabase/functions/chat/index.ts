@@ -630,7 +630,7 @@ Deno.serve(async (req) => {
     const styleSystem: Msg = {
       role: "system",
       content:
-        "Tu peux utiliser des emojis librement dans tes réponses lorsque c'est pertinent (ton, illustration, listes, ponctuation expressive). Évite l'excès : un emoji bien placé vaut mieux que dix.",
+        "You may use emojis freely in your responses when relevant (tone, illustration, lists, expressive punctuation). Avoid excess: one well-placed emoji is better than ten. Always respond in the same language as the user's last message.",
     };
 
     // Prepend system messages (style + memory) and drop any previous duplicates from the client
