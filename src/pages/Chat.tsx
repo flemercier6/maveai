@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Sparkles, Square } from "lucide-react";
 import { toast } from "sonner";
-import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, type Provider } from "@/lib/models";
+import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 
 type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string };
 
@@ -53,13 +53,19 @@ export default function Chat() {
     const convModel = conv?.model;
     supabase.from("messages").select("*").eq("conversation_id", activeId).order("created_at")
       .then(({ data }) => {
-        setMessages(((data ?? []) as any[]).map((m) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          provider: m.role === "assistant" ? convProvider : undefined,
-          model: m.role === "assistant" ? convModel : undefined,
-        })));
+        setMessages(((data ?? []) as any[]).map((m) => {
+          const msgModel = m.model ?? convModel;
+          const msgProvider = m.role === "assistant"
+            ? (msgModel && msgModel !== "auto" ? providerForModel(msgModel) : convProvider)
+            : undefined;
+          return {
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            provider: msgProvider,
+            model: m.role === "assistant" ? msgModel : undefined,
+          };
+        }));
       });
     if (conv) {
       setProvider(conv.provider as Provider);
