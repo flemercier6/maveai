@@ -304,7 +304,12 @@ async function firecrawlScrape(apiKey: string, url: string): Promise<string | nu
   }
 }
 
-async function linkupSearch(apiKey: string, query: string): Promise<string | null> {
+type WebSource = { title: string; url: string };
+
+async function linkupSearch(
+  apiKey: string,
+  query: string,
+): Promise<{ content: string; sources: WebSource[] } | null> {
   try {
     const r = await fetch("https://api.linkup.so/v1/search", {
       method: "POST",
@@ -326,13 +331,21 @@ async function linkupSearch(apiKey: string, query: string): Promise<string | nul
     }
     const results: any[] = j?.results ?? [];
     if (!Array.isArray(results) || !results.length) return null;
-    const blocks = results.slice(0, 8).map((res, i) => {
-      const title = res.name ?? res.title ?? "(no title)";
-      const url = res.url ?? "";
+    const top = results.slice(0, 8);
+    const sources: WebSource[] = top.map((res) => ({
+      title: (res.name ?? res.title ?? "Untitled").toString(),
+      url: (res.url ?? "").toString(),
+    }));
+    const blocks = top.map((res, i) => {
+      const title = sources[i].title;
+      const url = sources[i].url;
       const content = (res.content ?? res.snippet ?? res.description ?? "").toString().slice(0, 2000);
-      return `### Result ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
+      return `### Source ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
     });
-    return blocks.join("\n\n---\n\n").slice(0, 15000);
+    return {
+      content: blocks.join("\n\n---\n\n").slice(0, 15000),
+      sources,
+    };
   } catch (e) {
     console.error("linkup search exception", e);
     return null;
