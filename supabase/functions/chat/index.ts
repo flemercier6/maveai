@@ -206,7 +206,7 @@ async function extractAndSaveMemory(args: {
   assistantText: string;
 }) {
   const { supabase, userId, userText, assistantText } = args;
-  if (!userText.trim()) return;
+  if (!userText.trim()) return { added: 0, updated: 0 };
 
   // Load existing memories first so the extractor can decide skip/update/add.
   const { data: existingRows } = await supabase
@@ -289,11 +289,11 @@ ${assistantText.slice(0, 2000)}`;
       const j = await r.json();
       raw = j.content?.[0]?.text ?? "";
     } else {
-      return;
+      return { added: 0, updated: 0 };
     }
   } catch (e) {
     console.error("extract call failed", e);
-    return;
+    return { added: 0, updated: 0 };
   }
 
   let parsed: any;
@@ -301,10 +301,10 @@ ${assistantText.slice(0, 2000)}`;
     const cleaned = raw.replace(/```json|```/g, "").trim();
     parsed = JSON.parse(cleaned);
   } catch {
-    return;
+    return { added: 0, updated: 0 };
   }
   const actions = Array.isArray(parsed?.actions) ? parsed.actions : [];
-  if (!actions.length) return;
+  if (!actions.length) return { added: 0, updated: 0 };
 
   const existingById = new Map(existing.map((e) => [e.id, e]));
   const existingContents = new Set(existing.map((e) => e.content.toLowerCase().trim()));
@@ -334,16 +334,21 @@ ${assistantText.slice(0, 2000)}`;
     // "skip" → nothing
   }
 
+  let inserted = 0;
+  let updated = 0;
   if (toInsert.length) {
-    await supabase.from("user_memories").insert(toInsert);
+    const { error } = await supabase.from("user_memories").insert(toInsert);
+    if (!error) inserted = toInsert.length;
   }
   for (const u of toUpdate) {
-    await supabase
+    const { error } = await supabase
       .from("user_memories")
       .update({ content: u.content, kind: u.kind, updated_at: new Date().toISOString() })
       .eq("id", u.id)
       .eq("user_id", userId);
+    if (!error) updated += 1;
   }
+  return { added: inserted, updated };
 }
 
 Deno.serve(async (req) => {
@@ -480,19 +485,26 @@ Deno.serve(async (req) => {
             }
           }
 
+          // ---------- Extract memorable facts (await so we can notify the client) ----------
+          try {
+            const memResult = await extractAndSaveMemory({
+              supabase,
+              userId: user.id,
+              openaiKey: Deno.env.get("OPENAI_API_KEY"),
+              googleKey: Deno.env.get("GOOGLE_API_KEY"),
+              anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+              userText: lastUser,
+              assistantText,
+            });
+            if (memResult && (memResult.added > 0 || memResult.updated > 0)) {
+              controller.enqueue(enc({ type: "memory", added: memResult.added, updated: memResult.updated }));
+            }
+          } catch (err) {
+            console.error("memory extract failed:", err);
+          }
+
           controller.enqueue(enc({ type: "done" }));
           controller.close();
-
-          // ---------- Fire-and-forget: extract memorable facts ----------
-          extractAndSaveMemory({
-            supabase,
-            userId: user.id,
-            openaiKey: Deno.env.get("OPENAI_API_KEY"),
-            googleKey: Deno.env.get("GOOGLE_API_KEY"),
-            anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
-            userText: lastUser,
-            assistantText,
-          }).catch((err) => console.error("memory extract failed:", err));
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           controller.enqueue(enc({ type: "error", error: msg }));

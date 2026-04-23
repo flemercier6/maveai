@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -11,9 +12,27 @@ type Props = {
   streaming?: boolean;
   provider?: Provider;
   model?: string;
+  memory?: { added: number; updated: number };
 };
 
-function ChatMessageImpl({ role, content, streaming, provider, model }: Props) {
+function MemoryBadge({ added, updated }: { added: number; updated: number }) {
+  const total = added + updated;
+  if (total <= 0) return null;
+  const label =
+    added > 0 && updated > 0
+      ? `Mémoire mise à jour (${added} ajouté${added > 1 ? "s" : ""}, ${updated} modifié${updated > 1 ? "s" : ""})`
+      : added > 0
+        ? `Ajouté à la mémoire${added > 1 ? ` (${added})` : ""}`
+        : `Mémoire mise à jour${updated > 1 ? ` (${updated})` : ""}`;
+  return (
+    <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+      <Brain className="w-3.5 h-3.5" />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function ChatMessageImpl({ role, content, streaming, provider, model, memory }: Props) {
   const isUser = role === "user";
 
   if (isUser) {
@@ -31,9 +50,10 @@ function ChatMessageImpl({ role, content, streaming, provider, model }: Props) {
   return (
     <div className="w-full py-5">
       <div className="max-w-3xl mx-auto px-4">
-        {provider && (
-          <div className="mb-1.5">
-            <ProviderBadge provider={provider} model={model} />
+        {(provider || memory) && (
+          <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+            {provider && <ProviderBadge provider={provider} model={model} />}
+            {memory && <MemoryBadge added={memory.added} updated={memory.updated} />}
           </div>
         )}
         <div className={cn("chat-prose break-words", streaming && "typing-cursor")}>
@@ -52,5 +72,7 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.content === next.content &&
   prev.streaming === next.streaming &&
   prev.provider === next.provider &&
-  prev.model === next.model,
+  prev.model === next.model &&
+  prev.memory?.added === next.memory?.added &&
+  prev.memory?.updated === next.memory?.updated,
 );

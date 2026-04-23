@@ -12,7 +12,7 @@ import { ArrowRight, Sparkles, Square } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number } };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -203,6 +203,16 @@ export default function Chat() {
               setConversations((prev) =>
                 prev.map((c) => (c.id === convId ? { ...c, title: j.title } : c)),
               );
+            } else if (j.type === "memory") {
+              const mem = { added: Number(j.added) || 0, updated: Number(j.updated) || 0 };
+              setMessages((prev) => {
+                const next = prev.slice();
+                const last = next[next.length - 1];
+                if (last && last.role === "assistant") {
+                  next[next.length - 1] = { ...last, memory: mem };
+                }
+                return next;
+              });
             } else if (j.type === "error") {
               throw new Error(j.error);
             }
@@ -302,6 +312,7 @@ export default function Chat() {
                   content={m.content}
                   provider={m.provider}
                   model={m.model}
+                  memory={m.memory}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                 />
               ))}
