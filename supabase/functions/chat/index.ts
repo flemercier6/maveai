@@ -167,6 +167,32 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ---------- Load cross-provider user memory ----------
+    const { data: memRows } = await supabase
+      .from("user_memories")
+      .select("content,kind,created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    const memoryBlock = (memRows ?? [])
+      .map((m: any) => `- (${m.kind}) ${m.content}`)
+      .join("\n");
+
+    const memorySystem: Msg | null = memoryBlock
+      ? {
+        role: "system",
+        content:
+          "Mémoire persistante de l'utilisateur (faits, préférences, contexte) — utilise-la implicitement pour personnaliser tes réponses, sans la répéter mot pour mot :\n" +
+          memoryBlock,
+      }
+      : null;
+
+    // Prepend memory system message if not already present
+    const finalMessages: Msg[] = memorySystem
+      ? [memorySystem, ...messages.filter((m) => m.role !== "system" || !m.content.startsWith("Mémoire persistante"))]
+      : messages;
+
     const ENV_KEY: Record<string, string | undefined> = {
       openai: Deno.env.get("OPENAI_API_KEY"),
       anthropic: Deno.env.get("ANTHROPIC_API_KEY"),
