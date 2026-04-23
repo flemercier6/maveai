@@ -631,7 +631,13 @@ Deno.serve(async (req) => {
     const styleSystem: Msg = {
       role: "system",
       content:
-        "You may use emojis freely in your responses when relevant (tone, illustration, lists, expressive punctuation). Avoid excess: one well-placed emoji is better than ten. Always respond in the same language as the user's last message.",
+        "Format your responses for excellent readability:\n" +
+        "- Use generous whitespace, short paragraphs (2–4 sentences max), and frequent line breaks.\n" +
+        "- Structure longer answers with markdown headings (##, ###) and bullet lists.\n" +
+        "- Use horizontal dividers (---) to separate distinct sections or topics in long answers.\n" +
+        "- Avoid dense walls of text. Prefer airy, scannable layouts.\n" +
+        "- You may use emojis when relevant; one well-placed emoji beats ten.\n" +
+        "- Always respond in the same language as the user's last message.",
     };
 
     // Prepend system messages (style + memory) and drop any previous duplicates from the client
@@ -641,7 +647,7 @@ Deno.serve(async (req) => {
       ...messages.filter(
         (m) =>
           m.role !== "system" ||
-          (!m.content.startsWith("Persistent user memory") && !m.content.startsWith("You may use emojis")),
+          (!m.content.startsWith("Persistent user memory") && !m.content.startsWith("You may use emojis") && !m.content.startsWith("Format your responses")),
       ),
     ];
 
