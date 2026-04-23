@@ -666,13 +666,14 @@ Deno.serve(async (req) => {
     const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
     const lastUserText = lastUserMsg?.content ?? "";
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+    const linkupKey = Deno.env.get("LINKUP_API_KEY");
     let webContext: { kind: "scrape" | "search"; label: string; content: string } | null = null;
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
           // Run web tool detection + fetch (notify client of progress)
-          if (firecrawlKey && lastUserText) {
+          if ((firecrawlKey || linkupKey) && lastUserText) {
             controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
             const decision = await decideWebTool({
               googleKey: Deno.env.get("GOOGLE_API_KEY"),
@@ -680,7 +681,7 @@ Deno.serve(async (req) => {
               anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
               userText: lastUserText,
             });
-            if (decision.action === "scrape") {
+            if (decision.action === "scrape" && firecrawlKey) {
               controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "running" }));
               const md = await firecrawlScrape(firecrawlKey, decision.url);
               if (md) {
@@ -689,9 +690,9 @@ Deno.serve(async (req) => {
               } else {
                 controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "failed" }));
               }
-            } else if (decision.action === "search") {
+            } else if (decision.action === "search" && linkupKey) {
               controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "running" }));
-              const md = await firecrawlSearch(firecrawlKey, decision.query);
+              const md = await linkupSearch(linkupKey, decision.query);
               if (md) {
                 webContext = { kind: "search", label: decision.query, content: md };
                 controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "done" }));
