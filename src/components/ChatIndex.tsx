@@ -94,13 +94,13 @@ export function ChatIndex({ items, scrollContainer }: Props) {
               onClick={() => scrollTo(it.id)}
               aria-label={`Jump to: ${it.preview}`}
               className={cn(
-                "group flex items-center gap-2 outline-none rounded-md transition-[height,padding,background-color] duration-300 ease-out",
+                "group flex items-center outline-none rounded-md transition-[height,padding,background-color,gap] duration-300 ease-out",
                 hovered
                   ? cn(
-                      "self-stretch justify-start px-2 h-7",
+                      "self-stretch justify-start px-2 h-7 gap-2",
                       isActive ? "bg-white/15" : "hover:bg-white/10",
                     )
-                  : "h-[10px]",
+                  : "h-[10px] gap-0 justify-center",
               )}
             >
               <span
