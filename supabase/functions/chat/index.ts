@@ -138,8 +138,41 @@ async function extractAndSaveMemory(args: {
   const { supabase, userId, userText, assistantText } = args;
   if (!userText.trim()) return;
 
+  // Load existing memories first so the extractor can decide skip/update/add.
+  const { data: existingRows } = await supabase
+    .from("user_memories")
+    .select("id,content,kind")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  const existing = (existingRows ?? []) as { id: string; content: string; kind: string }[];
+
+  const existingBlock = existing.length
+    ? existing.map((m, i) => `${i + 1}. [id=${m.id}] (${m.kind}) ${m.content}`).join("\n")
+    : "(aucune mémoire existante)";
+
   const prompt =
-    `Tu es un extracteur de mémoire. À partir de l'échange ci-dessous, extrais UNIQUEMENT des faits durables et personnels concernant l'utilisateur (préférences, identité, projets, contexte récurrent). Ignore les questions ponctuelles et requêtes éphémères.\n\nRéponds STRICTEMENT en JSON: {"facts": [{"kind": "preference|identity|project|context", "content": "..."}]}\nSi rien à retenir: {"facts": []}.\n\n--- USER ---\n${userText}\n\n--- ASSISTANT ---\n${assistantText.slice(0, 2000)}`;
+    `Tu es un gestionnaire de mémoire utilisateur. Analyse l'échange et décide pour chaque fait durable et personnel (préférences, identité, projets, contexte récurrent) s'il faut :
+- "add"    : ajouter un NOUVEAU souvenir (info absente de la mémoire existante)
+- "update" : REMPLACER un souvenir existant (même sujet mais info différente, plus précise ou contradictoire) — fournis "id" du souvenir à remplacer
+- "skip"   : ne rien faire (déjà présent à l'identique ou non pertinent)
+
+Règles strictes :
+- Compare sémantiquement, pas seulement mot à mot. "Je suis dev" et "L'utilisateur est développeur" = doublon → skip.
+- Si un nouveau fait CONTREDIT ou PRÉCISE un fait existant sur le même sujet → update (avec l'id concerné).
+- Ignore les questions ponctuelles et requêtes éphémères.
+- Réponds STRICTEMENT en JSON, sans texte autour :
+{"actions":[{"op":"add|update|skip","id":"<uuid si update>","kind":"preference|identity|project|context","content":"..."}]}
+Si rien : {"actions":[]}.
+
+--- MÉMOIRE EXISTANTE ---
+${existingBlock}
+
+--- USER ---
+${userText}
+
+--- ASSISTANT ---
+${assistantText.slice(0, 2000)}`;
 
   let raw = "";
   try {
