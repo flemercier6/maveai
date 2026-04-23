@@ -289,11 +289,11 @@ ${assistantText.slice(0, 2000)}`;
       const j = await r.json();
       raw = j.content?.[0]?.text ?? "";
     } else {
-      return;
+      return { added: 0, updated: 0 };
     }
   } catch (e) {
     console.error("extract call failed", e);
-    return;
+    return { added: 0, updated: 0 };
   }
 
   let parsed: any;
@@ -301,10 +301,10 @@ ${assistantText.slice(0, 2000)}`;
     const cleaned = raw.replace(/```json|```/g, "").trim();
     parsed = JSON.parse(cleaned);
   } catch {
-    return;
+    return { added: 0, updated: 0 };
   }
   const actions = Array.isArray(parsed?.actions) ? parsed.actions : [];
-  if (!actions.length) return;
+  if (!actions.length) return { added: 0, updated: 0 };
 
   const existingById = new Map(existing.map((e) => [e.id, e]));
   const existingContents = new Set(existing.map((e) => e.content.toLowerCase().trim()));
