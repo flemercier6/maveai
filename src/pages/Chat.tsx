@@ -126,34 +126,51 @@ export default function Chat() {
     abortRef.current?.abort();
   };
 
-  const send = async (overrideText?: string) => {
+  const send = async (overrideText?: string, overrideAttachments?: Attachment[]) => {
     const text = (overrideText ?? input).trim();
-    if (!text || sending) return;
+    const atts = overrideAttachments ?? attachments;
+    if ((!text && atts.length === 0) || sending) return;
     setSending(true);
     lastSentRef.current = text;
-    if (overrideText === undefined) setInput("");
+    lastAttachmentsRef.current = atts;
+    if (overrideText === undefined) {
+      setInput("");
+      setAttachments([]);
+    }
 
     // Resolve Auto → concrete provider/model for this turn (Auto preference is preserved)
     const userPickedAuto = model === AUTO_MODEL_ID;
-    const resolved = userPickedAuto ? routeAuto(text) : { provider, model };
+    const hasImage = atts.some((a) => a.kind === "image");
+    // Force a vision-capable model when images are attached and the user is on Auto
+    const resolved = userPickedAuto
+      ? (hasImage ? { provider: "google" as Provider, model: "gemini-3.5-pro" } : routeAuto(text))
+      : { provider, model };
     const sendProvider = resolved.provider;
     const sendModel = resolved.model;
     // What we persist on the conversation: keep Auto if the user picked Auto
     const convProvider = userPickedAuto ? provider : sendProvider;
     const convModel = userPickedAuto ? AUTO_MODEL_ID : sendModel;
 
-    const convId = await ensureConversation(text);
+    // Build the textual portion of the user message (visible in history)
+    const attachmentSummary = atts.length
+      ? "\n\n" + atts.map((a) =>
+          a.kind === "image" ? `📎 Image: ${a.name}` : `📎 Fichier: ${a.name}`
+        ).join("\n")
+      : "";
+    const displayContent = text + attachmentSummary;
+
+    const convId = await ensureConversation(text || atts[0]?.name || "Attachment");
     if (!convId) { setSending(false); return; }
 
     // Update conversation provider/model in case it changed
     await supabase.from("conversations").update({ provider: convProvider, model: convModel }).eq("id", convId);
 
-    // Persist user message
+    // Persist user message (text only — we don't store binary attachments)
     const { data: userMsg } = await supabase.from("messages").insert({
-      conversation_id: convId, user_id: user!.id, role: "user", content: text,
+      conversation_id: convId, user_id: user!.id, role: "user", content: displayContent,
     }).select().single();
 
-    const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: text }];
+    const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: displayContent }];
     setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel }]);
     setStreaming(true);
 
@@ -172,7 +189,15 @@ export default function Chat() {
           conversationId: convId,
           provider: sendProvider,
           model: sendModel,
-          messages: baseMsgs.map((m) => ({ role: m.role, content: m.content })),
+          messages: baseMsgs.map((m, i) => {
+            // Only the LAST user message carries the live attachments
+            const isLast = i === baseMsgs.length - 1;
+            return {
+              role: m.role,
+              content: m.content,
+              attachments: isLast && m.role === "user" ? atts : undefined,
+            };
+          }),
         }),
         signal: controller.signal,
       });
