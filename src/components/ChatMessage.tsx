@@ -37,7 +37,7 @@ function ChatMessageImpl({ role, content, streaming, provider, model, memory }: 
 
   if (isUser) {
     return (
-      <div className="w-full py-3">
+      <div className="w-full pt-6 pb-2">
         <div className="max-w-3xl mx-auto px-4 flex flex-col items-end gap-1.5">
           <div className="max-w-[80%] rounded-2xl bg-bubble-user text-bubble-user-foreground px-4 py-2.5 chat-prose break-words">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
@@ -49,7 +49,7 @@ function ChatMessageImpl({ role, content, streaming, provider, model, memory }: 
   }
 
   return (
-    <div className="w-full py-5">
+    <div className="w-full pt-4 pb-8">
       <div className="max-w-3xl mx-auto px-4">
         {provider && (
           <div className="mb-1.5">
