@@ -70,7 +70,7 @@ function ToolBadge({ tool, label }: ToolUse) {
   // Truncate long URLs/queries
   const shortLabel = label.length > 60 ? label.slice(0, 57) + "…" : label;
   return (
-    <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground max-w-full">
+    <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground max-w-full">
       <Icon className="w-3.5 h-3.5 shrink-0" />
       <span className="truncate">{text}: {shortLabel}</span>
     </div>
@@ -305,12 +305,12 @@ function ChatMessageImpl({
   return (
     <div className="w-full my-[50px]">
       <div className="max-w-3xl mx-auto px-4">
-        {provider && (
-          <div className="mb-1.5">
-            <ProviderBadge provider={provider} model={model} />
+        {(provider || (tool && tool.status !== "failed")) && (
+          <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "15px" }}>
+            {provider && <ProviderBadge provider={provider} model={model} />}
+            {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
           </div>
         )}
-        {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
         <div className="chat-prose break-words">
           {display ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{display}</ReactMarkdown>
