@@ -109,8 +109,8 @@ export function ChatIndex({ items, scrollContainer }: Props) {
                 className={cn(
                   "block h-[3px] rounded-full transition-all duration-300 ease-out shrink-0",
                   isActive
-                    ? "bg-foreground w-[32px]"
-                    : "bg-muted-foreground/40 w-[25px] group-hover:bg-muted-foreground/70",
+                    ? "bg-foreground w-[24px]"
+                    : "bg-muted-foreground/40 w-[18px] group-hover:bg-muted-foreground/70",
                 )}
               />
             </button>
