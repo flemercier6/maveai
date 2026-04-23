@@ -82,7 +82,7 @@ export function ChatIndex({ items, scrollContainer }: Props) {
           "flex flex-col bg-foreground select-none transition-[padding,border-radius,min-width,max-width] duration-300 ease-out gap-0",
           hovered
             ? "rounded-2xl shadow-md py-3 pl-3 pr-3 min-w-[220px] max-w-[300px] items-stretch"
-            : "rounded-xl py-2 px-2 items-center",
+            : "rounded-[15px] py-2 px-2 items-center",
         )}
       >
         {items.map((it) => {
