@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ChatSidebar, type Conversation } from "@/components/ChatSidebar";
 import { ChatMessage } from "@/components/ChatMessage";
+import { ChatIndex } from "@/components/ChatIndex";
 import { ModelPicker } from "@/components/ModelPicker";
 
 import { Textarea } from "@/components/ui/textarea";
@@ -49,6 +50,7 @@ export default function Chat() {
     pos: { left: number; top: number };
   } | null>(null);
 
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const lastSentRef = useRef<string>("");
@@ -517,8 +519,25 @@ export default function Chat() {
         userName={displayName ?? (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0]}
       />
 
-      <main className="flex-1 flex flex-col min-w-0">
-        <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <main className="flex-1 flex flex-col min-w-0 relative">
+        <ChatIndex
+          scrollContainer={scrollEl}
+          items={messages
+            .map((m, i) => ({ m, i }))
+            .filter(({ m }) => m.role === "user" && !!m.id)
+            .map(({ m }) => ({
+              id: m.id as string,
+              preview: m.content.replace(/\n+/g, " ").trim().slice(0, 60) +
+                (m.content.length > 60 ? "…" : ""),
+            }))}
+        />
+        <div
+          ref={(el) => {
+            (scrollRef as any).current = el;
+            setScrollEl(el);
+          }}
+          className="flex-1 overflow-y-auto"
+        >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
               <h2 className="text-2xl font-semibold mb-2">How can I help you?</h2>
@@ -531,6 +550,7 @@ export default function Chat() {
               {messages.map((m, i) => (
                 <ChatMessage
                   key={m.id ?? i}
+                  id={m.id}
                   role={m.role}
                   content={m.content}
                   provider={m.provider}
