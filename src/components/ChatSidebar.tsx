@@ -20,7 +20,6 @@ type Props = {
   onSelect: (id: string) => void;
   onNew: () => void;
   onDeleted: (id: string) => void;
-  onOpenKeys: () => void;
   userEmail?: string;
 };
 
@@ -88,12 +87,6 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
       </ScrollArea>
 
       <div className="p-2 border-t border-sidebar-border space-y-0.5">
-        <button
-          onClick={onOpenKeys}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-sidebar-accent/60 text-sidebar-foreground"
-        >
-          <KeyRound className="w-4 h-4 opacity-70" /> Clés API
-        </button>
         <div className="px-3 py-2 text-xs text-muted-foreground truncate">{userEmail}</div>
         <button
           onClick={signOut}
