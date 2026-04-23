@@ -66,7 +66,7 @@
     --sidebar-foreground: 222 14% 18%;
     --sidebar-primary: 0 0% 0%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 13% 92%;
+    --sidebar-accent: 0 0% 90%;      /* #E6E6E6 — sidebar hover/active bg */
     --sidebar-accent-foreground: 222 14% 12%;
     --sidebar-border: 0 0% 88%;      /* #E0E0E0 */
     --sidebar-ring: 0 0% 0%;

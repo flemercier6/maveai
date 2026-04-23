@@ -114,13 +114,13 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
         <div className="mt-2 space-y-0.5">
           <button
             onClick={onNew}
-            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-xs text-sidebar-foreground hover:bg-sidebar-accent/60"
+            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-xs text-sidebar-foreground hover:bg-sidebar-accent"
           >
             <Plus className="w-4 h-4 opacity-70" /> New chat
           </button>
           <button
             type="button"
-            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-xs text-sidebar-foreground hover:bg-sidebar-accent/60"
+            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-xs text-sidebar-foreground hover:bg-sidebar-accent"
           >
             <Search className="w-4 h-4 opacity-70" /> Search chats
           </button>
@@ -147,7 +147,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
                     "group relative w-full rounded-lg text-sm transition-colors",
                     activeId === c.id
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "hover:bg-sidebar-accent/60 text-sidebar-foreground"
+                      : "hover:bg-sidebar-accent text-sidebar-foreground"
                   )}
                 >
                   {renamingId === c.id ? (
@@ -182,7 +182,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
                             aria-label="Conversation options"
                             className={cn(
                               "flex h-6 w-6 shrink-0 items-center justify-center rounded-[4px] transition-opacity hover:bg-background/40",
-                              activeId === c.id ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/60",
+                              activeId === c.id ? "bg-sidebar-accent" : "hover:bg-sidebar-accent",
                               hovered === c.id || menuOpenId === c.id
                                 ? "opacity-70 hover:opacity-100"
                                 : "opacity-0 pointer-events-none"
@@ -216,7 +216,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[4px] hover:bg-sidebar-accent/60 text-sidebar-foreground"
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[4px] hover:bg-sidebar-accent text-sidebar-foreground"
             >
               <div className="w-7 h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-xs font-medium uppercase">
                 {(userName?.[0] ?? userEmail?.[0] ?? "?")}
