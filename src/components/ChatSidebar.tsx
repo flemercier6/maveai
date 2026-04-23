@@ -30,6 +30,7 @@ type Props = {
   onNew: () => void;
   onDeleted: (id: string) => void;
   userEmail?: string;
+  userName?: string;
 };
 
 const MIN_WIDTH = 200;
@@ -37,7 +38,7 @@ const MAX_WIDTH = 480;
 const DEFAULT_WIDTH = 240;
 const STORAGE_KEY = "chat-sidebar-width";
 
-export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail }: Props) {
+export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail, userName }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
