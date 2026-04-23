@@ -21,6 +21,7 @@ import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provide
 import { loadAttachment, type Attachment } from "@/lib/attachments";
 import { SlashCommandMenu, filterSlashItems, type SlashItem } from "@/components/SlashCommandMenu";
 import { getTextareaCaretCoords } from "@/lib/caret";
+import { ClarifyCard, type ClarifyQuestion } from "@/components/ClarifyCard";
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
@@ -44,6 +45,7 @@ export default function Chat() {
   const [streaming, setStreaming] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachLoading, setAttachLoading] = useState(false);
+  const [clarify, setClarify] = useState<ClarifyQuestion[] | null>(null);
   const [slash, setSlash] = useState<{
     query: string;
     start: number;
@@ -85,6 +87,7 @@ export default function Chat() {
 
   // Load messages when active changes
   useEffect(() => {
+    setClarify(null);
     if (!activeId) { setMessages([]); return; }
     const conv = conversations.find((c) => c.id === activeId);
     const convProvider = (conv?.provider as Provider) ?? "openai";
@@ -139,11 +142,12 @@ export default function Chat() {
     abortRef.current?.abort();
   };
 
-  const send = async (overrideText?: string, overrideAttachments?: Attachment[]) => {
+  const send = async (overrideText?: string, overrideAttachments?: Attachment[], opts?: { skipClarify?: boolean }) => {
     const text = (overrideText ?? input).trim();
     const atts = overrideAttachments ?? attachments;
     if ((!text && atts.length === 0) || sending) return;
     setSending(true);
+    setClarify(null);
     lastSentRef.current = text;
     lastAttachmentsRef.current = atts;
     if (overrideText === undefined) {
@@ -202,6 +206,7 @@ export default function Chat() {
           conversationId: convId,
           provider: sendProvider,
           model: sendModel,
+          skipClarify: opts?.skipClarify === true,
           messages: baseMsgs.map((m, i) => {
             // Only the LAST user message carries the live attachments
             const isLast = i === baseMsgs.length - 1;
@@ -313,6 +318,18 @@ export default function Chat() {
                   }
                   return next;
                 });
+              }
+            } else if (j.type === "clarify") {
+              const qs = Array.isArray(j.questions) ? (j.questions as ClarifyQuestion[]) : [];
+              if (qs.length) {
+                // Remove the empty assistant placeholder — no answer was generated yet.
+                setMessages((prev) => {
+                  if (prev.length && prev[prev.length - 1].role === "assistant" && !prev[prev.length - 1].content) {
+                    return prev.slice(0, -1);
+                  }
+                  return prev;
+                });
+                setClarify(qs);
               }
             } else if (j.type === "error") {
               throw new Error(j.error);
@@ -592,6 +609,16 @@ export default function Chat() {
             className="pointer-events-none absolute left-0 right-0 -top-20 h-20 bg-gradient-to-t from-background to-transparent"
           />
           <div className="max-w-2xl mx-auto">
+            {clarify && (
+              <ClarifyCard
+                questions={clarify}
+                onSkip={() => setClarify(null)}
+                onSubmit={(combined) => {
+                  setClarify(null);
+                  void send(combined, [], { skipClarify: true });
+                }}
+              />
+            )}
             <input
               ref={fileInputRef}
               type="file"
