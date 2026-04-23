@@ -111,12 +111,6 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
       className="relative shrink-0 h-screen flex flex-col bg-sidebar border-r border-sidebar-border"
     >
       <div className="p-3 border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="w-7 h-7 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-            <Sparkles className="w-4 h-4" />
-          </div>
-          <span className="font-semibold text-sidebar-foreground">Polychat</span>
-        </div>
         <div className="mt-2 space-y-0.5">
           <button
             onClick={onNew}
