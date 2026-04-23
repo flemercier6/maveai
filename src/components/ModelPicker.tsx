@@ -1,5 +1,6 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MODELS, PROVIDERS, PROVIDER_LABEL, type Provider } from "@/lib/models";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { MODELS, PROVIDERS, type Provider, providerForModel } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
 
 type Props = {
@@ -10,46 +11,55 @@ type Props = {
 };
 
 export function ModelPicker({ provider, model, onChange, disabled }: Props) {
+  const currentModel = MODELS[provider].find((m) => m.id === model);
+
   return (
-    <div className="flex items-center gap-2">
+    <TooltipProvider delayDuration={200}>
       <Select
-        value={provider}
+        value={model}
         onValueChange={(v) => {
-          const p = v as Provider;
-          onChange(p, MODELS[p][0].id);
+          const p = providerForModel(v);
+          onChange(p, v);
         }}
         disabled={disabled}
       >
-        <SelectTrigger className="w-[160px] h-9 bg-card">
+        <SelectTrigger className="w-[220px] h-9 bg-card">
           <SelectValue>
             <span className="flex items-center gap-2 leading-none">
               <ProviderLogo provider={provider} className="w-5 h-5 shrink-0" />
-              <span className="leading-none">{PROVIDER_LABEL[provider]}</span>
+              <span className="leading-none">{currentModel?.label ?? model}</span>
             </span>
           </SelectValue>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="w-[260px]">
           {PROVIDERS.map((p) => (
-            <SelectItem key={p.id} value={p.id}>
-              <span className="flex items-center gap-2 leading-none">
-                <ProviderLogo provider={p.id} className="w-5 h-5 shrink-0" />
-                <span className="leading-none">{PROVIDER_LABEL[p.id]}</span>
-              </span>
-            </SelectItem>
+            <SelectGroup key={p.id}>
+              <SelectLabel className="pl-2 text-xs text-muted-foreground font-medium">
+                <span className="flex items-center gap-2">
+                  <ProviderLogo provider={p.id} className="w-4 h-4 shrink-0" />
+                  {p.label}
+                </span>
+              </SelectLabel>
+              {MODELS[p.id].map((m) => (
+                <Tooltip key={m.id}>
+                  <TooltipTrigger asChild>
+                    <SelectItem value={m.id} className="pl-8">
+                      {m.label}
+                    </SelectItem>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    sideOffset={12}
+                    className="bg-black text-white border-black text-xs px-2 py-1"
+                  >
+                    {m.description}
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </SelectGroup>
           ))}
         </SelectContent>
       </Select>
-
-      <Select value={model} onValueChange={(v) => onChange(provider, v)} disabled={disabled}>
-        <SelectTrigger className="w-[220px] h-9 bg-card">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {MODELS[provider].map((m) => (
-            <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    </TooltipProvider>
   );
 }
