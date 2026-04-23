@@ -358,7 +358,7 @@ export default function Chat() {
                 ) : (
                   <Button
                     size="icon"
-                    onClick={send}
+                    onClick={() => send()}
                     disabled={!input.trim()}
                     className="h-9 w-9 rounded-full"
                     aria-label="Send message"
