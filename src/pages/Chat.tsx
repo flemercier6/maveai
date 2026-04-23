@@ -46,11 +46,17 @@ export default function Chat() {
   // Load messages when active changes
   useEffect(() => {
     if (!activeId) { setMessages([]); return; }
+    const conv = conversations.find((c) => c.id === activeId);
+    const convProvider = (conv?.provider as Provider) ?? "openai";
     supabase.from("messages").select("*").eq("conversation_id", activeId).order("created_at")
       .then(({ data }) => {
-        setMessages(((data ?? []) as any[]).map((m) => ({ id: m.id, role: m.role, content: m.content })));
+        setMessages(((data ?? []) as any[]).map((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          provider: m.role === "assistant" ? convProvider : undefined,
+        })));
       });
-    const conv = conversations.find((c) => c.id === activeId);
     if (conv) {
       setProvider(conv.provider as Provider);
       setModel(conv.model);
@@ -96,7 +102,7 @@ export default function Chat() {
     }).select().single();
 
     const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: text }];
-    setMessages([...baseMsgs, { role: "assistant", content: "" }]);
+    setMessages([...baseMsgs, { role: "assistant", content: "", provider }]);
     setStreaming(true);
 
     try {
@@ -140,7 +146,7 @@ export default function Chat() {
               acc += j.text;
               setMessages((prev) => {
                 const next = [...prev];
-                next[next.length - 1] = { role: "assistant", content: acc };
+                next[next.length - 1] = { role: "assistant", content: acc, provider };
                 return next;
               });
             } else if (j.type === "title" && j.title) {
@@ -222,6 +228,7 @@ export default function Chat() {
                   key={m.id ?? i}
                   role={m.role}
                   content={m.content}
+                  provider={m.provider}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                 />
               ))}
