@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { DEFAULT_MODEL, type Provider } from "@/lib/models";
+import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, type Provider } from "@/lib/models";
 
 type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider };
 
