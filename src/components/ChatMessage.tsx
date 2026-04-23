@@ -1,5 +1,5 @@
 import { memo, useState, type ReactNode } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink } from "lucide-react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
@@ -170,7 +170,7 @@ function renderWithSources(text: string, sources: Source[] | undefined): ReactNo
   return <>{out}</>;
 }
 
-function buildMdComponents(sources: Source[] | undefined) {
+function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) {
   const transformChildren = (children: ReactNode): ReactNode => {
     if (!sources?.length) return children;
     if (typeof children === "string") return renderWithSources(children, sources);
@@ -182,8 +182,13 @@ function buildMdComponents(sources: Source[] | undefined) {
     return children;
   };
   return {
-    a: ({ node, ...props }: any) => (
-      <a {...props} target="_blank" rel="noopener noreferrer" />
+    a: ({ node, children, ...props }: any) => (
+      <a {...props} target="_blank" rel="noopener noreferrer" className="inline-flex items-baseline gap-0.5">
+        <span>{children}</span>
+        {isAssistant && (
+          <ArrowUpRight className="w-3.5 h-3.5 shrink-0 self-center -translate-y-[1px] opacity-70" aria-hidden />
+        )}
+      </a>
     ),
     p: ({ node, children, ...props }: any) => <p {...props}>{transformChildren(children)}</p>,
     li: ({ node, children, ...props }: any) => <li {...props}>{transformChildren(children)}</li>,
@@ -208,7 +213,7 @@ function ChatMessageImpl({
   // Smooth typewriter for assistant messages while streaming.
   const smoothed = useSmoothText(content, !isUser && !!streaming);
   const display = isUser ? content : (streaming ? smoothed : content);
-  const mdComponents = buildMdComponents(sources);
+  const mdComponents = buildMdComponents(sources, !isUser);
 
   const handleCopy = async () => {
     try {
