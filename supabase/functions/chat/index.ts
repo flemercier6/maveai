@@ -57,7 +57,9 @@ async function* parseSSELines(reader: ReadableStreamDefaultReader<Uint8Array>) {
 }
 
 // ---------- OpenAI ----------
-async function* streamOpenAI(apiKey: string, model: string, messages: Msg[]) {
+type Usage = { input_tokens: number; output_tokens: number };
+
+async function* streamOpenAI(apiKey: string, model: string, messages: Msg[]): AsyncGenerator<string, Usage | undefined> {
   const oaiMessages = messages.map((m) => {
     const text = mergeTextAttachments(m.content, m.attachments);
     const images = (m.attachments ?? []).filter((a) => a.kind === "image") as Extract<Attachment, { kind: "image" }>[];
@@ -78,26 +80,39 @@ async function* streamOpenAI(apiKey: string, model: string, messages: Msg[]) {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model, messages: oaiMessages, stream: true }),
+    body: JSON.stringify({
+      model,
+      messages: oaiMessages,
+      stream: true,
+      stream_options: { include_usage: true },
+    }),
   });
   if (!r.ok || !r.body) {
     const t = await r.text();
     throw new Error(`OpenAI ${r.status}: ${t}`);
   }
+  let usage: Usage | undefined;
   for await (const line of parseSSELines(r.body.getReader())) {
     if (!line.startsWith("data: ")) continue;
     const data = line.slice(6).trim();
-    if (data === "[DONE]") return;
+    if (data === "[DONE]") break;
     try {
       const j = JSON.parse(data);
       const delta = j.choices?.[0]?.delta?.content;
       if (delta) yield delta as string;
+      if (j.usage) {
+        usage = {
+          input_tokens: Number(j.usage.prompt_tokens ?? 0),
+          output_tokens: Number(j.usage.completion_tokens ?? 0),
+        };
+      }
     } catch { /* partial */ }
   }
+  return usage;
 }
 
 // ---------- Anthropic ----------
-async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]) {
+async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]): AsyncGenerator<string, Usage | undefined> {
   const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   const conv = messages.filter((m) => m.role !== "system");
   const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -135,6 +150,8 @@ async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]) 
     const t = await r.text();
     throw new Error(`Anthropic ${r.status}: ${t}`);
   }
+  let inputTok = 0;
+  let outputTok = 0;
   for await (const line of parseSSELines(r.body.getReader())) {
     if (!line.startsWith("data: ")) continue;
     const data = line.slice(6).trim();
@@ -143,12 +160,21 @@ async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]) 
       if (j.type === "content_block_delta" && j.delta?.type === "text_delta") {
         yield j.delta.text as string;
       }
+      if (j.type === "message_start" && j.message?.usage) {
+        inputTok = Number(j.message.usage.input_tokens ?? 0);
+        outputTok = Number(j.message.usage.output_tokens ?? 0);
+      }
+      if (j.type === "message_delta" && j.usage) {
+        if (typeof j.usage.input_tokens === "number") inputTok = j.usage.input_tokens;
+        if (typeof j.usage.output_tokens === "number") outputTok = j.usage.output_tokens;
+      }
     } catch { /* partial */ }
   }
+  return { input_tokens: inputTok, output_tokens: outputTok };
 }
 
 // ---------- Google Gemini (SSE) ----------
-async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
+async function* streamGemini(apiKey: string, model: string, messages: Msg[]): AsyncGenerator<string, Usage | undefined> {
   const sys = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   const contents = messages
     .filter((m) => m.role !== "system")
@@ -179,6 +205,7 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
     const t = await r.text();
     throw new Error(`Gemini ${r.status}: ${t}`);
   }
+  let usage: Usage | undefined;
   for await (const line of parseSSELines(r.body.getReader())) {
     if (!line.startsWith("data: ")) continue;
     const data = line.slice(6).trim();
@@ -193,8 +220,17 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
           yield piece as string;
         }
       }
+      if (j.usageMetadata) {
+        usage = {
+          input_tokens: Number(j.usageMetadata.promptTokenCount ?? 0),
+          output_tokens: Number(
+            j.usageMetadata.candidatesTokenCount ?? j.usageMetadata.totalTokenCount ?? 0,
+          ),
+        };
+      }
     } catch { /* partial */ }
   }
+  return usage;
 }
 
 // ---------- Web tools (Firecrawl) ----------
