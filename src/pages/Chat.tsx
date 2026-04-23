@@ -205,6 +205,7 @@ export default function Chat() {
           conversationId: convId,
           provider: sendProvider,
           model: sendModel,
+          skipClarify: opts?.skipClarify === true,
           messages: baseMsgs.map((m, i) => {
             // Only the LAST user message carries the live attachments
             const isLast = i === baseMsgs.length - 1;
