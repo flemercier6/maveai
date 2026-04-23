@@ -119,11 +119,14 @@ function ChatMessageImpl({
             <ProviderBadge provider={provider} model={model} />
           </div>
         )}
+        {tool && <ToolBadge tool={tool.tool} label={tool.label} />}
         <div className="chat-prose break-words">
           {display ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{display}</ReactMarkdown>
           ) : streaming ? (
-            <span className="text-shimmer text-sm font-medium">Thinking...</span>
+            <span className="text-shimmer text-sm font-medium">
+              {tool ? (tool.tool === "scrape" ? "Lecture de la page…" : "Recherche en cours…") : "Thinking..."}
+            </span>
           ) : " "}
         </div>
         {!streaming && content && (
