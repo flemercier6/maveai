@@ -115,30 +115,19 @@ export function SlashCommandMenu({ query, position, onSelect, onClose }: Props) 
             aria-selected={isActive}
             onMouseEnter={() => setActive(idx)}
             onClick={() => onSelect(it)}
-            className={`w-full flex items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm ${
+            className={`w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm ${
               isActive ? "bg-dropdown-hover" : ""
             }`}
           >
-            <span className="mt-0.5 inline-flex items-center justify-center w-4 h-4 shrink-0">
+            <span className="inline-flex items-center justify-center w-4 h-4 shrink-0">
               {it.provider === "auto" ? (
                 <Sparkles className="w-4 h-4 text-muted-foreground" />
               ) : (
                 <ProviderLogo provider={it.provider} className="w-4 h-4" />
               )}
             </span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-[13px] font-medium text-foreground truncate">
-                {it.label}
-              </span>
-              <span className="block text-[11px] text-muted-foreground truncate">
-                {it.description}
-              </span>
-            </span>
-            <span className="text-[10px] text-muted-foreground self-center font-mono">
-              /{it.slug}
-            </span>
-          </button>
-        );
+            <span className="text-[13px] text-foreground truncate">{it.label}</span>
+          </button>);
       })}
     </div>
   );
