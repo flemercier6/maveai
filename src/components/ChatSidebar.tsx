@@ -107,7 +107,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
     <aside
       ref={asideRef}
       style={{ width }}
-      className="relative shrink-0 h-screen flex flex-col bg-sidebar border-r border-sidebar-border"
+      className="relative shrink-0 h-screen flex flex-col bg-background border-r border-sidebar-border"
     >
       <div className="p-3 border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-2">
