@@ -144,7 +144,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
                   onMouseEnter={() => setHovered(c.id)}
                   onMouseLeave={() => setHovered(null)}
                   className={cn(
-                    "group relative w-full rounded-lg text-sm transition-colors",
+                    "group relative w-full rounded-[4px] text-sm transition-colors",
                     activeId === c.id
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
                       : "hover:bg-sidebar-accent text-sidebar-foreground"
