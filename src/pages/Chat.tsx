@@ -255,9 +255,6 @@ export default function Chat() {
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
-              <div className="w-14 h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center mb-4">
-                <Sparkles className="w-7 h-7" />
-              </div>
               <h2 className="text-2xl font-semibold mb-2">How can I help you?</h2>
               <p className="text-muted-foreground max-w-md">
                 Pick a provider and a model, then ask your question. Remember to add your API keys in the settings.
