@@ -1,20 +1,16 @@
-import { memo, useState } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search } from "lucide-react";
+import { memo, useState, type ReactNode } from "react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Provider } from "@/lib/models";
 import { useSmoothText } from "@/hooks/useSmoothText";
-
-const mdComponents = {
-  a: ({ node, ...props }: any) => (
-    <a {...props} target="_blank" rel="noopener noreferrer" />
-  ),
-};
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
+type Source = { title: string; url: string };
 
 type Props = {
   role: "user" | "assistant";
@@ -25,6 +21,7 @@ type Props = {
   memory?: { added: number; updated: number };
   tool?: ToolUse;
   phase?: Phase;
+  sources?: Source[];
   onRetry?: () => void;
   onDelete?: () => void;
 };
