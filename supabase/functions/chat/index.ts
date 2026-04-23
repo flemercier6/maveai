@@ -436,6 +436,123 @@ async function linkupSearch(
   }
 }
 
+// ---------- Clarifying questions ----------
+type ClarifyQuestion = {
+  question: string;
+  header?: string;
+  multi?: boolean;
+  options: { label: string }[];
+};
+
+async function decideClarify(args: {
+  googleKey?: string;
+  openaiKey?: string;
+  anthropicKey?: string;
+  userText: string;
+  hasHistory: boolean;
+}): Promise<ClarifyQuestion[] | null> {
+  const { userText, hasHistory } = args;
+  if (!userText.trim() || userText.trim().length < 12) return null;
+
+  const prompt = `You are a clarification assistant. Decide whether the user's request below is COMPLEX or AMBIGUOUS enough that asking 1–3 short multiple-choice questions BEFORE answering would meaningfully improve the answer.
+
+Reply STRICTLY in JSON, no surrounding text.
+
+If clarification is NOT useful (simple/clear factual or chit-chat request, code request with enough info, translation, summary of provided text, follow-up that already has context, etc.):
+{"needs_clarification": false}
+
+If clarification IS useful:
+{
+  "needs_clarification": true,
+  "questions": [
+    {
+      "header": "<2-3 word tag, e.g. 'Audience', 'Tone', 'Scope'>",
+      "question": "<one clear question ending with '?'>",
+      "multi": false,
+      "options": [
+        {"label": "<short option, 1-5 words>"},
+        {"label": "..."},
+        {"label": "..."}
+      ]
+    }
+  ]
+}
+
+STRICT RULES:
+- Maximum 3 questions, only ask what's truly needed.
+- 2–4 options per question. Keep options short, distinct, mutually exclusive (unless multi=true).
+- Do NOT add an "Other" option — the UI handles that automatically.
+- Use the SAME LANGUAGE as the user's message.
+- Only return needs_clarification=true for genuinely complex/ambiguous requests (planning, creative briefs, multi-step builds, vague analysis requests, design choices, strategy, recommendations with many trade-offs, etc.).
+- Conversation already has prior turns: ${hasHistory ? "yes" : "no"}. If yes, only clarify if the new turn opens a NEW complex topic.
+
+User message:
+${userText.slice(0, 2000)}`;
+
+  let raw = "";
+  try {
+    if (args.googleKey) {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${args.googleKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" },
+          }),
+        },
+      );
+      const j = await r.json();
+      raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
+    } else if (args.openaiKey) {
+      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${args.openaiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gpt-5-nano",
+          messages: [{ role: "user", content: prompt }],
+          response_format: { type: "json_object" },
+        }),
+      });
+      const j = await r.json();
+      raw = j.choices?.[0]?.message?.content ?? "";
+    } else {
+      return null;
+    }
+  } catch (e) {
+    console.error("decideClarify failed", e);
+    return null;
+  }
+
+  try {
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    if (!parsed?.needs_clarification) return null;
+    const qs = Array.isArray(parsed.questions) ? parsed.questions : [];
+    const out: ClarifyQuestion[] = [];
+    for (const q of qs.slice(0, 3)) {
+      if (!q || typeof q.question !== "string") continue;
+      const opts = Array.isArray(q.options) ? q.options : [];
+      const cleanedOpts = opts
+        .map((o: any) => ({ label: String(o?.label ?? "").trim() }))
+        .filter((o: { label: string }) => o.label.length > 0)
+        .slice(0, 4);
+      if (cleanedOpts.length < 2) continue;
+      out.push({
+        question: q.question.trim(),
+        header: typeof q.header === "string" ? q.header.trim().slice(0, 24) : undefined,
+        multi: !!q.multi,
+        options: cleanedOpts,
+      });
+    }
+    return out.length ? out : null;
+  } catch (e) {
+    console.error("decideClarify parse failed", e);
+    return null;
+  }
+}
+
 // ---------- Title generation (short summary from first user message) ----------
 async function generateTitle(args: {
   openaiKey?: string;
