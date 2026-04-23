@@ -247,8 +247,19 @@ export default function Chat() {
             if (j.type === "delta") {
               acc += j.text;
               scheduleFlush();
+            } else if (j.type === "phase") {
+              const phase: Phase = j.phase;
+              setMessages((prev) => {
+                const next = prev.slice();
+                next[next.length - 1] = { ...next[next.length - 1], phase };
+                return next;
+              });
             } else if (j.type === "tool") {
-              const tool: ToolUse = { tool: j.tool, label: String(j.label ?? "") };
+              const tool: ToolUse = {
+                tool: j.tool,
+                label: String(j.label ?? ""),
+                status: (j.status as ToolStatus) ?? "running",
+              };
               setMessages((prev) => {
                 const next = prev.slice();
                 next[next.length - 1] = { ...next[next.length - 1], tool };
