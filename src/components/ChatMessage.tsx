@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
 import type { Provider } from "@/lib/models";
+import { useSmoothText } from "@/hooks/useSmoothText";
 
 type Props = {
   role: "user" | "assistant";
@@ -34,6 +35,9 @@ function MemoryBadge({ added, updated }: { added: number; updated: number }) {
 
 function ChatMessageImpl({ role, content, streaming, provider, model, memory }: Props) {
   const isUser = role === "user";
+  // Smooth typewriter for assistant messages while streaming.
+  const smoothed = useSmoothText(content, !isUser && !!streaming);
+  const display = isUser ? content : (streaming ? smoothed : content);
 
   if (isUser) {
     return (
@@ -57,8 +61,8 @@ function ChatMessageImpl({ role, content, streaming, provider, model, memory }: 
           </div>
         )}
         <div className={cn("chat-prose break-words", streaming && "typing-cursor")}>
-          {content ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+          {display ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{display}</ReactMarkdown>
           ) : streaming ? "" : " "}
         </div>
       </div>
