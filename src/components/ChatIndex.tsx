@@ -113,7 +113,7 @@ export function ChatIndex({ items, scrollContainer }: Props) {
               />
               <span
                 className={cn(
-                  "truncate text-sm font-medium whitespace-nowrap text-left transition-[opacity,max-width] duration-300 ease-out",
+                  "truncate whitespace-nowrap text-left transition-[opacity,max-width] duration-300 ease-out text-xs font-sans font-semibold",
                   hovered
                     ? "opacity-100 max-w-[240px]"
                     : "opacity-0 max-w-0",
