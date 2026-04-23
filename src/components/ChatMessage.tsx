@@ -6,6 +6,12 @@ import { ProviderBadge } from "./ProviderBadge";
 import type { Provider } from "@/lib/models";
 import { useSmoothText } from "@/hooks/useSmoothText";
 
+const mdComponents = {
+  a: ({ node, ...props }: any) => (
+    <a {...props} target="_blank" rel="noopener noreferrer" />
+  ),
+};
+
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
@@ -126,7 +132,7 @@ function ChatMessageImpl({
       <div className="w-full py-3">
         <div className="max-w-3xl mx-auto px-4 flex flex-col items-end gap-1.5">
           <div className="max-w-[80%] rounded-2xl bg-bubble-user text-bubble-user-foreground px-4 py-2.5 chat-prose break-words">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{content}</ReactMarkdown>
           </div>
           {memory && <MemoryBadge added={memory.added} updated={memory.updated} />}
         </div>
@@ -145,7 +151,7 @@ function ChatMessageImpl({
         {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
         <div className="chat-prose break-words">
           {display ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{display}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{display}</ReactMarkdown>
           ) : streaming ? (
             <span className="text-shimmer text-sm font-medium">
               {getStatusMessage(phase, tool)}
