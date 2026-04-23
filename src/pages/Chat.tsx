@@ -493,7 +493,7 @@ export default function Chat() {
                   {attachLoading && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 py-1.5">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Lecture du fichier...
+                      Reading file...
                     </div>
                   )}
                 </div>
