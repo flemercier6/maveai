@@ -312,6 +312,7 @@ export default function Chat() {
                   content={m.content}
                   provider={m.provider}
                   model={m.model}
+                  memory={m.memory}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                 />
               ))}
