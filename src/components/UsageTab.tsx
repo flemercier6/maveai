@@ -147,33 +147,52 @@ export function UsageTab() {
     <section className="space-y-6">
       <h2 className="text-lg font-semibold">Usage</h2>
 
-      {/* Big total cost card */}
-      <div className="rounded-xl border border-border bg-[hsl(var(--dropdown-hover))] p-6">
-        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Total spent on AI
+      {/* Big total cost cards: base + ×3 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="rounded-xl border border-border bg-[hsl(var(--dropdown-hover))] p-6">
+          <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Total spent on AI
+          </div>
+          <div className="mt-2 text-5xl font-semibold tracking-tight text-foreground tabular-nums">
+            {fmtUSD(data.totalCost)}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span>
+              <span className="font-medium text-foreground tabular-nums">
+                {fmtTokens(data.totalRequests)}
+              </span>{" "}
+              requests
+            </span>
+            <span>
+              <span className="font-medium text-foreground tabular-nums">
+                {fmtTokens(data.totalInputTokens)}
+              </span>{" "}
+              in
+            </span>
+            <span>
+              <span className="font-medium text-foreground tabular-nums">
+                {fmtTokens(data.totalOutputTokens)}
+              </span>{" "}
+              out
+            </span>
+          </div>
         </div>
-        <div className="mt-2 text-5xl font-semibold tracking-tight text-foreground tabular-nums">
-          {fmtUSD(data.totalCost)}
-        </div>
-        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
-          <span>
-            <span className="font-medium text-foreground tabular-nums">
-              {fmtTokens(data.totalRequests)}
-            </span>{" "}
-            requests
-          </span>
-          <span>
-            <span className="font-medium text-foreground tabular-nums">
-              {fmtTokens(data.totalInputTokens)}
-            </span>{" "}
-            input tokens
-          </span>
-          <span>
-            <span className="font-medium text-foreground tabular-nums">
-              {fmtTokens(data.totalOutputTokens)}
-            </span>{" "}
-            output tokens
-          </span>
+
+        <div className="rounded-xl border border-border bg-foreground text-background p-6">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-medium uppercase tracking-wide opacity-70">
+              Billed price
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider rounded-full bg-background/15 px-2 py-0.5">
+              ×3
+            </span>
+          </div>
+          <div className="mt-2 text-5xl font-semibold tracking-tight tabular-nums">
+            {fmtUSD(data.totalCost * 3)}
+          </div>
+          <div className="mt-3 text-xs opacity-70">
+            Margin applied on top of provider list price.
+          </div>
         </div>
       </div>
 
@@ -189,6 +208,7 @@ export function UsageTab() {
                 <th className="text-right font-medium px-3 py-2">Input</th>
                 <th className="text-right font-medium px-3 py-2">Output</th>
                 <th className="text-right font-medium px-3 py-2">Cost</th>
+                <th className="text-right font-medium px-3 py-2">×3</th>
               </tr>
             </thead>
             <tbody>
@@ -213,6 +233,9 @@ export function UsageTab() {
                     </td>
                     <td className="px-3 py-2.5 text-right tabular-nums font-medium">
                       {fmtUSD(row.cost)}
+                    </td>
+                    <td className="px-3 py-2.5 text-right tabular-nums font-semibold">
+                      {fmtUSD(row.cost * 3)}
                     </td>
                   </tr>
                 );
