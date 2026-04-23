@@ -3,8 +3,6 @@
 
 import * as pdfjsLib from "pdfjs-dist";
 // Use the bundled worker so we don't depend on a CDN.
-// Vite resolves the `?url` import to a static URL.
-// @ts-expect-error - vite-specific import
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 (pdfjsLib as any).GlobalWorkerOptions.workerSrc = workerUrl;
