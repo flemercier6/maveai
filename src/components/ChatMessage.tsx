@@ -1,6 +1,5 @@
-import { memo } from "react";
-import { Brain } from "lucide-react";
-// cn no longer needed here
+import { memo, useState } from "react";
+import { Brain, Copy, Check, RotateCcw, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
@@ -14,6 +13,8 @@ type Props = {
   provider?: Provider;
   model?: string;
   memory?: { added: number; updated: number };
+  onRetry?: () => void;
+  onDelete?: () => void;
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
@@ -33,11 +34,52 @@ function MemoryBadge({ added, updated }: { added: number; updated: number }) {
   );
 }
 
-function ChatMessageImpl({ role, content, streaming, provider, model, memory }: Props) {
+function ActionButton({
+  onClick,
+  ariaLabel,
+  children,
+}: {
+  onClick: () => void;
+  ariaLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors"
+    >
+      {children}
+    </button>
+  );
+}
+
+function ChatMessageImpl({
+  role,
+  content,
+  streaming,
+  provider,
+  model,
+  memory,
+  onRetry,
+  onDelete,
+}: Props) {
   const isUser = role === "user";
+  const [copied, setCopied] = useState(false);
   // Smooth typewriter for assistant messages while streaming.
   const smoothed = useSmoothText(content, !isUser && !!streaming);
   const display = isUser ? content : (streaming ? smoothed : content);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* ignore */
+    }
+  };
 
   if (isUser) {
     return (
@@ -67,6 +109,23 @@ function ChatMessageImpl({ role, content, streaming, provider, model, memory }: 
             <span className="text-shimmer text-sm font-medium">Thinking...</span>
           ) : " "}
         </div>
+        {!streaming && content && (
+          <div className="mt-2 flex items-center gap-1 -ml-1.5">
+            <ActionButton onClick={handleCopy} ariaLabel={copied ? "Copié" : "Copier"}>
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            </ActionButton>
+            {onRetry && (
+              <ActionButton onClick={onRetry} ariaLabel="Régénérer">
+                <RotateCcw className="w-4 h-4" />
+              </ActionButton>
+            )}
+            {onDelete && (
+              <ActionButton onClick={onDelete} ariaLabel="Supprimer">
+                <Trash2 className="w-4 h-4" />
+              </ActionButton>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -80,5 +139,7 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.provider === next.provider &&
   prev.model === next.model &&
   prev.memory?.added === next.memory?.added &&
-  prev.memory?.updated === next.memory?.updated,
+  prev.memory?.updated === next.memory?.updated &&
+  prev.onRetry === next.onRetry &&
+  prev.onDelete === next.onDelete,
 );
