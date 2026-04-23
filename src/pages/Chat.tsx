@@ -74,11 +74,11 @@ export default function Chat() {
 
   const ensureConversation = async (firstUserContent: string): Promise<string | null> => {
     if (activeId) return activeId;
-    const title = firstUserContent.slice(0, 60).trim() || "Nouvelle conversation";
+    const title = firstUserContent.slice(0, 60).trim() || "New conversation";
     const { data, error } = await supabase.from("conversations").insert({
       user_id: user!.id, title, provider, model,
     }).select().single();
-    if (error || !data) { toast.error(error?.message ?? "Erreur"); return null; }
+    if (error || !data) { toast.error(error?.message ?? "Error"); return null; }
     setConversations((prev) => [data as Conversation, ...prev]);
     setActiveId(data.id);
     return data.id;
