@@ -153,7 +153,7 @@ export function UsageTab() {
           <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Total spent on AI
           </div>
-          <div className="mt-2 text-5xl font-semibold tracking-tight text-foreground tabular-nums">
+          <div className="mt-2 font-semibold tracking-tight text-foreground tabular-nums text-xl">
             {fmtUSD(data.totalCost)}
           </div>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -187,7 +187,7 @@ export function UsageTab() {
               ×3
             </span>
           </div>
-          <div className="mt-2 text-5xl font-semibold tracking-tight tabular-nums">
+          <div className="mt-2 font-semibold tracking-tight tabular-nums text-xl">
             {fmtUSD(data.totalCost * 3)}
           </div>
           <div className="mt-3 text-xs opacity-70">
