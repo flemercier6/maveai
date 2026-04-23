@@ -324,7 +324,7 @@ function ChatMessageImpl({
     <div className="w-full my-[50px]">
       <div className="max-w-3xl mx-auto px-4">
         {(provider || (tool && tool.status !== "failed")) && (
-          <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "15px" }}>
+          <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "10px" }}>
             {provider && <ProviderBadge provider={provider} model={model} />}
             {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
           </div>
