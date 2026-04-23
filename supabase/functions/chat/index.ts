@@ -304,7 +304,12 @@ async function firecrawlScrape(apiKey: string, url: string): Promise<string | nu
   }
 }
 
-async function linkupSearch(apiKey: string, query: string): Promise<string | null> {
+type WebSource = { title: string; url: string };
+
+async function linkupSearch(
+  apiKey: string,
+  query: string,
+): Promise<{ content: string; sources: WebSource[] } | null> {
   try {
     const r = await fetch("https://api.linkup.so/v1/search", {
       method: "POST",
@@ -326,13 +331,21 @@ async function linkupSearch(apiKey: string, query: string): Promise<string | nul
     }
     const results: any[] = j?.results ?? [];
     if (!Array.isArray(results) || !results.length) return null;
-    const blocks = results.slice(0, 8).map((res, i) => {
-      const title = res.name ?? res.title ?? "(no title)";
-      const url = res.url ?? "";
+    const top = results.slice(0, 8);
+    const sources: WebSource[] = top.map((res) => ({
+      title: (res.name ?? res.title ?? "Untitled").toString(),
+      url: (res.url ?? "").toString(),
+    }));
+    const blocks = top.map((res, i) => {
+      const title = sources[i].title;
+      const url = sources[i].url;
       const content = (res.content ?? res.snippet ?? res.description ?? "").toString().slice(0, 2000);
-      return `### Result ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
+      return `### Source ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
     });
-    return blocks.join("\n\n---\n\n").slice(0, 15000);
+    return {
+      content: blocks.join("\n\n---\n\n").slice(0, 15000),
+      sources,
+    };
   } catch (e) {
     console.error("linkup search exception", e);
     return null;
@@ -673,7 +686,9 @@ Deno.serve(async (req) => {
     const lastUserText = lastUserMsg?.content ?? "";
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     const linkupKey = Deno.env.get("LINKUP_API_KEY");
-    let webContext: { kind: "scrape" | "search"; label: string; content: string } | null = null;
+    let webContext:
+      | { kind: "scrape" | "search"; label: string; content: string; sources?: WebSource[] }
+      | null = null;
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -691,17 +706,29 @@ Deno.serve(async (req) => {
               controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "running" }));
               const md = await firecrawlScrape(firecrawlKey, decision.url);
               if (md) {
-                webContext = { kind: "scrape", label: decision.url, content: md };
+                webContext = {
+                  kind: "scrape",
+                  label: decision.url,
+                  content: md,
+                  sources: [{ title: decision.url, url: decision.url }],
+                };
                 controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "done" }));
+                controller.enqueue(enc({ type: "sources", sources: webContext.sources }));
               } else {
                 controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "failed" }));
               }
             } else if (decision.action === "search" && linkupKey) {
               controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "running" }));
-              const md = await linkupSearch(linkupKey, decision.query);
-              if (md) {
-                webContext = { kind: "search", label: decision.query, content: md };
+              const res = await linkupSearch(linkupKey, decision.query);
+              if (res) {
+                webContext = {
+                  kind: "search",
+                  label: decision.query,
+                  content: res.content,
+                  sources: res.sources,
+                };
                 controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "done" }));
+                controller.enqueue(enc({ type: "sources", sources: res.sources }));
               } else {
                 controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "failed" }));
               }
@@ -712,11 +739,19 @@ Deno.serve(async (req) => {
           let messagesForLLM = finalMessages;
           if (webContext) {
             const header = webContext.kind === "scrape"
-              ? `Content of the requested web page (${webContext.label}). Use it as the primary source and cite the URL when relevant:`
-              : `Web search results for "${webContext.label}". Use these sources to answer, and cite the relevant URLs:`;
+              ? `Content of the requested web page (${webContext.label}). Use it as the primary source.`
+              : `Web search results for "${webContext.label}". Use these sources to answer.`;
+            const citationRule = webContext.sources && webContext.sources.length
+              ? `\n\nCITATION RULES — IMPORTANT:\n` +
+                `- The sources are numbered 1..${webContext.sources.length} (matching the "Source N:" blocks below).\n` +
+                `- Whenever you state a fact taken from the sources, append an inline citation marker in the form [source:N] (or [source:N,M] for multiple) RIGHT AFTER the relevant sentence or claim.\n` +
+                `- Do NOT invent source numbers. Only cite numbers that exist (1..${webContext.sources.length}).\n` +
+                `- Do NOT add a "Sources" list at the end — markers alone are enough; the UI renders them.\n` +
+                `- Place markers naturally in the flow, e.g. "Paris is the capital of France [source:1]."`
+              : "";
             const webSystem: Msg = {
               role: "system",
-              content: `${header}\n\n${webContext.content}`,
+              content: `${header}${citationRule}\n\n${webContext.content}`,
             };
             messagesForLLM = [webSystem, ...finalMessages];
           }

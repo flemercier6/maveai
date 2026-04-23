@@ -1,20 +1,16 @@
-import { memo, useState } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search } from "lucide-react";
+import { memo, useState, type ReactNode } from "react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Provider } from "@/lib/models";
 import { useSmoothText } from "@/hooks/useSmoothText";
-
-const mdComponents = {
-  a: ({ node, ...props }: any) => (
-    <a {...props} target="_blank" rel="noopener noreferrer" />
-  ),
-};
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
+type Source = { title: string; url: string };
 
 type Props = {
   role: "user" | "assistant";
@@ -25,6 +21,7 @@ type Props = {
   memory?: { added: number; updated: number };
   tool?: ToolUse;
   phase?: Phase;
+  sources?: Source[];
   onRetry?: () => void;
   onDelete?: () => void;
 };
@@ -99,6 +96,100 @@ function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined): 
   return "Thinking…";
 }
 
+function SourceTag({ indices, sources }: { indices: number[]; sources: Source[] }) {
+  const items = indices
+    .map((n) => ({ n, src: sources[n - 1] }))
+    .filter((x) => x.src);
+  if (!items.length) return null;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center align-middle mx-0.5 h-5 px-1.5 rounded-full border border-border bg-card text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors no-underline"
+        >
+          Source
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-80 p-2">
+        <div className="text-[11px] font-medium text-muted-foreground px-2 py-1">
+          {items.length === 1 ? "Source" : `${items.length} sources`}
+        </div>
+        <ul className="flex flex-col">
+          {items.map(({ n, src }) => {
+            let host = "";
+            try { host = new URL(src.url).hostname.replace(/^www\./, ""); } catch { host = src.url; }
+            return (
+              <li key={n}>
+                <a
+                  href={src.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-2 px-2 py-1.5 rounded-md hover:bg-dropdown-hover no-underline"
+                >
+                  <span className="mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted text-[10px] font-medium text-muted-foreground shrink-0">
+                    {n}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] text-foreground line-clamp-2 leading-snug">
+                      {src.title}
+                    </span>
+                    <span className="block text-[11px] text-muted-foreground truncate">{host}</span>
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-1" />
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+const SOURCE_RE = /\[source:\s*([\d,\s]+)\]/gi;
+
+function renderWithSources(text: string, sources: Source[] | undefined): ReactNode {
+  if (!sources || !sources.length || !text.includes("[source:")) return text;
+  const out: ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  SOURCE_RE.lastIndex = 0;
+  while ((m = SOURCE_RE.exec(text)) !== null) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    const indices = m[1]
+      .split(",")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => Number.isFinite(n) && n >= 1 && n <= sources.length);
+    if (indices.length) {
+      out.push(<SourceTag key={`s-${m.index}`} indices={indices} sources={sources} />);
+    }
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return <>{out}</>;
+}
+
+function buildMdComponents(sources: Source[] | undefined) {
+  const transformChildren = (children: ReactNode): ReactNode => {
+    if (!sources?.length) return children;
+    if (typeof children === "string") return renderWithSources(children, sources);
+    if (Array.isArray(children)) {
+      return children.map((c, i) =>
+        typeof c === "string" ? <span key={i}>{renderWithSources(c, sources)}</span> : c,
+      );
+    }
+    return children;
+  };
+  return {
+    a: ({ node, ...props }: any) => (
+      <a {...props} target="_blank" rel="noopener noreferrer" />
+    ),
+    p: ({ node, children, ...props }: any) => <p {...props}>{transformChildren(children)}</p>,
+    li: ({ node, children, ...props }: any) => <li {...props}>{transformChildren(children)}</li>,
+  };
+}
+
 function ChatMessageImpl({
   role,
   content,
@@ -108,6 +199,7 @@ function ChatMessageImpl({
   memory,
   tool,
   phase,
+  sources,
   onRetry,
   onDelete,
 }: Props) {
@@ -116,6 +208,7 @@ function ChatMessageImpl({
   // Smooth typewriter for assistant messages while streaming.
   const smoothed = useSmoothText(content, !isUser && !!streaming);
   const display = isUser ? content : (streaming ? smoothed : content);
+  const mdComponents = buildMdComponents(sources);
 
   const handleCopy = async () => {
     try {
@@ -193,6 +286,7 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.tool?.label === next.tool?.label &&
   prev.tool?.status === next.tool?.status &&
   prev.phase === next.phase &&
+  prev.sources === next.sources &&
   prev.onRetry === next.onRetry &&
   prev.onDelete === next.onDelete,
 );
