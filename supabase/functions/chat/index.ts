@@ -793,28 +793,64 @@ Deno.serve(async (req) => {
             messagesForLLM = [webSystem, ...finalMessages];
           }
 
-          let iter: AsyncGenerator<string>;
+          let iter: AsyncGenerator<string, Usage | undefined>;
           if (provider === "openai") iter = streamOpenAI(apiKey, model, messagesForLLM);
           else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, messagesForLLM);
           else iter = streamGemini(apiKey, model, messagesForLLM);
 
-          for await (const chunk of iter) {
+          let usage: Usage | undefined;
+          while (true) {
+            const next = await iter.next();
+            if (next.done) {
+              usage = next.value;
+              break;
+            }
+            const chunk = next.value;
             assistantText += chunk;
             controller.enqueue(enc({ type: "delta", text: chunk }));
           }
 
           // Persist assistant message
-          await supabase.from("messages").insert({
-            conversation_id: conversationId,
-            user_id: user.id,
-            role: "assistant",
-            content: assistantText,
-            model,
-          });
+          const { data: insertedMsg } = await supabase
+            .from("messages")
+            .insert({
+              conversation_id: conversationId,
+              user_id: user.id,
+              role: "assistant",
+              content: assistantText,
+              model,
+            })
+            .select("id")
+            .single();
           await supabase
             .from("conversations")
             .update({ updated_at: new Date().toISOString() })
             .eq("id", conversationId);
+
+          // ---------- Persist usage event with computed cost ----------
+          if (usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) {
+            const price = priceFor(model);
+            const inputCost = (usage.input_tokens / 1_000_000) * price.input;
+            const outputCost = (usage.output_tokens / 1_000_000) * price.output;
+            await supabase.from("usage_events").insert({
+              user_id: user.id,
+              conversation_id: conversationId,
+              message_id: insertedMsg?.id ?? null,
+              provider,
+              model,
+              input_tokens: usage.input_tokens,
+              output_tokens: usage.output_tokens,
+              input_cost_usd: inputCost,
+              output_cost_usd: outputCost,
+              total_cost_usd: inputCost + outputCost,
+            });
+            controller.enqueue(enc({
+              type: "usage",
+              input_tokens: usage.input_tokens,
+              output_tokens: usage.output_tokens,
+              cost_usd: inputCost + outputCost,
+            }));
+          }
 
           // ---------- Auto-generate title if this is the first user message ----------
           const userMessagesCount = messages.filter((m) => m.role === "user").length;
