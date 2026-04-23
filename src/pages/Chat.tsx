@@ -24,7 +24,7 @@ export default function Chat() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [provider, setProvider] = useState<Provider>("openai");
-  const [model, setModel] = useState<string>(DEFAULT_MODEL.openai);
+  const [model, setModel] = useState<string>(AUTO_MODEL_ID);
   const [sending, setSending] = useState(false);
   const [streaming, setStreaming] = useState(false);
 
