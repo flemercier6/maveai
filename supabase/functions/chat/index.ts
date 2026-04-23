@@ -152,10 +152,21 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
   const sys = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   const contents = messages
     .filter((m) => m.role !== "system")
-    .map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
+    .map((m) => {
+      const text = mergeTextAttachments(m.content, m.attachments);
+      const images = (m.attachments ?? []).filter((a) => a.kind === "image") as Extract<Attachment, { kind: "image" }>[];
+      const parts: any[] = [];
+      if (text) parts.push({ text });
+      for (const img of images) {
+        const { mediaType, base64 } = splitDataUrl(img.dataUrl);
+        parts.push({ inlineData: { mimeType: mediaType, data: base64 } });
+      }
+      if (!parts.length) parts.push({ text: "" });
+      return {
+        role: m.role === "assistant" ? "model" : "user",
+        parts,
+      };
+    });
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
   const body: any = { contents };
   if (sys) body.systemInstruction = { parts: [{ text: sys }] };
