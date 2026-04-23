@@ -49,7 +49,7 @@ function ChatMessageImpl({ role, content, streaming, provider, model, memory }: 
   }
 
   return (
-    <div className="w-full my-[50px]">
+    <div className="w-full my-[70px]">
       <div className="max-w-3xl mx-auto px-4">
         {provider && (
           <div className="mb-1.5">
