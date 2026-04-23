@@ -39,13 +39,13 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
         disabled={disabled}
         onOpenChange={(o) => { if (!o) hideTip(); }}
       >
-        <SelectTrigger className="w-auto min-w-0 h-9 bg-card gap-2">
+        <SelectTrigger className="w-auto min-w-0 h-9 bg-card gap-2 text-xs">
           <SelectValue>
-            <span className="flex items-center gap-2 leading-none">
+            <span className="flex items-center gap-1.5 leading-none">
               {isAuto ? (
-                <Sparkles className="w-4 h-4 shrink-0" />
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
               ) : (
-                <ProviderLogo provider={provider} className="w-5 h-5 shrink-0" />
+                <ProviderLogo provider={provider} className="w-4 h-4 shrink-0" />
               )}
               <span className="leading-none">{isAuto ? "Auto" : (currentModel?.label ?? model)}</span>
             </span>
