@@ -206,7 +206,7 @@ async function extractAndSaveMemory(args: {
   assistantText: string;
 }) {
   const { supabase, userId, userText, assistantText } = args;
-  if (!userText.trim()) return;
+  if (!userText.trim()) return { added: 0, updated: 0 };
 
   // Load existing memories first so the extractor can decide skip/update/add.
   const { data: existingRows } = await supabase
