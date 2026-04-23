@@ -23,7 +23,7 @@ type Props = {
   userEmail?: string;
 };
 
-export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, onOpenKeys, userEmail }: Props) {
+export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
 
   const remove = async (id: string, e: React.MouseEvent) => {
