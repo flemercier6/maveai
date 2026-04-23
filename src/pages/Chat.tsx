@@ -43,6 +43,11 @@ export default function Chat() {
   const [streaming, setStreaming] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachLoading, setAttachLoading] = useState(false);
+  const [slash, setSlash] = useState<{
+    query: string;
+    start: number;
+    pos: { left: number; top: number };
+  } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
