@@ -345,6 +345,8 @@ export default function Chat() {
                   model={m.model}
                   memory={m.memory}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
+                  onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
+                  onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}
                 />
               ))}
             </div>
