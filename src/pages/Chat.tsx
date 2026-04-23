@@ -239,7 +239,7 @@ export default function Chat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKey}
-                placeholder="Envoie un message..."
+                placeholder="Send a message..."
                 rows={1}
                 className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 max-h-48 py-3.5 px-4"
               />
