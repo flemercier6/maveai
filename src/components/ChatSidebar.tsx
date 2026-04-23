@@ -150,45 +150,44 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
                   className="h-7 text-xs px-1.5 py-0 rounded-[4px]"
                 />
               ) : (
-                <button
-                  onClick={() => onSelect(c.id)}
-                  className="w-full flex items-center text-left min-w-0 text-xs py-[6px] px-[10px]"
-                >
-                  <span className="flex-1 truncate pr-7">
-                    {c.title}
-                  </span>
-                </button>
-              )}
-              {renamingId !== c.id && (hovered === c.id || activeId === c.id || menuOpenId === c.id) && (
-                <DropdownMenu
-                  open={menuOpenId === c.id}
-                  onOpenChange={(o) => setMenuOpenId(o ? c.id : null)}
-                >
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label="Conversation options"
-                      className={cn(
-                        "absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-[4px]",
-                        "opacity-70 hover:opacity-100 hover:bg-background/40",
-                        activeId === c.id ? "bg-sidebar-accent" : "bg-sidebar group-hover:bg-sidebar-accent/60"
-                      )}
-                    >
-                      <MoreHorizontal className="w-3.5 h-3.5" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" side="right" className="w-36">
-                    <DropdownMenuItem onClick={() => startRename(c)}>
-                      <Pencil className="w-3.5 h-3.5 mr-2 opacity-70" /> Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => remove(c.id)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex w-full items-center gap-1 pr-1">
+                  <button
+                    onClick={() => onSelect(c.id)}
+                    className="flex-1 min-w-0 text-left text-xs py-[6px] pl-[10px] pr-[4px]"
+                  >
+                    <span className="block truncate">
+                      {c.title}
+                    </span>
+                  </button>
+                  <DropdownMenu
+                    open={menuOpenId === c.id}
+                    onOpenChange={(o) => setMenuOpenId(o ? c.id : null)}
+                  >
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label="Conversation options"
+                        className={cn(
+                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-[4px] opacity-70 transition-opacity hover:opacity-100 hover:bg-background/40",
+                          activeId === c.id ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/60"
+                        )}
+                      >
+                        <MoreHorizontal className="w-3.5 h-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" side="right" className="w-36">
+                      <DropdownMenuItem onClick={() => startRename(c)}>
+                        <Pencil className="w-3.5 h-3.5 mr-2 opacity-70" /> Rename
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => remove(c.id)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               )}
             </div>
           ))}
