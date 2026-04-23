@@ -212,9 +212,9 @@ export default function Chat() {
               <div className="w-14 h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center mb-4">
                 <Sparkles className="w-7 h-7" />
               </div>
-              <h2 className="text-2xl font-semibold mb-2">Comment puis-je t'aider ?</h2>
+              <h2 className="text-2xl font-semibold mb-2">How can I help you?</h2>
               <p className="text-muted-foreground max-w-md">
-                Choisis un fournisseur et un modèle, puis pose ta question. Pense à ajouter tes clés API dans les paramètres.
+                Pick a provider and a model, then ask your question. Remember to add your API keys in the settings.
               </p>
             </div>
           ) : (
