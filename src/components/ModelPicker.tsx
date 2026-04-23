@@ -54,7 +54,7 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
         <SelectContent align="end" className="w-[260px]">
           <SelectItem
             value={AUTO_MODEL_ID}
-            className="py-2.5 bg-[#F8F8F8] data-[state=checked]:bg-[#F8F8F8] focus:bg-[#F8F8F8]"
+            className="py-3.5 bg-[#F8F8F8] data-[state=checked]:bg-[#F8F8F8] focus:bg-[#F8F8F8]"
           >
             <span className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 shrink-0" />
