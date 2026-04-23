@@ -204,37 +204,62 @@ function collectAndStripSources(
 }
 
 function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) {
-  const transformChildren = (children: ReactNode): ReactNode => {
+  // Recursively strip [source:N] markers from any text nodes, while
+  // collecting all referenced source indices into `collected`.
+  const stripChildren = (children: ReactNode, collected: Set<number>): ReactNode => {
     if (!sources?.length) return children;
 
     if (typeof children === "string") {
-      return renderWithSources(children, sources);
+      const { text, indices } = collectAndStripSources(children, sources);
+      indices.forEach((n) => collected.add(n));
+      return text;
     }
 
     if (Array.isArray(children)) {
       return children.map((child, index) => {
         if (typeof child === "string") {
-          return <span key={index}>{renderWithSources(child, sources)}</span>;
+          const { text, indices } = collectAndStripSources(child, sources);
+          indices.forEach((n) => collected.add(n));
+          return text;
         }
-
         if (isValidElement(child)) {
           return cloneElement(child as React.ReactElement<any>, {
             key: child.key ?? index,
-            children: transformChildren((child.props as { children?: ReactNode }).children),
+            children: stripChildren((child.props as { children?: ReactNode }).children, collected),
           });
         }
-
         return child;
       });
     }
 
     if (isValidElement(children)) {
       return cloneElement(children as React.ReactElement<any>, {
-        children: transformChildren((children.props as { children?: ReactNode }).children),
+        children: stripChildren((children.props as { children?: ReactNode }).children, collected),
       });
     }
 
     return children;
+  };
+
+  // Wrap a block-level element: strip inline markers and append one grouped tag at the end.
+  const renderBlock = (Tag: "p" | "li" | "blockquote", children: ReactNode, props: any) => {
+    if (!sources?.length) {
+      return <Tag {...props}>{children}</Tag>;
+    }
+    const collected = new Set<number>();
+    const stripped = stripChildren(children, collected);
+    const indices = Array.from(collected).sort((a, b) => a - b);
+    return (
+      <Tag {...props}>
+        {stripped}
+        {indices.length > 0 && (
+          <>
+            {" "}
+            <SourceTag indices={indices} sources={sources} />
+          </>
+        )}
+      </Tag>
+    );
   };
 
   return {
@@ -246,12 +271,9 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
         )}
       </a>
     ),
-    p: ({ node, children, ...props }: any) => <p {...props}>{transformChildren(children)}</p>,
-    li: ({ node, children, ...props }: any) => <li {...props}>{transformChildren(children)}</li>,
-    strong: ({ node, children, ...props }: any) => <strong {...props}>{transformChildren(children)}</strong>,
-    em: ({ node, children, ...props }: any) => <em {...props}>{transformChildren(children)}</em>,
-    span: ({ node, children, ...props }: any) => <span {...props}>{transformChildren(children)}</span>,
-    blockquote: ({ node, children, ...props }: any) => <blockquote {...props}>{transformChildren(children)}</blockquote>,
+    p: ({ node, children, ...props }: any) => renderBlock("p", children, props),
+    li: ({ node, children, ...props }: any) => renderBlock("li", children, props),
+    blockquote: ({ node, children, ...props }: any) => renderBlock("blockquote", children, props),
   };
 }
 
