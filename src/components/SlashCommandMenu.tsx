@@ -1,0 +1,145 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Sparkles } from "lucide-react";
+import { MODELS, PROVIDERS, AUTO_MODEL_ID, type Provider } from "@/lib/models";
+import { ProviderLogo } from "./ProviderLogo";
+
+export type SlashItem = {
+  provider: Provider | "auto";
+  model: string;
+  label: string;
+  description: string;
+  /** lowercase label without spaces, used for /xxx matching */
+  slug: string;
+};
+
+/** Build the full list of selectable items (Auto + all models). */
+export function buildSlashItems(): SlashItem[] {
+  const items: SlashItem[] = [
+    {
+      provider: "auto",
+      model: AUTO_MODEL_ID,
+      label: "Auto",
+      description: "Pick the best model for me",
+      slug: "auto",
+    },
+  ];
+  for (const p of PROVIDERS) {
+    for (const m of MODELS[p.id]) {
+      items.push({
+        provider: p.id,
+        model: m.id,
+        label: m.label,
+        description: m.description,
+        slug: m.label.toLowerCase().replace(/[^a-z0-9]/g, ""),
+      });
+    }
+  }
+  return items;
+}
+
+export function filterSlashItems(query: string): SlashItem[] {
+  const items = buildSlashItems();
+  const q = query.toLowerCase().replace(/\s+/g, "");
+  if (!q) return items;
+  return items.filter(
+    (it) =>
+      it.slug.includes(q) ||
+      it.label.toLowerCase().includes(query.toLowerCase()) ||
+      it.model.toLowerCase().includes(q),
+  );
+}
+
+type Props = {
+  query: string;
+  position: { left: number; top: number } | null;
+  onSelect: (item: SlashItem) => void;
+  onClose: () => void;
+};
+
+export function SlashCommandMenu({ query, position, onSelect, onClose }: Props) {
+  const items = useMemo(() => filterSlashItems(query), [query]);
+  const [active, setActive] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Reset active index when query changes
+  useEffect(() => {
+    setActive(0);
+  }, [query]);
+
+  // Keyboard navigation handled at the textarea level via custom events
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!items.length) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActive((a) => (a + 1) % items.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActive((a) => (a - 1 + items.length) % items.length);
+      } else if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        onSelect(items[active]);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
+  }, [items, active, onSelect, onClose]);
+
+  // Scroll the active item into view
+  useEffect(() => {
+    const el = listRef.current?.querySelector<HTMLElement>(`[data-idx="${active}"]`);
+    el?.scrollIntoView({ block: "nearest" });
+  }, [active]);
+
+  if (!position || !items.length) return null;
+
+  return (
+    <div
+      ref={listRef}
+      role="listbox"
+      className="absolute z-50 w-72 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg"
+      style={{ left: position.left, top: position.top }}
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      {items.map((it, idx) => {
+        const isActive = idx === active;
+        return (
+          <button
+            key={`${it.provider}-${it.model}`}
+            data-idx={idx}
+            type="button"
+            role="option"
+            aria-selected={isActive}
+            onMouseEnter={() => setActive(idx)}
+            onClick={() => onSelect(it)}
+            className={`w-full flex items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm ${
+              isActive ? "bg-dropdown-hover" : ""
+            }`}
+          >
+            <span className="mt-0.5 inline-flex items-center justify-center w-4 h-4 shrink-0">
+              {it.provider === "auto" ? (
+                <Sparkles className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ProviderLogo provider={it.provider} className="w-4 h-4" />
+              )}
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-[13px] font-medium text-foreground truncate">
+                {it.label}
+              </span>
+              <span className="block text-[11px] text-muted-foreground truncate">
+                {it.description}
+              </span>
+            </span>
+            <span className="text-[10px] text-muted-foreground self-center font-mono">
+              /{it.slug}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}

@@ -18,6 +18,8 @@ import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2 } from "lucid
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 import { loadAttachment, type Attachment } from "@/lib/attachments";
+import { SlashCommandMenu, filterSlashItems, type SlashItem } from "@/components/SlashCommandMenu";
+import { getTextareaCaretCoords } from "@/lib/caret";
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
@@ -41,6 +43,11 @@ export default function Chat() {
   const [streaming, setStreaming] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachLoading, setAttachLoading] = useState(false);
+  const [slash, setSlash] = useState<{
+    query: string;
+    start: number;
+    pos: { left: number; top: number };
+  } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -370,7 +377,66 @@ export default function Chat() {
     }
   };
 
+  // ---- Slash command detection ----
+  // Detect "/word" immediately before the caret (boundary: start of input or whitespace).
+  const detectSlash = (value: string, caret: number) => {
+    const before = value.slice(0, caret);
+    const m = before.match(/(?:^|\s)(\/[A-Za-z0-9.\-]*)$/);
+    if (!m) return null;
+    const token = m[1]; // e.g. "/gem"
+    const start = before.length - token.length;
+    return { start, query: token.slice(1) };
+  };
+
+  const updateSlashFromTextarea = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const caret = el.selectionStart ?? el.value.length;
+    const found = detectSlash(el.value, caret);
+    if (!found) {
+      setSlash((s) => (s ? null : s));
+      return;
+    }
+    // Position the menu directly under the caret
+    const { left, top, height } = getTextareaCaretCoords(el, found.start);
+    setSlash({
+      query: found.query,
+      start: found.start,
+      pos: { left: el.offsetLeft + left, top: el.offsetTop + top + height + 4 },
+    });
+  };
+
+  const applySlashSelection = (item: SlashItem) => {
+    const el = textareaRef.current;
+    if (!el || !slash) return;
+    const before = el.value.slice(0, slash.start);
+    const after = el.value.slice((el.selectionStart ?? slash.start));
+    // Remove the leading whitespace separator? No — only strip the "/xxx" itself.
+    const next = before + after;
+    setInput(next);
+    setSlash(null);
+    // Update model picker
+    if (item.provider === "auto") {
+      // Keep the previously chosen provider as the persistence target; switch model to AUTO
+      setModel(AUTO_MODEL_ID);
+    } else {
+      setProvider(item.provider);
+      setModel(item.model);
+    }
+    // Restore caret position where the "/xxx" used to start
+    setTimeout(() => {
+      const node = textareaRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(slash.start, slash.start);
+    }, 0);
+  };
+
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // When the slash menu is open, let it consume navigation/confirm keys
+    if (slash && ["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.key)) {
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
@@ -514,7 +580,7 @@ export default function Chat() {
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
-            <div className="bg-card border border-border rounded-2xl transition-shadow focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)]">
+            <div className="relative bg-card border border-border rounded-2xl transition-shadow focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)]">
               {(attachments.length > 0 || attachLoading) && (
                 <div className="flex flex-wrap gap-2 px-3 pt-3">
                   {attachments.map((a, i) => (
@@ -549,12 +615,27 @@ export default function Chat() {
               <Textarea
                 ref={textareaRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  // Defer so selectionStart reflects post-update value
+                  requestAnimationFrame(updateSlashFromTextarea);
+                }}
                 onKeyDown={onKey}
+                onKeyUp={updateSlashFromTextarea}
+                onClick={updateSlashFromTextarea}
+                onBlur={() => setTimeout(() => setSlash(null), 100)}
                 placeholder="Send a message..."
                 rows={1}
                 className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
               />
+              {slash && (
+                <SlashCommandMenu
+                  query={slash.query}
+                  position={slash.pos}
+                  onSelect={applySlashSelection}
+                  onClose={() => setSlash(null)}
+                />
+              )}
               <div className="flex items-center justify-between gap-[15px] px-2 pb-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
