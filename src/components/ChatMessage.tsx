@@ -6,7 +6,9 @@ import { ProviderBadge } from "./ProviderBadge";
 import type { Provider } from "@/lib/models";
 import { useSmoothText } from "@/hooks/useSmoothText";
 
-type ToolUse = { tool: "scrape" | "search"; label: string };
+type ToolStatus = "running" | "done" | "failed";
+type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
+type Phase = "analyzing" | "generating";
 
 type Props = {
   role: "user" | "assistant";
@@ -16,6 +18,7 @@ type Props = {
   model?: string;
   memory?: { added: number; updated: number };
   tool?: ToolUse;
+  phase?: Phase;
   onRetry?: () => void;
   onDelete?: () => void;
 };
@@ -71,6 +74,25 @@ function ToolBadge({ tool, label }: ToolUse) {
   );
 }
 
+function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined): string {
+  if (tool) {
+    const short = tool.label.length > 50 ? tool.label.slice(0, 47) + "…" : tool.label;
+    if (tool.status === "done") {
+      return tool.tool === "scrape" ? "Synthèse de la page…" : "Synthèse des résultats…";
+    }
+    if (tool.status === "failed") {
+      return "Outil indisponible, je continue sans…";
+    }
+    // running
+    return tool.tool === "scrape"
+      ? `Lecture de ${short}…`
+      : `Recherche : « ${short} »…`;
+  }
+  if (phase === "analyzing") return "Analyse de ta demande…";
+  if (phase === "generating") return "Réflexion…";
+  return "Réflexion…";
+}
+
 function ChatMessageImpl({
   role,
   content,
@@ -79,6 +101,7 @@ function ChatMessageImpl({
   model,
   memory,
   tool,
+  phase,
   onRetry,
   onDelete,
 }: Props) {
@@ -119,13 +142,13 @@ function ChatMessageImpl({
             <ProviderBadge provider={provider} model={model} />
           </div>
         )}
-        {tool && <ToolBadge tool={tool.tool} label={tool.label} />}
+        {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
         <div className="chat-prose break-words">
           {display ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{display}</ReactMarkdown>
           ) : streaming ? (
             <span className="text-shimmer text-sm font-medium">
-              {tool ? (tool.tool === "scrape" ? "Lecture de la page…" : "Recherche en cours…") : "Thinking..."}
+              {getStatusMessage(phase, tool)}
             </span>
           ) : " "}
         </div>
@@ -162,6 +185,8 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.memory?.updated === next.memory?.updated &&
   prev.tool?.tool === next.tool?.tool &&
   prev.tool?.label === next.tool?.label &&
+  prev.tool?.status === next.tool?.status &&
+  prev.phase === next.phase &&
   prev.onRetry === next.onRetry &&
   prev.onDelete === next.onDelete,
 );
