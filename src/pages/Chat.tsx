@@ -292,8 +292,11 @@ export default function Chat() {
     } catch (e) {
       const aborted = (e as any)?.name === "AbortError" || controller.signal.aborted;
       if (aborted) {
-        // Restore the prompt the user was sending so they can edit/resend
+        // Restore the prompt + attachments the user was sending
         setInput(lastSentRef.current);
+        if (lastAttachmentsRef.current.length) {
+          setAttachments(lastAttachmentsRef.current);
+        }
         // Remove the (empty) assistant placeholder and the persisted user message
         setMessages((prev) => {
           const trimmed = prev.slice(0, -1); // drop assistant placeholder
