@@ -1,0 +1,234 @@
+// Multi-provider streaming chat: OpenAI, Anthropic, Google Gemini
+// deno-lint-ignore-file no-explicit-any
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+type Msg = { role: "user" | "assistant" | "system"; content: string };
+
+function sseEncoder() {
+  const encoder = new TextEncoder();
+  return (obj: unknown) => encoder.encode(`data: ${JSON.stringify(obj)}\n\n`);
+}
+
+async function* parseSSELines(reader: ReadableStreamDefaultReader<Uint8Array>) {
+  const decoder = new TextDecoder();
+  let buf = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let idx;
+    while ((idx = buf.indexOf("\n")) !== -1) {
+      const line = buf.slice(0, idx).replace(/\r$/, "");
+      buf = buf.slice(idx + 1);
+      if (line) yield line;
+    }
+  }
+  if (buf.trim()) yield buf;
+}
+
+// ---------- OpenAI ----------
+async function* streamOpenAI(apiKey: string, model: string, messages: Msg[]) {
+  const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ model, messages, stream: true }),
+  });
+  if (!r.ok || !r.body) {
+    const t = await r.text();
+    throw new Error(`OpenAI ${r.status}: ${t}`);
+  }
+  for await (const line of parseSSELines(r.body.getReader())) {
+    if (!line.startsWith("data: ")) continue;
+    const data = line.slice(6).trim();
+    if (data === "[DONE]") return;
+    try {
+      const j = JSON.parse(data);
+      const delta = j.choices?.[0]?.delta?.content;
+      if (delta) yield delta as string;
+    } catch { /* partial */ }
+  }
+}
+
+// ---------- Anthropic ----------
+async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]) {
+  const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const conv = messages.filter((m) => m.role !== "system");
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      stream: true,
+      system: system || undefined,
+      messages: conv.map((m) => ({ role: m.role, content: m.content })),
+    }),
+  });
+  if (!r.ok || !r.body) {
+    const t = await r.text();
+    throw new Error(`Anthropic ${r.status}: ${t}`);
+  }
+  for await (const line of parseSSELines(r.body.getReader())) {
+    if (!line.startsWith("data: ")) continue;
+    const data = line.slice(6).trim();
+    try {
+      const j = JSON.parse(data);
+      if (j.type === "content_block_delta" && j.delta?.type === "text_delta") {
+        yield j.delta.text as string;
+      }
+    } catch { /* partial */ }
+  }
+}
+
+// ---------- Google Gemini (SSE) ----------
+async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
+  const sys = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const contents = messages
+    .filter((m) => m.role !== "system")
+    .map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
+  const body: any = { contents };
+  if (sys) body.systemInstruction = { parts: [{ text: sys }] };
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok || !r.body) {
+    const t = await r.text();
+    throw new Error(`Gemini ${r.status}: ${t}`);
+  }
+  for await (const line of parseSSELines(r.body.getReader())) {
+    if (!line.startsWith("data: ")) continue;
+    const data = line.slice(6).trim();
+    try {
+      const j = JSON.parse(data);
+      const txt = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("");
+      if (txt) yield txt as string;
+    } catch { /* partial */ }
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Missing auth" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { conversationId, provider, model, messages } = await req.json() as {
+      conversationId: string;
+      provider: "openai" | "anthropic" | "google";
+      model: string;
+      messages: Msg[];
+    };
+
+    if (!conversationId || !provider || !model || !Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: "Invalid payload" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: keyRow, error: keyErr } = await supabase
+      .from("api_keys")
+      .select("api_key")
+      .eq("provider", provider)
+      .maybeSingle();
+
+    if (keyErr || !keyRow?.api_key) {
+      return new Response(
+        JSON.stringify({ error: `Aucune clé API configurée pour ${provider}. Ajoute-la dans les paramètres.` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const enc = sseEncoder();
+    let assistantText = "";
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          let iter: AsyncGenerator<string>;
+          if (provider === "openai") iter = streamOpenAI(keyRow.api_key, model, messages);
+          else if (provider === "anthropic") iter = streamAnthropic(keyRow.api_key, model, messages);
+          else iter = streamGemini(keyRow.api_key, model, messages);
+
+          for await (const chunk of iter) {
+            assistantText += chunk;
+            controller.enqueue(enc({ type: "delta", text: chunk }));
+          }
+
+          // Persist assistant message
+          await supabase.from("messages").insert({
+            conversation_id: conversationId,
+            user_id: user.id,
+            role: "assistant",
+            content: assistantText,
+          });
+          await supabase
+            .from("conversations")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", conversationId);
+
+          controller.enqueue(enc({ type: "done" }));
+          controller.close();
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          controller.enqueue(enc({ type: "error", error: msg }));
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
