@@ -860,11 +860,12 @@ Deno.serve(async (req) => {
             .eq("id", conversationId);
 
           // ---------- Persist usage event with computed cost ----------
+          console.log("[usage] provider=", provider, "model=", model, "usage=", JSON.stringify(usage));
           if (usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) {
             const price = priceFor(model);
             const inputCost = (usage.input_tokens / 1_000_000) * price.input;
             const outputCost = (usage.output_tokens / 1_000_000) * price.output;
-            await supabase.from("usage_events").insert({
+            const { error: usageErr } = await supabase.from("usage_events").insert({
               user_id: user.id,
               conversation_id: conversationId,
               message_id: insertedMsg?.id ?? null,
@@ -876,12 +877,16 @@ Deno.serve(async (req) => {
               output_cost_usd: outputCost,
               total_cost_usd: inputCost + outputCost,
             });
+            if (usageErr) console.error("[usage] insert error:", usageErr);
+            else console.log("[usage] inserted ok");
             controller.enqueue(enc({
               type: "usage",
               input_tokens: usage.input_tokens,
               output_tokens: usage.output_tokens,
               cost_usd: inputCost + outputCost,
             }));
+          } else {
+            console.warn("[usage] skipped — no usage data returned by provider");
           }
 
           // ---------- Auto-generate title if this is the first user message ----------
