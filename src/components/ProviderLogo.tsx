@@ -1,4 +1,5 @@
 import type { Provider } from "@/lib/models";
+import claudeLogo from "@/assets/claude-logo.png";
 
 function OpenAILogo({ className }: { className?: string }) {
   return (
@@ -10,9 +11,7 @@ function OpenAILogo({ className }: { className?: string }) {
 
 function AnthropicLogo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
-      <path d="M14.137 4h-3.297L16.738 20h3.296zM6.86 4 0 20h3.355l1.402-3.43h6.99L13.149 20h3.355L9.642 4zM5.83 13.717l2.298-5.621 2.299 5.62z" />
-    </svg>
+    <img src={claudeLogo} alt="Claude" className={`${className ?? ""} object-contain rounded-sm`} />
   );
 }
 
