@@ -1,10 +1,12 @@
 import { memo, useState } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2 } from "lucide-react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
 import type { Provider } from "@/lib/models";
 import { useSmoothText } from "@/hooks/useSmoothText";
+
+type ToolUse = { tool: "scrape" | "search"; label: string };
 
 type Props = {
   role: "user" | "assistant";
@@ -13,6 +15,7 @@ type Props = {
   provider?: Provider;
   model?: string;
   memory?: { added: number; updated: number };
+  tool?: ToolUse;
   onRetry?: () => void;
   onDelete?: () => void;
 };
