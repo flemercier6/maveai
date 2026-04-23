@@ -8,7 +8,7 @@ import { ModelPicker } from "@/components/ModelPicker";
 
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Sparkles } from "lucide-react";
+import { ArrowUp, Sparkles, Square } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, type Provider } from "@/lib/models";
 
@@ -27,8 +27,10 @@ export default function Chat() {
   const [model, setModel] = useState<string>(DEFAULT_MODEL.openai);
   const [sending, setSending] = useState(false);
   const [streaming, setStreaming] = useState(false);
-  
+
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const lastSentRef = useRef<string>("");
 
   useEffect(() => {
     if (!loading && !user) navigate("/signin", { replace: true });
