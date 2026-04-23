@@ -86,22 +86,29 @@
 
 @layer components {
   .chat-prose {
-    @apply text-[15px] leading-[1.75] text-foreground;
+    @apply text-[15px] leading-[1.85] text-foreground;
   }
-  .chat-prose p { @apply mb-3 last:mb-0; }
+  .chat-prose > * + * { @apply mt-5; }
+  .chat-prose p { @apply mb-5 last:mb-0; }
   .chat-prose pre {
-    @apply bg-muted text-foreground rounded-lg p-3 my-3 overflow-x-auto text-[13px];
+    @apply bg-muted text-foreground rounded-lg p-4 my-5 overflow-x-auto text-[13px] leading-relaxed;
   }
   .chat-prose code {
     @apply bg-muted px-1.5 py-0.5 rounded text-[13px];
   }
   .chat-prose pre code { @apply bg-transparent p-0; }
-  .chat-prose ul { @apply list-disc pl-5 mb-3; }
-  .chat-prose ol { @apply list-decimal pl-5 mb-3; }
-  .chat-prose h1 { @apply text-xl font-semibold mt-4 mb-2; }
-  .chat-prose h2 { @apply text-lg font-semibold mt-4 mb-2; }
-  .chat-prose h3 { @apply text-base font-semibold mt-3 mb-2; }
+  .chat-prose ul { @apply list-disc pl-6 mb-5 space-y-2; }
+  .chat-prose ol { @apply list-decimal pl-6 mb-5 space-y-2; }
+  .chat-prose li { @apply leading-[1.75]; }
+  .chat-prose li > p { @apply mb-2; }
+  .chat-prose h1 { @apply text-[28px] font-semibold leading-tight mt-10 mb-4 first:mt-0; }
+  .chat-prose h2 { @apply text-[22px] font-semibold leading-snug mt-9 mb-3 first:mt-0; }
+  .chat-prose h3 { @apply text-[18px] font-semibold leading-snug mt-7 mb-3 first:mt-0; }
+  .chat-prose h1 + *, .chat-prose h2 + *, .chat-prose h3 + * { @apply mt-0; }
+  .chat-prose hr { @apply my-8 border-0 border-t border-border; }
+  .chat-prose blockquote { @apply border-l-2 border-border pl-4 my-5 text-muted-foreground italic; }
   .chat-prose a { @apply underline underline-offset-2 text-primary; }
+  .chat-prose strong { @apply font-semibold; }
 
   .typing-cursor::after {
     content: '▍';
