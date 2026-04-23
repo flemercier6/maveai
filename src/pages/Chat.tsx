@@ -320,7 +320,14 @@ export default function Chat() {
         pending = false;
         setMessages((prev) => {
           const next = prev.slice();
-          next[next.length - 1] = { role: "assistant", content: acc, provider: sendProvider, model: sendModel };
+          const current = next[next.length - 1];
+          next[next.length - 1] = {
+            ...current,
+            role: "assistant",
+            content: acc,
+            provider: sendProvider,
+            model: sendModel,
+          };
           return next;
         });
       }
