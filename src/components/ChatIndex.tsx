@@ -81,7 +81,7 @@ export function ChatIndex({ items, scrollContainer }: Props) {
       <div
         className={cn(
           "flex flex-col items-end justify-center gap-2 rounded-full bg-[hsl(0_0%_97%)] py-3 px-2 transition-all duration-200",
-          hovered && "rounded-2xl px-3 py-4 shadow-md",
+          hovered && "rounded-2xl shadow-md py-[30px] px-[2px] gap-[8px]",
         )}
       >
         {items.map((it) => {
