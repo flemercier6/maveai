@@ -8,7 +8,7 @@ import { ModelPicker } from "@/components/ModelPicker";
 
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Sparkles, Square } from "lucide-react";
+import { ArrowRight, Sparkles, Square } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 
@@ -304,7 +304,7 @@ export default function Chat() {
                   <Button
                     size="icon"
                     onClick={stop}
-                    className="h-9 w-9 rounded-xl"
+                    className="h-9 w-9 rounded-full"
                     aria-label="Stop generation"
                   >
                     <Square className="w-4 h-4 fill-current" />
@@ -314,10 +314,10 @@ export default function Chat() {
                     size="icon"
                     onClick={send}
                     disabled={!input.trim()}
-                    className="h-9 w-9 rounded-xl"
+                    className="h-9 w-9 rounded-full"
                     aria-label="Send message"
                   >
-                    <ArrowUp className="w-4 h-4" />
+                    <ArrowRight className="w-4 h-4" />
                   </Button>
                 )}
               </div>
