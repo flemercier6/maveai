@@ -293,7 +293,7 @@ export default function Chat() {
                 rows={1}
                 className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 max-h-48 py-3.5 px-4"
               />
-              <div className="flex items-center justify-between gap-2 px-2 pb-2">
+              <div className="flex items-center justify-end gap-[15px] px-2 pb-2">
                 <ModelPicker
                   provider={provider}
                   model={model}
