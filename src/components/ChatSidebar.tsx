@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Trash2, LogOut, Sparkles, Brain, MoreHorizontal, Pencil, ChevronDown } from "lucide-react";
+import { Plus, Trash2, LogOut, Sparkles, Brain, MoreHorizontal, Pencil, ChevronDown, Search } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -116,9 +116,20 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
           </div>
           <span className="font-semibold text-sidebar-foreground">Polychat</span>
         </div>
-        <Button onClick={onNew} className="w-full mt-2 justify-start gap-2" variant="default">
-          <Plus className="w-4 h-4" /> New conversation
-        </Button>
+        <div className="mt-2 space-y-0.5">
+          <button
+            onClick={onNew}
+            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-xs text-sidebar-foreground hover:bg-sidebar-accent/60"
+          >
+            <Plus className="w-4 h-4 opacity-70" /> New chat
+          </button>
+          <button
+            type="button"
+            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-xs text-sidebar-foreground hover:bg-sidebar-accent/60"
+          >
+            <Search className="w-4 h-4 opacity-70" /> Search chats
+          </button>
+        </div>
       </div>
 
       <ScrollArea className="flex-1">
