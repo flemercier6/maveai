@@ -261,7 +261,7 @@ export default function Chat() {
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground text-center mt-2">
-              Les réponses viennent directement de {provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : "Google"} avec ta clé.
+              Responses come directly from {provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : "Google"} using your key.
             </p>
           </div>
         </div>
