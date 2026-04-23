@@ -12,7 +12,7 @@ import { ArrowUp, Sparkles, Square } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, type Provider } from "@/lib/models";
 
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -50,6 +50,7 @@ export default function Chat() {
     if (!activeId) { setMessages([]); return; }
     const conv = conversations.find((c) => c.id === activeId);
     const convProvider = (conv?.provider as Provider) ?? "openai";
+    const convModel = conv?.model;
     supabase.from("messages").select("*").eq("conversation_id", activeId).order("created_at")
       .then(({ data }) => {
         setMessages(((data ?? []) as any[]).map((m) => ({
@@ -57,6 +58,7 @@ export default function Chat() {
           role: m.role,
           content: m.content,
           provider: m.role === "assistant" ? convProvider : undefined,
+          model: m.role === "assistant" ? convModel : undefined,
         })));
       });
     if (conv) {
@@ -118,7 +120,7 @@ export default function Chat() {
     }).select().single();
 
     const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: text }];
-    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider }]);
+    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel }]);
     setStreaming(true);
 
     const controller = new AbortController();
@@ -166,7 +168,7 @@ export default function Chat() {
               acc += j.text;
               setMessages((prev) => {
                 const next = [...prev];
-                next[next.length - 1] = { role: "assistant", content: acc, provider: sendProvider };
+                next[next.length - 1] = { role: "assistant", content: acc, provider: sendProvider, model: sendModel };
                 return next;
               });
             } else if (j.type === "title" && j.title) {
@@ -263,6 +265,7 @@ export default function Chat() {
                   role={m.role}
                   content={m.content}
                   provider={m.provider}
+                  model={m.model}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                 />
               ))}

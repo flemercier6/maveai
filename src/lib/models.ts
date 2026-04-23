@@ -39,6 +39,15 @@ export const PROVIDER_LABEL: Record<Provider, string> = {
 // Special "Auto" sentinel — handled by routeAuto() before sending
 export const AUTO_MODEL_ID = "auto";
 
+// Helper: get a model's display label from its id
+export function modelLabel(modelId: string): string {
+  for (const p of PROVIDERS) {
+    const m = MODELS[p.id].find((x) => x.id === modelId);
+    if (m) return m.label;
+  }
+  return modelId;
+}
+
 // Helper: find provider for a model id
 export function providerForModel(modelId: string): Provider {
   for (const p of PROVIDERS) {
