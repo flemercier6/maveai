@@ -477,6 +477,14 @@ export default function Chat() {
                   onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
                   onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}
                   onEdit={m.role === "user" ? () => {
+                    if (sending) return;
+                    const userMsg = messages[i];
+                    const assistantMsg = messages[i + 1]?.role === "assistant" ? messages[i + 1] : null;
+                    const ids = [userMsg?.id, assistantMsg?.id].filter(Boolean) as string[];
+                    if (ids.length) {
+                      void supabase.from("messages").delete().in("id", ids);
+                    }
+                    setMessages((prev) => prev.filter((_, idx) => idx !== i && !(assistantMsg && idx === i + 1)));
                     setInput(m.content);
                     setTimeout(() => {
                       const el = textareaRef.current;
