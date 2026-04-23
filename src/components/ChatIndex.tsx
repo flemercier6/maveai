@@ -73,12 +73,18 @@ export function ChatIndex({ items, scrollContainer }: Props) {
   return (
     <div
       ref={wrapRef}
-      className="fixed top-4 right-4 z-30 flex flex-col items-end gap-2"
+      className="fixed top-4 right-4 z-30"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Vertical pill with one dot per prompt */}
-      <div className="flex flex-col items-center bg-foreground rounded-full py-2.5 px-1.5 gap-1.5 cursor-default select-none">
+      <div
+        className={cn(
+          "flex flex-col bg-foreground select-none transition-[padding,border-radius,gap] duration-300 ease-out",
+          hovered
+            ? "rounded-2xl shadow-md py-3 pl-3 pr-3 gap-1 min-w-[220px] max-w-[300px]"
+            : "rounded-full py-2.5 px-1.5 gap-1.5 items-center",
+        )}
+      >
         {items.map((it) => {
           const isActive = it.id === activeId;
           return (
@@ -88,44 +94,37 @@ export function ChatIndex({ items, scrollContainer }: Props) {
               onClick={() => scrollTo(it.id)}
               aria-label={`Jump to: ${it.preview}`}
               className={cn(
-                "rounded-full transition-all duration-200",
-                isActive
-                  ? "bg-background w-2 h-2"
-                  : "bg-background/40 hover:bg-background/70 w-1.5 h-1.5",
+                "group flex items-center gap-2 outline-none rounded-md transition-colors",
+                hovered
+                  ? cn(
+                      "self-stretch justify-end px-2 py-1",
+                      isActive ? "bg-white/15" : "hover:bg-white/10",
+                    )
+                  : "",
               )}
-            />
-          );
-        })}
-      </div>
-
-      {/* Expanded prompt list */}
-      <div
-        className={cn(
-          "overflow-hidden transition-[max-height,opacity] duration-300 ease-out",
-          hovered ? "max-h-[70vh] opacity-100" : "max-h-0 opacity-0",
-        )}
-      >
-        <div className="flex flex-col items-stretch bg-foreground text-background rounded-2xl shadow-md py-3 px-3 gap-1 min-w-[200px] max-w-[280px]">
-          {items.map((it) => {
-            const isActive = it.id === activeId;
-            return (
-              <button
-                key={it.id}
-                type="button"
-                onClick={() => scrollTo(it.id)}
+            >
+              <span
                 className={cn(
-                  "text-left text-sm font-medium truncate rounded-md px-2 py-1 transition-colors",
-                  isActive
-                    ? "text-background bg-white/15"
-                    : "text-background/60 hover:bg-white/10 hover:text-background",
+                  "truncate text-sm font-medium whitespace-nowrap text-right transition-[opacity,max-width] duration-300 ease-out",
+                  hovered
+                    ? "opacity-100 max-w-[240px]"
+                    : "opacity-0 max-w-0",
+                  isActive ? "text-background" : "text-background/60 group-hover:text-background",
                 )}
-                aria-label={`Jump to: ${it.preview}`}
               >
                 {it.preview}
-              </button>
-            );
-          })}
-        </div>
+              </span>
+              <span
+                className={cn(
+                  "block rounded-full shrink-0 transition-all duration-200",
+                  isActive
+                    ? "bg-background w-2 h-2"
+                    : "bg-background/40 group-hover:bg-background/70 w-1.5 h-1.5",
+                )}
+              />
+            </button>
+          );
+        })}
       </div>
     </div>
   );
