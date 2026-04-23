@@ -327,7 +327,7 @@ export default function Chat() {
         <div className="bg-background p-4 pb-[5px] pt-[5px] relative">
           <div
             aria-hidden
-            className="pointer-events-none absolute left-0 right-0 -top-8 h-8 bg-gradient-to-t from-background to-transparent"
+            className="pointer-events-none absolute left-0 right-0 -top-20 h-20 bg-gradient-to-t from-background to-transparent"
           />
           <div className="max-w-3xl mx-auto">
             <div className="bg-card border border-border rounded-2xl transition-shadow focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)]">
