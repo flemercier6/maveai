@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Sparkles, User } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type Props = {
   role: "user" | "assistant";
