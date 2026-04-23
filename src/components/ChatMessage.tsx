@@ -96,19 +96,51 @@ function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined): 
   return "Thinking…";
 }
 
+function faviconUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    return `https://www.google.com/s2/favicons?sz=64&domain=${u.hostname}`;
+  } catch {
+    return null;
+  }
+}
+
 function SourceTag({ indices, sources }: { indices: number[]; sources: Source[] }) {
   const items = indices
     .map((n) => ({ n, src: sources[n - 1] }))
     .filter((x) => x.src);
   if (!items.length) return null;
+  const thumbs = items.slice(0, 3);
   return (
     <Popover>
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center align-middle mx-0.5 h-5 px-1.5 rounded-full border border-border bg-card text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors no-underline"
+          className="inline-flex items-center align-middle mx-0.5 h-5 pl-0.5 pr-1.5 rounded-full border border-border bg-card text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors no-underline gap-1"
         >
-          Source
+          <span className="inline-flex items-center">
+            {thumbs.map(({ n, src }, i) => {
+              const fav = faviconUrl(src.url);
+              return (
+                <span
+                  key={n}
+                  className={`inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted overflow-hidden ring-1 ring-card ${i > 0 ? "-ml-1.5" : ""}`}
+                  style={{ zIndex: thumbs.length - i }}
+                >
+                  {fav ? (
+                    <img
+                      src={fav}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                    />
+                  ) : null}
+                </span>
+              );
+            })}
+          </span>
+          <span>Source</span>
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80 p-2">
@@ -119,6 +151,7 @@ function SourceTag({ indices, sources }: { indices: number[]; sources: Source[] 
           {items.map(({ n, src }) => {
             let host = "";
             try { host = new URL(src.url).hostname.replace(/^www\./, ""); } catch { host = src.url; }
+            const fav = faviconUrl(src.url);
             return (
               <li key={n}>
                 <a
@@ -127,8 +160,12 @@ function SourceTag({ indices, sources }: { indices: number[]; sources: Source[] 
                   rel="noopener noreferrer"
                   className="flex items-start gap-2 px-2 py-1.5 rounded-md hover:bg-dropdown-hover no-underline"
                 >
-                  <span className="mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted text-[10px] font-medium text-muted-foreground shrink-0">
-                    {n}
+                  <span className="mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted overflow-hidden shrink-0">
+                    {fav ? (
+                      <img src={fav} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      <span className="text-[10px] font-medium text-muted-foreground">{n}</span>
+                    )}
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-[13px] text-foreground line-clamp-2 leading-snug">
