@@ -377,7 +377,66 @@ export default function Chat() {
     }
   };
 
+  // ---- Slash command detection ----
+  // Detect "/word" immediately before the caret (boundary: start of input or whitespace).
+  const detectSlash = (value: string, caret: number) => {
+    const before = value.slice(0, caret);
+    const m = before.match(/(?:^|\s)(\/[A-Za-z0-9.\-]*)$/);
+    if (!m) return null;
+    const token = m[1]; // e.g. "/gem"
+    const start = before.length - token.length;
+    return { start, query: token.slice(1) };
+  };
+
+  const updateSlashFromTextarea = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const caret = el.selectionStart ?? el.value.length;
+    const found = detectSlash(el.value, caret);
+    if (!found) {
+      setSlash((s) => (s ? null : s));
+      return;
+    }
+    // Position the menu directly under the caret
+    const { left, top, height } = getTextareaCaretCoords(el, found.start);
+    setSlash({
+      query: found.query,
+      start: found.start,
+      pos: { left: el.offsetLeft + left, top: el.offsetTop + top + height + 4 },
+    });
+  };
+
+  const applySlashSelection = (item: SlashItem) => {
+    const el = textareaRef.current;
+    if (!el || !slash) return;
+    const before = el.value.slice(0, slash.start);
+    const after = el.value.slice((el.selectionStart ?? slash.start));
+    // Remove the leading whitespace separator? No — only strip the "/xxx" itself.
+    const next = before + after;
+    setInput(next);
+    setSlash(null);
+    // Update model picker
+    if (item.provider === "auto") {
+      // Keep the previously chosen provider as the persistence target; switch model to AUTO
+      setModel(AUTO_MODEL_ID);
+    } else {
+      setProvider(item.provider);
+      setModel(item.model);
+    }
+    // Restore caret position where the "/xxx" used to start
+    setTimeout(() => {
+      const node = textareaRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(slash.start, slash.start);
+    }, 0);
+  };
+
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // When the slash menu is open, let it consume navigation/confirm keys
+    if (slash && ["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.key)) {
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
