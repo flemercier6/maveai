@@ -35,11 +35,15 @@ export default function Chat() {
   const [model, setModel] = useState<string>(AUTO_MODEL_ID);
   const [sending, setSending] = useState(false);
   const [streaming, setStreaming] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachLoading, setAttachLoading] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const lastSentRef = useRef<string>("");
+  const lastAttachmentsRef = useRef<Attachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-resize textarea height based on content
   useEffect(() => {
