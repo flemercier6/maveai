@@ -94,7 +94,7 @@ export function ChatIndex({ items, scrollContainer }: Props) {
               onClick={() => scrollTo(it.id)}
               aria-label={`Jump to: ${it.preview}`}
               className={cn(
-                "group flex items-center gap-2 outline-none rounded-md transition-colors",
+                "group flex items-center outline-none rounded-md transition-colors",
                 hovered
                   ? cn(
                       "self-stretch justify-start px-2 py-1",
@@ -106,9 +106,11 @@ export function ChatIndex({ items, scrollContainer }: Props) {
               <span
                 className={cn(
                   "block rounded-full shrink-0 h-[2px] transition-all duration-200",
+                  hovered ? "w-0 mr-0" : "mr-0",
                   isActive
-                    ? "bg-background w-5"
-                    : "bg-background/40 group-hover:bg-background/70 w-[15px]",
+                    ? "bg-background"
+                    : "bg-background/40 group-hover:bg-background/70",
+                  hovered ? "" : (isActive ? "w-5" : "w-[15px]"),
                 )}
               />
               <span
