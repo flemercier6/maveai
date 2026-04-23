@@ -47,7 +47,7 @@
     --input: 220 13% 91%;
     --ring: 158 64% 32%;
 
-    --bubble-user: 220 13% 94%;
+    --bubble-user: 0 0% 97%;            /* #F8F8F8 */
     --bubble-user-fg: 222 14% 12%;
     --bubble-assistant: 0 0% 100%;
     --bubble-assistant-fg: 222 14% 12%;
