@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -24,8 +24,43 @@ type Props = {
   userEmail?: string;
 };
 
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 480;
+const DEFAULT_WIDTH = 240;
+const STORAGE_KEY = "chat-sidebar-width";
+
 export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
+  const [width, setWidth] = useState<number>(() => {
+    if (typeof window === "undefined") return DEFAULT_WIDTH;
+    const saved = Number(localStorage.getItem(STORAGE_KEY));
+    return saved >= MIN_WIDTH && saved <= MAX_WIDTH ? saved : DEFAULT_WIDTH;
+  });
+  const [resizing, setResizing] = useState(false);
+  const asideRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!resizing) return;
+    const onMove = (e: MouseEvent) => {
+      const left = asideRef.current?.getBoundingClientRect().left ?? 0;
+      const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX - left));
+      setWidth(next);
+    };
+    const onUp = () => {
+      setResizing(false);
+      localStorage.setItem(STORAGE_KEY, String(width));
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [resizing, width]);
 
   const remove = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -40,7 +75,11 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
   };
 
   return (
-    <aside className="w-72 shrink-0 h-screen flex flex-col bg-sidebar border-r border-sidebar-border">
+    <aside
+      ref={asideRef}
+      style={{ width }}
+      className="relative shrink-0 h-screen flex flex-col bg-sidebar border-r border-sidebar-border"
+    >
       <div className="p-3 border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-2">
           <div className="w-7 h-7 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
@@ -102,6 +141,18 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
           <LogOut className="w-4 h-4 opacity-70" /> Se déconnecter
         </button>
       </div>
+
+      {/* Resize handle */}
+      <div
+        onMouseDown={(e) => { e.preventDefault(); setResizing(true); }}
+        onDoubleClick={() => { setWidth(DEFAULT_WIDTH); localStorage.setItem(STORAGE_KEY, String(DEFAULT_WIDTH)); }}
+        className={cn(
+          "absolute top-0 right-0 h-full w-1 cursor-col-resize group z-10",
+          "hover:bg-primary/40 transition-colors",
+          resizing && "bg-primary/60"
+        )}
+        title="Glisser pour redimensionner — double-clic pour réinitialiser"
+      />
     </aside>
   );
 }
