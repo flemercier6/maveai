@@ -32,6 +32,15 @@ export default function Chat() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const lastSentRef = useRef<string>("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea height based on content
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [input]);
 
   useEffect(() => {
     if (!loading && !user) navigate("/signin", { replace: true });
@@ -361,12 +370,13 @@ export default function Chat() {
           <div className="max-w-2xl mx-auto">
             <div className="bg-card border border-border rounded-2xl transition-shadow focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)]">
               <Textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKey}
                 placeholder="Send a message..."
                 rows={1}
-                className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 max-h-48 py-3.5 px-4"
+                className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4"
               />
               <div className="flex items-center justify-end gap-[15px] px-2 pb-2">
                 <ModelPicker
