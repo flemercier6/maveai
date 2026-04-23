@@ -154,14 +154,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
                   onClick={() => onSelect(c.id)}
                   className="w-full flex items-center text-left min-w-0 text-xs py-[6px] px-[10px]"
                 >
-                  <span
-                    className={cn(
-                      "flex-1 truncate transition-[padding] duration-150",
-                      hovered === c.id || activeId === c.id || menuOpenId === c.id
-                        ? "pr-7"
-                        : "pr-1"
-                    )}
-                  >
+                  <span className="flex-1 truncate pr-7">
                     {c.title}
                   </span>
                 </button>
