@@ -608,6 +608,16 @@ export default function Chat() {
             className="pointer-events-none absolute left-0 right-0 -top-20 h-20 bg-gradient-to-t from-background to-transparent"
           />
           <div className="max-w-2xl mx-auto">
+            {clarify && (
+              <ClarifyCard
+                questions={clarify}
+                onSkip={() => setClarify(null)}
+                onSubmit={(combined) => {
+                  setClarify(null);
+                  void send(combined, [], { skipClarify: true });
+                }}
+              />
+            )}
             <input
               ref={fileInputRef}
               type="file"
