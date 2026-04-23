@@ -216,17 +216,17 @@ async function decideWebTool(args: {
   const urlMatch = userText.match(/https?:\/\/[^\s<>"']+/);
   if (urlMatch) return { action: "scrape", url: urlMatch[0] };
 
-  const prompt = `Décide si pour répondre correctement à ce message, il faut consulter le web.
+  const prompt = `Decide whether answering this message correctly requires consulting the web.
 
-Réponds UNIQUEMENT en JSON, sans texte autour, selon l'un de ces formats :
-{"action":"none"}                          → la connaissance générale suffit
-{"action":"search","query":"..."}          → il faut chercher des infos récentes / factuelles / actualité / prix / résultats / personnes / événements
-{"action":"scrape","url":"https://..."}    → l'utilisateur cite explicitement un site/URL à lire
+Reply ONLY in JSON, no surrounding text, in one of these formats:
+{"action":"none"}                          → general knowledge is enough
+{"action":"search","query":"..."}          → fresh / factual / news / prices / results / people / events info is needed
+{"action":"scrape","url":"https://..."}    → the user explicitly cites a website/URL to read
 
-Règles :
-- "none" pour : conversation, code, raisonnement, créativité, reformulation, traduction, math, opinion.
-- "search" UNIQUEMENT si la réponse dépend d'informations factuelles à jour ou vérifiables en ligne.
-- Garde la query courte (≤ 12 mots), en gardant la langue de l'utilisateur.
+Rules:
+- "none" for: chat, code, reasoning, creativity, rewriting, translation, math, opinion.
+- "search" ONLY if the answer depends on up-to-date or web-verifiable factual info.
+- Keep the query short (≤ 12 words), in the user's own language.
 
 Message:
 ${userText.slice(0, 1500)}`;
