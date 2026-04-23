@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Brain } from "lucide-react";
-import { cn } from "@/lib/utils";
+// cn no longer needed here
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
