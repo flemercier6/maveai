@@ -208,6 +208,7 @@ export function UsageTab() {
                 <th className="text-right font-medium px-3 py-2">Input</th>
                 <th className="text-right font-medium px-3 py-2">Output</th>
                 <th className="text-right font-medium px-3 py-2">Cost</th>
+                <th className="text-right font-medium px-3 py-2">×3</th>
               </tr>
             </thead>
             <tbody>
