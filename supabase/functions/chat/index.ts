@@ -34,6 +34,38 @@ function mergeTextAttachments(content: string, atts: Attachment[] | undefined): 
   return content + textParts.join("");
 }
 
+// ---------- Pricing (USD per 1M tokens) ----------
+// Keep in sync with src/lib/models.ts. Values are public list prices.
+type Price = { input: number; output: number };
+const MODEL_PRICES: Record<string, Price> = {
+  // OpenAI
+  "gpt-5.4": { input: 2.5, output: 10 },
+  "gpt-4o": { input: 2.5, output: 10 },
+  "gpt-4o-mini": { input: 0.15, output: 0.6 },
+  // Anthropic
+  "claude-opus-4-7": { input: 15, output: 75 },
+  "claude-sonnet-4-6": { input: 3, output: 15 },
+  "claude-3-5-haiku-latest": { input: 0.8, output: 4 },
+  // Google
+  "gemini-2.5-pro": { input: 1.25, output: 10 },
+  "gemini-2.5-flash": { input: 0.3, output: 2.5 },
+  "gemini-2.5-flash-lite": { input: 0.1, output: 0.4 },
+};
+function priceFor(model: string): Price {
+  if (MODEL_PRICES[model]) return MODEL_PRICES[model];
+  // Fuzzy fallbacks for variants/aliases
+  const m = model.toLowerCase();
+  if (m.includes("opus")) return MODEL_PRICES["claude-opus-4-7"];
+  if (m.includes("sonnet")) return MODEL_PRICES["claude-sonnet-4-6"];
+  if (m.includes("haiku")) return MODEL_PRICES["claude-3-5-haiku-latest"];
+  if (m.includes("flash-lite")) return MODEL_PRICES["gemini-2.5-flash-lite"];
+  if (m.includes("flash")) return MODEL_PRICES["gemini-2.5-flash"];
+  if (m.includes("gemini")) return MODEL_PRICES["gemini-2.5-pro"];
+  if (m.includes("mini")) return MODEL_PRICES["gpt-4o-mini"];
+  if (m.includes("gpt")) return MODEL_PRICES["gpt-5.4"];
+  return { input: 0, output: 0 };
+}
+
 function sseEncoder() {
   const encoder = new TextEncoder();
   return (obj: unknown) => encoder.encode(`data: ${JSON.stringify(obj)}\n\n`);
@@ -57,7 +89,9 @@ async function* parseSSELines(reader: ReadableStreamDefaultReader<Uint8Array>) {
 }
 
 // ---------- OpenAI ----------
-async function* streamOpenAI(apiKey: string, model: string, messages: Msg[]) {
+type Usage = { input_tokens: number; output_tokens: number };
+
+async function* streamOpenAI(apiKey: string, model: string, messages: Msg[]): AsyncGenerator<string, Usage | undefined> {
   const oaiMessages = messages.map((m) => {
     const text = mergeTextAttachments(m.content, m.attachments);
     const images = (m.attachments ?? []).filter((a) => a.kind === "image") as Extract<Attachment, { kind: "image" }>[];
@@ -78,26 +112,39 @@ async function* streamOpenAI(apiKey: string, model: string, messages: Msg[]) {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model, messages: oaiMessages, stream: true }),
+    body: JSON.stringify({
+      model,
+      messages: oaiMessages,
+      stream: true,
+      stream_options: { include_usage: true },
+    }),
   });
   if (!r.ok || !r.body) {
     const t = await r.text();
     throw new Error(`OpenAI ${r.status}: ${t}`);
   }
+  let usage: Usage | undefined;
   for await (const line of parseSSELines(r.body.getReader())) {
     if (!line.startsWith("data: ")) continue;
     const data = line.slice(6).trim();
-    if (data === "[DONE]") return;
+    if (data === "[DONE]") break;
     try {
       const j = JSON.parse(data);
       const delta = j.choices?.[0]?.delta?.content;
       if (delta) yield delta as string;
+      if (j.usage) {
+        usage = {
+          input_tokens: Number(j.usage.prompt_tokens ?? 0),
+          output_tokens: Number(j.usage.completion_tokens ?? 0),
+        };
+      }
     } catch { /* partial */ }
   }
+  return usage;
 }
 
 // ---------- Anthropic ----------
-async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]) {
+async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]): AsyncGenerator<string, Usage | undefined> {
   const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   const conv = messages.filter((m) => m.role !== "system");
   const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -135,6 +182,8 @@ async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]) 
     const t = await r.text();
     throw new Error(`Anthropic ${r.status}: ${t}`);
   }
+  let inputTok = 0;
+  let outputTok = 0;
   for await (const line of parseSSELines(r.body.getReader())) {
     if (!line.startsWith("data: ")) continue;
     const data = line.slice(6).trim();
@@ -143,12 +192,21 @@ async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]) 
       if (j.type === "content_block_delta" && j.delta?.type === "text_delta") {
         yield j.delta.text as string;
       }
+      if (j.type === "message_start" && j.message?.usage) {
+        inputTok = Number(j.message.usage.input_tokens ?? 0);
+        outputTok = Number(j.message.usage.output_tokens ?? 0);
+      }
+      if (j.type === "message_delta" && j.usage) {
+        if (typeof j.usage.input_tokens === "number") inputTok = j.usage.input_tokens;
+        if (typeof j.usage.output_tokens === "number") outputTok = j.usage.output_tokens;
+      }
     } catch { /* partial */ }
   }
+  return { input_tokens: inputTok, output_tokens: outputTok };
 }
 
 // ---------- Google Gemini (SSE) ----------
-async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
+async function* streamGemini(apiKey: string, model: string, messages: Msg[]): AsyncGenerator<string, Usage | undefined> {
   const sys = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   const contents = messages
     .filter((m) => m.role !== "system")
@@ -179,6 +237,7 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
     const t = await r.text();
     throw new Error(`Gemini ${r.status}: ${t}`);
   }
+  let usage: Usage | undefined;
   for await (const line of parseSSELines(r.body.getReader())) {
     if (!line.startsWith("data: ")) continue;
     const data = line.slice(6).trim();
@@ -193,8 +252,17 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
           yield piece as string;
         }
       }
+      if (j.usageMetadata) {
+        usage = {
+          input_tokens: Number(j.usageMetadata.promptTokenCount ?? 0),
+          output_tokens: Number(
+            j.usageMetadata.candidatesTokenCount ?? j.usageMetadata.totalTokenCount ?? 0,
+          ),
+        };
+      }
     } catch { /* partial */ }
   }
+  return usage;
 }
 
 // ---------- Web tools (Firecrawl) ----------
@@ -757,28 +825,64 @@ Deno.serve(async (req) => {
             messagesForLLM = [webSystem, ...finalMessages];
           }
 
-          let iter: AsyncGenerator<string>;
+          let iter: AsyncGenerator<string, Usage | undefined>;
           if (provider === "openai") iter = streamOpenAI(apiKey, model, messagesForLLM);
           else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, messagesForLLM);
           else iter = streamGemini(apiKey, model, messagesForLLM);
 
-          for await (const chunk of iter) {
+          let usage: Usage | undefined;
+          while (true) {
+            const next = await iter.next();
+            if (next.done) {
+              usage = next.value;
+              break;
+            }
+            const chunk = next.value;
             assistantText += chunk;
             controller.enqueue(enc({ type: "delta", text: chunk }));
           }
 
           // Persist assistant message
-          await supabase.from("messages").insert({
-            conversation_id: conversationId,
-            user_id: user.id,
-            role: "assistant",
-            content: assistantText,
-            model,
-          });
+          const { data: insertedMsg } = await supabase
+            .from("messages")
+            .insert({
+              conversation_id: conversationId,
+              user_id: user.id,
+              role: "assistant",
+              content: assistantText,
+              model,
+            })
+            .select("id")
+            .single();
           await supabase
             .from("conversations")
             .update({ updated_at: new Date().toISOString() })
             .eq("id", conversationId);
+
+          // ---------- Persist usage event with computed cost ----------
+          if (usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) {
+            const price = priceFor(model);
+            const inputCost = (usage.input_tokens / 1_000_000) * price.input;
+            const outputCost = (usage.output_tokens / 1_000_000) * price.output;
+            await supabase.from("usage_events").insert({
+              user_id: user.id,
+              conversation_id: conversationId,
+              message_id: insertedMsg?.id ?? null,
+              provider,
+              model,
+              input_tokens: usage.input_tokens,
+              output_tokens: usage.output_tokens,
+              input_cost_usd: inputCost,
+              output_cost_usd: outputCost,
+              total_cost_usd: inputCost + outputCost,
+            });
+            controller.enqueue(enc({
+              type: "usage",
+              input_tokens: usage.input_tokens,
+              output_tokens: usage.output_tokens,
+              cost_usd: inputCost + outputCost,
+            }));
+          }
 
           // ---------- Auto-generate title if this is the first user message ----------
           const userMessagesCount = messages.filter((m) => m.role === "user").length;

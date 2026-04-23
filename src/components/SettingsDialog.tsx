@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Settings, Sparkles, Globe } from "lucide-react";
+import { UsageTab } from "@/components/UsageTab";
 
 type Section = "preferences" | "integrations" | "usage";
 
@@ -74,14 +75,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
               </p>
             </section>
           )}
-          {active === "usage" && (
-            <section className="space-y-2">
-              <h2 className="text-lg font-semibold">Usage</h2>
-              <p className="text-sm text-muted-foreground">
-                Track your activity and consumption.
-              </p>
-            </section>
-          )}
+          {active === "usage" && <UsageTab />}
         </div>
       </DialogContent>
     </Dialog>

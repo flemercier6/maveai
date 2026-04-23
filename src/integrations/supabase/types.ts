@@ -103,6 +103,51 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_events: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          id: string
+          input_cost_usd: number
+          input_tokens: number
+          message_id: string | null
+          model: string
+          output_cost_usd: number
+          output_tokens: number
+          provider: string
+          total_cost_usd: number
+          user_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          input_cost_usd?: number
+          input_tokens?: number
+          message_id?: string | null
+          model: string
+          output_cost_usd?: number
+          output_tokens?: number
+          provider: string
+          total_cost_usd?: number
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          input_cost_usd?: number
+          input_tokens?: number
+          message_id?: string | null
+          model?: string
+          output_cost_usd?: number
+          output_tokens?: number
+          provider?: string
+          total_cost_usd?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_memories: {
         Row: {
           content: string
