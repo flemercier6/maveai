@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Plus, Trash2, LogOut, Sparkles, Brain } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus, Trash2, LogOut, Sparkles, Brain, MoreHorizontal, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -31,6 +38,9 @@ const STORAGE_KEY = "chat-sidebar-width";
 
 export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
   const [width, setWidth] = useState<number>(() => {
     if (typeof window === "undefined") return DEFAULT_WIDTH;
     const saved = Number(localStorage.getItem(STORAGE_KEY));
@@ -62,11 +72,29 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
     };
   }, [resizing, width]);
 
-  const remove = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const remove = async (id: string) => {
     const { error } = await supabase.from("conversations").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
     onDeleted(id);
+  };
+
+  const startRename = (c: Conversation) => {
+    setRenamingId(c.id);
+    setRenameValue(c.title);
+  };
+
+  const commitRename = async (id: string) => {
+    const title = renameValue.trim();
+    setRenamingId(null);
+    if (!title) return;
+    const { error } = await supabase
+      .from("conversations")
+      .update({ title })
+      .eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    // Optimistic update via parent: mutate local list by reloading
+    const target = conversations.find((c) => c.id === id);
+    if (target) target.title = title;
   };
 
   const signOut = async () => {
@@ -103,30 +131,62 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
               onMouseEnter={() => setHovered(c.id)}
               onMouseLeave={() => setHovered(null)}
               className={cn(
-                "group relative w-full rounded-lg text-sm transition-colors",
+                "group relative w-full rounded-[4px] text-sm transition-colors",
                 activeId === c.id
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "hover:bg-sidebar-accent/60 text-sidebar-foreground"
               )}
             >
-              <button
-                onClick={() => onSelect(c.id)}
-                className="w-full flex items-center text-left min-w-0 py-[4px] px-[4px] text-xs"
-              >
-                <span className="flex-1 truncate pr-6">{c.title}</span>
-              </button>
-              {(hovered === c.id || activeId === c.id) && (
+              {renamingId === c.id ? (
+                <Input
+                  autoFocus
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={() => commitRename(c.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitRename(c.id);
+                    if (e.key === "Escape") setRenamingId(null);
+                  }}
+                  className="h-7 text-xs px-1.5 py-0 rounded-[4px]"
+                />
+              ) : (
                 <button
-                  onClick={(e) => remove(c.id, e)}
-                  aria-label="Delete conversation"
-                  className={cn(
-                    "absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-md",
-                    "opacity-70 hover:opacity-100 hover:text-destructive hover:bg-background/40",
-                    activeId === c.id ? "bg-sidebar-accent" : "bg-sidebar group-hover:bg-sidebar-accent/60"
-                  )}
+                  onClick={() => onSelect(c.id)}
+                  className="w-full flex items-center text-left min-w-0 py-[4px] px-[4px] text-xs"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="flex-1 truncate pr-6">{c.title}</span>
                 </button>
+              )}
+              {renamingId !== c.id && (hovered === c.id || activeId === c.id || menuOpenId === c.id) && (
+                <DropdownMenu
+                  open={menuOpenId === c.id}
+                  onOpenChange={(o) => setMenuOpenId(o ? c.id : null)}
+                >
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="Conversation options"
+                      className={cn(
+                        "absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-[4px]",
+                        "opacity-70 hover:opacity-100 hover:bg-background/40",
+                        activeId === c.id ? "bg-sidebar-accent" : "bg-sidebar group-hover:bg-sidebar-accent/60"
+                      )}
+                    >
+                      <MoreHorizontal className="w-3.5 h-3.5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" side="right" className="w-36">
+                    <DropdownMenuItem onClick={() => startRename(c)}>
+                      <Pencil className="w-3.5 h-3.5 mr-2 opacity-70" /> Rename
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => remove(c.id)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
           ))}
