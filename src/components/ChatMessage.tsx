@@ -6,6 +6,12 @@ import { ProviderBadge } from "./ProviderBadge";
 import type { Provider } from "@/lib/models";
 import { useSmoothText } from "@/hooks/useSmoothText";
 
+const mdComponents = {
+  a: ({ node, ...props }: any) => (
+    <a {...props} target="_blank" rel="noopener noreferrer" />
+  ),
+};
+
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
