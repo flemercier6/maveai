@@ -9,7 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Trash2, LogOut, Sparkles, Brain, MoreHorizontal, Pencil } from "lucide-react";
+import { Plus, Trash2, LogOut, Sparkles, Brain, MoreHorizontal, Pencil, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -121,79 +122,87 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-2 space-y-0.5">
-          {conversations.length === 0 && (
-            <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet.</p>
-          )}
-          {conversations.map((c) => (
-            <div
-              key={c.id}
-              onMouseEnter={() => setHovered(c.id)}
-              onMouseLeave={() => setHovered(null)}
-              className={cn(
-                "group relative w-full rounded-[4px] text-sm transition-colors",
-                activeId === c.id
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "hover:bg-sidebar-accent/60 text-sidebar-foreground"
+        <div className="p-2">
+          <Collapsible defaultOpen>
+            <CollapsibleTrigger className="group flex w-full items-center gap-1 px-[10px] py-[6px] text-[11px] font-medium uppercase tracking-wide text-muted-foreground hover:text-sidebar-foreground">
+              <ChevronDown className="w-3 h-3 transition-transform group-data-[state=closed]:-rotate-90" />
+              <span>Recent</span>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-0.5 pt-1">
+              {conversations.length === 0 && (
+                <p className="text-xs text-muted-foreground px-3 py-2">No conversations yet.</p>
               )}
-            >
-              {renamingId === c.id ? (
-                <Input
-                  autoFocus
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  onBlur={() => commitRename(c.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") commitRename(c.id);
-                    if (e.key === "Escape") setRenamingId(null);
-                  }}
-                  className="h-7 text-xs px-1.5 py-0 rounded-[4px]"
-                />
-              ) : (
-                <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 pr-1">
-                  <button
-                    onClick={() => onSelect(c.id)}
-                    className="min-w-0 overflow-hidden text-left text-xs py-[6px] pl-[10px] pr-[4px]"
-                  >
-                    <span className="block truncate">
-                      {c.title}
-                    </span>
-                  </button>
-                  <DropdownMenu
-                    open={menuOpenId === c.id}
-                    onOpenChange={(o) => setMenuOpenId(o ? c.id : null)}
-                  >
-                    <DropdownMenuTrigger asChild>
+              {conversations.map((c) => (
+                <div
+                  key={c.id}
+                  onMouseEnter={() => setHovered(c.id)}
+                  onMouseLeave={() => setHovered(null)}
+                  className={cn(
+                    "group relative w-full rounded-[4px] text-sm transition-colors",
+                    activeId === c.id
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "hover:bg-sidebar-accent/60 text-sidebar-foreground"
+                  )}
+                >
+                  {renamingId === c.id ? (
+                    <Input
+                      autoFocus
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={() => commitRename(c.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitRename(c.id);
+                        if (e.key === "Escape") setRenamingId(null);
+                      }}
+                      className="h-7 text-xs px-1.5 py-0 rounded-[4px]"
+                    />
+                  ) : (
+                    <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 pr-1">
                       <button
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label="Conversation options"
-                        className={cn(
-                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-[4px] transition-opacity hover:bg-background/40",
-                          activeId === c.id ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/60",
-                          hovered === c.id || menuOpenId === c.id
-                            ? "opacity-70 hover:opacity-100"
-                            : "opacity-0 pointer-events-none"
-                        )}
+                        onClick={() => onSelect(c.id)}
+                        className="min-w-0 overflow-hidden text-left text-xs py-[6px] pl-[10px] pr-[4px]"
                       >
-                        <MoreHorizontal className="w-3.5 h-3.5" />
+                        <span className="block truncate">
+                          {c.title}
+                        </span>
                       </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" side="right" className="w-36">
-                      <DropdownMenuItem onClick={() => startRename(c)}>
-                        <Pencil className="w-3.5 h-3.5 mr-2 opacity-70" /> Rename
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => remove(c.id)}
-                        className="text-destructive focus:text-destructive"
+                      <DropdownMenu
+                        open={menuOpenId === c.id}
+                        onOpenChange={(o) => setMenuOpenId(o ? c.id : null)}
                       >
-                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label="Conversation options"
+                            className={cn(
+                              "flex h-6 w-6 shrink-0 items-center justify-center rounded-[4px] transition-opacity hover:bg-background/40",
+                              activeId === c.id ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/60",
+                              hovered === c.id || menuOpenId === c.id
+                                ? "opacity-70 hover:opacity-100"
+                                : "opacity-0 pointer-events-none"
+                            )}
+                          >
+                            <MoreHorizontal className="w-3.5 h-3.5" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" side="right" className="w-36">
+                          <DropdownMenuItem onClick={() => startRename(c)}>
+                            <Pencil className="w-3.5 h-3.5 mr-2 opacity-70" /> Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => remove(c.id)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </ScrollArea>
 
