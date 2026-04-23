@@ -30,7 +30,7 @@ function mergeTextAttachments(content: string, atts: Attachment[] | undefined): 
   if (!atts?.length) return content;
   const textParts = atts
     .filter((a): a is Extract<Attachment, { kind: "text" }> => a.kind === "text")
-    .map((a) => `\n\n--- Fichier joint: ${a.name} (${a.mime}) ---\n${a.text}\n--- fin ${a.name} ---`);
+    .map((a) => `\n\n--- Attached file: ${a.name} (${a.mime}) ---\n${a.text}\n--- end ${a.name} ---`);
   return content + textParts.join("");
 }
 
