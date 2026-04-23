@@ -138,8 +138,41 @@ async function extractAndSaveMemory(args: {
   const { supabase, userId, userText, assistantText } = args;
   if (!userText.trim()) return;
 
+  // Load existing memories first so the extractor can decide skip/update/add.
+  const { data: existingRows } = await supabase
+    .from("user_memories")
+    .select("id,content,kind")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  const existing = (existingRows ?? []) as { id: string; content: string; kind: string }[];
+
+  const existingBlock = existing.length
+    ? existing.map((m, i) => `${i + 1}. [id=${m.id}] (${m.kind}) ${m.content}`).join("\n")
+    : "(aucune mémoire existante)";
+
   const prompt =
-    `Tu es un extracteur de mémoire. À partir de l'échange ci-dessous, extrais UNIQUEMENT des faits durables et personnels concernant l'utilisateur (préférences, identité, projets, contexte récurrent). Ignore les questions ponctuelles et requêtes éphémères.\n\nRéponds STRICTEMENT en JSON: {"facts": [{"kind": "preference|identity|project|context", "content": "..."}]}\nSi rien à retenir: {"facts": []}.\n\n--- USER ---\n${userText}\n\n--- ASSISTANT ---\n${assistantText.slice(0, 2000)}`;
+    `Tu es un gestionnaire de mémoire utilisateur. Analyse l'échange et décide pour chaque fait durable et personnel (préférences, identité, projets, contexte récurrent) s'il faut :
+- "add"    : ajouter un NOUVEAU souvenir (info absente de la mémoire existante)
+- "update" : REMPLACER un souvenir existant (même sujet mais info différente, plus précise ou contradictoire) — fournis "id" du souvenir à remplacer
+- "skip"   : ne rien faire (déjà présent à l'identique ou non pertinent)
+
+Règles strictes :
+- Compare sémantiquement, pas seulement mot à mot. "Je suis dev" et "L'utilisateur est développeur" = doublon → skip.
+- Si un nouveau fait CONTREDIT ou PRÉCISE un fait existant sur le même sujet → update (avec l'id concerné).
+- Ignore les questions ponctuelles et requêtes éphémères.
+- Réponds STRICTEMENT en JSON, sans texte autour :
+{"actions":[{"op":"add|update|skip","id":"<uuid si update>","kind":"preference|identity|project|context","content":"..."}]}
+Si rien : {"actions":[]}.
+
+--- MÉMOIRE EXISTANTE ---
+${existingBlock}
+
+--- USER ---
+${userText}
+
+--- ASSISTANT ---
+${assistantText.slice(0, 2000)}`;
 
   let raw = "";
   try {
@@ -200,26 +233,46 @@ async function extractAndSaveMemory(args: {
   } catch {
     return;
   }
-  const facts = Array.isArray(parsed?.facts) ? parsed.facts : [];
-  if (!facts.length) return;
+  const actions = Array.isArray(parsed?.actions) ? parsed.actions : [];
+  if (!actions.length) return;
 
-  const { data: existing } = await supabase
-    .from("user_memories")
-    .select("content")
-    .eq("user_id", userId);
-  const existingSet = new Set((existing ?? []).map((e: any) => e.content.toLowerCase().trim()));
+  const existingById = new Map(existing.map((e) => [e.id, e]));
+  const existingContents = new Set(existing.map((e) => e.content.toLowerCase().trim()));
+  const validKinds = ["preference", "identity", "project", "context", "fact"];
+  const norm = (s: string) => s.toLowerCase().trim();
 
-  const rows = facts
-    .filter((f: any) => f?.content && !existingSet.has(String(f.content).toLowerCase().trim()))
-    .slice(0, 10)
-    .map((f: any) => ({
-      user_id: userId,
-      content: String(f.content).slice(0, 500),
-      kind: ["preference", "identity", "project", "context"].includes(f.kind) ? f.kind : "fact",
-    }));
+  const toInsert: { user_id: string; content: string; kind: string }[] = [];
+  const toUpdate: { id: string; content: string; kind: string }[] = [];
 
-  if (rows.length) {
-    await supabase.from("user_memories").insert(rows);
+  for (const a of actions.slice(0, 10)) {
+    if (!a?.content || typeof a.content !== "string") continue;
+    const content = a.content.slice(0, 500).trim();
+    if (!content) continue;
+    const kind = validKinds.includes(a.kind) ? a.kind : "fact";
+
+    if (a.op === "update" && a.id && existingById.has(a.id)) {
+      const prev = existingById.get(a.id)!;
+      if (norm(prev.content) === norm(content)) continue; // no-op
+      toUpdate.push({ id: a.id, content, kind });
+      existingContents.delete(norm(prev.content));
+      existingContents.add(norm(content));
+    } else if (a.op === "add") {
+      if (existingContents.has(norm(content))) continue; // dedup
+      toInsert.push({ user_id: userId, content, kind });
+      existingContents.add(norm(content));
+    }
+    // "skip" → nothing
+  }
+
+  if (toInsert.length) {
+    await supabase.from("user_memories").insert(toInsert);
+  }
+  for (const u of toUpdate) {
+    await supabase
+      .from("user_memories")
+      .update({ content: u.content, kind: u.kind, updated_at: new Date().toISOString() })
+      .eq("id", u.id)
+      .eq("user_id", userId);
   }
 }
 
