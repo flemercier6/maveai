@@ -168,8 +168,11 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
                         onClick={(e) => e.stopPropagation()}
                         aria-label="Conversation options"
                         className={cn(
-                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-[4px] opacity-70 transition-opacity hover:opacity-100 hover:bg-background/40",
-                          activeId === c.id ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/60"
+                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-[4px] transition-opacity hover:bg-background/40",
+                          activeId === c.id ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/60",
+                          hovered === c.id || menuOpenId === c.id
+                            ? "opacity-70 hover:opacity-100"
+                            : "opacity-0 pointer-events-none"
                         )}
                       >
                         <MoreHorizontal className="w-3.5 h-3.5" />
