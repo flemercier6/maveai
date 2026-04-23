@@ -79,10 +79,10 @@ export function ChatIndex({ items, scrollContainer }: Props) {
     >
       <div
         className={cn(
-          "flex flex-col bg-foreground select-none transition-[padding,border-radius,min-width,max-width] duration-300 ease-out gap-1",
+          "flex flex-col bg-foreground select-none transition-[padding,border-radius,min-width,max-width] duration-300 ease-out gap-0",
           hovered
             ? "rounded-2xl shadow-md py-3 pl-3 pr-3 min-w-[220px] max-w-[300px] items-stretch"
-            : "rounded-xl py-3 px-3 items-start",
+            : "rounded-xl py-2 px-3 items-start",
         )}
       >
         {items.map((it) => {
@@ -94,13 +94,13 @@ export function ChatIndex({ items, scrollContainer }: Props) {
               onClick={() => scrollTo(it.id)}
               aria-label={`Jump to: ${it.preview}`}
               className={cn(
-                "group flex items-center gap-2 outline-none rounded-md transition-colors h-5",
+                "group flex items-center gap-2 outline-none rounded-md transition-[height,padding,background-color] duration-300 ease-out",
                 hovered
                   ? cn(
-                      "self-stretch justify-start px-2",
+                      "self-stretch justify-start px-2 h-7",
                       isActive ? "bg-white/15" : "hover:bg-white/10",
                     )
-                  : "",
+                  : "h-[10px]",
               )}
             >
               <span
