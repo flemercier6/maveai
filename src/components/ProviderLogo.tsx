@@ -5,19 +5,19 @@ import openaiLogo from "@/assets/openai-logo.png";
 
 function OpenAILogo({ className }: { className?: string }) {
   return (
-    <img src={openaiLogo} alt="OpenAI" className={`${className ?? ""} object-contain rounded-sm dark:invert`} />
+    <img src={openaiLogo} alt="OpenAI" className={`${className ?? ""} object-contain rounded-[3px] dark:invert`} />
   );
 }
 
 function AnthropicLogo({ className }: { className?: string }) {
   return (
-    <img src={claudeLogo} alt="Claude" className={`${className ?? ""} object-contain rounded-sm`} />
+    <img src={claudeLogo} alt="Claude" className={`${className ?? ""} object-contain rounded-[3px]`} />
   );
 }
 
 function GoogleLogo({ className }: { className?: string }) {
   return (
-    <img src={geminiLogo} alt="Gemini" className={`${className ?? ""} object-contain rounded-sm`} />
+    <img src={geminiLogo} alt="Gemini" className={`${className ?? ""} object-contain rounded-[3px]`} />
   );
 }
 

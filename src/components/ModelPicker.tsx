@@ -23,7 +23,7 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
         <SelectTrigger className="w-[160px] h-9 bg-card">
           <SelectValue>
             <span className="inline-flex items-center gap-2">
-              <ProviderLogo provider={provider} className="w-3.5 h-3.5" />
+              <ProviderLogo provider={provider} className="w-5 h-5" />
               {PROVIDER_LABEL[provider]}
             </span>
           </SelectValue>
@@ -32,7 +32,7 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
           {PROVIDERS.map((p) => (
             <SelectItem key={p.id} value={p.id}>
               <span className="inline-flex items-center gap-2">
-                <ProviderLogo provider={p.id} className="w-3.5 h-3.5" />
+                <ProviderLogo provider={p.id} className="w-5 h-5" />
                 {PROVIDER_LABEL[p.id]}
               </span>
             </SelectItem>
