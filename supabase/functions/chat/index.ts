@@ -64,6 +64,7 @@ function priceFor(model: string): Price {
   if (m.includes("mini")) return MODEL_PRICES["gpt-4o-mini"];
   if (m.includes("gpt")) return MODEL_PRICES["gpt-5.4"];
   return { input: 0, output: 0 };
+}
 
 function sseEncoder() {
   const encoder = new TextEncoder();
