@@ -26,8 +26,10 @@ export function ChatMessage({ role, content, streaming }: Props) {
           <div className="text-xs font-medium text-muted-foreground mb-1">
             {isUser ? "Toi" : "Assistant"}
           </div>
-          <div className={cn("chat-prose whitespace-pre-wrap break-words", streaming && "typing-cursor")}>
-            {content || (streaming ? "" : " ")}
+          <div className={cn("chat-prose break-words", streaming && "typing-cursor")}>
+            {content ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+            ) : streaming ? "" : " "}
           </div>
         </div>
       </div>
