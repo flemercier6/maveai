@@ -286,6 +286,7 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.tool?.label === next.tool?.label &&
   prev.tool?.status === next.tool?.status &&
   prev.phase === next.phase &&
+  prev.sources === next.sources &&
   prev.onRetry === next.onRetry &&
   prev.onDelete === next.onDelete,
 );
