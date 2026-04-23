@@ -24,6 +24,7 @@ type Props = {
   sources?: Source[];
   onRetry?: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
