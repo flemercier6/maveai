@@ -44,6 +44,10 @@ export default function Chat() {
       .then(({ data }) => {
         setConversations((data ?? []) as Conversation[]);
       });
+    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        setDisplayName((data?.display_name as string | null) ?? null);
+      });
   }, [user]);
 
   // Load messages when active changes
