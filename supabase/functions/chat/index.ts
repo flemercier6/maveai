@@ -672,6 +672,7 @@ Deno.serve(async (req) => {
         try {
           // Run web tool detection + fetch (notify client of progress)
           if (firecrawlKey && lastUserText) {
+            controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
             const decision = await decideWebTool({
               googleKey: Deno.env.get("GOOGLE_API_KEY"),
               openaiKey: Deno.env.get("OPENAI_API_KEY"),
@@ -679,14 +680,25 @@ Deno.serve(async (req) => {
               userText: lastUserText,
             });
             if (decision.action === "scrape") {
-              controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url }));
+              controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "running" }));
               const md = await firecrawlScrape(firecrawlKey, decision.url);
-              if (md) webContext = { kind: "scrape", label: decision.url, content: md };
+              if (md) {
+                webContext = { kind: "scrape", label: decision.url, content: md };
+                controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "done" }));
+              } else {
+                controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "failed" }));
+              }
             } else if (decision.action === "search") {
-              controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query }));
+              controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "running" }));
               const md = await firecrawlSearch(firecrawlKey, decision.query);
-              if (md) webContext = { kind: "search", label: decision.query, content: md };
+              if (md) {
+                webContext = { kind: "search", label: decision.query, content: md };
+                controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "done" }));
+              } else {
+                controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "failed" }));
+              }
             }
+            controller.enqueue(enc({ type: "phase", phase: "generating" }));
           }
 
           let messagesForLLM = finalMessages;
