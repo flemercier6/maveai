@@ -615,12 +615,27 @@ export default function Chat() {
               <Textarea
                 ref={textareaRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  // Defer so selectionStart reflects post-update value
+                  requestAnimationFrame(updateSlashFromTextarea);
+                }}
                 onKeyDown={onKey}
+                onKeyUp={updateSlashFromTextarea}
+                onClick={updateSlashFromTextarea}
+                onBlur={() => setTimeout(() => setSlash(null), 100)}
                 placeholder="Send a message..."
                 rows={1}
                 className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
               />
+              {slash && (
+                <SlashCommandMenu
+                  query={slash.query}
+                  position={slash.pos}
+                  onSelect={applySlashSelection}
+                  onClose={() => setSlash(null)}
+                />
+              )}
               <div className="flex items-center justify-between gap-[15px] px-2 pb-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
