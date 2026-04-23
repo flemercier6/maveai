@@ -1,4 +1,4 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MODELS, PROVIDERS, type Provider, providerForModel } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
@@ -32,32 +32,27 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="w-[260px]">
-          {PROVIDERS.map((p) => (
-            <SelectGroup key={p.id}>
-              <SelectLabel className="pl-2 text-xs text-muted-foreground font-medium">
-                <span className="flex items-center gap-2">
-                  <ProviderLogo provider={p.id} className="w-4 h-4 shrink-0" />
-                  {p.label}
-                </span>
-              </SelectLabel>
-              {MODELS[p.id].map((m) => (
-                <Tooltip key={m.id}>
-                  <TooltipTrigger asChild>
-                    <SelectItem value={m.id} className="pl-8">
-                      {m.label}
-                    </SelectItem>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    sideOffset={12}
-                    className="bg-black text-white border-black text-xs px-2 py-1"
-                  >
-                    {m.description}
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-            </SelectGroup>
-          ))}
+          {PROVIDERS.map((p) =>
+            MODELS[p.id].map((m) => (
+              <Tooltip key={m.id}>
+                <TooltipTrigger asChild>
+                  <SelectItem value={m.id}>
+                    <span className="flex items-center gap-2 leading-none">
+                      <ProviderLogo provider={p.id} className="w-5 h-5 shrink-0" />
+                      <span className="leading-none">{m.label}</span>
+                    </span>
+                  </SelectItem>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  sideOffset={12}
+                  className="bg-black text-white border-black text-xs px-2 py-1"
+                >
+                  {m.description}
+                </TooltipContent>
+              </Tooltip>
+            )),
+          )}
         </SelectContent>
       </Select>
     </TooltipProvider>
