@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { DEFAULT_MODEL, type Provider } from "@/lib/models";
+import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, type Provider } from "@/lib/models";
 
 type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider };
 
@@ -90,11 +90,16 @@ export default function Chat() {
     setSending(true);
     setInput("");
 
+    // Resolve Auto → concrete provider/model for this turn
+    const resolved = model === AUTO_MODEL_ID ? routeAuto(text) : { provider, model };
+    const sendProvider = resolved.provider;
+    const sendModel = resolved.model;
+
     const convId = await ensureConversation(text);
     if (!convId) { setSending(false); return; }
 
     // Update conversation provider/model in case it changed
-    await supabase.from("conversations").update({ provider, model }).eq("id", convId);
+    await supabase.from("conversations").update({ provider: sendProvider, model: sendModel }).eq("id", convId);
 
     // Persist user message
     const { data: userMsg } = await supabase.from("messages").insert({
@@ -102,7 +107,7 @@ export default function Chat() {
     }).select().single();
 
     const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: text }];
-    setMessages([...baseMsgs, { role: "assistant", content: "", provider }]);
+    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider }]);
     setStreaming(true);
 
     try {
@@ -115,8 +120,8 @@ export default function Chat() {
         },
         body: JSON.stringify({
           conversationId: convId,
-          provider,
-          model,
+          provider: sendProvider,
+          model: sendModel,
           messages: baseMsgs.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
@@ -146,7 +151,7 @@ export default function Chat() {
               acc += j.text;
               setMessages((prev) => {
                 const next = [...prev];
-                next[next.length - 1] = { role: "assistant", content: acc, provider };
+                next[next.length - 1] = { role: "assistant", content: acc, provider: sendProvider };
                 return next;
               });
             } else if (j.type === "title" && j.title) {
@@ -167,7 +172,7 @@ export default function Chat() {
       setConversations((prev) => {
         const found = prev.find((c) => c.id === convId);
         if (!found) return prev;
-        const updated = { ...found, updated_at: new Date().toISOString(), provider, model };
+        const updated = { ...found, updated_at: new Date().toISOString(), provider: sendProvider, model: sendModel };
         return [updated, ...prev.filter((c) => c.id !== convId)];
       });
     } catch (e) {
@@ -261,7 +266,9 @@ export default function Chat() {
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground text-center mt-2">
-              Responses come directly from {provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : "Google"} using your key.
+              {model === AUTO_MODEL_ID
+                ? "Auto picks the best model for each message."
+                : `Responses come directly from ${provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : "Google"} using your key.`}
             </p>
           </div>
         </div>

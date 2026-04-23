@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MODELS, PROVIDERS, type Provider, providerForModel } from "@/lib/models";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from "@/components/ui/select";
+import { MODELS, PROVIDERS, type Provider, providerForModel, AUTO_MODEL_ID } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
+import { Sparkles } from "lucide-react";
 
 type Props = {
   provider: Provider;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function ModelPicker({ provider, model, onChange, disabled }: Props) {
+  const isAuto = model === AUTO_MODEL_ID;
   const currentModel = MODELS[provider].find((m) => m.id === model);
   const [tip, setTip] = useState<{ text: string; top: number; left: number } | null>(null);
 
@@ -26,6 +28,11 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
       <Select
         value={model}
         onValueChange={(v) => {
+          if (v === AUTO_MODEL_ID) {
+            // Keep provider as-is; routing happens at send time
+            onChange(provider, AUTO_MODEL_ID);
+            return;
+          }
           const p = providerForModel(v);
           onChange(p, v);
         }}
@@ -35,12 +42,29 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
         <SelectTrigger className="w-[220px] h-9 bg-card">
           <SelectValue>
             <span className="flex items-center gap-2 leading-none">
-              <ProviderLogo provider={provider} className="w-5 h-5 shrink-0" />
-              <span className="leading-none">{currentModel?.label ?? model}</span>
+              {isAuto ? (
+                <Sparkles className="w-4 h-4 shrink-0" />
+              ) : (
+                <ProviderLogo provider={provider} className="w-5 h-5 shrink-0" />
+              )}
+              <span className="leading-none">{isAuto ? "Auto" : (currentModel?.label ?? model)}</span>
             </span>
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="w-[260px]">
+          <SelectItem
+            value={AUTO_MODEL_ID}
+            onMouseEnter={(e) => showTip(e, "Picks the best model for your message")}
+            onMouseLeave={hideTip}
+            onFocus={(e) => showTip(e, "Picks the best model for your message")}
+            onBlur={hideTip}
+          >
+            <span className="flex items-center gap-2 leading-none">
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span className="leading-none">Auto</span>
+            </span>
+          </SelectItem>
+          <SelectSeparator />
           {PROVIDERS.map((p) =>
             MODELS[p.id].map((m) => (
               <SelectItem
