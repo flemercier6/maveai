@@ -88,7 +88,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
           <span className="font-semibold text-sidebar-foreground">Polychat</span>
         </div>
         <Button onClick={onNew} className="w-full mt-2 justify-start gap-2" variant="default">
-          <Plus className="w-4 h-4" /> Nouvelle conversation
+          <Plus className="w-4 h-4" /> New conversation
         </Button>
       </div>
 
