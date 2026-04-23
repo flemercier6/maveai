@@ -22,7 +22,9 @@ export const MODELS: Record<Provider, { id: string; label: string }[]> = {
     { id: "claude-3-5-haiku-latest", label: "Claude 3.5 Haiku" },
   ],
   google: [
-    { id: "gemini-2.0-flash-exp", label: "Gemini 2.0 Flash (latest)" },
+    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro (latest)" },
+    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" },
     { id: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
     { id: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
   ],
@@ -31,7 +33,7 @@ export const MODELS: Record<Provider, { id: string; label: string }[]> = {
 export const DEFAULT_MODEL: Record<Provider, string> = {
   openai: "gpt-5.4",
   anthropic: "claude-opus-4-7",
-  google: "gemini-2.0-flash-exp",
+  google: "gemini-2.5-pro",
 };
 
 export const PROVIDER_LABEL: Record<Provider, string> = {
