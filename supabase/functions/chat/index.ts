@@ -125,6 +125,76 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
   }
 }
 
+// ---------- Title generation (short summary from first user message) ----------
+async function generateTitle(args: {
+  openaiKey?: string;
+  googleKey?: string;
+  anthropicKey?: string;
+  userText: string;
+}): Promise<string | null> {
+  const { userText } = args;
+  if (!userText.trim()) return null;
+
+  const prompt = `Génère un titre TRÈS court (3 à 6 mots maximum) résumant le sujet de ce message. Pas de guillemets, pas de ponctuation finale, pas d'emoji. Réponds uniquement par le titre.
+
+Message :
+${userText.slice(0, 1000)}`;
+
+  try {
+    if (args.googleKey) {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${args.googleKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+          }),
+        },
+      );
+      const j = await r.json();
+      const t = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
+      return cleanTitle(t);
+    } else if (args.openaiKey) {
+      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${args.openaiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gpt-5-nano",
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      const j = await r.json();
+      return cleanTitle(j.choices?.[0]?.message?.content ?? "");
+    } else if (args.anthropicKey) {
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": args.anthropicKey,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-3-5-haiku-latest",
+          max_tokens: 32,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      const j = await r.json();
+      return cleanTitle(j.content?.[0]?.text ?? "");
+    }
+  } catch (e) {
+    console.error("title gen failed", e);
+  }
+  return null;
+}
+
+function cleanTitle(s: string): string | null {
+  const t = s.replace(/^["'`]+|["'`]+$/g, "").replace(/[.!?]+$/g, "").trim();
+  if (!t) return null;
+  return t.slice(0, 60);
+}
+
 // ---------- Memory extraction (uses cheapest available provider) ----------
 async function extractAndSaveMemory(args: {
   supabase: any;
