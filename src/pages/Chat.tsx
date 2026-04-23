@@ -120,8 +120,8 @@ export default function Chat() {
         },
         body: JSON.stringify({
           conversationId: convId,
-          provider,
-          model,
+          provider: sendProvider,
+          model: sendModel,
           messages: baseMsgs.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
