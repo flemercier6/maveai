@@ -1,5 +1,6 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MODELS, PROVIDERS, PROVIDER_LABEL, type Provider } from "@/lib/models";
+import { ProviderLogo } from "./ProviderLogo";
 
 type Props = {
   provider: Provider;
@@ -19,12 +20,22 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
         }}
         disabled={disabled}
       >
-        <SelectTrigger className="w-[140px] h-9 bg-card">
-          <SelectValue />
+        <SelectTrigger className="w-[160px] h-9 bg-card">
+          <SelectValue>
+            <span className="inline-flex items-center gap-2">
+              <ProviderLogo provider={provider} className="w-3.5 h-3.5" />
+              {PROVIDER_LABEL[provider]}
+            </span>
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {PROVIDERS.map((p) => (
-            <SelectItem key={p.id} value={p.id}>{PROVIDER_LABEL[p.id]}</SelectItem>
+            <SelectItem key={p.id} value={p.id}>
+              <span className="inline-flex items-center gap-2">
+                <ProviderLogo provider={p.id} className="w-3.5 h-3.5" />
+                {PROVIDER_LABEL[p.id]}
+              </span>
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
