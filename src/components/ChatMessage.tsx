@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -12,7 +13,7 @@ type Props = {
   model?: string;
 };
 
-export function ChatMessage({ role, content, streaming, provider, model }: Props) {
+function ChatMessageImpl({ role, content, streaming, provider, model }: Props) {
   const isUser = role === "user";
 
   if (isUser) {
@@ -44,3 +45,12 @@ export function ChatMessage({ role, content, streaming, provider, model }: Props
     </div>
   );
 }
+
+// Memoize so historical messages don't re-render on every streaming tick.
+export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
+  prev.role === next.role &&
+  prev.content === next.content &&
+  prev.streaming === next.streaming &&
+  prev.provider === next.provider &&
+  prev.model === next.model,
+);
