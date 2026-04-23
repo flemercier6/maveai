@@ -2,9 +2,9 @@
 export type Provider = "openai" | "anthropic" | "google";
 
 export const PROVIDERS: { id: Provider; label: string }[] = [
-  { id: "openai", label: "OpenAI" },
-  { id: "anthropic", label: "Anthropic" },
-  { id: "google", label: "Google" },
+  { id: "openai", label: "ChatGPT" },
+  { id: "anthropic", label: "Claude" },
+  { id: "google", label: "Gemini" },
 ];
 
 export const MODELS: Record<Provider, { id: string; label: string }[]> = {
@@ -37,7 +37,7 @@ export const DEFAULT_MODEL: Record<Provider, string> = {
 };
 
 export const PROVIDER_LABEL: Record<Provider, string> = {
-  openai: "OpenAI",
-  anthropic: "Anthropic",
-  google: "Google Gemini",
+  openai: "ChatGPT",
+  anthropic: "Claude",
+  google: "Gemini",
 };
