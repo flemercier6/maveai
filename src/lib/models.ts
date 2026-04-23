@@ -33,7 +33,7 @@ export const MODELS: Record<Provider, { id: string; label: string }[]> = {
 export const DEFAULT_MODEL: Record<Provider, string> = {
   openai: "gpt-5.4",
   anthropic: "claude-opus-4-7",
-  google: "gemini-2.5-pro",
+  google: "gemini-2.5-flash",
 };
 
 export const PROVIDER_LABEL: Record<Provider, string> = {
