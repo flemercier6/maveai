@@ -245,6 +245,13 @@ export default function Chat() {
             if (j.type === "delta") {
               acc += j.text;
               scheduleFlush();
+            } else if (j.type === "tool") {
+              const tool: ToolUse = { tool: j.tool, label: String(j.label ?? "") };
+              setMessages((prev) => {
+                const next = prev.slice();
+                next[next.length - 1] = { ...next[next.length - 1], tool };
+                return next;
+              });
             } else if (j.type === "title" && j.title) {
               setConversations((prev) =>
                 prev.map((c) => (c.id === convId ? { ...c, title: j.title } : c)),
