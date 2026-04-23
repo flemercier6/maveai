@@ -93,7 +93,7 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
         createPortal(
           <div
             style={{ position: "fixed", top: tip.top, left: tip.left, transform: "translateY(-50%)" }}
-            className="pointer-events-none z-[100] whitespace-nowrap rounded-[4px] bg-black px-2 py-1 text-xs text-white shadow-md"
+            className="pointer-events-none z-[100] whitespace-nowrap rounded-[4px] bg-tooltip px-2 py-1 text-xs text-tooltip-foreground shadow-md"
           >
             {tip.text}
           </div>,

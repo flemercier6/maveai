@@ -52,6 +52,9 @@
     --bubble-assistant: 0 0% 100%;
     --bubble-assistant-fg: 222 14% 12%;
 
+    --tooltip: 0 0% 0%;
+    --tooltip-foreground: 0 0% 100%;
+
     --radius: 0.875rem;
 
     --shadow-sm: 0 1px 2px 0 hsl(220 13% 10% / 0.05);
