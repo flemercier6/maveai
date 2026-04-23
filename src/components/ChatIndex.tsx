@@ -73,7 +73,7 @@ export function ChatIndex({ items, scrollContainer }: Props) {
   return (
     <div
       ref={wrapRef}
-      className="fixed top-4 right-4 z-30"
+      className="fixed bottom-4 left-4 z-30"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -97,23 +97,12 @@ export function ChatIndex({ items, scrollContainer }: Props) {
                 "group flex items-center gap-2 outline-none rounded-md transition-colors",
                 hovered
                   ? cn(
-                      "self-stretch justify-end px-2 py-1",
+                      "self-stretch justify-start px-2 py-1",
                       isActive ? "bg-white/15" : "hover:bg-white/10",
                     )
                   : "",
               )}
             >
-              <span
-                className={cn(
-                  "truncate text-sm font-medium whitespace-nowrap text-right transition-[opacity,max-width] duration-300 ease-out",
-                  hovered
-                    ? "opacity-100 max-w-[240px]"
-                    : "opacity-0 max-w-0",
-                  isActive ? "text-background" : "text-background/60 group-hover:text-background",
-                )}
-              >
-                {it.preview}
-              </span>
               <span
                 className={cn(
                   "block rounded-full shrink-0 transition-all duration-200",
@@ -122,6 +111,17 @@ export function ChatIndex({ items, scrollContainer }: Props) {
                     : "bg-background/40 group-hover:bg-background/70 w-1.5 h-1.5",
                 )}
               />
+              <span
+                className={cn(
+                  "truncate text-sm font-medium whitespace-nowrap text-left transition-[opacity,max-width] duration-300 ease-out",
+                  hovered
+                    ? "opacity-100 max-w-[240px]"
+                    : "opacity-0 max-w-0",
+                  isActive ? "text-background" : "text-background/60 group-hover:text-background",
+                )}
+              >
+                {it.preview}
+              </span>
             </button>
           );
         })}
