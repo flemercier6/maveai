@@ -27,7 +27,7 @@ export default function Chat() {
   const [model, setModel] = useState<string>(DEFAULT_MODEL.openai);
   const [sending, setSending] = useState(false);
   const [streaming, setStreaming] = useState(false);
-  const [keysOpen, setKeysOpen] = useState(false);
+  
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -251,8 +251,6 @@ export default function Chat() {
           </div>
         </div>
       </main>
-
-      <ApiKeysDialog open={keysOpen} onOpenChange={setKeysOpen} userId={user.id} />
     </div>
   );
 }
