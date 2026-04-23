@@ -111,7 +111,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
             >
               <button
                 onClick={() => onSelect(c.id)}
-                className="w-full flex items-center px-3 py-2 text-left min-w-0"
+                className="w-full flex items-center text-left min-w-0 py-[4px] px-[4px] text-xs"
               >
                 <span className="flex-1 truncate pr-6">{c.title}</span>
               </button>
