@@ -99,7 +99,7 @@ export function ChatIndex({ items, scrollContainer }: Props) {
           hovered ? "max-h-[70vh] opacity-100" : "max-h-0 opacity-0",
         )}
       >
-        <div className="flex flex-col items-stretch bg-[hsl(0_0%_97%)] rounded-2xl shadow-md py-3 px-3 gap-1 min-w-[200px] max-w-[280px]">
+        <div className="flex flex-col items-stretch bg-foreground text-background rounded-2xl shadow-md py-3 px-3 gap-1 min-w-[200px] max-w-[280px]">
           {items.map((it) => {
             const isActive = it.id === activeId;
             return (
@@ -110,8 +110,8 @@ export function ChatIndex({ items, scrollContainer }: Props) {
                 className={cn(
                   "text-left text-sm font-medium truncate rounded-md px-2 py-1 transition-colors",
                   isActive
-                    ? "text-foreground bg-dropdown-hover"
-                    : "text-muted-foreground hover:bg-dropdown-hover hover:text-foreground",
+                    ? "text-background bg-white/15"
+                    : "text-background/60 hover:bg-white/10 hover:text-background",
                 )}
                 aria-label={`Jump to: ${it.preview}`}
               >
