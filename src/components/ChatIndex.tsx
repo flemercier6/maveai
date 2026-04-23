@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import paragraphIcon from "@/assets/paragraph.svg";
 
 type Item = { id: string; preview: string };
 
@@ -9,16 +11,14 @@ type Props = {
 };
 
 /**
- * Floating vertical index of user prompts in the active chat.
- * - Collapsed: just a stack of horizontal ticks (25px wide).
- * - Hover: expands to reveal each prompt's start text on the left.
- * - Active prompt (the one currently in view) tick is black + wider; others are grey.
- * - Click on a row scrolls to that prompt.
+ * Floating index of user prompts in the active chat.
+ * Collapsed: black horizontal pill with [icon] "Index" [chevrons].
+ * Expanded (on hover): reveals the list of prompts; click to scroll to that prompt.
  */
 export function ChatIndex({ items, scrollContainer }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [hovered, setHovered] = useState(false);
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
 
   // Track which prompt anchor is currently the closest to the top of the viewport.
   useEffect(() => {
@@ -38,14 +38,12 @@ export function ChatIndex({ items, scrollContainer }: Props) {
       let bestDist = Infinity;
       for (const el of els) {
         const r = el.getBoundingClientRect();
-        // Distance from the top of the scroll container (with a small offset).
         const dist = Math.abs(r.top - (containerRect.top + 80));
         if (r.bottom > containerRect.top && dist < bestDist) {
           bestDist = dist;
           bestId = el.id.replace("chat-anchor-", "");
         }
       }
-      // Fallback: last one above the viewport
       if (!bestId) bestId = items[items.length - 1].id;
       setActiveId(bestId);
     };
@@ -74,48 +72,54 @@ export function ChatIndex({ items, scrollContainer }: Props) {
 
   return (
     <div
-      className="fixed top-4 right-4 z-30"
+      ref={wrapRef}
+      className="fixed top-4 right-4 z-30 flex flex-col items-end gap-2"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {/* Pill */}
+      <div className="flex items-center bg-foreground text-background rounded-full h-9 pl-3 pr-2.5 cursor-default select-none">
+        <img src={paragraphIcon} alt="" className="w-[13px] h-[9px]" />
+        <span
+          className="text-sm font-medium leading-none"
+          style={{ marginLeft: 10 }}
+        >
+          Index
+        </span>
+        <ChevronsUpDown
+          className="w-3.5 h-3.5 opacity-80"
+          style={{ marginLeft: 10 }}
+        />
+      </div>
+
+      {/* Expanded prompt list */}
       <div
         className={cn(
-          "flex flex-col items-center justify-center bg-[hsl(0_0%_97%)] transition-[padding,gap,border-radius,box-shadow] duration-300 ease-out",
-          hovered
-            ? "rounded-2xl shadow-md gap-px px-[5px] py-[20px]"
-            : "rounded-full py-2 px-1.5 gap-1.5",
+          "overflow-hidden transition-[max-height,opacity] duration-300 ease-out",
+          hovered ? "max-h-[70vh] opacity-100" : "max-h-0 opacity-0",
         )}
       >
-        {items.map((it) => {
-          const isActive = it.id === activeId;
-          return (
-            <button
-              key={it.id}
-              type="button"
-              onClick={() => scrollTo(it.id)}
-              className="group flex items-center gap-2 outline-none self-stretch justify-end"
-              aria-label={`Jump to: ${it.preview}`}
-            >
-              <span
+        <div className="flex flex-col items-stretch bg-[hsl(0_0%_97%)] rounded-2xl shadow-md py-3 px-3 gap-1 min-w-[200px] max-w-[280px]">
+          {items.map((it) => {
+            const isActive = it.id === activeId;
+            return (
+              <button
+                key={it.id}
+                type="button"
+                onClick={() => scrollTo(it.id)}
                 className={cn(
-                  "max-w-[200px] truncate text-sm font-medium whitespace-nowrap transition-[opacity,max-width] duration-300 ease-out",
-                  hovered ? "opacity-100 max-w-[200px]" : "opacity-0 max-w-0",
-                  isActive ? "text-foreground" : "text-muted-foreground",
+                  "text-left text-sm font-medium truncate rounded-md px-2 py-1 transition-colors",
+                  isActive
+                    ? "text-foreground bg-dropdown-hover"
+                    : "text-muted-foreground hover:bg-dropdown-hover hover:text-foreground",
                 )}
+                aria-label={`Jump to: ${it.preview}`}
               >
                 {it.preview}
-              </span>
-              <span
-                className={cn(
-                  "block h-[3px] rounded-full transition-all duration-300 ease-out shrink-0",
-                  isActive
-                    ? "bg-foreground w-[24px]"
-                    : "bg-muted-foreground/40 w-[18px] group-hover:bg-muted-foreground/70",
-                )}
-              />
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
