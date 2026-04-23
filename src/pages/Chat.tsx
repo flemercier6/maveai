@@ -172,7 +172,7 @@ export default function Chat() {
       setConversations((prev) => {
         const found = prev.find((c) => c.id === convId);
         if (!found) return prev;
-        const updated = { ...found, updated_at: new Date().toISOString(), provider, model };
+        const updated = { ...found, updated_at: new Date().toISOString(), provider: sendProvider, model: sendModel };
         return [updated, ...prev.filter((c) => c.id !== convId)];
       });
     } catch (e) {
