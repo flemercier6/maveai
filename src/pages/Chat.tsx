@@ -19,7 +19,8 @@ import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 import { loadAttachment, type Attachment } from "@/lib/attachments";
 
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number } };
+type ToolUse = { tool: "scrape" | "search"; label: string };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -244,6 +245,13 @@ export default function Chat() {
             if (j.type === "delta") {
               acc += j.text;
               scheduleFlush();
+            } else if (j.type === "tool") {
+              const tool: ToolUse = { tool: j.tool, label: String(j.label ?? "") };
+              setMessages((prev) => {
+                const next = prev.slice();
+                next[next.length - 1] = { ...next[next.length - 1], tool };
+                return next;
+              });
             } else if (j.type === "title" && j.title) {
               setConversations((prev) =>
                 prev.map((c) => (c.id === convId ? { ...c, title: j.title } : c)),
@@ -420,6 +428,7 @@ export default function Chat() {
                   provider={m.provider}
                   model={m.model}
                   memory={m.memory}
+                  tool={m.tool}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                   onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
                   onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}

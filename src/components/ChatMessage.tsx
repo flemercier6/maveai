@@ -1,10 +1,12 @@
 import { memo, useState } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2 } from "lucide-react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
 import type { Provider } from "@/lib/models";
 import { useSmoothText } from "@/hooks/useSmoothText";
+
+type ToolUse = { tool: "scrape" | "search"; label: string };
 
 type Props = {
   role: "user" | "assistant";
@@ -13,6 +15,7 @@ type Props = {
   provider?: Provider;
   model?: string;
   memory?: { added: number; updated: number };
+  tool?: ToolUse;
   onRetry?: () => void;
   onDelete?: () => void;
 };
@@ -55,6 +58,19 @@ function ActionButton({
   );
 }
 
+function ToolBadge({ tool, label }: ToolUse) {
+  const Icon = tool === "scrape" ? Globe : Search;
+  const text = tool === "scrape" ? "Lecture de la page" : "Recherche web";
+  // Truncate long URLs/queries
+  const shortLabel = label.length > 60 ? label.slice(0, 57) + "…" : label;
+  return (
+    <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground max-w-full">
+      <Icon className="w-3.5 h-3.5 shrink-0" />
+      <span className="truncate">{text} : {shortLabel}</span>
+    </div>
+  );
+}
+
 function ChatMessageImpl({
   role,
   content,
@@ -62,6 +78,7 @@ function ChatMessageImpl({
   provider,
   model,
   memory,
+  tool,
   onRetry,
   onDelete,
 }: Props) {
@@ -102,11 +119,14 @@ function ChatMessageImpl({
             <ProviderBadge provider={provider} model={model} />
           </div>
         )}
+        {tool && <ToolBadge tool={tool.tool} label={tool.label} />}
         <div className="chat-prose break-words">
           {display ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{display}</ReactMarkdown>
           ) : streaming ? (
-            <span className="text-shimmer text-sm font-medium">Thinking...</span>
+            <span className="text-shimmer text-sm font-medium">
+              {tool ? (tool.tool === "scrape" ? "Lecture de la page…" : "Recherche en cours…") : "Thinking..."}
+            </span>
           ) : " "}
         </div>
         {!streaming && content && (
@@ -140,6 +160,8 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.model === next.model &&
   prev.memory?.added === next.memory?.added &&
   prev.memory?.updated === next.memory?.updated &&
+  prev.tool?.tool === next.tool?.tool &&
+  prev.tool?.label === next.tool?.label &&
   prev.onRetry === next.onRetry &&
   prev.onDelete === next.onDelete,
 );
