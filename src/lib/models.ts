@@ -9,15 +9,17 @@ export const PROVIDERS: { id: Provider; label: string }[] = [
 
 export const MODELS: Record<Provider, { id: string; label: string }[]> = {
   openai: [
-    { id: "gpt-4o", label: "GPT-4o (latest)" },
+    { id: "gpt-5.4", label: "GPT-5.4 (latest)" },
+    { id: "gpt-5", label: "GPT-5" },
+    { id: "gpt-4o", label: "GPT-4o" },
     { id: "gpt-4o-mini", label: "GPT-4o mini" },
     { id: "gpt-4-turbo", label: "GPT-4 Turbo" },
-    { id: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
   ],
   anthropic: [
-    { id: "claude-3-5-sonnet-latest", label: "Claude 3.5 Sonnet (latest)" },
+    { id: "claude-opus-4-7", label: "Claude Opus 4.7 (latest)" },
+    { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
+    { id: "claude-3-5-sonnet-latest", label: "Claude 3.5 Sonnet" },
     { id: "claude-3-5-haiku-latest", label: "Claude 3.5 Haiku" },
-    { id: "claude-3-opus-latest", label: "Claude 3 Opus" },
   ],
   google: [
     { id: "gemini-2.0-flash-exp", label: "Gemini 2.0 Flash (latest)" },
@@ -27,8 +29,8 @@ export const MODELS: Record<Provider, { id: string; label: string }[]> = {
 };
 
 export const DEFAULT_MODEL: Record<Provider, string> = {
-  openai: "gpt-4o",
-  anthropic: "claude-3-5-sonnet-latest",
+  openai: "gpt-5.4",
+  anthropic: "claude-opus-4-7",
   google: "gemini-2.0-flash-exp",
 };
 
