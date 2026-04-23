@@ -39,7 +39,7 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
         disabled={disabled}
         onOpenChange={(o) => { if (!o) hideTip(); }}
       >
-        <SelectTrigger className="w-auto min-w-0 h-9 border-0 bg-transparent gap-2 text-xs hover:bg-dropdown-hover">
+        <SelectTrigger className="w-auto min-w-0 h-9 border-0 bg-transparent gap-2 text-xs rounded-[50px] hover:bg-dropdown-hover focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0">
           <SelectValue>
             <span className="flex items-center gap-1.5 leading-none">
               {!isAuto && (
