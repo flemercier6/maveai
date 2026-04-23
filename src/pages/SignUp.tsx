@@ -9,9 +9,9 @@ import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
 
 const schema = z.object({
-  name: z.string().trim().min(1, "Nom requis").max(80),
-  email: z.string().trim().email("Email invalide").max(255),
-  password: z.string().min(6, "Au moins 6 caractères").max(128),
+  name: z.string().trim().min(1, "Name required").max(80),
+  email: z.string().trim().email("Invalid email").max(255),
+  password: z.string().min(6, "At least 6 characters").max(128),
 });
 
 export default function SignUp() {
@@ -40,7 +40,7 @@ export default function SignUp() {
       toast.error(error.message);
       return;
     }
-    toast.success("Compte créé. Bienvenue !");
+    toast.success("Account created. Welcome!");
     navigate("/", { replace: true });
   };
 
@@ -55,14 +55,14 @@ export default function SignUp() {
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-8 shadow-soft">
-          <h2 className="text-2xl font-semibold mb-1">Créer un compte</h2>
+          <h2 className="text-2xl font-semibold mb-1">Create an account</h2>
           <p className="text-muted-foreground text-sm mb-6">
-            Accède à OpenAI, Anthropic et Gemini en un seul endroit.
+            Access OpenAI, Anthropic and Gemini in one place.
           </p>
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nom</Label>
+              <Label htmlFor="name">Name</Label>
               <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ada Lovelace" />
             </div>
             <div className="space-y-2">
@@ -70,17 +70,17 @@ export default function SignUp() {
               <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="ada@example.com" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="••••••••" />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Création..." : "Créer mon compte"}
+              {loading ? "Creating..." : "Create my account"}
             </Button>
           </form>
 
           <p className="text-sm text-muted-foreground text-center mt-6">
-            Déjà inscrit ?{" "}
-            <Link to="/signin" className="text-primary hover:underline">Se connecter</Link>
+            Already have an account?{" "}
+            <Link to="/signin" className="text-primary hover:underline">Sign in</Link>
           </p>
         </div>
       </div>
