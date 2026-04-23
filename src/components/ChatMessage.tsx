@@ -305,12 +305,12 @@ function ChatMessageImpl({
   return (
     <div className="w-full my-[50px]">
       <div className="max-w-3xl mx-auto px-4">
-        {provider && (
-          <div className="mb-1.5">
-            <ProviderBadge provider={provider} model={model} />
+        {(provider || (tool && tool.status !== "failed")) && (
+          <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "15px" }}>
+            {provider && <ProviderBadge provider={provider} model={model} />}
+            {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
           </div>
         )}
-        {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
         <div className="chat-prose break-words">
           {display ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{display}</ReactMarkdown>
