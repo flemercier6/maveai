@@ -266,6 +266,20 @@ export default function Chat() {
                 next[next.length - 1] = { ...next[next.length - 1], tool };
                 return next;
               });
+            } else if (j.type === "sources") {
+              const sources: Source[] = Array.isArray(j.sources)
+                ? j.sources.filter((s: any) => s && typeof s.url === "string").map((s: any) => ({
+                    title: String(s.title ?? s.url),
+                    url: String(s.url),
+                  }))
+                : [];
+              if (sources.length) {
+                setMessages((prev) => {
+                  const next = prev.slice();
+                  next[next.length - 1] = { ...next[next.length - 1], sources };
+                  return next;
+                });
+              }
             } else if (j.type === "title" && j.title) {
               setConversations((prev) =>
                 prev.map((c) => (c.id === convId ? { ...c, title: j.title } : c)),
