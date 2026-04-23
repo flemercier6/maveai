@@ -58,13 +58,27 @@ async function* parseSSELines(reader: ReadableStreamDefaultReader<Uint8Array>) {
 
 // ---------- OpenAI ----------
 async function* streamOpenAI(apiKey: string, model: string, messages: Msg[]) {
+  const oaiMessages = messages.map((m) => {
+    const text = mergeTextAttachments(m.content, m.attachments);
+    const images = (m.attachments ?? []).filter((a) => a.kind === "image") as Extract<Attachment, { kind: "image" }>[];
+    if (m.role === "user" && images.length) {
+      return {
+        role: "user",
+        content: [
+          { type: "text", text },
+          ...images.map((img) => ({ type: "image_url", image_url: { url: img.dataUrl } })),
+        ],
+      };
+    }
+    return { role: m.role, content: text };
+  });
   const r = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model, messages, stream: true }),
+    body: JSON.stringify({ model, messages: oaiMessages, stream: true }),
   });
   if (!r.ok || !r.body) {
     const t = await r.text();
@@ -98,7 +112,23 @@ async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]) 
       max_tokens: 4096,
       stream: true,
       system: system || undefined,
-      messages: conv.map((m) => ({ role: m.role, content: m.content })),
+      messages: conv.map((m) => {
+        const text = mergeTextAttachments(m.content, m.attachments);
+        const images = (m.attachments ?? []).filter((a) => a.kind === "image") as Extract<Attachment, { kind: "image" }>[];
+        if (m.role === "user" && images.length) {
+          return {
+            role: "user",
+            content: [
+              ...images.map((img) => {
+                const { mediaType, base64 } = splitDataUrl(img.dataUrl);
+                return { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } };
+              }),
+              { type: "text", text },
+            ],
+          };
+        }
+        return { role: m.role, content: text };
+      }),
     }),
   });
   if (!r.ok || !r.body) {
