@@ -203,6 +203,16 @@ export default function Chat() {
               setConversations((prev) =>
                 prev.map((c) => (c.id === convId ? { ...c, title: j.title } : c)),
               );
+            } else if (j.type === "memory") {
+              const mem = { added: Number(j.added) || 0, updated: Number(j.updated) || 0 };
+              setMessages((prev) => {
+                const next = prev.slice();
+                const last = next[next.length - 1];
+                if (last && last.role === "assistant") {
+                  next[next.length - 1] = { ...last, memory: mem };
+                }
+                return next;
+              });
             } else if (j.type === "error") {
               throw new Error(j.error);
             }
