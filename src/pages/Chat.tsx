@@ -206,9 +206,7 @@ export default function Chat() {
       />
 
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0 bg-background/80 backdrop-blur">
-          <ModelPicker provider={provider} model={model} onChange={(p, m) => { setProvider(p); setModel(m); }} disabled={streaming} />
-        </header>
+        <header className="h-14 border-b border-border px-4 shrink-0 bg-background/80 backdrop-blur" />
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
@@ -238,23 +236,31 @@ export default function Chat() {
 
         <div className="bg-background p-4">
           <div className="max-w-3xl mx-auto">
-            <div className="relative flex items-end bg-card border border-border rounded-2xl shadow-soft focus-within:border-primary/50 transition">
+            <div className="bg-card border border-border rounded-2xl shadow-soft focus-within:border-primary/50 transition">
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKey}
                 placeholder="Envoie un message..."
                 rows={1}
-                className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 max-h-48 py-3.5 pl-4 pr-14"
+                className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 max-h-48 py-3.5 px-4"
               />
-              <Button
-                size="icon"
-                onClick={send}
-                disabled={!input.trim() || sending}
-                className="absolute right-2 bottom-2 h-9 w-9 rounded-xl"
-              >
-                <ArrowUp className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center justify-between gap-2 px-2 pb-2">
+                <ModelPicker
+                  provider={provider}
+                  model={model}
+                  onChange={(p, m) => { setProvider(p); setModel(m); }}
+                  disabled={streaming}
+                />
+                <Button
+                  size="icon"
+                  onClick={send}
+                  disabled={!input.trim() || sending}
+                  className="h-9 w-9 rounded-xl"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             <p className="text-[11px] text-muted-foreground text-center mt-2">
               Les réponses viennent directement de {provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : "Google"} avec ta clé.
