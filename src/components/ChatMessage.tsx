@@ -151,7 +151,7 @@ function ChatMessageImpl({
         {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
         <div className="chat-prose break-words">
           {display ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{display}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{display}</ReactMarkdown>
           ) : streaming ? (
             <span className="text-shimmer text-sm font-medium">
               {getStatusMessage(phase, tool)}
