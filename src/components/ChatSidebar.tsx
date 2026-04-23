@@ -50,6 +50,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
     return saved >= MIN_WIDTH && saved <= MAX_WIDTH ? saved : DEFAULT_WIDTH;
   });
   const [resizing, setResizing] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -253,6 +254,8 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
         )}
         title="Drag to resize — double-click to reset"
       />
+
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </aside>
   );
 }
