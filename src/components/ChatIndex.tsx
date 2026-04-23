@@ -79,7 +79,7 @@ export function ChatIndex({ items, scrollContainer }: Props) {
     >
       <div
         className={cn(
-          "flex flex-col bg-foreground select-none transition-[padding,border-radius,min-width,max-width] duration-300 ease-out gap-0",
+          "flex flex-col bg-[hsl(var(--dropdown-hover))] select-none transition-[padding,border-radius,min-width,max-width] duration-300 ease-out gap-0",
           hovered
             ? "rounded-2xl shadow-md py-3 pl-3 pr-3 min-w-[220px] max-w-[300px] items-stretch"
             : "rounded-[25px] py-2 px-2 items-center",
@@ -97,8 +97,8 @@ export function ChatIndex({ items, scrollContainer }: Props) {
                 "group flex items-center outline-none rounded-md transition-[height,padding,background-color,gap] duration-300 ease-out",
                 hovered
                   ? cn(
-                      "self-stretch justify-start px-2 h-7 gap-2",
-                      isActive ? "bg-white/15" : "hover:bg-white/10",
+                  "self-stretch justify-start px-2 h-7 gap-2",
+                      isActive ? "bg-black/10" : "hover:bg-black/5",
                     )
                   : "h-[10px] gap-0 justify-center",
               )}
@@ -107,8 +107,8 @@ export function ChatIndex({ items, scrollContainer }: Props) {
                 className={cn(
                   "block rounded-full shrink-0 h-[2px] transition-all duration-200",
                   isActive
-                    ? "bg-background w-5"
-                    : "bg-background/40 group-hover:bg-background/70 w-[15px]",
+                    ? "bg-foreground w-5"
+                    : "bg-foreground/40 group-hover:bg-foreground/70 w-[15px]",
                 )}
               />
               <span
@@ -117,7 +117,7 @@ export function ChatIndex({ items, scrollContainer }: Props) {
                   hovered
                     ? "opacity-100 max-w-[240px]"
                     : "opacity-0 max-w-0",
-                  isActive ? "text-background" : "text-background/60 group-hover:text-background",
+                  isActive ? "text-foreground" : "text-foreground/60 group-hover:text-foreground",
                 )}
               >
                 {it.preview}
