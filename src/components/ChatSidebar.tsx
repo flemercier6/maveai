@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Plus, Trash2, LogOut, Sparkles } from "lucide-react";
+import { MessageSquare, Plus, Trash2, LogOut, Sparkles, Brain } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -88,6 +89,12 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
 
       <div className="p-2 border-t border-sidebar-border space-y-0.5">
         <div className="px-3 py-2 text-xs text-muted-foreground truncate">{userEmail}</div>
+        <Link
+          to="/memory"
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-sidebar-accent/60 text-sidebar-foreground"
+        >
+          <Brain className="w-4 h-4 opacity-70" /> Mémoire
+        </Link>
         <button
           onClick={signOut}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-sidebar-accent/60 text-sidebar-foreground"
