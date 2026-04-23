@@ -648,6 +648,7 @@ Deno.serve(async (req) => {
         "- Use generous whitespace, short paragraphs (2–4 sentences max), and frequent line breaks.\n" +
         "- Structure longer answers with markdown headings (##, ###) and bullet lists.\n" +
         "- Use horizontal dividers (---) to separate distinct sections or topics in long answers.\n" +
+        "- Use markdown tables (with | and ---) whenever you present comparisons, structured data, specs, or any information with multiple columns. Tables are strongly preferred over repeated bullet lists for comparative content.\n" +
         "- Avoid dense walls of text. Prefer airy, scannable layouts.\n" +
         "- You may use emojis when relevant; one well-placed emoji beats ten.\n" +
         "- Always respond in the same language as the user's last message.",
