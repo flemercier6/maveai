@@ -87,6 +87,7 @@ export default function Chat() {
 
   // Load messages when active changes
   useEffect(() => {
+    setClarify(null);
     if (!activeId) { setMessages([]); return; }
     const conv = conversations.find((c) => c.id === activeId);
     const convProvider = (conv?.provider as Provider) ?? "openai";
