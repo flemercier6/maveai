@@ -8,7 +8,31 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-type Msg = { role: "user" | "assistant" | "system"; content: string };
+type Attachment =
+  | { kind: "image"; name: string; mime: string; dataUrl: string }
+  | { kind: "text"; name: string; mime: string; text: string };
+
+type Msg = {
+  role: "user" | "assistant" | "system";
+  content: string;
+  attachments?: Attachment[];
+};
+
+// Strip data URL prefix → return [mediaType, base64]
+function splitDataUrl(dataUrl: string): { mediaType: string; base64: string } {
+  const m = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+  if (!m) return { mediaType: "image/png", base64: "" };
+  return { mediaType: m[1], base64: m[2] };
+}
+
+// Inline text-only attachments (PDF text, .md, etc.) directly into the textual content.
+function mergeTextAttachments(content: string, atts: Attachment[] | undefined): string {
+  if (!atts?.length) return content;
+  const textParts = atts
+    .filter((a): a is Extract<Attachment, { kind: "text" }> => a.kind === "text")
+    .map((a) => `\n\n--- Fichier joint: ${a.name} (${a.mime}) ---\n${a.text}\n--- fin ${a.name} ---`);
+  return content + textParts.join("");
+}
 
 function sseEncoder() {
   const encoder = new TextEncoder();
