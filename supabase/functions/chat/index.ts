@@ -480,7 +480,7 @@ If clarification IS useful:
 
 STRICT RULES:
 - Maximum 3 questions, only ask what's truly needed.
-- 2–4 options per question. Keep options short, distinct, mutually exclusive (unless multi=true).
+- 2–4 options per question. Keep options VERY short — ideally 1–3 words, max 24 characters. They render as inline pills, so long sentences break the layout. Make them distinct and mutually exclusive (unless multi=true).
 - Do NOT add an "Other" option — the UI handles that automatically.
 - Use the SAME LANGUAGE as the user's message.
 - Only return needs_clarification=true for genuinely complex/ambiguous requests (planning, creative briefs, multi-step builds, vague analysis requests, design choices, strategy, recommendations with many trade-offs, etc.).
