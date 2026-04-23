@@ -546,7 +546,7 @@ export default function Chat() {
               </p>
             </div>
           ) : (
-            <div className="pb-4">
+            <div className="pt-8 pb-4">
               {messages.map((m, i) => (
                 <ChatMessage
                   key={m.id ?? i}
