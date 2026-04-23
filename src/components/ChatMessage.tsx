@@ -28,10 +28,10 @@ function MemoryBadge({ added, updated }: { added: number; updated: number }) {
   if (total <= 0) return null;
   const label =
     added > 0 && updated > 0
-      ? `Mémoire mise à jour (${added} ajouté${added > 1 ? "s" : ""}, ${updated} modifié${updated > 1 ? "s" : ""})`
+      ? `Memory updated (${added} added, ${updated} edited)`
       : added > 0
-        ? `Ajouté à la mémoire${added > 1 ? ` (${added})` : ""}`
-        : `Mémoire mise à jour${updated > 1 ? ` (${updated})` : ""}`;
+        ? `Added to memory${added > 1 ? ` (${added})` : ""}`
+        : `Memory updated${updated > 1 ? ` (${updated})` : ""}`;
   return (
     <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
       <Brain className="w-3.5 h-3.5" />
@@ -63,13 +63,13 @@ function ActionButton({
 
 function ToolBadge({ tool, label }: ToolUse) {
   const Icon = tool === "scrape" ? Globe : Search;
-  const text = tool === "scrape" ? "Lecture de la page" : "Recherche web";
+  const text = tool === "scrape" ? "Read page" : "Web search";
   // Truncate long URLs/queries
   const shortLabel = label.length > 60 ? label.slice(0, 57) + "…" : label;
   return (
     <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground max-w-full">
       <Icon className="w-3.5 h-3.5 shrink-0" />
-      <span className="truncate">{text} : {shortLabel}</span>
+      <span className="truncate">{text}: {shortLabel}</span>
     </div>
   );
 }
@@ -78,19 +78,19 @@ function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined): 
   if (tool) {
     const short = tool.label.length > 50 ? tool.label.slice(0, 47) + "…" : tool.label;
     if (tool.status === "done") {
-      return tool.tool === "scrape" ? "Synthèse de la page…" : "Synthèse des résultats…";
+      return tool.tool === "scrape" ? "Summarizing page…" : "Summarizing results…";
     }
     if (tool.status === "failed") {
-      return "Outil indisponible, je continue sans…";
+      return "Tool unavailable, continuing without it…";
     }
     // running
     return tool.tool === "scrape"
-      ? `Lecture de ${short}…`
-      : `Recherche : « ${short} »…`;
+      ? `Reading ${short}…`
+      : `Searching: "${short}"…`;
   }
-  if (phase === "analyzing") return "Analyse de ta demande…";
-  if (phase === "generating") return "Réflexion…";
-  return "Réflexion…";
+  if (phase === "analyzing") return "Analyzing your request…";
+  if (phase === "generating") return "Thinking…";
+  return "Thinking…";
 }
 
 function ChatMessageImpl({
@@ -154,16 +154,16 @@ function ChatMessageImpl({
         </div>
         {!streaming && content && (
           <div className="mt-2 flex items-center gap-1 -ml-1.5">
-            <ActionButton onClick={handleCopy} ariaLabel={copied ? "Copié" : "Copier"}>
+            <ActionButton onClick={handleCopy} ariaLabel={copied ? "Copied" : "Copy"}>
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </ActionButton>
             {onRetry && (
-              <ActionButton onClick={onRetry} ariaLabel="Régénérer">
+              <ActionButton onClick={onRetry} ariaLabel="Retry">
                 <RotateCcw className="w-4 h-4" />
               </ActionButton>
             )}
             {onDelete && (
-              <ActionButton onClick={onDelete} ariaLabel="Supprimer">
+              <ActionButton onClick={onDelete} ariaLabel="Delete">
                 <Trash2 className="w-4 h-4" />
               </ActionButton>
             )}

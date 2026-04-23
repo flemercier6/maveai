@@ -38,7 +38,7 @@ async function extractPdfText(file: File): Promise<string> {
 
 export async function loadAttachment(file: File): Promise<Attachment> {
   if (file.size > MAX_FILE_BYTES) {
-    throw new Error(`${file.name} dépasse 15 Mo`);
+    throw new Error(`${file.name} exceeds 15 MB`);
   }
   if (file.type.startsWith("image/")) {
     const dataUrl = await readAsDataURL(file);

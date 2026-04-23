@@ -30,7 +30,7 @@ function mergeTextAttachments(content: string, atts: Attachment[] | undefined): 
   if (!atts?.length) return content;
   const textParts = atts
     .filter((a): a is Extract<Attachment, { kind: "text" }> => a.kind === "text")
-    .map((a) => `\n\n--- Fichier joint: ${a.name} (${a.mime}) ---\n${a.text}\n--- fin ${a.name} ---`);
+    .map((a) => `\n\n--- Attached file: ${a.name} (${a.mime}) ---\n${a.text}\n--- end ${a.name} ---`);
   return content + textParts.join("");
 }
 
@@ -216,17 +216,17 @@ async function decideWebTool(args: {
   const urlMatch = userText.match(/https?:\/\/[^\s<>"']+/);
   if (urlMatch) return { action: "scrape", url: urlMatch[0] };
 
-  const prompt = `Décide si pour répondre correctement à ce message, il faut consulter le web.
+  const prompt = `Decide whether answering this message correctly requires consulting the web.
 
-Réponds UNIQUEMENT en JSON, sans texte autour, selon l'un de ces formats :
-{"action":"none"}                          → la connaissance générale suffit
-{"action":"search","query":"..."}          → il faut chercher des infos récentes / factuelles / actualité / prix / résultats / personnes / événements
-{"action":"scrape","url":"https://..."}    → l'utilisateur cite explicitement un site/URL à lire
+Reply ONLY in JSON, no surrounding text, in one of these formats:
+{"action":"none"}                          → general knowledge is enough
+{"action":"search","query":"..."}          → fresh / factual / news / prices / results / people / events info is needed
+{"action":"scrape","url":"https://..."}    → the user explicitly cites a website/URL to read
 
-Règles :
-- "none" pour : conversation, code, raisonnement, créativité, reformulation, traduction, math, opinion.
-- "search" UNIQUEMENT si la réponse dépend d'informations factuelles à jour ou vérifiables en ligne.
-- Garde la query courte (≤ 12 mots), en gardant la langue de l'utilisateur.
+Rules:
+- "none" for: chat, code, reasoning, creativity, rewriting, translation, math, opinion.
+- "search" ONLY if the answer depends on up-to-date or web-verifiable factual info.
+- Keep the query short (≤ 12 words), in the user's own language.
 
 Message:
 ${userText.slice(0, 1500)}`;
@@ -329,7 +329,7 @@ async function firecrawlSearch(apiKey: string, query: string): Promise<string | 
       const title = res.title ?? res.metadata?.title ?? "(sans titre)";
       const url = res.url ?? res.metadata?.sourceURL ?? "";
       const content = (res.markdown ?? res.description ?? "").toString().slice(0, 2000);
-      return `### Résultat ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
+      return `### Result ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
     });
     return blocks.join("\n\n---\n\n").slice(0, 15000);
   } catch (e) {
@@ -622,7 +622,7 @@ Deno.serve(async (req) => {
       ? {
         role: "system",
         content:
-          "Mémoire persistante de l'utilisateur (faits, préférences, contexte) — utilise-la implicitement pour personnaliser tes réponses, sans la répéter mot pour mot :\n" +
+          "Persistent user memory (facts, preferences, context) — use it implicitly to personalize your responses, without repeating it verbatim:\n" +
           memoryBlock,
       }
       : null;
@@ -630,7 +630,7 @@ Deno.serve(async (req) => {
     const styleSystem: Msg = {
       role: "system",
       content:
-        "Tu peux utiliser des emojis librement dans tes réponses lorsque c'est pertinent (ton, illustration, listes, ponctuation expressive). Évite l'excès : un emoji bien placé vaut mieux que dix.",
+        "You may use emojis freely in your responses when relevant (tone, illustration, lists, expressive punctuation). Avoid excess: one well-placed emoji is better than ten. Always respond in the same language as the user's last message.",
     };
 
     // Prepend system messages (style + memory) and drop any previous duplicates from the client
@@ -640,7 +640,7 @@ Deno.serve(async (req) => {
       ...messages.filter(
         (m) =>
           m.role !== "system" ||
-          (!m.content.startsWith("Mémoire persistante") && !m.content.startsWith("Tu peux utiliser des emojis")),
+          (!m.content.startsWith("Persistent user memory") && !m.content.startsWith("You may use emojis")),
       ),
     ];
 
@@ -653,7 +653,7 @@ Deno.serve(async (req) => {
 
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: `Le fournisseur ${provider} n'est pas activé sur cette instance.` }),
+        JSON.stringify({ error: `Provider ${provider} is not enabled on this instance.` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -704,8 +704,8 @@ Deno.serve(async (req) => {
           let messagesForLLM = finalMessages;
           if (webContext) {
             const header = webContext.kind === "scrape"
-              ? `Contenu de la page web demandée (${webContext.label}). Utilise-le comme source principale et cite l'URL si pertinent :`
-              : `Résultats de recherche web pour "${webContext.label}". Utilise ces sources pour répondre, et cite les URLs pertinentes :`;
+              ? `Content of the requested web page (${webContext.label}). Use it as the primary source and cite the URL when relevant:`
+              : `Web search results for "${webContext.label}". Use these sources to answer, and cite the relevant URLs:`;
             const webSystem: Msg = {
               role: "system",
               content: `${header}\n\n${webContext.content}`,
