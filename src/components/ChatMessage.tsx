@@ -213,7 +213,7 @@ function ChatMessageImpl({
   // Smooth typewriter for assistant messages while streaming.
   const smoothed = useSmoothText(content, !isUser && !!streaming);
   const display = isUser ? content : (streaming ? smoothed : content);
-  const mdComponents = buildMdComponents(sources);
+  const mdComponents = buildMdComponents(sources, !isUser);
 
   const handleCopy = async () => {
     try {
