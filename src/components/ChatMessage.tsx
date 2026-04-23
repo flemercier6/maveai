@@ -184,27 +184,23 @@ function SourceTag({ indices, sources }: { indices: number[]; sources: Source[] 
   );
 }
 
-const SOURCE_RE = /\[source:\s*([\d,\s]+)\]/gi;
+const SOURCE_RE = /\s*\[source:\s*([\d,\s]+)\]/gi;
 
-function renderWithSources(text: string, sources: Source[] | undefined): ReactNode {
-  if (!sources || !sources.length || !text.includes("[source:")) return text;
-  const out: ReactNode[] = [];
-  let last = 0;
-  let m: RegExpExecArray | null;
+// Strip inline [source:N] markers from text and collect all referenced indices.
+function collectAndStripSources(
+  text: string,
+  sources: Source[],
+): { text: string; indices: number[] } {
+  const found = new Set<number>();
   SOURCE_RE.lastIndex = 0;
-  while ((m = SOURCE_RE.exec(text)) !== null) {
-    if (m.index > last) out.push(text.slice(last, m.index));
-    const indices = m[1]
-      .split(",")
+  const stripped = text.replace(SOURCE_RE, (_m, g1: string) => {
+    g1.split(",")
       .map((s) => parseInt(s.trim(), 10))
-      .filter((n) => Number.isFinite(n) && n >= 1 && n <= sources.length);
-    if (indices.length) {
-      out.push(<SourceTag key={`s-${m.index}`} indices={indices} sources={sources} />);
-    }
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) out.push(text.slice(last));
-  return <>{out}</>;
+      .filter((n) => Number.isFinite(n) && n >= 1 && n <= sources.length)
+      .forEach((n) => found.add(n));
+    return "";
+  });
+  return { text: stripped, indices: Array.from(found).sort((a, b) => a - b) };
 }
 
 function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) {
