@@ -73,7 +73,7 @@ export function ChatIndex({ items, scrollContainer }: Props) {
   return (
     <div
       ref={wrapRef}
-      className="fixed bottom-4 left-4 z-30"
+      className="absolute bottom-4 left-4 z-30"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
