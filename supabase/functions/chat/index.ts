@@ -485,19 +485,26 @@ Deno.serve(async (req) => {
             }
           }
 
+          // ---------- Extract memorable facts (await so we can notify the client) ----------
+          try {
+            const memResult = await extractAndSaveMemory({
+              supabase,
+              userId: user.id,
+              openaiKey: Deno.env.get("OPENAI_API_KEY"),
+              googleKey: Deno.env.get("GOOGLE_API_KEY"),
+              anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+              userText: lastUser,
+              assistantText,
+            });
+            if (memResult && (memResult.added > 0 || memResult.updated > 0)) {
+              controller.enqueue(enc({ type: "memory", added: memResult.added, updated: memResult.updated }));
+            }
+          } catch (err) {
+            console.error("memory extract failed:", err);
+          }
+
           controller.enqueue(enc({ type: "done" }));
           controller.close();
-
-          // ---------- Fire-and-forget: extract memorable facts ----------
-          extractAndSaveMemory({
-            supabase,
-            userId: user.id,
-            openaiKey: Deno.env.get("OPENAI_API_KEY"),
-            googleKey: Deno.env.get("GOOGLE_API_KEY"),
-            anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
-            userText: lastUser,
-            assistantText,
-          }).catch((err) => console.error("memory extract failed:", err));
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           controller.enqueue(enc({ type: "error", error: msg }));
