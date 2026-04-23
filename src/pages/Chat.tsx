@@ -106,12 +106,12 @@ export default function Chat() {
     abortRef.current?.abort();
   };
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || sending) return;
     setSending(true);
     lastSentRef.current = text;
-    setInput("");
+    if (overrideText === undefined) setInput("");
 
     // Resolve Auto → concrete provider/model for this turn (Auto preference is preserved)
     const userPickedAuto = model === AUTO_MODEL_ID;
