@@ -647,7 +647,7 @@ Deno.serve(async (req) => {
       ...messages.filter(
         (m) =>
           m.role !== "system" ||
-          (!m.content.startsWith("Persistent user memory") && !m.content.startsWith("You may use emojis")),
+          (!m.content.startsWith("Persistent user memory") && !m.content.startsWith("You may use emojis") && !m.content.startsWith("Format your responses")),
       ),
     ];
 
