@@ -173,14 +173,37 @@ function renderWithSources(text: string, sources: Source[] | undefined): ReactNo
 function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) {
   const transformChildren = (children: ReactNode): ReactNode => {
     if (!sources?.length) return children;
-    if (typeof children === "string") return renderWithSources(children, sources);
-    if (Array.isArray(children)) {
-      return children.map((c, i) =>
-        typeof c === "string" ? <span key={i}>{renderWithSources(c, sources)}</span> : c,
-      );
+
+    if (typeof children === "string") {
+      return renderWithSources(children, sources);
     }
+
+    if (Array.isArray(children)) {
+      return children.map((child, index) => {
+        if (typeof child === "string") {
+          return <span key={index}>{renderWithSources(child, sources)}</span>;
+        }
+
+        if (isValidElement(child)) {
+          return cloneElement(child as React.ReactElement<any>, {
+            key: child.key ?? index,
+            children: transformChildren((child.props as { children?: ReactNode }).children),
+          });
+        }
+
+        return child;
+      });
+    }
+
+    if (isValidElement(children)) {
+      return cloneElement(children as React.ReactElement<any>, {
+        children: transformChildren((children.props as { children?: ReactNode }).children),
+      });
+    }
+
     return children;
   };
+
   return {
     a: ({ node, children, ...props }: any) => (
       <a {...props} target="_blank" rel="noopener noreferrer" className="inline-flex items-baseline gap-0.5">
@@ -192,6 +215,10 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
     ),
     p: ({ node, children, ...props }: any) => <p {...props}>{transformChildren(children)}</p>,
     li: ({ node, children, ...props }: any) => <li {...props}>{transformChildren(children)}</li>,
+    strong: ({ node, children, ...props }: any) => <strong {...props}>{transformChildren(children)}</strong>,
+    em: ({ node, children, ...props }: any) => <em {...props}>{transformChildren(children)}</em>,
+    span: ({ node, children, ...props }: any) => <span {...props}>{transformChildren(children)}</span>,
+    blockquote: ({ node, children, ...props }: any) => <blockquote {...props}>{transformChildren(children)}</blockquote>,
   };
 }
 
