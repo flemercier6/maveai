@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ChatSidebar, type Conversation } from "@/components/ChatSidebar";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ModelPicker } from "@/components/ModelPicker";
-import { ApiKeysDialog } from "@/components/ApiKeysDialog";
+
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, Sparkles } from "lucide-react";
@@ -27,7 +27,7 @@ export default function Chat() {
   const [model, setModel] = useState<string>(DEFAULT_MODEL.openai);
   const [sending, setSending] = useState(false);
   const [streaming, setStreaming] = useState(false);
-  const [keysOpen, setKeysOpen] = useState(false);
+  
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -192,7 +192,6 @@ export default function Chat() {
           setConversations((prev) => prev.filter((c) => c.id !== id));
           if (activeId === id) { setActiveId(null); setMessages([]); }
         }}
-        onOpenKeys={() => setKeysOpen(true)}
         userEmail={user.email}
       />
 
@@ -252,8 +251,6 @@ export default function Chat() {
           </div>
         </div>
       </main>
-
-      <ApiKeysDialog open={keysOpen} onOpenChange={setKeysOpen} userId={user.id} />
     </div>
   );
 }

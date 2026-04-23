@@ -165,15 +165,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: keyRow, error: keyErr } = await supabase
-      .from("api_keys")
-      .select("api_key")
-      .eq("provider", provider)
-      .maybeSingle();
+    const ENV_KEY: Record<string, string | undefined> = {
+      openai: Deno.env.get("OPENAI_API_KEY"),
+      anthropic: Deno.env.get("ANTHROPIC_API_KEY"),
+      google: Deno.env.get("GOOGLE_API_KEY"),
+    };
+    const apiKey = ENV_KEY[provider];
 
-    if (keyErr || !keyRow?.api_key) {
+    if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: `Aucune clé API configurée pour ${provider}. Ajoute-la dans les paramètres.` }),
+        JSON.stringify({ error: `Le fournisseur ${provider} n'est pas activé sur cette instance.` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -185,9 +186,9 @@ Deno.serve(async (req) => {
       async start(controller) {
         try {
           let iter: AsyncGenerator<string>;
-          if (provider === "openai") iter = streamOpenAI(keyRow.api_key, model, messages);
-          else if (provider === "anthropic") iter = streamAnthropic(keyRow.api_key, model, messages);
-          else iter = streamGemini(keyRow.api_key, model, messages);
+          if (provider === "openai") iter = streamOpenAI(apiKey, model, messages);
+          else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, messages);
+          else iter = streamGemini(apiKey, model, messages);
 
           for await (const chunk of iter) {
             assistantText += chunk;
