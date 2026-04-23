@@ -206,8 +206,6 @@ export default function Chat() {
       />
 
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b border-border px-4 shrink-0 bg-background/80 backdrop-blur" />
-
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
