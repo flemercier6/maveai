@@ -58,6 +58,19 @@ function ActionButton({
   );
 }
 
+function ToolBadge({ tool, label }: ToolUse) {
+  const Icon = tool === "scrape" ? Globe : Search;
+  const text = tool === "scrape" ? "Lecture de la page" : "Recherche web";
+  // Truncate long URLs/queries
+  const shortLabel = label.length > 60 ? label.slice(0, 57) + "…" : label;
+  return (
+    <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-muted-foreground max-w-full">
+      <Icon className="w-3.5 h-3.5 shrink-0" />
+      <span className="truncate">{text} : {shortLabel}</span>
+    </div>
+  );
+}
+
 function ChatMessageImpl({
   role,
   content,
@@ -65,6 +78,7 @@ function ChatMessageImpl({
   provider,
   model,
   memory,
+  tool,
   onRetry,
   onDelete,
 }: Props) {
