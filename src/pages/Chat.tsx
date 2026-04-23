@@ -143,7 +143,7 @@ export default function Chat() {
     const hasImage = atts.some((a) => a.kind === "image");
     // Force a vision-capable model when images are attached and the user is on Auto
     const resolved = userPickedAuto
-      ? (hasImage ? { provider: "google" as Provider, model: "gemini-3.5-pro" } : routeAuto(text))
+      ? (hasImage ? { provider: "google" as Provider, model: "gemini-2.5-pro" } : routeAuto(text))
       : { provider, model };
     const sendProvider = resolved.provider;
     const sendModel = resolved.model;

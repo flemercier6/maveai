@@ -99,7 +99,7 @@ export function routeAuto(message: string): { provider: Provider; model: string 
 
   // 3. Gemini Pro — image/file, Google products, structured data
   if (hasImageOrFile || mentionsGoogle || wantsStructured) {
-    return { provider: "google", model: "gemini-3.5-pro" };
+    return { provider: "google", model: "gemini-2.5-pro" };
   }
 
   // 2. ChatGPT fastest — short creative / quick rewrites
