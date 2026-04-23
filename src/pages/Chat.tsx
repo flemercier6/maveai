@@ -106,12 +106,12 @@ export default function Chat() {
     abortRef.current?.abort();
   };
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || sending) return;
     setSending(true);
     lastSentRef.current = text;
-    setInput("");
+    if (overrideText === undefined) setInput("");
 
     // Resolve Auto → concrete provider/model for this turn (Auto preference is preserved)
     const userPickedAuto = model === AUTO_MODEL_ID;
@@ -279,6 +279,33 @@ export default function Chat() {
     }
   };
 
+  // Delete an assistant reply along with the user message that prompted it.
+  const handleDeleteAssistant = async (assistantIdx: number) => {
+    if (sending) return;
+    const assistant = messages[assistantIdx];
+    if (!assistant || assistant.role !== "assistant") return;
+    const userIdx = assistantIdx - 1;
+    const userMsg = userIdx >= 0 && messages[userIdx]?.role === "user" ? messages[userIdx] : null;
+
+    const ids = [assistant.id, userMsg?.id].filter(Boolean) as string[];
+    if (ids.length) {
+      await supabase.from("messages").delete().in("id", ids);
+    }
+    setMessages((prev) => prev.filter((_, i) => i !== assistantIdx && i !== userIdx));
+  };
+
+  // Regenerate: remove the user/assistant pair, then re-send the same prompt.
+  const handleRetryAssistant = async (assistantIdx: number) => {
+    if (sending) return;
+    const userIdx = assistantIdx - 1;
+    const userMsg = userIdx >= 0 && messages[userIdx]?.role === "user" ? messages[userIdx] : null;
+    if (!userMsg) return;
+    const text = userMsg.content;
+    await handleDeleteAssistant(assistantIdx);
+    // small defer so state has settled before send() snapshots `messages`
+    setTimeout(() => { void send(text); }, 0);
+  };
+
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
@@ -318,6 +345,8 @@ export default function Chat() {
                   model={m.model}
                   memory={m.memory}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
+                  onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
+                  onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}
                 />
               ))}
             </div>
@@ -358,7 +387,7 @@ export default function Chat() {
                 ) : (
                   <Button
                     size="icon"
-                    onClick={send}
+                    onClick={() => send()}
                     disabled={!input.trim()}
                     className="h-9 w-9 rounded-full"
                     aria-label="Send message"
