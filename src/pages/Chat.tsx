@@ -151,7 +151,7 @@ export default function Chat() {
               acc += j.text;
               setMessages((prev) => {
                 const next = [...prev];
-                next[next.length - 1] = { role: "assistant", content: acc, provider };
+                next[next.length - 1] = { role: "assistant", content: acc, provider: sendProvider };
                 return next;
               });
             } else if (j.type === "title" && j.title) {
