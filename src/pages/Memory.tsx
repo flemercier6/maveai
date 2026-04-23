@@ -3,11 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Brain, Plus, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ArrowLeft, Brain, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 type Memory = {
@@ -22,6 +30,9 @@ export default function Memory() {
   const navigate = useNavigate();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [newContent, setNewContent] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate("/signin", { replace: true });
@@ -63,6 +74,66 @@ export default function Memory() {
     setMemories([]);
   };
 
+  // Parse a paste from another AI (ChatGPT, Claude, Gemini, etc.).
+  // Accepts: JSON array of strings, JSON array of {content, kind?},
+  // numbered lists, bullet lists, or one fact per line.
+  const parseImport = (raw: string): { content: string; kind: string }[] => {
+    const text = raw.trim();
+    if (!text) return [];
+
+    // Try JSON first
+    try {
+      const json = JSON.parse(text);
+      if (Array.isArray(json)) {
+        return json
+          .map((it) => {
+            if (typeof it === "string") return { content: it.trim(), kind: "fact" };
+            if (it && typeof it === "object" && typeof it.content === "string") {
+              return { content: String(it.content).trim(), kind: String(it.kind ?? "fact") };
+            }
+            return null;
+          })
+          .filter((x): x is { content: string; kind: string } => !!x && !!x.content);
+      }
+    } catch {
+      // not JSON, fall through
+    }
+
+    // Line-based: strip bullets, numbering, markdown
+    return text
+      .split(/\r?\n+/)
+      .map((l) =>
+        l
+          .replace(/^\s*[-*•·]\s+/, "")
+          .replace(/^\s*\d+[.)]\s+/, "")
+          .replace(/^\s*#+\s+/, "")
+          .trim(),
+      )
+      .filter((l) => l.length > 2)
+      .map((content) => ({ content, kind: "fact" }));
+  };
+
+  const importMemories = async () => {
+    const items = parseImport(importText);
+    if (items.length === 0) {
+      toast.error("Aucun souvenir détecté dans le texte collé.");
+      return;
+    }
+    setImporting(true);
+    const rows = items.map((it) => ({
+      user_id: user!.id,
+      content: it.content,
+      kind: it.kind || "fact",
+    }));
+    const { error } = await supabase.from("user_memories").insert(rows);
+    setImporting(false);
+    if (error) return toast.error(error.message);
+    toast.success(`${rows.length} souvenir${rows.length > 1 ? "s" : ""} importé${rows.length > 1 ? "s" : ""}.`);
+    setImportText("");
+    setImportOpen(false);
+    load();
+  };
+
   if (loading || !user) return null;
 
   return (
@@ -82,7 +153,49 @@ export default function Memory() {
         </p>
 
         <Card className="p-4 space-y-3">
-          <h2 className="text-sm font-medium">Ajouter un souvenir</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium">Ajouter un souvenir</h2>
+            <Dialog open={importOpen} onOpenChange={setImportOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Upload className="w-4 h-4 mr-1" /> Importer depuis un autre AI
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Importer la mémoire d'un autre AI</DialogTitle>
+                  <DialogDescription>
+                    Colle ici la mémoire exportée depuis ChatGPT, Claude, Gemini, etc. Formats acceptés : un
+                    souvenir par ligne, liste à puces/numérotée, ou JSON (tableau de chaînes ou d'objets
+                    {" "}
+                    <code>{`{content, kind}`}</code>).
+                  </DialogDescription>
+                </DialogHeader>
+                <Textarea
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  placeholder={`- Je travaille comme développeur full-stack\n- Je préfère TypeScript et React\n- J'habite à Paris`}
+                  rows={10}
+                  className="font-mono text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {parseImport(importText).length} souvenir(s) détecté(s).
+                </p>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setImportOpen(false)}>
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={importMemories}
+                    disabled={importing || parseImport(importText).length === 0}
+                  >
+                    <Upload className="w-4 h-4 mr-1" />
+                    Importer {parseImport(importText).length || ""}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
           <Textarea
             value={newContent}
             onChange={(e) => setNewContent(e.target.value)}
