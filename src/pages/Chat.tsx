@@ -8,7 +8,7 @@ import { ModelPicker } from "@/components/ModelPicker";
 
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Sparkles, Square } from "lucide-react";
+import { ArrowRight, Sparkles, Square } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 
