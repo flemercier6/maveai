@@ -14,6 +14,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SettingsDialog } from "@/components/SettingsDialog";
 
 export type Conversation = {
   id: string;
@@ -228,8 +229,8 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top" className="w-[--radix-dropdown-menu-trigger-width]">
-            <DropdownMenuItem asChild>
-              <Link to="/settings"><Settings className="w-3.5 h-3.5 mr-2 opacity-70" /> Settings</Link>
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSettingsOpen(true); }}>
+              <Settings className="w-3.5 h-3.5 mr-2 opacity-70" /> Settings
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link to="/memory"><Brain className="w-3.5 h-3.5 mr-2 opacity-70" /> Memory</Link>
