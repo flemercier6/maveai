@@ -373,11 +373,12 @@ async function firecrawlScrape(apiKey: string, url: string): Promise<string | nu
 }
 
 type WebSource = { title: string; url: string };
+type WebImage = { url: string; title?: string; sourceUrl?: string };
 
 async function linkupSearch(
   apiKey: string,
   query: string,
-): Promise<{ content: string; sources: WebSource[] } | null> {
+): Promise<{ content: string; sources: WebSource[]; images: WebImage[] } | null> {
   try {
     const r = await fetch("https://api.linkup.so/v1/search", {
       method: "POST",
@@ -389,7 +390,7 @@ async function linkupSearch(
         q: query,
         depth: "standard",
         outputType: "searchResults",
-        includeImages: false,
+        includeImages: true,
       }),
     });
     const j = await r.json();
@@ -399,11 +400,25 @@ async function linkupSearch(
     }
     const results: any[] = j?.results ?? [];
     if (!Array.isArray(results) || !results.length) return null;
-    const top = results.slice(0, 8);
+    // Linkup mixes text and image entries; separate them.
+    const textResults = results.filter((res) => {
+      const t = (res.type ?? "").toString().toLowerCase();
+      return t !== "image" && (res.content || res.snippet || res.description);
+    });
+    const imageResults = results.filter((res) => {
+      const t = (res.type ?? "").toString().toLowerCase();
+      return t === "image" || /\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(res.url ?? "");
+    });
+    const top = textResults.slice(0, 8);
     const sources: WebSource[] = top.map((res) => ({
       title: (res.name ?? res.title ?? "Untitled").toString(),
       url: (res.url ?? "").toString(),
     }));
+    const images: WebImage[] = imageResults.slice(0, 6).map((res) => ({
+      url: (res.url ?? "").toString(),
+      title: (res.name ?? res.title ?? "").toString() || undefined,
+      sourceUrl: (res.sourceUrl ?? res.referrer ?? undefined) as string | undefined,
+    })).filter((im) => /^https?:\/\//.test(im.url));
     const blocks = top.map((res, i) => {
       const title = sources[i].title;
       const url = sources[i].url;
@@ -413,6 +428,7 @@ async function linkupSearch(
     return {
       content: blocks.join("\n\n---\n\n").slice(0, 15000),
       sources,
+      images,
     };
   } catch (e) {
     console.error("linkup search exception", e);
