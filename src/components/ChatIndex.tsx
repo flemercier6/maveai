@@ -57,7 +57,7 @@ export function ChatIndex({ items, scrollContainer }: Props) {
     };
   }, [items, scrollContainer]);
 
-  if (items.length === 0) return null;
+  if (items.length < 2) return null;
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(`chat-anchor-${id}`);
