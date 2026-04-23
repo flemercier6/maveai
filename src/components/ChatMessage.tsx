@@ -13,6 +13,7 @@ type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
 
 type Props = {
+  id?: string;
   role: "user" | "assistant";
   content: string;
   streaming?: boolean;
@@ -279,6 +280,7 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
 }
 
 function ChatMessageImpl({
+  id,
   role,
   content,
   streaming,
@@ -311,7 +313,7 @@ function ChatMessageImpl({
 
   if (isUser) {
     return (
-      <div className="w-full py-3">
+      <div className="w-full py-3" id={id ? `chat-anchor-${id}` : undefined}>
         <div className="max-w-3xl mx-auto px-4 flex flex-col items-end gap-1.5">
           <div className="max-w-[80%] rounded-2xl bg-bubble-user text-bubble-user-foreground px-4 py-2.5 chat-prose break-words">
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{content}</ReactMarkdown>
@@ -376,6 +378,7 @@ function ChatMessageImpl({
 
 // Memoize so historical messages don't re-render on every streaming tick.
 export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
+  prev.id === next.id &&
   prev.role === next.role &&
   prev.content === next.content &&
   prev.streaming === next.streaming &&
