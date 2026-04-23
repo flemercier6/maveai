@@ -24,9 +24,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 14% 12%;
 
-    --primary: 158 64% 32%;          /* warm, ChatGPT-ish green */
+    --primary: 0 0% 0%;              /* #000000 */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 158 64% 28%;
+    --primary-hover: 0 0% 15%;
 
     --secondary: 220 13% 95%;
     --secondary-foreground: 222 14% 18%;
