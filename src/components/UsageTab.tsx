@@ -234,6 +234,9 @@ export function UsageTab() {
                     <td className="px-3 py-2.5 text-right tabular-nums font-medium">
                       {fmtUSD(row.cost)}
                     </td>
+                    <td className="px-3 py-2.5 text-right tabular-nums font-semibold">
+                      {fmtUSD(row.cost * 3)}
+                    </td>
                   </tr>
                 );
               })}
