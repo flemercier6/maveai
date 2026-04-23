@@ -38,10 +38,11 @@ function ChatMessageImpl({ role, content, streaming, provider, model, memory }: 
   if (isUser) {
     return (
       <div className="w-full py-3">
-        <div className="max-w-3xl mx-auto px-4 flex justify-end">
+        <div className="max-w-3xl mx-auto px-4 flex flex-col items-end gap-1.5">
           <div className="max-w-[80%] rounded-2xl bg-bubble-user text-bubble-user-foreground px-4 py-2.5 chat-prose break-words">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
           </div>
+          {memory && <MemoryBadge added={memory.added} updated={memory.updated} />}
         </div>
       </div>
     );
@@ -50,10 +51,9 @@ function ChatMessageImpl({ role, content, streaming, provider, model, memory }: 
   return (
     <div className="w-full py-5">
       <div className="max-w-3xl mx-auto px-4">
-        {(provider || memory) && (
-          <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-            {provider && <ProviderBadge provider={provider} model={model} />}
-            {memory && <MemoryBadge added={memory.added} updated={memory.updated} />}
+        {provider && (
+          <div className="mb-1.5">
+            <ProviderBadge provider={provider} model={model} />
           </div>
         )}
         <div className={cn("chat-prose break-words", streaming && "typing-cursor")}>

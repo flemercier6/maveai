@@ -205,14 +205,18 @@ export default function Chat() {
               );
             } else if (j.type === "memory") {
               const mem = { added: Number(j.added) || 0, updated: Number(j.updated) || 0 };
-              setMessages((prev) => {
-                const next = prev.slice();
-                const last = next[next.length - 1];
-                if (last && last.role === "assistant") {
-                  next[next.length - 1] = { ...last, memory: mem };
-                }
-                return next;
-              });
+              if (mem.added + mem.updated > 0) {
+                setMessages((prev) => {
+                  const next = prev.slice();
+                  for (let i = next.length - 1; i >= 0; i--) {
+                    if (next[i].role === "user") {
+                      next[i] = { ...next[i], memory: mem };
+                      break;
+                    }
+                  }
+                  return next;
+                });
+              }
             } else if (j.type === "error") {
               throw new Error(j.error);
             }
