@@ -37,6 +37,9 @@
     --accent: 220 13% 94%;
     --accent-foreground: 222 14% 12%;
 
+    --select-active: 214 100% 94%;     /* #E2EEFF */
+    --select-active-foreground: 222 14% 12%;
+
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
