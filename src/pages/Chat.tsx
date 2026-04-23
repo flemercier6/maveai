@@ -254,6 +254,7 @@ export default function Chat() {
           if (activeId === id) { setActiveId(null); setMessages([]); }
         }}
         userEmail={user.email}
+        userName={displayName ?? (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0]}
       />
 
       <main className="flex-1 flex flex-col min-w-0">
