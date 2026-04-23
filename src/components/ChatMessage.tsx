@@ -28,10 +28,10 @@ function MemoryBadge({ added, updated }: { added: number; updated: number }) {
   if (total <= 0) return null;
   const label =
     added > 0 && updated > 0
-      ? `Mémoire mise à jour (${added} ajouté${added > 1 ? "s" : ""}, ${updated} modifié${updated > 1 ? "s" : ""})`
+      ? `Memory updated (${added} added, ${updated} edited)`
       : added > 0
-        ? `Ajouté à la mémoire${added > 1 ? ` (${added})` : ""}`
-        : `Mémoire mise à jour${updated > 1 ? ` (${updated})` : ""}`;
+        ? `Added to memory${added > 1 ? ` (${added})` : ""}`
+        : `Memory updated${updated > 1 ? ` (${updated})` : ""}`;
   return (
     <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
       <Brain className="w-3.5 h-3.5" />
