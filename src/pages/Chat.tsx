@@ -217,6 +217,9 @@ export default function Chat() {
                   return next;
                 });
               }
+            } else if (j.type === "error") {
+              throw new Error(j.error);
+            }
           } catch (e) {
             if (e instanceof SyntaxError) continue;
             throw e;
