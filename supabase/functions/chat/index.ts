@@ -125,6 +125,104 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
   }
 }
 
+// ---------- Memory extraction (uses cheapest available provider) ----------
+async function extractAndSaveMemory(args: {
+  supabase: any;
+  userId: string;
+  openaiKey?: string;
+  googleKey?: string;
+  anthropicKey?: string;
+  userText: string;
+  assistantText: string;
+}) {
+  const { supabase, userId, userText, assistantText } = args;
+  if (!userText.trim()) return;
+
+  const prompt =
+    `Tu es un extracteur de mémoire. À partir de l'échange ci-dessous, extrais UNIQUEMENT des faits durables et personnels concernant l'utilisateur (préférences, identité, projets, contexte récurrent). Ignore les questions ponctuelles et requêtes éphémères.\n\nRéponds STRICTEMENT en JSON: {"facts": [{"kind": "preference|identity|project|context", "content": "..."}]}\nSi rien à retenir: {"facts": []}.\n\n--- USER ---\n${userText}\n\n--- ASSISTANT ---\n${assistantText.slice(0, 2000)}`;
+
+  let raw = "";
+  try {
+    if (args.googleKey) {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${args.googleKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" },
+          }),
+        },
+      );
+      const j = await r.json();
+      raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
+    } else if (args.openaiKey) {
+      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${args.openaiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gpt-5-nano",
+          messages: [{ role: "user", content: prompt }],
+          response_format: { type: "json_object" },
+        }),
+      });
+      const j = await r.json();
+      raw = j.choices?.[0]?.message?.content ?? "";
+    } else if (args.anthropicKey) {
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": args.anthropicKey,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-3-5-haiku-latest",
+          max_tokens: 512,
+          messages: [{ role: "user", content: prompt + "\n\nRéponds uniquement avec le JSON." }],
+        }),
+      });
+      const j = await r.json();
+      raw = j.content?.[0]?.text ?? "";
+    } else {
+      return;
+    }
+  } catch (e) {
+    console.error("extract call failed", e);
+    return;
+  }
+
+  let parsed: any;
+  try {
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+    parsed = JSON.parse(cleaned);
+  } catch {
+    return;
+  }
+  const facts = Array.isArray(parsed?.facts) ? parsed.facts : [];
+  if (!facts.length) return;
+
+  const { data: existing } = await supabase
+    .from("user_memories")
+    .select("content")
+    .eq("user_id", userId);
+  const existingSet = new Set((existing ?? []).map((e: any) => e.content.toLowerCase().trim()));
+
+  const rows = facts
+    .filter((f: any) => f?.content && !existingSet.has(String(f.content).toLowerCase().trim()))
+    .slice(0, 10)
+    .map((f: any) => ({
+      user_id: userId,
+      content: String(f.content).slice(0, 500),
+      kind: ["preference", "identity", "project", "context"].includes(f.kind) ? f.kind : "fact",
+    }));
+
+  if (rows.length) {
+    await supabase.from("user_memories").insert(rows);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -167,6 +265,32 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ---------- Load cross-provider user memory ----------
+    const { data: memRows } = await supabase
+      .from("user_memories")
+      .select("content,kind,created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    const memoryBlock = (memRows ?? [])
+      .map((m: any) => `- (${m.kind}) ${m.content}`)
+      .join("\n");
+
+    const memorySystem: Msg | null = memoryBlock
+      ? {
+        role: "system",
+        content:
+          "Mémoire persistante de l'utilisateur (faits, préférences, contexte) — utilise-la implicitement pour personnaliser tes réponses, sans la répéter mot pour mot :\n" +
+          memoryBlock,
+      }
+      : null;
+
+    // Prepend memory system message if not already present
+    const finalMessages: Msg[] = memorySystem
+      ? [memorySystem, ...messages.filter((m) => m.role !== "system" || !m.content.startsWith("Mémoire persistante"))]
+      : messages;
+
     const ENV_KEY: Record<string, string | undefined> = {
       openai: Deno.env.get("OPENAI_API_KEY"),
       anthropic: Deno.env.get("ANTHROPIC_API_KEY"),
@@ -188,9 +312,9 @@ Deno.serve(async (req) => {
       async start(controller) {
         try {
           let iter: AsyncGenerator<string>;
-          if (provider === "openai") iter = streamOpenAI(apiKey, model, messages);
-          else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, messages);
-          else iter = streamGemini(apiKey, model, messages);
+          if (provider === "openai") iter = streamOpenAI(apiKey, model, finalMessages);
+          else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, finalMessages);
+          else iter = streamGemini(apiKey, model, finalMessages);
 
           for await (const chunk of iter) {
             assistantText += chunk;
@@ -211,6 +335,18 @@ Deno.serve(async (req) => {
 
           controller.enqueue(enc({ type: "done" }));
           controller.close();
+
+          // ---------- Fire-and-forget: extract memorable facts ----------
+          const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+          extractAndSaveMemory({
+            supabase,
+            userId: user.id,
+            openaiKey: Deno.env.get("OPENAI_API_KEY"),
+            googleKey: Deno.env.get("GOOGLE_API_KEY"),
+            anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+            userText: lastUser,
+            assistantText,
+          }).catch((err) => console.error("memory extract failed:", err));
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           controller.enqueue(enc({ type: "error", error: msg }));
