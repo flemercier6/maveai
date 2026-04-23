@@ -45,6 +45,7 @@ export default function Chat() {
   const [streaming, setStreaming] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachLoading, setAttachLoading] = useState(false);
+  const [clarify, setClarify] = useState<ClarifyQuestion[] | null>(null);
   const [slash, setSlash] = useState<{
     query: string;
     start: number;
