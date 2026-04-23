@@ -34,6 +34,37 @@ function mergeTextAttachments(content: string, atts: Attachment[] | undefined): 
   return content + textParts.join("");
 }
 
+// ---------- Pricing (USD per 1M tokens) ----------
+// Keep in sync with src/lib/models.ts. Values are public list prices.
+type Price = { input: number; output: number };
+const MODEL_PRICES: Record<string, Price> = {
+  // OpenAI
+  "gpt-5.4": { input: 2.5, output: 10 },
+  "gpt-4o": { input: 2.5, output: 10 },
+  "gpt-4o-mini": { input: 0.15, output: 0.6 },
+  // Anthropic
+  "claude-opus-4-7": { input: 15, output: 75 },
+  "claude-sonnet-4-6": { input: 3, output: 15 },
+  "claude-3-5-haiku-latest": { input: 0.8, output: 4 },
+  // Google
+  "gemini-2.5-pro": { input: 1.25, output: 10 },
+  "gemini-2.5-flash": { input: 0.3, output: 2.5 },
+  "gemini-2.5-flash-lite": { input: 0.1, output: 0.4 },
+};
+function priceFor(model: string): Price {
+  if (MODEL_PRICES[model]) return MODEL_PRICES[model];
+  // Fuzzy fallbacks for variants/aliases
+  const m = model.toLowerCase();
+  if (m.includes("opus")) return MODEL_PRICES["claude-opus-4-7"];
+  if (m.includes("sonnet")) return MODEL_PRICES["claude-sonnet-4-6"];
+  if (m.includes("haiku")) return MODEL_PRICES["claude-3-5-haiku-latest"];
+  if (m.includes("flash-lite")) return MODEL_PRICES["gemini-2.5-flash-lite"];
+  if (m.includes("flash")) return MODEL_PRICES["gemini-2.5-flash"];
+  if (m.includes("gemini")) return MODEL_PRICES["gemini-2.5-pro"];
+  if (m.includes("mini")) return MODEL_PRICES["gpt-4o-mini"];
+  if (m.includes("gpt")) return MODEL_PRICES["gpt-5.4"];
+  return { input: 0, output: 0 };
+
 function sseEncoder() {
   const encoder = new TextEncoder();
   return (obj: unknown) => encoder.encode(`data: ${JSON.stringify(obj)}\n\n`);
