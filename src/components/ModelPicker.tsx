@@ -19,7 +19,7 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
 
   const showTip = (e: React.SyntheticEvent<HTMLElement>, text: string) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setTip({ text, top: rect.top + rect.height / 2, left: rect.right + 12 });
+    setTip({ text, top: rect.top + rect.height / 2, left: rect.left - 12 });
   };
   const hideTip = () => setTip(null);
 
@@ -51,14 +51,10 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
             </span>
           </SelectValue>
         </SelectTrigger>
-        <SelectContent className="w-[260px]">
+        <SelectContent align="end" className="w-[260px]">
           <SelectItem
             value={AUTO_MODEL_ID}
             className="py-2.5 bg-[#F8F8F8] data-[state=checked]:bg-[#F8F8F8] focus:bg-[#F8F8F8]"
-            onMouseEnter={(e) => showTip(e, "Picks the best model for your message")}
-            onMouseLeave={hideTip}
-            onFocus={(e) => showTip(e, "Picks the best model for your message")}
-            onBlur={hideTip}
           >
             <span className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 shrink-0" />
@@ -92,7 +88,7 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
       {tip &&
         createPortal(
           <div
-            style={{ position: "fixed", top: tip.top, left: tip.left, transform: "translateY(-50%)" }}
+            style={{ position: "fixed", top: tip.top, left: tip.left, transform: "translate(-100%, -50%)" }}
             className="pointer-events-none z-[100] whitespace-nowrap rounded-[4px] bg-tooltip px-2 py-1 text-xs text-tooltip-foreground shadow-md"
           >
             {tip.text}
