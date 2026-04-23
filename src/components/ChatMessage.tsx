@@ -1,5 +1,5 @@
 import { memo, useState, type ReactNode } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink } from "lucide-react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
