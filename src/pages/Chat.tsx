@@ -97,16 +97,20 @@ export default function Chat() {
     lastSentRef.current = text;
     setInput("");
 
-    // Resolve Auto → concrete provider/model for this turn
-    const resolved = model === AUTO_MODEL_ID ? routeAuto(text) : { provider, model };
+    // Resolve Auto → concrete provider/model for this turn (Auto preference is preserved)
+    const userPickedAuto = model === AUTO_MODEL_ID;
+    const resolved = userPickedAuto ? routeAuto(text) : { provider, model };
     const sendProvider = resolved.provider;
     const sendModel = resolved.model;
+    // What we persist on the conversation: keep Auto if the user picked Auto
+    const convProvider = userPickedAuto ? provider : sendProvider;
+    const convModel = userPickedAuto ? AUTO_MODEL_ID : sendModel;
 
     const convId = await ensureConversation(text);
     if (!convId) { setSending(false); return; }
 
     // Update conversation provider/model in case it changed
-    await supabase.from("conversations").update({ provider: sendProvider, model: sendModel }).eq("id", convId);
+    await supabase.from("conversations").update({ provider: convProvider, model: convModel }).eq("id", convId);
 
     // Persist user message
     const { data: userMsg } = await supabase.from("messages").insert({
