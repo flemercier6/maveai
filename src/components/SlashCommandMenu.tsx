@@ -101,7 +101,7 @@ export function SlashCommandMenu({ query, position, onSelect, onClose }: Props) 
       ref={listRef}
       role="listbox"
       className="absolute z-50 w-72 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg"
-      style={{ left: position.left, top: position.top }}
+      style={{ left: position.left, top: position.top, transform: "translateY(-100%)" }}
       onMouseDown={(e) => e.preventDefault()}
     >
       {items.map((it, idx) => {

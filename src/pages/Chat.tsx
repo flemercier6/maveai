@@ -397,12 +397,12 @@ export default function Chat() {
       setSlash((s) => (s ? null : s));
       return;
     }
-    // Position the menu directly under the caret
-    const { left, top, height } = getTextareaCaretCoords(el, found.start);
+    // Position the menu above the textarea, horizontally aligned with the caret
+    const { left } = getTextareaCaretCoords(el, found.start);
     setSlash({
       query: found.query,
       start: found.start,
-      pos: { left: el.offsetLeft + left, top: el.offsetTop + top + height + 4 },
+      pos: { left: el.offsetLeft + left, top: el.offsetTop - 8 },
     });
   };
 
