@@ -58,7 +58,7 @@ function ActionButton({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors"
+      className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors px-[5px] py-[5px]"
     >
       {children}
     </button>
