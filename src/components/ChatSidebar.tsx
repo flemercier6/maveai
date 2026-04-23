@@ -124,7 +124,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
       <ScrollArea className="flex-1">
         <div className="p-2">
           <Collapsible defaultOpen>
-            <CollapsibleTrigger className="group flex w-full items-center gap-1 px-[10px] py-[6px] text-[11px] font-medium uppercase tracking-wide text-muted-foreground hover:text-sidebar-foreground">
+            <CollapsibleTrigger className="group flex w-full items-center gap-1 px-[10px] py-[6px] text-[11px] font-medium text-muted-foreground hover:text-sidebar-foreground">
               <ChevronDown className="w-3 h-3 transition-transform group-data-[state=closed]:-rotate-90" />
               <span>Recent</span>
             </CollapsibleTrigger>
