@@ -304,36 +304,37 @@ async function firecrawlScrape(apiKey: string, url: string): Promise<string | nu
   }
 }
 
-async function firecrawlSearch(apiKey: string, query: string): Promise<string | null> {
+async function linkupSearch(apiKey: string, query: string): Promise<string | null> {
   try {
-    const r = await fetch("https://api.firecrawl.dev/v2/search", {
+    const r = await fetch("https://api.linkup.so/v1/search", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        query,
-        limit: 5,
-        scrapeOptions: { formats: ["markdown"] },
+        q: query,
+        depth: "standard",
+        outputType: "searchResults",
+        includeImages: false,
       }),
     });
     const j = await r.json();
     if (!r.ok) {
-      console.error("firecrawl search error", r.status, j);
+      console.error("linkup search error", r.status, j);
       return null;
     }
-    const results: any[] = j?.data?.web ?? j?.data ?? j?.results ?? [];
+    const results: any[] = j?.results ?? [];
     if (!Array.isArray(results) || !results.length) return null;
-    const blocks = results.slice(0, 5).map((res, i) => {
-      const title = res.title ?? res.metadata?.title ?? "(sans titre)";
-      const url = res.url ?? res.metadata?.sourceURL ?? "";
-      const content = (res.markdown ?? res.description ?? "").toString().slice(0, 2000);
+    const blocks = results.slice(0, 8).map((res, i) => {
+      const title = res.name ?? res.title ?? "(no title)";
+      const url = res.url ?? "";
+      const content = (res.content ?? res.snippet ?? res.description ?? "").toString().slice(0, 2000);
       return `### Result ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
     });
     return blocks.join("\n\n---\n\n").slice(0, 15000);
   } catch (e) {
-    console.error("firecrawl search exception", e);
+    console.error("linkup search exception", e);
     return null;
   }
 }
@@ -665,13 +666,14 @@ Deno.serve(async (req) => {
     const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
     const lastUserText = lastUserMsg?.content ?? "";
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+    const linkupKey = Deno.env.get("LINKUP_API_KEY");
     let webContext: { kind: "scrape" | "search"; label: string; content: string } | null = null;
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
           // Run web tool detection + fetch (notify client of progress)
-          if (firecrawlKey && lastUserText) {
+          if ((firecrawlKey || linkupKey) && lastUserText) {
             controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
             const decision = await decideWebTool({
               googleKey: Deno.env.get("GOOGLE_API_KEY"),
@@ -679,7 +681,7 @@ Deno.serve(async (req) => {
               anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
               userText: lastUserText,
             });
-            if (decision.action === "scrape") {
+            if (decision.action === "scrape" && firecrawlKey) {
               controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "running" }));
               const md = await firecrawlScrape(firecrawlKey, decision.url);
               if (md) {
@@ -688,9 +690,9 @@ Deno.serve(async (req) => {
               } else {
                 controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "failed" }));
               }
-            } else if (decision.action === "search") {
+            } else if (decision.action === "search" && linkupKey) {
               controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "running" }));
-              const md = await firecrawlSearch(firecrawlKey, decision.query);
+              const md = await linkupSearch(linkupKey, decision.query);
               if (md) {
                 webContext = { kind: "search", label: decision.query, content: md };
                 controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "done" }));
