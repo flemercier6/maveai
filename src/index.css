@@ -115,6 +115,19 @@
   .bg-bubble-user .chat-prose a,
   .bg-bubble-user.chat-prose a { color: hsl(var(--link)); }
   .chat-prose strong { @apply font-semibold; }
+  .chat-prose table {
+    @apply w-full my-5 border-collapse text-[14px] border border-border rounded-lg overflow-hidden;
+    display: table;
+  }
+  .chat-prose thead { @apply bg-muted; }
+  .chat-prose th {
+    @apply text-left font-semibold px-3 py-2 border-b border-border;
+  }
+  .chat-prose td {
+    @apply px-3 py-2 border-b border-border align-top;
+  }
+  .chat-prose tbody tr:last-child td { @apply border-b-0; }
+  .chat-prose tbody tr:hover { @apply bg-muted/40; }
 
   .typing-cursor::after {
     content: '▍';
