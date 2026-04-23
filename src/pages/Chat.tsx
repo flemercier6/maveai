@@ -157,7 +157,7 @@ export default function Chat() {
     // Build the textual portion of the user message (visible in history)
     const attachmentSummary = atts.length
       ? "\n\n" + atts.map((a) =>
-          a.kind === "image" ? `📎 Image: ${a.name}` : `📎 Fichier: ${a.name}`
+          a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
         ).join("\n")
       : "";
     const displayContent = text + attachmentSummary;
