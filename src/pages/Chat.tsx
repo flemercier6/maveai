@@ -143,6 +143,10 @@ export default function Chat() {
                 next[next.length - 1] = { role: "assistant", content: acc };
                 return next;
               });
+            } else if (j.type === "title" && j.title) {
+              setConversations((prev) =>
+                prev.map((c) => (c.id === convId ? { ...c, title: j.title } : c)),
+              );
             } else if (j.type === "error") {
               throw new Error(j.error);
             }
