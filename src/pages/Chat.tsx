@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ChatSidebar, type Conversation } from "@/components/ChatSidebar";
 import { ChatMessage } from "@/components/ChatMessage";
+import { ChatIndex } from "@/components/ChatIndex";
 import { ModelPicker } from "@/components/ModelPicker";
 
 import { Textarea } from "@/components/ui/textarea";
@@ -49,6 +50,7 @@ export default function Chat() {
     pos: { left: number; top: number };
   } | null>(null);
 
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const lastSentRef = useRef<string>("");
