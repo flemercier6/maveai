@@ -334,16 +334,21 @@ ${assistantText.slice(0, 2000)}`;
     // "skip" → nothing
   }
 
+  let inserted = 0;
+  let updated = 0;
   if (toInsert.length) {
-    await supabase.from("user_memories").insert(toInsert);
+    const { error } = await supabase.from("user_memories").insert(toInsert);
+    if (!error) inserted = toInsert.length;
   }
   for (const u of toUpdate) {
-    await supabase
+    const { error } = await supabase
       .from("user_memories")
       .update({ content: u.content, kind: u.kind, updated_at: new Date().toISOString() })
       .eq("id", u.id)
       .eq("user_id", userId);
+    if (!error) updated += 1;
   }
+  return { added: inserted, updated };
 }
 
 Deno.serve(async (req) => {
