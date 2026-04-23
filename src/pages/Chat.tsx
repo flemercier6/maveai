@@ -90,11 +90,16 @@ export default function Chat() {
     setSending(true);
     setInput("");
 
+    // Resolve Auto → concrete provider/model for this turn
+    const resolved = model === AUTO_MODEL_ID ? routeAuto(text) : { provider, model };
+    const sendProvider = resolved.provider;
+    const sendModel = resolved.model;
+
     const convId = await ensureConversation(text);
     if (!convId) { setSending(false); return; }
 
     // Update conversation provider/model in case it changed
-    await supabase.from("conversations").update({ provider, model }).eq("id", convId);
+    await supabase.from("conversations").update({ provider: sendProvider, model: sendModel }).eq("id", convId);
 
     // Persist user message
     const { data: userMsg } = await supabase.from("messages").insert({
@@ -102,7 +107,7 @@ export default function Chat() {
     }).select().single();
 
     const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: text }];
-    setMessages([...baseMsgs, { role: "assistant", content: "", provider }]);
+    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider }]);
     setStreaming(true);
 
     try {
