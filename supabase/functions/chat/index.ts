@@ -329,7 +329,7 @@ async function firecrawlSearch(apiKey: string, query: string): Promise<string | 
       const title = res.title ?? res.metadata?.title ?? "(sans titre)";
       const url = res.url ?? res.metadata?.sourceURL ?? "";
       const content = (res.markdown ?? res.description ?? "").toString().slice(0, 2000);
-      return `### Résultat ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
+      return `### Result ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
     });
     return blocks.join("\n\n---\n\n").slice(0, 15000);
   } catch (e) {
