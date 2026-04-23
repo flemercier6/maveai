@@ -896,6 +896,25 @@ Deno.serve(async (req) => {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // ---------- Clarifying questions (asked BEFORE running anything else) ----------
+          if (!skipClarify && lastUserText) {
+            const userTurns = messages.filter((m) => m.role === "user").length;
+            controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
+            const clarify = await decideClarify({
+              googleKey: Deno.env.get("GOOGLE_API_KEY"),
+              openaiKey: Deno.env.get("OPENAI_API_KEY"),
+              anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+              userText: lastUserText,
+              hasHistory: userTurns > 1,
+            });
+            if (clarify && clarify.length) {
+              controller.enqueue(enc({ type: "clarify", questions: clarify }));
+              controller.enqueue(enc({ type: "done" }));
+              controller.close();
+              return;
+            }
+          }
+
           // Run web tool detection + fetch (notify client of progress)
           if ((firecrawlKey || linkupKey) && lastUserText) {
             controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
