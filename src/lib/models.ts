@@ -19,7 +19,7 @@ export const MODELS: Record<Provider, ModelOption[]> = {
     { id: "claude-sonnet-4-6", label: "Sonnet 4.6", description: "Anthropic's fastest model" },
   ],
   google: [
-    { id: "gemini-3.5-pro", label: "Gemini 3.5 Pro", description: "Google's latest model" },
+    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", description: "Google's most capable model" },
     { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", description: "Google's fastest model" },
   ],
 };
@@ -27,7 +27,7 @@ export const MODELS: Record<Provider, ModelOption[]> = {
 export const DEFAULT_MODEL: Record<Provider, string> = {
   openai: "gpt-5.4",
   anthropic: "claude-opus-4-7",
-  google: "gemini-3.5-pro",
+  google: "gemini-2.5-pro",
 };
 
 export const PROVIDER_LABEL: Record<Provider, string> = {
@@ -99,7 +99,7 @@ export function routeAuto(message: string): { provider: Provider; model: string 
 
   // 3. Gemini Pro — image/file, Google products, structured data
   if (hasImageOrFile || mentionsGoogle || wantsStructured) {
-    return { provider: "google", model: "gemini-3.5-pro" };
+    return { provider: "google", model: "gemini-2.5-pro" };
   }
 
   // 2. ChatGPT fastest — short creative / quick rewrites
