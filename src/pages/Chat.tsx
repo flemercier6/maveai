@@ -86,10 +86,15 @@ export default function Chat() {
     return data.id;
   };
 
+  const stop = () => {
+    abortRef.current?.abort();
+  };
+
   const send = async () => {
     const text = input.trim();
     if (!text || sending) return;
     setSending(true);
+    lastSentRef.current = text;
     setInput("");
 
     // Resolve Auto → concrete provider/model for this turn
@@ -112,6 +117,9 @@ export default function Chat() {
     setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider }]);
     setStreaming(true);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const resp = await fetch(FUNC_URL, {
@@ -126,6 +134,7 @@ export default function Chat() {
           model: sendModel,
           messages: baseMsgs.map((m) => ({ role: m.role, content: m.content })),
         }),
+        signal: controller.signal,
       });
 
       if (!resp.ok || !resp.body) {
