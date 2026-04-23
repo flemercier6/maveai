@@ -98,30 +98,38 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
             <p className="text-xs text-muted-foreground px-3 py-4">No conversations yet.</p>
           )}
           {conversations.map((c) => (
-            <button
+            <div
               key={c.id}
-              onClick={() => onSelect(c.id)}
               onMouseEnter={() => setHovered(c.id)}
               onMouseLeave={() => setHovered(null)}
               className={cn(
-                "group w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors",
+                "group relative w-full rounded-lg text-sm transition-colors",
                 activeId === c.id
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "hover:bg-sidebar-accent/60 text-sidebar-foreground"
               )}
             >
-              <MessageSquare className="w-4 h-4 shrink-0 opacity-70" />
-              <span className="flex-1 truncate">{c.title}</span>
+              <button
+                onClick={() => onSelect(c.id)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-left min-w-0"
+              >
+                <MessageSquare className="w-4 h-4 shrink-0 opacity-70" />
+                <span className="flex-1 truncate pr-6">{c.title}</span>
+              </button>
               {(hovered === c.id || activeId === c.id) && (
-                <span
-                  role="button"
+                <button
                   onClick={(e) => remove(c.id, e)}
-                  className="opacity-60 hover:opacity-100 hover:text-destructive"
+                  aria-label="Delete conversation"
+                  className={cn(
+                    "absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-md",
+                    "opacity-70 hover:opacity-100 hover:text-destructive hover:bg-background/40",
+                    activeId === c.id ? "bg-sidebar-accent" : "bg-sidebar group-hover:bg-sidebar-accent/60"
+                  )}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                </span>
+                </button>
               )}
-            </button>
+            </div>
           ))}
         </div>
       </ScrollArea>
