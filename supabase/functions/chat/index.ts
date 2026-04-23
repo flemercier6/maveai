@@ -135,9 +135,9 @@ async function generateTitle(args: {
   const { userText } = args;
   if (!userText.trim()) return null;
 
-  const prompt = `Génère un titre TRÈS court (3 à 6 mots maximum) résumant le sujet de ce message. Pas de guillemets, pas de ponctuation finale, pas d'emoji. Réponds uniquement par le titre.
+  const prompt = `Generate a VERY short title (3 to 6 words maximum) summarizing the topic of this message. No quotes, no ending punctuation, no emoji. Reply with the title only.
 
-Message :
+Message:
 ${userText.slice(0, 1000)}`;
 
   try {
@@ -219,23 +219,23 @@ async function extractAndSaveMemory(args: {
 
   const existingBlock = existing.length
     ? existing.map((m, i) => `${i + 1}. [id=${m.id}] (${m.kind}) ${m.content}`).join("\n")
-    : "(aucune mémoire existante)";
+    : "(no existing memory)";
 
   const prompt =
-    `Tu es un gestionnaire de mémoire utilisateur. Analyse l'échange et décide pour chaque fait durable et personnel (préférences, identité, projets, contexte récurrent) s'il faut :
-- "add"    : ajouter un NOUVEAU souvenir (info absente de la mémoire existante)
-- "update" : REMPLACER un souvenir existant (même sujet mais info différente, plus précise ou contradictoire) — fournis "id" du souvenir à remplacer
-- "skip"   : ne rien faire (déjà présent à l'identique ou non pertinent)
+    `You are a user memory manager. Analyze the exchange and decide, for every durable and personal fact (preferences, identity, projects, recurring context), whether to:
+- "add"    : add a NEW memory (info absent from existing memory)
+- "update" : REPLACE an existing memory (same subject but different, more precise or contradictory info) — provide the "id" of the memory to replace
+- "skip"   : do nothing (already present identically or not relevant)
 
-Règles strictes :
-- Compare sémantiquement, pas seulement mot à mot. "Je suis dev" et "L'utilisateur est développeur" = doublon → skip.
-- Si un nouveau fait CONTREDIT ou PRÉCISE un fait existant sur le même sujet → update (avec l'id concerné).
-- Ignore les questions ponctuelles et requêtes éphémères.
-- Réponds STRICTEMENT en JSON, sans texte autour :
-{"actions":[{"op":"add|update|skip","id":"<uuid si update>","kind":"preference|identity|project|context","content":"..."}]}
-Si rien : {"actions":[]}.
+Strict rules:
+- Compare semantically, not just word-for-word. "I'm a dev" and "The user is a developer" = duplicate → skip.
+- If a new fact CONTRADICTS or REFINES an existing fact on the same subject → update (with the concerned id).
+- Ignore one-off questions and ephemeral requests.
+- Reply STRICTLY in JSON, no surrounding text:
+{"actions":[{"op":"add|update|skip","id":"<uuid if update>","kind":"preference|identity|project|context","content":"..."}]}
+If nothing: {"actions":[]}.
 
---- MÉMOIRE EXISTANTE ---
+--- EXISTING MEMORY ---
 ${existingBlock}
 
 --- USER ---
@@ -283,7 +283,7 @@ ${assistantText.slice(0, 2000)}`;
         body: JSON.stringify({
           model: "claude-3-5-haiku-latest",
           max_tokens: 512,
-          messages: [{ role: "user", content: prompt + "\n\nRéponds uniquement avec le JSON." }],
+          messages: [{ role: "user", content: prompt + "\n\nReply with JSON only." }],
         }),
       });
       const j = await r.json();
