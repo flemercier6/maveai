@@ -187,10 +187,28 @@ export default function Chat() {
         return [updated, ...prev.filter((c) => c.id !== convId)];
       });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.error(msg);
-      setMessages((prev) => prev.slice(0, -1));
+      const aborted = (e as any)?.name === "AbortError" || controller.signal.aborted;
+      if (aborted) {
+        // Restore the prompt the user was sending so they can edit/resend
+        setInput(lastSentRef.current);
+        // Remove the (empty) assistant placeholder and the persisted user message
+        setMessages((prev) => {
+          const trimmed = prev.slice(0, -1); // drop assistant placeholder
+          if (trimmed.length && trimmed[trimmed.length - 1].role === "user") {
+            return trimmed.slice(0, -1);
+          }
+          return trimmed;
+        });
+        if (userMsg?.id) {
+          await supabase.from("messages").delete().eq("id", userMsg.id);
+        }
+      } else {
+        const msg = e instanceof Error ? e.message : String(e);
+        toast.error(msg);
+        setMessages((prev) => prev.slice(0, -1));
+      }
     } finally {
+      abortRef.current = null;
       setStreaming(false);
       setSending(false);
     }
@@ -266,14 +284,26 @@ export default function Chat() {
                   onChange={(p, m) => { setProvider(p); setModel(m); }}
                   disabled={streaming}
                 />
-                <Button
-                  size="icon"
-                  onClick={send}
-                  disabled={!input.trim() || sending}
-                  className="h-9 w-9 rounded-xl"
-                >
-                  <ArrowUp className="w-4 h-4" />
-                </Button>
+                {sending ? (
+                  <Button
+                    size="icon"
+                    onClick={stop}
+                    className="h-9 w-9 rounded-xl"
+                    aria-label="Stop generation"
+                  >
+                    <Square className="w-4 h-4 fill-current" />
+                  </Button>
+                ) : (
+                  <Button
+                    size="icon"
+                    onClick={send}
+                    disabled={!input.trim()}
+                    className="h-9 w-9 rounded-xl"
+                    aria-label="Send message"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground text-center mt-[5px]">
