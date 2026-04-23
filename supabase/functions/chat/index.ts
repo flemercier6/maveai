@@ -197,6 +197,147 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]) {
   }
 }
 
+// ---------- Web tools (Firecrawl) ----------
+type WebDecision =
+  | { action: "none" }
+  | { action: "scrape"; url: string }
+  | { action: "search"; query: string };
+
+async function decideWebTool(args: {
+  googleKey?: string;
+  openaiKey?: string;
+  anthropicKey?: string;
+  userText: string;
+}): Promise<WebDecision> {
+  const { userText } = args;
+  if (!userText.trim()) return { action: "none" };
+
+  // Quick heuristic: explicit URL → scrape
+  const urlMatch = userText.match(/https?:\/\/[^\s<>"']+/);
+  if (urlMatch) return { action: "scrape", url: urlMatch[0] };
+
+  const prompt = `Décide si pour répondre correctement à ce message, il faut consulter le web.
+
+Réponds UNIQUEMENT en JSON, sans texte autour, selon l'un de ces formats :
+{"action":"none"}                          → la connaissance générale suffit
+{"action":"search","query":"..."}          → il faut chercher des infos récentes / factuelles / actualité / prix / résultats / personnes / événements
+{"action":"scrape","url":"https://..."}    → l'utilisateur cite explicitement un site/URL à lire
+
+Règles :
+- "none" pour : conversation, code, raisonnement, créativité, reformulation, traduction, math, opinion.
+- "search" UNIQUEMENT si la réponse dépend d'informations factuelles à jour ou vérifiables en ligne.
+- Garde la query courte (≤ 12 mots), en gardant la langue de l'utilisateur.
+
+Message:
+${userText.slice(0, 1500)}`;
+
+  let raw = "";
+  try {
+    if (args.googleKey) {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${args.googleKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" },
+          }),
+        },
+      );
+      const j = await r.json();
+      raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
+    } else if (args.openaiKey) {
+      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${args.openaiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gpt-5-nano",
+          messages: [{ role: "user", content: prompt }],
+          response_format: { type: "json_object" },
+        }),
+      });
+      const j = await r.json();
+      raw = j.choices?.[0]?.message?.content ?? "";
+    } else {
+      return { action: "none" };
+    }
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    if (parsed?.action === "search" && typeof parsed.query === "string" && parsed.query.trim()) {
+      return { action: "search", query: parsed.query.trim() };
+    }
+    if (parsed?.action === "scrape" && typeof parsed.url === "string" && /^https?:\/\//.test(parsed.url)) {
+      return { action: "scrape", url: parsed.url };
+    }
+  } catch (e) {
+    console.error("decideWebTool failed", e);
+  }
+  return { action: "none" };
+}
+
+async function firecrawlScrape(apiKey: string, url: string): Promise<string | null> {
+  try {
+    const r = await fetch("https://api.firecrawl.dev/v2/scrape", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        url,
+        formats: ["markdown"],
+        onlyMainContent: true,
+      }),
+    });
+    const j = await r.json();
+    if (!r.ok) {
+      console.error("firecrawl scrape error", r.status, j);
+      return null;
+    }
+    const md: string | undefined = j?.data?.markdown ?? j?.markdown;
+    if (!md) return null;
+    return md.slice(0, 15000);
+  } catch (e) {
+    console.error("firecrawl scrape exception", e);
+    return null;
+  }
+}
+
+async function firecrawlSearch(apiKey: string, query: string): Promise<string | null> {
+  try {
+    const r = await fetch("https://api.firecrawl.dev/v2/search", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query,
+        limit: 5,
+        scrapeOptions: { formats: ["markdown"] },
+      }),
+    });
+    const j = await r.json();
+    if (!r.ok) {
+      console.error("firecrawl search error", r.status, j);
+      return null;
+    }
+    const results: any[] = j?.data?.web ?? j?.data ?? j?.results ?? [];
+    if (!Array.isArray(results) || !results.length) return null;
+    const blocks = results.slice(0, 5).map((res, i) => {
+      const title = res.title ?? res.metadata?.title ?? "(sans titre)";
+      const url = res.url ?? res.metadata?.sourceURL ?? "";
+      const content = (res.markdown ?? res.description ?? "").toString().slice(0, 2000);
+      return `### Résultat ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
+    });
+    return blocks.join("\n\n---\n\n").slice(0, 15000);
+  } catch (e) {
+    console.error("firecrawl search exception", e);
+    return null;
+  }
+}
+
 // ---------- Title generation (short summary from first user message) ----------
 async function generateTitle(args: {
   openaiKey?: string;
