@@ -476,6 +476,16 @@ export default function Chat() {
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                   onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
                   onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}
+                  onEdit={m.role === "user" ? () => {
+                    setInput(m.content);
+                    setTimeout(() => {
+                      const el = textareaRef.current;
+                      if (el) {
+                        el.focus();
+                        el.setSelectionRange(el.value.length, el.value.length);
+                      }
+                    }, 0);
+                  } : undefined}
                 />
               ))}
             </div>

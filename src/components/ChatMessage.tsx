@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement, memo, useState, type ReactNode } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight } from "lucide-react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
@@ -24,6 +24,7 @@ type Props = {
   sources?: Source[];
   onRetry?: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
@@ -289,6 +290,7 @@ function ChatMessageImpl({
   sources,
   onRetry,
   onDelete,
+  onEdit,
 }: Props) {
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
@@ -315,6 +317,18 @@ function ChatMessageImpl({
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{content}</ReactMarkdown>
           </div>
           {memory && <MemoryBadge added={memory.added} updated={memory.updated} />}
+          {(onEdit || content) && (
+            <div className="flex items-center gap-1 -mr-1.5">
+              {onEdit && (
+                <ActionButton onClick={onEdit} ariaLabel="Edit">
+                  <Pencil className="w-4 h-4" />
+                </ActionButton>
+              )}
+              <ActionButton onClick={handleCopy} ariaLabel={copied ? "Copied" : "Copy"}>
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </ActionButton>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -375,5 +389,6 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.phase === next.phase &&
   prev.sources === next.sources &&
   prev.onRetry === next.onRetry &&
-  prev.onDelete === next.onDelete,
+  prev.onDelete === next.onDelete &&
+  prev.onEdit === next.onEdit,
 );
