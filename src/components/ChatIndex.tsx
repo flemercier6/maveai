@@ -77,19 +77,25 @@ export function ChatIndex({ items, scrollContainer }: Props) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Pill */}
-      <div className="flex items-center bg-foreground text-background rounded-full h-9 pl-3 pr-2.5 cursor-default select-none">
-        <img src={paragraphIcon} alt="" className="w-[13px] h-[9px]" />
-        <span
-          className="text-sm font-medium leading-none"
-          style={{ marginLeft: 10 }}
-        >
-          Index
-        </span>
-        <ChevronsUpDown
-          className="w-3.5 h-3.5 opacity-80"
-          style={{ marginLeft: 10 }}
-        />
+      {/* Vertical pill with one dot per prompt */}
+      <div className="flex flex-col items-center bg-foreground rounded-full py-2.5 px-1.5 gap-1.5 cursor-default select-none">
+        {items.map((it) => {
+          const isActive = it.id === activeId;
+          return (
+            <button
+              key={it.id}
+              type="button"
+              onClick={() => scrollTo(it.id)}
+              aria-label={`Jump to: ${it.preview}`}
+              className={cn(
+                "rounded-full transition-all duration-200",
+                isActive
+                  ? "bg-background w-2 h-2"
+                  : "bg-background/40 hover:bg-background/70 w-1.5 h-1.5",
+              )}
+            />
+          );
+        })}
       </div>
 
       {/* Expanded prompt list */}
