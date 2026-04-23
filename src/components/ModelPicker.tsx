@@ -54,14 +54,18 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
         <SelectContent className="w-[260px]">
           <SelectItem
             value={AUTO_MODEL_ID}
+            className="data-[state=checked]:bg-transparent focus:bg-accent"
             onMouseEnter={(e) => showTip(e, "Picks the best model for your message")}
             onMouseLeave={hideTip}
             onFocus={(e) => showTip(e, "Picks the best model for your message")}
             onBlur={hideTip}
           >
-            <span className="flex items-center gap-2 leading-none">
+            <span className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 shrink-0" />
-              <span className="leading-none">Auto</span>
+              <span className="flex flex-col leading-tight">
+                <span className="leading-none">Auto</span>
+                <span className="text-[11px] text-muted-foreground font-normal mt-0.5">Pick the best model for your request</span>
+              </span>
             </span>
           </SelectItem>
           <SelectSeparator />
