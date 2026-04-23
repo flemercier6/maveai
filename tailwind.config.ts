@@ -58,6 +58,10 @@ export default {
           assistant: "hsl(var(--bubble-assistant))",
           "assistant-foreground": "hsl(var(--bubble-assistant-fg))",
         },
+        tooltip: {
+          DEFAULT: "hsl(var(--tooltip))",
+          foreground: "hsl(var(--tooltip-foreground))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
