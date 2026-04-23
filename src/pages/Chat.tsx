@@ -279,6 +279,33 @@ export default function Chat() {
     }
   };
 
+  // Delete an assistant reply along with the user message that prompted it.
+  const handleDeleteAssistant = async (assistantIdx: number) => {
+    if (sending) return;
+    const assistant = messages[assistantIdx];
+    if (!assistant || assistant.role !== "assistant") return;
+    const userIdx = assistantIdx - 1;
+    const userMsg = userIdx >= 0 && messages[userIdx]?.role === "user" ? messages[userIdx] : null;
+
+    const ids = [assistant.id, userMsg?.id].filter(Boolean) as string[];
+    if (ids.length) {
+      await supabase.from("messages").delete().in("id", ids);
+    }
+    setMessages((prev) => prev.filter((_, i) => i !== assistantIdx && i !== userIdx));
+  };
+
+  // Regenerate: remove the user/assistant pair, then re-send the same prompt.
+  const handleRetryAssistant = async (assistantIdx: number) => {
+    if (sending) return;
+    const userIdx = assistantIdx - 1;
+    const userMsg = userIdx >= 0 && messages[userIdx]?.role === "user" ? messages[userIdx] : null;
+    if (!userMsg) return;
+    const text = userMsg.content;
+    await handleDeleteAssistant(assistantIdx);
+    // small defer so state has settled before send() snapshots `messages`
+    setTimeout(() => { void send(text); }, 0);
+  };
+
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
