@@ -214,9 +214,9 @@ Deno.serve(async (req) => {
       async start(controller) {
         try {
           let iter: AsyncGenerator<string>;
-          if (provider === "openai") iter = streamOpenAI(apiKey, model, messages);
-          else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, messages);
-          else iter = streamGemini(apiKey, model, messages);
+          if (provider === "openai") iter = streamOpenAI(apiKey, model, finalMessages);
+          else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, finalMessages);
+          else iter = streamGemini(apiKey, model, finalMessages);
 
           for await (const chunk of iter) {
             assistantText += chunk;
@@ -237,6 +237,18 @@ Deno.serve(async (req) => {
 
           controller.enqueue(enc({ type: "done" }));
           controller.close();
+
+          // ---------- Fire-and-forget: extract memorable facts ----------
+          const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+          extractAndSaveMemory({
+            supabase,
+            userId: user.id,
+            openaiKey: Deno.env.get("OPENAI_API_KEY"),
+            googleKey: Deno.env.get("GOOGLE_API_KEY"),
+            anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+            userText: lastUser,
+            assistantText,
+          }).catch((err) => console.error("memory extract failed:", err));
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           controller.enqueue(enc({ type: "error", error: msg }));
