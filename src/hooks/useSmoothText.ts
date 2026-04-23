@@ -50,10 +50,10 @@ export function useSmoothText(target: string, enabled: boolean): string {
         return;
       }
 
-      // Base speed: ~70 chars/sec. Accelerate as the buffer grows so we
-      // never fall more than ~1.5s behind the actual stream.
-      const baseCps = 70;
-      const catchupBoost = Math.min(remaining / 30, 8); // up to 8x
+      // Base speed: ~35 chars/sec. Accelerate as the buffer grows so we
+      // never fall more than ~3s behind the actual stream.
+      const baseCps = 35;
+      const catchupBoost = Math.min(remaining / 60, 6); // up to 6x
       const cps = baseCps * (1 + catchupBoost);
 
       // How many chars to reveal this frame
