@@ -653,7 +653,7 @@ Deno.serve(async (req) => {
 
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: `Le fournisseur ${provider} n'est pas activé sur cette instance.` }),
+        JSON.stringify({ error: `Provider ${provider} is not enabled on this instance.` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
