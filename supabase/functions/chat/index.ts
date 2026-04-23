@@ -421,10 +421,22 @@ Deno.serve(async (req) => {
       }
       : null;
 
-    // Prepend memory system message if not already present
-    const finalMessages: Msg[] = memorySystem
-      ? [memorySystem, ...messages.filter((m) => m.role !== "system" || !m.content.startsWith("Mémoire persistante"))]
-      : messages;
+    const styleSystem: Msg = {
+      role: "system",
+      content:
+        "Tu peux utiliser des emojis librement dans tes réponses lorsque c'est pertinent (ton, illustration, listes, ponctuation expressive). Évite l'excès : un emoji bien placé vaut mieux que dix.",
+    };
+
+    // Prepend system messages (style + memory) and drop any previous duplicates from the client
+    const baseSystems: Msg[] = [styleSystem, ...(memorySystem ? [memorySystem] : [])];
+    const finalMessages: Msg[] = [
+      ...baseSystems,
+      ...messages.filter(
+        (m) =>
+          m.role !== "system" ||
+          (!m.content.startsWith("Mémoire persistante") && !m.content.startsWith("Tu peux utiliser des emojis")),
+      ),
+    ];
 
     const ENV_KEY: Record<string, string | undefined> = {
       openai: Deno.env.get("OPENAI_API_KEY"),
