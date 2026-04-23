@@ -450,6 +450,7 @@ Deno.serve(async (req) => {
             user_id: user.id,
             role: "assistant",
             content: assistantText,
+            model,
           });
           await supabase
             .from("conversations")
