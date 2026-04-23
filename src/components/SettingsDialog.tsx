@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { Settings, Sparkles } from "lucide-react";
-import { Plug } from "@/lib/icons-shim";
+import { Settings, Sparkles, Globe } from "lucide-react";
 
 type Section = "preferences" | "integrations" | "usage";
 
 const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "preferences", label: "Preferences", icon: Settings },
-  { id: "integrations", label: "Integrations", icon: Plug },
+  { id: "integrations", label: "Integrations", icon: Globe },
   { id: "usage", label: "Usage", icon: Sparkles },
 ];
 
