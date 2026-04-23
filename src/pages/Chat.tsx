@@ -237,7 +237,7 @@ export default function Chat() {
           )}
         </div>
 
-        <div className="bg-background p-4">
+        <div className="bg-background p-4 pb-[5px] pt-[5px]">
           <div className="max-w-3xl mx-auto">
             <div className="bg-card border border-border rounded-2xl shadow-soft focus-within:border-primary/50 transition">
               <Textarea
