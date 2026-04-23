@@ -18,7 +18,12 @@ export function ProviderBadge({ provider, model }: { provider: Provider; model?:
         <TooltipTrigger asChild>
           <span className="inline-flex">{badge}</span>
         </TooltipTrigger>
-        <TooltipContent side="top">{modelLabel(model)}</TooltipContent>
+        <TooltipContent
+          side="top"
+          className="bg-black text-white border-0 rounded-[4px] px-2 py-1 text-xs shadow-md"
+        >
+          {modelLabel(model)}
+        </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
