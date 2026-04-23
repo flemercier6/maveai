@@ -54,7 +54,7 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
         <SelectContent className="w-[260px]">
           <SelectItem
             value={AUTO_MODEL_ID}
-            className="data-[state=checked]:bg-transparent focus:bg-accent"
+            className="py-2.5 bg-[#F8F8F8] data-[state=checked]:bg-[#F8F8F8] focus:bg-[#F8F8F8]"
             onMouseEnter={(e) => showTip(e, "Picks the best model for your message")}
             onMouseLeave={hideTip}
             onFocus={(e) => showTip(e, "Picks the best model for your message")}
