@@ -225,10 +225,10 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
               className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[4px] hover:bg-sidebar-accent/60 text-sidebar-foreground"
             >
               <div className="w-7 h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-xs font-medium uppercase">
-                {(userEmail?.[0] ?? "?")}
+                {(userName?.[0] ?? userEmail?.[0] ?? "?")}
               </div>
               <span className="flex-1 min-w-0 text-left text-xs truncate">
-                {userEmail?.split("@")[0] ?? "User"}
+                {userName ?? userEmail?.split("@")[0] ?? "User"}
               </span>
               <ChevronsUpDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
             </button>
