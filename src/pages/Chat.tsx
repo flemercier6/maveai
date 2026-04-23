@@ -20,6 +20,7 @@ export default function Chat() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -42,6 +43,10 @@ export default function Chat() {
     supabase.from("conversations").select("*").order("updated_at", { ascending: false })
       .then(({ data }) => {
         setConversations((data ?? []) as Conversation[]);
+      });
+    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        setDisplayName((data?.display_name as string | null) ?? null);
       });
   }, [user]);
 
@@ -249,6 +254,7 @@ export default function Chat() {
           if (activeId === id) { setActiveId(null); setMessages([]); }
         }}
         userEmail={user.email}
+        userName={displayName ?? (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0]}
       />
 
       <main className="flex-1 flex flex-col min-w-0">

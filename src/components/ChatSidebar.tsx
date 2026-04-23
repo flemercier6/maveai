@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Trash2, LogOut, Sparkles, Brain, MoreHorizontal, Pencil, ChevronDown, Search } from "lucide-react";
+import { Plus, Trash2, LogOut, Sparkles, Brain, MoreHorizontal, Pencil, ChevronDown, Search, Settings, ChevronsUpDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,7 @@ type Props = {
   onNew: () => void;
   onDeleted: (id: string) => void;
   userEmail?: string;
+  userName?: string;
 };
 
 const MIN_WIDTH = 200;
@@ -37,7 +38,7 @@ const MAX_WIDTH = 480;
 const DEFAULT_WIDTH = 240;
 const STORAGE_KEY = "chat-sidebar-width";
 
-export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail }: Props) {
+export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail, userName }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -217,20 +218,33 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
         </div>
       </ScrollArea>
 
-      <div className="p-2 border-t border-sidebar-border space-y-0.5">
-        <div className="px-3 py-2 text-xs text-muted-foreground truncate">{userEmail}</div>
-        <Link
-          to="/memory"
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-sidebar-accent/60 text-sidebar-foreground"
-        >
-          <Brain className="w-4 h-4 opacity-70" /> Memory
-        </Link>
-        <button
-          onClick={signOut}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-sidebar-accent/60 text-sidebar-foreground"
-        >
-          <LogOut className="w-4 h-4 opacity-70" /> Sign out
-        </button>
+      <div className="p-2 border-t border-sidebar-border">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[4px] hover:bg-sidebar-accent/60 text-sidebar-foreground"
+            >
+              <div className="w-7 h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-xs font-medium uppercase">
+                {(userName?.[0] ?? userEmail?.[0] ?? "?")}
+              </div>
+              <span className="flex-1 min-w-0 text-left text-xs truncate">
+                {userName ?? userEmail?.split("@")[0] ?? "User"}
+              </span>
+              <ChevronsUpDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="top" className="w-[--radix-dropdown-menu-trigger-width]">
+            <DropdownMenuItem asChild>
+              <Link to="/settings"><Settings className="w-3.5 h-3.5 mr-2 opacity-70" /> Settings</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/memory"><Brain className="w-3.5 h-3.5 mr-2 opacity-70" /> Memory</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={signOut}>
+              <LogOut className="w-3.5 h-3.5 mr-2 opacity-70" /> Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Resize handle */}
