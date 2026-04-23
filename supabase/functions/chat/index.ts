@@ -233,26 +233,46 @@ ${assistantText.slice(0, 2000)}`;
   } catch {
     return;
   }
-  const facts = Array.isArray(parsed?.facts) ? parsed.facts : [];
-  if (!facts.length) return;
+  const actions = Array.isArray(parsed?.actions) ? parsed.actions : [];
+  if (!actions.length) return;
 
-  const { data: existing } = await supabase
-    .from("user_memories")
-    .select("content")
-    .eq("user_id", userId);
-  const existingSet = new Set((existing ?? []).map((e: any) => e.content.toLowerCase().trim()));
+  const existingById = new Map(existing.map((e) => [e.id, e]));
+  const existingContents = new Set(existing.map((e) => e.content.toLowerCase().trim()));
+  const validKinds = ["preference", "identity", "project", "context", "fact"];
+  const norm = (s: string) => s.toLowerCase().trim();
 
-  const rows = facts
-    .filter((f: any) => f?.content && !existingSet.has(String(f.content).toLowerCase().trim()))
-    .slice(0, 10)
-    .map((f: any) => ({
-      user_id: userId,
-      content: String(f.content).slice(0, 500),
-      kind: ["preference", "identity", "project", "context"].includes(f.kind) ? f.kind : "fact",
-    }));
+  const toInsert: { user_id: string; content: string; kind: string }[] = [];
+  const toUpdate: { id: string; content: string; kind: string }[] = [];
 
-  if (rows.length) {
-    await supabase.from("user_memories").insert(rows);
+  for (const a of actions.slice(0, 10)) {
+    if (!a?.content || typeof a.content !== "string") continue;
+    const content = a.content.slice(0, 500).trim();
+    if (!content) continue;
+    const kind = validKinds.includes(a.kind) ? a.kind : "fact";
+
+    if (a.op === "update" && a.id && existingById.has(a.id)) {
+      const prev = existingById.get(a.id)!;
+      if (norm(prev.content) === norm(content)) continue; // no-op
+      toUpdate.push({ id: a.id, content, kind });
+      existingContents.delete(norm(prev.content));
+      existingContents.add(norm(content));
+    } else if (a.op === "add") {
+      if (existingContents.has(norm(content))) continue; // dedup
+      toInsert.push({ user_id: userId, content, kind });
+      existingContents.add(norm(content));
+    }
+    // "skip" → nothing
+  }
+
+  if (toInsert.length) {
+    await supabase.from("user_memories").insert(toInsert);
+  }
+  for (const u of toUpdate) {
+    await supabase
+      .from("user_memories")
+      .update({ content: u.content, kind: u.kind, updated_at: new Date().toISOString() })
+      .eq("id", u.id)
+      .eq("user_id", userId);
   }
 }
 
