@@ -290,6 +290,7 @@ function ChatMessageImpl({
   sources,
   onRetry,
   onDelete,
+  onEdit,
 }: Props) {
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
@@ -316,6 +317,18 @@ function ChatMessageImpl({
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{content}</ReactMarkdown>
           </div>
           {memory && <MemoryBadge added={memory.added} updated={memory.updated} />}
+          {(onEdit || content) && (
+            <div className="flex items-center gap-1 -mr-1.5">
+              {onEdit && (
+                <ActionButton onClick={onEdit} ariaLabel="Edit">
+                  <Pencil className="w-4 h-4" />
+                </ActionButton>
+              )}
+              <ActionButton onClick={handleCopy} ariaLabel={copied ? "Copied" : "Copy"}>
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </ActionButton>
+            </div>
+          )}
         </div>
       </div>
     );
