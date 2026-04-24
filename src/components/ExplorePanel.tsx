@@ -331,7 +331,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge }: Props) {
             {merging ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <GitMerge className="w-3.5 h-3.5" />
+              <ArrowDown className="w-3.5 h-3.5" />
             )}
             Merge
           </Button>
