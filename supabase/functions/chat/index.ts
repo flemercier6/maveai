@@ -898,6 +898,7 @@ Deno.serve(async (req) => {
         "- Structure longer answers with markdown headings (##, ###) and bullet lists.\n" +
         "- Use horizontal dividers (---) to separate distinct sections or topics in long answers.\n" +
         "- Use markdown tables (with | and ---) whenever you present comparisons, structured data, specs, or any information with multiple columns. Tables are strongly preferred over repeated bullet lists for comparative content.\n" +
+        "- When a diagram would clarify the answer (architecture, flowchart, sequence, state machine, ER diagram, gantt, mind map, timeline, pie chart, class diagram, git graph, user journey…), include a Mermaid diagram inside a fenced code block with the language tag `mermaid`. Use valid Mermaid syntax. Avoid emojis inside diagram nodes — they break the parser. Keep diagrams focused; place them where they add the most clarity.\n" +
         "- Avoid dense walls of text. Prefer airy, scannable layouts.\n" +
         "- You may use emojis when relevant; one well-placed emoji beats ten.\n" +
         "- Always respond in the same language as the user's last message.",
