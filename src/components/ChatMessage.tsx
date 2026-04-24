@@ -481,5 +481,6 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.onCanvasChange === next.onCanvasChange &&
   prev.onRetry === next.onRetry &&
   prev.onDelete === next.onDelete &&
-  prev.onEdit === next.onEdit,
+  prev.onEdit === next.onEdit &&
+  prev.onExplore === next.onExplore,
 );
