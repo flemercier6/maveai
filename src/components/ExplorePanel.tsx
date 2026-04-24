@@ -160,19 +160,25 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     setMessages([...baseMsgs, { role: "assistant", content: "" }]);
     setStreaming(true);
 
-    // Build the payload: parent history, plus a bridge message quoting the selection,
-    // plus the branch conversation so far.
-    const bridgePreamble =
-      `The user is opening a side exploration branched from the main conversation. ` +
-      `They are focused on this excerpt from your previous response:\n\n` +
-      `> ${seed.quotedText.replace(/\n/g, "\n> ")}\n\n` +
-      `Continue the discussion grounded in this excerpt, while using the prior context above. ` +
-      `Stay concise unless the user asks for depth.`;
+    // Build the payload: parent history (if any), an optional bridge message
+    // quoting the selection, plus the branch conversation so far.
+    const hasQuote = !!(seed.quotedText && seed.quotedText.trim());
+    const bridgePreamble = hasQuote
+      ? `The user is opening a side exploration branched from the main conversation. ` +
+        `They are focused on this excerpt from your previous response:\n\n` +
+        `> ${seed.quotedText!.replace(/\n/g, "\n> ")}\n\n` +
+        `Continue the discussion grounded in this excerpt, while using the prior context above. ` +
+        `Stay concise unless the user asks for depth.`
+      : null;
 
     const payloadMessages = [
       ...seed.parentHistory,
-      { role: "user" as const, content: bridgePreamble },
-      { role: "assistant" as const, content: "Understood — what would you like to explore?" },
+      ...(bridgePreamble
+        ? [
+            { role: "user" as const, content: bridgePreamble },
+            { role: "assistant" as const, content: "Understood — what would you like to explore?" },
+          ]
+        : []),
       ...baseMsgs.map((m) => ({ role: m.role, content: m.content })),
     ];
 
