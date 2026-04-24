@@ -1125,28 +1125,8 @@ Deno.serve(async (req) => {
             console.warn("[usage] skipped — no usage data returned by provider");
           }
 
-          // ---------- Auto-generate title if this is the first user message ----------
-          const userMessagesCount = messages.filter((m) => m.role === "user").length;
+          // (Title generation moved to the start of the stream so it runs even on early returns.)
           const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
-          if (userMessagesCount <= 1 && lastUser) {
-            try {
-              const title = await generateTitle({
-                openaiKey: Deno.env.get("OPENAI_API_KEY"),
-                googleKey: Deno.env.get("GOOGLE_API_KEY"),
-                anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
-                userText: lastUser,
-              });
-              if (title) {
-                await supabase
-                  .from("conversations")
-                  .update({ title })
-                  .eq("id", conversationId);
-                controller.enqueue(enc({ type: "title", title }));
-              }
-            } catch (err) {
-              console.error("title update failed:", err);
-            }
-          }
 
           // ---------- Extract memorable facts (await so we can notify the client) ----------
           try {
