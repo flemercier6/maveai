@@ -999,16 +999,23 @@ export default function Chat() {
                   )}
                 </div>
               )}
-              <div className="relative">
-                {writeRequested && (
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute left-4 top-3.5 text-sm leading-relaxed select-none"
-                    style={{ color: "#0062FF" }}
+              {writeRequested && (
+                <div className="px-3 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setWriteRequested(false)}
+                    aria-label="Remove Note"
+                    className="group inline-flex items-center gap-1.5 rounded-full border border-border bg-background pl-2 pr-2.5 py-1 text-xs font-medium text-foreground hover:bg-dropdown-hover transition-colors"
                   >
-                    /write
-                  </span>
-                )}
+                    <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                      <FileText className="w-3.5 h-3.5 text-muted-foreground group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
+                      <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                    </span>
+                    Note
+                  </button>
+                </div>
+              )}
+              <div className="relative">
                 <Textarea
                   ref={textareaRef}
                   value={input}
@@ -1017,28 +1024,13 @@ export default function Chat() {
                     // Defer so selectionStart reflects post-update value
                     requestAnimationFrame(updateSlashFromTextarea);
                   }}
-                  onKeyDown={(e) => {
-                    // Backspace at the very start removes the /write badge.
-                    if (
-                      writeRequested &&
-                      e.key === "Backspace" &&
-                      textareaRef.current?.selectionStart === 0 &&
-                      textareaRef.current?.selectionEnd === 0
-                    ) {
-                      e.preventDefault();
-                      setWriteRequested(false);
-                      return;
-                    }
-                    onKey(e);
-                  }}
+                  onKeyDown={onKey}
                   onKeyUp={updateSlashFromTextarea}
                   onClick={updateSlashFromTextarea}
                   onBlur={() => setTimeout(() => setSlash(null), 100)}
-                  placeholder={writeRequested ? "" : "Send a message..."}
+                  placeholder="Send a message..."
                   rows={1}
-                  className={`w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed ${
-                    writeRequested ? "!pl-[62px]" : ""
-                  }`}
+                  className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
                 />
               </div>
               {slash && (
