@@ -96,9 +96,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         .from("chat_branches")
         .insert({
           user_id: userId,
-          conversation_id: seed.conversationId,
-          source_message_id: seed.sourceMessageId,
-          quoted_text: seed.quotedText,
+          conversation_id: seed.conversationId ?? null,
+          source_message_id: seed.sourceMessageId ?? null,
+          quoted_text: seed.quotedText ?? "",
           title: "Exploration",
           status: "open",
         })
