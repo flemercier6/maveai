@@ -389,6 +389,9 @@ export default function Chat() {
           model: sendModel,
           skipClarify: opts?.skipClarify === true,
           writingMode,
+          // When the user explicitly invoked /write, force the model to produce
+          // a canvas — don't let it decide otherwise.
+          forceCanvas: writeRequested === true,
           previousCanvas,
           messages: baseMsgs.map((m, i) => {
             // Only the LAST user message carries the live attachments
