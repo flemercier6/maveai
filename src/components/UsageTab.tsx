@@ -391,8 +391,7 @@ export function UsageTab() {
               Billed price (×3) ·{" "}
               <span className="font-medium text-foreground tabular-nums">
                 {fmtUSD(periodTotal)}
-              </span>{" "}
-              this {range}
+              </span>
             </p>
           </div>
           <div className="inline-flex rounded-[6px] border border-border p-0.5 bg-[hsl(var(--dropdown-hover))]">
@@ -412,6 +411,39 @@ export function UsageTab() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Period navigator */}
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => canPrev && setOffset((o) => o - 1)}
+            disabled={!canPrev}
+            className={cn(
+              "h-7 w-7 flex items-center justify-center rounded-[4px] border border-border transition-colors",
+              canPrev
+                ? "hover:bg-[hsl(var(--dropdown-hover))] text-foreground"
+                : "text-muted-foreground/40 cursor-not-allowed",
+            )}
+            aria-label="Previous period"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div className="text-xs font-medium tabular-nums">{title}</div>
+          <button
+            type="button"
+            onClick={() => canNext && setOffset((o) => o + 1)}
+            disabled={!canNext}
+            className={cn(
+              "h-7 w-7 flex items-center justify-center rounded-[4px] border border-border transition-colors",
+              canNext
+                ? "hover:bg-[hsl(var(--dropdown-hover))] text-foreground"
+                : "text-muted-foreground/40 cursor-not-allowed",
+            )}
+            aria-label="Next period"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
         <div className="h-56 w-full">
@@ -434,16 +466,16 @@ export function UsageTab() {
               />
               <Tooltip
                 cursor={{ fill: "hsl(var(--dropdown-hover))" }}
-                contentStyle={{
-                  background: "hsl(var(--tooltip))",
-                  border: "none",
-                  borderRadius: 4,
-                  padding: "4px 8px",
-                  fontSize: 12,
-                  color: "hsl(var(--tooltip-foreground))",
+                content={({ active, payload, label }) => {
+                  if (!active || !payload || !payload.length) return null;
+                  const v = Number(payload[0].value ?? 0);
+                  return (
+                    <div className="rounded-[4px] bg-tooltip text-tooltip-foreground text-xs px-2 py-1 shadow-md">
+                      <div className="opacity-70">{label}</div>
+                      <div className="font-semibold tabular-nums">{fmtUSD(v)}</div>
+                    </div>
+                  );
                 }}
-                labelStyle={{ color: "hsl(var(--tooltip-foreground))", opacity: 0.7 }}
-                formatter={(v: number) => [fmtUSD(Number(v)), "Spend"]}
               />
               <Bar dataKey="spend" fill="hsl(var(--foreground))" radius={[3, 3, 0, 0]} />
             </BarChart>
