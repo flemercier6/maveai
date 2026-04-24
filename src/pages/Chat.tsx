@@ -60,6 +60,8 @@ export default function Chat() {
   const [clarify, setClarify] = useState<ClarifyQuestion[] | null>(null);
   // User explicitly invoked /write for the next message (forces writing canvas mode).
   const [writeRequested, setWriteRequested] = useState(false);
+  // User explicitly invoked /explore — next send opens a side exploration instead of posting.
+  const [exploreRequested, setExploreRequested] = useState(false);
   // Title generation animation: convId -> { target, shown }. "pending" = not yet received.
   const [titleAnim, setTitleAnim] = useState<Record<string, { target: string | null; shown: string }>>({});
   const titleTimerRef = useRef<Record<string, number>>({});
