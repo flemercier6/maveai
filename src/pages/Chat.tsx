@@ -118,21 +118,27 @@ export default function Chat() {
   }, [activeId]);
 
   // Scroll behavior:
-  // - When NOT streaming: keep pinned to the bottom (load / new conversation / final message).
+  // - On conversation load: pin to the bottom once.
   // - When streaming starts: scroll once so the last user message sits at the top of the
   //   viewport, then stop auto-scrolling so the user can read from the start of the answer.
+  // - When streaming ends: do NOT auto-scroll — keep the user where they are reading.
   const didInitialStreamScrollRef = useRef(false);
   const lastStreamUserIdRef = useRef<string | null>(null);
 
+  // Initial pin-to-bottom when switching conversations.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+  }, [activeId]);
+
+  // Reset the per-turn streaming flag when streaming stops.
+  useEffect(() => {
     if (!streaming) {
       didInitialStreamScrollRef.current = false;
       lastStreamUserIdRef.current = null;
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }
-  }, [messages, streaming]);
+  }, [streaming]);
 
   useEffect(() => {
     if (!streaming) return;
