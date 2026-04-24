@@ -910,7 +910,7 @@ Deno.serve(async (req) => {
     }
     const user = { id: userData.user.id };
 
-    const { conversationId, provider, model, messages, skipClarify, writingMode, previousCanvas } = await req.json() as {
+    const { conversationId, provider, model, messages, skipClarify, writingMode, previousCanvas, forceCanvas } = await req.json() as {
       conversationId: string;
       provider: "openai" | "anthropic" | "google";
       model: string;
@@ -918,6 +918,7 @@ Deno.serve(async (req) => {
       skipClarify?: boolean;
       writingMode?: boolean;
       previousCanvas?: string | null;
+      forceCanvas?: boolean;
     };
 
     if (!conversationId || !provider || !model || !Array.isArray(messages)) {
