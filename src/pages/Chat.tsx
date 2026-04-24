@@ -147,11 +147,10 @@ export default function Chat() {
     const lastUser = [...messages].reverse().find((m) => m.role === "user" && m.id);
     if (!lastUser?.id) return;
 
-    // Only run once per new streaming turn (identified by the last user message id).
+    // Keep trying during streaming until the last user bubble actually reaches the top.
     if (didInitialStreamScrollRef.current && lastStreamUserIdRef.current === lastUser.id) return;
     lastStreamUserIdRef.current = lastUser.id;
 
-    // Wait for the DOM to mount the anchor, then align it to the top.
     let cancelled = false;
     const tryScroll = (attempt: number) => {
       if (cancelled) return;
@@ -160,14 +159,45 @@ export default function Chat() {
         if (attempt < 10) requestAnimationFrame(() => tryScroll(attempt + 1));
         return;
       }
-      const containerTop = el.getBoundingClientRect().top;
-      const anchorTop = anchor.getBoundingClientRect().top;
+
+      const containerRect = el.getBoundingClientRect();
+      const anchorRect = anchor.getBoundingClientRect();
+      const offset = 16;
+      const distanceToTop = anchorRect.top - (containerRect.top + offset);
+
+      // Already aligned close enough: stop auto-scrolling for this turn.
+      if (Math.abs(distanceToTop) <= 8) {
+        didInitialStreamScrollRef.current = true;
+        return;
+      }
+
+      const targetTop = el.scrollTop + distanceToTop;
+      const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
+      const nextTop = Math.max(0, Math.min(targetTop, maxTop));
+      const canMoveMore = nextTop > el.scrollTop + 1;
+
+      if (!canMoveMore) {
+        // Not enough streamed content yet to place the user bubble at the top.
+        // Leave the flag unset so the next streaming update tries again.
+        return;
+      }
+
       el.scrollTo({
-        top: el.scrollTop + (anchorTop - containerTop) - 16,
-        behavior: "smooth",
+        top: nextTop,
+        behavior: attempt === 0 ? "smooth" : "auto",
       });
-      didInitialStreamScrollRef.current = true;
+
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        const updatedAnchor = document.getElementById(`chat-anchor-${lastUser.id}`);
+        if (!updatedAnchor) return;
+        const updatedDistance = updatedAnchor.getBoundingClientRect().top - (el.getBoundingClientRect().top + offset);
+        if (Math.abs(updatedDistance) <= 8) {
+          didInitialStreamScrollRef.current = true;
+        }
+      });
     };
+
     requestAnimationFrame(() => tryScroll(0));
     return () => { cancelled = true; };
   }, [streaming, messages]);
