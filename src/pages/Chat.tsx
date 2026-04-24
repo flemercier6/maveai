@@ -890,6 +890,44 @@ export default function Chat() {
     setExploreOpen(true);
   };
 
+  // Reopen an existing branch by id (clicked on a chat indicator tag).
+  const openExistingBranch = (branchId: string) => {
+    if (!activeId) return;
+    const branch = branches.find((b) => b.id === branchId);
+    if (!branch) return;
+    const sourceIdx = messages.findIndex((m) => m.id === branch.source_message_id);
+    if (sourceIdx < 0) return;
+    const parentHistory = messages
+      .slice(0, sourceIdx + 1)
+      .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
+      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+    setExploreSeed({
+      conversationId: activeId,
+      sourceMessageId: branch.source_message_id,
+      quotedText: branch.quoted_text,
+      parentHistory,
+      provider,
+      model: model === AUTO_MODEL_ID ? "gpt-4o-mini" : model,
+      existingBranchId: branch.id,
+    });
+    setExploreOpen(true);
+  };
+
+  // Compute per-message branch chips. "selection" when quoted text differs
+  // from the full message content; "full" otherwise.
+  const branchesByMessage: Record<string, MessageBranch[]> = {};
+  for (const b of branches) {
+    const msg = messages.find((m) => m.id === b.source_message_id);
+    if (!msg) continue;
+    const isFull = !b.quoted_text || b.quoted_text.trim() === msg.content.trim();
+    const entry: MessageBranch = {
+      id: b.id,
+      quotedText: b.quoted_text,
+      kind: isFull ? "full" : "selection",
+    };
+    (branchesByMessage[b.source_message_id] ??= []).push(entry);
+  }
+
   // Insert a merged summary back into the main chat as a new assistant message.
   const handleMergeSummary = async (summary: string) => {
     if (!activeId || !user) return;
