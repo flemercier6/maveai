@@ -923,18 +923,38 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ---------- Load cross-provider user memory (kept compact) ----------
+    // ---------- Load & filter user memory by relevance to current query ----------
+    // Strategy: extract keywords from the latest user message, then keep only
+    // memories whose own keywords overlap. If nothing is relevant, inject NO
+    // memory at all — saves tokens and keeps unrelated facts out of the prompt.
+    const lastUserMsg = [...(messages as Msg[])].reverse().find((m) => m.role === "user");
+    const queryKeywords = new Set(extractKeywords(lastUserMsg?.content ?? "", 20));
+
     const { data: memRows } = await supabase
       .from("user_memories")
-      .select("content,kind,created_at")
+      .select("id,content,kind,keywords")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .limit(100); // lightweight: just metadata, real filtering happens below
 
-    // Build memory block with a hard char budget so it never dominates the prompt.
-    const MEMORY_CHAR_BUDGET = 2000;
+    // Score each memory; fall back to deriving keywords from content if missing
+    // (handles legacy rows persisted before the keywords column existed).
+    type ScoredMem = { content: string; kind: string; score: number };
+    const scored: ScoredMem[] = [];
+    for (const m of (memRows ?? []) as Array<{ content: string; kind: string; keywords: string[] | null }>) {
+      const kws = (m.keywords && m.keywords.length)
+        ? m.keywords
+        : extractKeywords(m.content, 12);
+      const score = memoryRelevance(kws, queryKeywords);
+      if (score > 0) scored.push({ content: m.content, kind: m.kind, score });
+    }
+    scored.sort((a, b) => b.score - a.score);
+
+    // Cap: max 8 relevant memories AND a hard char budget. Tight by design.
+    const MEMORY_MAX_ITEMS = 8;
+    const MEMORY_CHAR_BUDGET = 1200;
     let memoryBlock = "";
-    for (const m of (memRows ?? []) as any[]) {
+    for (const m of scored.slice(0, MEMORY_MAX_ITEMS)) {
       const line = `- (${m.kind}) ${m.content}`;
       if (memoryBlock.length + line.length + 1 > MEMORY_CHAR_BUDGET) break;
       memoryBlock += (memoryBlock ? "\n" : "") + line;
@@ -944,7 +964,7 @@ Deno.serve(async (req) => {
       ? {
         role: "system",
         content:
-          "User memory (use implicitly, don't repeat verbatim):\n" + memoryBlock,
+          "Relevant user memory (use implicitly, don't repeat verbatim):\n" + memoryBlock,
       }
       : null;
 
