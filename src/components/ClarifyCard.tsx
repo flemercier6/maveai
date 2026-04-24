@@ -119,7 +119,7 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
             )}
             <h4 className="text-sm font-medium text-foreground">{q.question}</h4>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-col gap-1.5 items-stretch">
             {q.options.map((opt, optIdx) => {
               const active = a.selected.includes(optIdx);
               return (
@@ -128,14 +128,14 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
                   type="button"
                   onClick={() => toggle(optIdx)}
                   className={[
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors",
+                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors w-full justify-start text-left",
                     active
                       ? "border-foreground bg-foreground text-background"
                       : "border-border bg-background text-foreground hover:bg-dropdown-hover",
                   ].join(" ")}
                 >
-                  {active && <Check className="w-3 h-3" />}
-                  <span>{opt.label}</span>
+                  {active && <Check className="w-3 h-3 shrink-0" />}
+                  <span className="truncate">{opt.label}</span>
                 </button>
               );
             })}
