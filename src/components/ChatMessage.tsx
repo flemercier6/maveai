@@ -4,8 +4,10 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
 import { FlowDiagram } from "./FlowDiagram";
+import { RequestVisualizer } from "./RequestVisualizer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Provider } from "@/lib/models";
+import type { RequestMeta } from "@/lib/requestMeta";
 import { useSmoothText } from "@/hooks/useSmoothText";
 
 type ToolStatus = "running" | "done" | "failed";
@@ -24,6 +26,7 @@ type Props = {
   tool?: ToolUse;
   phase?: Phase;
   sources?: Source[];
+  meta?: RequestMeta;
   onRetry?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
@@ -331,6 +334,7 @@ function ChatMessageImpl({
   tool,
   phase,
   sources,
+  meta,
   onRetry,
   onDelete,
   onEdit,
@@ -412,6 +416,7 @@ function ChatMessageImpl({
             )}
           </div>
         )}
+        {!streaming && meta && <RequestVisualizer meta={meta} />}
       </div>
     </div>
   );
@@ -432,6 +437,7 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.tool?.status === next.tool?.status &&
   prev.phase === next.phase &&
   prev.sources === next.sources &&
+  prev.meta === next.meta &&
   prev.onRetry === next.onRetry &&
   prev.onDelete === next.onDelete &&
   prev.onEdit === next.onEdit,
