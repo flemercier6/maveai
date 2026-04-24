@@ -1146,9 +1146,9 @@ export default function Chat() {
         </div>
       </main>
 
-      {/* Floating Explore button over the current selection (only inside assistant messages) */}
-      {selection && !exploreOpen && activeId && (
-        <ExploreButton rect={selection.rect} onClick={openExplore} />
+      {/* Floating Explore button over the current selection (self-contained) */}
+      {activeId && (
+        <SelectionExploreButton onExplore={openExplore} disabled={exploreOpen} />
       )}
 
       {/* Right-hand exploration side panel */}
