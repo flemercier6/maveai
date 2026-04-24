@@ -130,7 +130,7 @@ export function SlashCommandMenu({ query, position, onSelect, onClose }: Props) 
               {it.provider === "auto" ? (
                 <Sparkles className="w-4 h-4 text-muted-foreground" />
               ) : it.provider === "write" ? (
-                <PenLine className="w-4 h-4 text-muted-foreground" />
+                <Pencil className="w-4 h-4 text-muted-foreground" />
               ) : (
                 <ProviderLogo provider={it.provider} className="w-4 h-4" />
               )}
