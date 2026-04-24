@@ -982,23 +982,35 @@ Deno.serve(async (req) => {
         "Short slug ids, ≤6-word labels, no positions, 4–12 nodes. Not Mermaid.",
     };
 
-    // Writing-canvas mode: the full drafted document goes into a ```canvas fenced block.
-    // The short commentary BEFORE the block is normal chat (what you changed, etc.).
-    // On follow-up edits, the client sends the previous canvas content so the model rewrites it.
+    // Writing-canvas mode. Output format (STRICT):
+    //   Line 1: CANVAS_EDIT: yes|no
+    //   Line 2: CANVAS_TITLE: <short title, 2-5 words> (only when CANVAS_EDIT: yes)
+    //   Then one short sentence, then ```canvas ... ``` block (only when CANVAS_EDIT: yes).
+    //   When CANVAS_EDIT: no → respond normally as a regular chat reply (no canvas block).
     const writingSystem: Msg | null = writingMode
       ? {
         role: "system",
         content:
           "WRITING CANVAS MODE.\n" +
           "The user is drafting a document (email, report, article, note, etc.).\n" +
-          "Rules for your response:\n" +
-          "1) Start with ONE short sentence (≤20 words) in the user's language describing what you did.\n" +
-          "2) Then output the ENTIRE document inside a fenced block opened with ```canvas and closed with ```.\n" +
-          "3) Do NOT write anything after the closing ```.\n" +
-          "4) The canvas block must contain plain prose only (no markdown headings unless the document type needs them). Do not wrap it in quotes.\n" +
           (previousCanvas
-            ? "5) EDIT MODE: a previous version of the document is provided below. Apply the user's requested changes and output the FULL updated document — keep everything that wasn't asked to change.\n\nPREVIOUS DOCUMENT:\n" + previousCanvas
-            : "5) CREATION MODE: write the document from scratch based on the user's request."),
+            ? "A previous version of the document exists (shown below).\n" +
+              "FIRST, decide: is the user's NEW message a request to MODIFY that document, or a totally different question/topic?\n" +
+              "- If it's a modification (edit, rewrite, translate, shorten, change tone, add a paragraph…): CANVAS_EDIT: yes\n" +
+              "- If it's a NEW unrelated question or chit-chat: CANVAS_EDIT: no → answer normally, no canvas.\n"
+            : "This is a new drafting request: CANVAS_EDIT: yes.\n") +
+          "\nResponse format (STRICT):\n" +
+          "Line 1 must be exactly: CANVAS_EDIT: yes    OR    CANVAS_EDIT: no\n" +
+          "\nIf CANVAS_EDIT: no → after line 1, just answer the user normally. Do NOT output a canvas block.\n" +
+          "\nIf CANVAS_EDIT: yes:\n" +
+          "  Line 2: CANVAS_TITLE: <2 to 5 words, in the user's language, describing the document topic — no quotes, no punctuation>\n" +
+          "  Line 3: ONE short sentence (≤20 words) in the user's language describing what you did.\n" +
+          "  Then output the ENTIRE updated document inside a fenced block opened with ```canvas and closed with ```.\n" +
+          "  Do NOT write anything after the closing ```.\n" +
+          "  The canvas block must contain plain prose only (no wrapping quotes).\n" +
+          (previousCanvas
+            ? "\nWhen editing, output the FULL updated document — keep everything that wasn't asked to change.\n\nPREVIOUS DOCUMENT:\n" + previousCanvas
+            : ""),
       }
       : null;
 

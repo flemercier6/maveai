@@ -30,7 +30,7 @@ type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -102,11 +102,51 @@ export default function Chat() {
     const convModel = conv?.model;
     supabase.from("messages").select("*").eq("conversation_id", activeId).order("created_at")
       .then(({ data }) => {
+        // Re-parse persisted assistant text to recover canvas blocks & titles.
+        const parseStored = (raw: string): { body: string; canvas?: string; canvasTitle?: string } => {
+          let rest = raw ?? "";
+          const editMatch = rest.match(/^\s*CANVAS_EDIT:\s*(yes|no)\s*\n?/i);
+          let editMode: "yes" | "no" | null = null;
+          if (editMatch) {
+            editMode = editMatch[1].toLowerCase() as "yes" | "no";
+            rest = rest.slice(editMatch[0].length);
+          }
+          let title: string | undefined;
+          const titleMatch = rest.match(/^\s*CANVAS_TITLE:\s*([^\n]+?)\s*\n?/i);
+          if (titleMatch) {
+            title = titleMatch[1].trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 60);
+            rest = rest.slice(titleMatch[0].length);
+          }
+          if (editMode === "no") return { body: rest };
+          const open = rest.indexOf("```canvas");
+          if (open < 0) return { body: rest };
+          const afterOpen = rest.indexOf("\n", open);
+          if (afterOpen < 0) return { body: rest };
+          const close = rest.indexOf("```", afterOpen + 1);
+          if (close < 0) return { body: rest };
+          const canvas = rest.slice(afterOpen + 1, close).replace(/\n+$/, "");
+          const body = rest.slice(0, open) + rest.slice(close + 3);
+          return { body, canvas, canvasTitle: title };
+        };
+        let canvasCounter = 0;
         setMessages(((data ?? []) as any[]).map((m) => {
           const msgModel = m.model ?? convModel;
           const msgProvider = m.role === "assistant"
             ? (msgModel && msgModel !== "auto" ? providerForModel(msgModel) : convProvider)
             : undefined;
+          if (m.role === "assistant") {
+            const parsed = parseStored(m.content);
+            const hasCanvas = typeof parsed.canvas === "string";
+            if (hasCanvas) canvasCounter += 1;
+            return {
+              id: m.id,
+              role: m.role,
+              content: parsed.body,
+              provider: msgProvider,
+              model: msgModel,
+              ...(hasCanvas ? { canvas: parsed.canvas, canvasTitle: parsed.canvasTitle, canvasVersion: canvasCounter } : {}),
+            };
+          }
           return {
             id: m.id,
             role: m.role,
@@ -369,28 +409,52 @@ export default function Chat() {
       let buf = "";
       let acc = "";
 
-      // Parse streaming text: split out a ```canvas ... ``` block so the
-      // canvas content streams into an editable block while everything else
-      // renders as the normal assistant reply.
-      const splitCanvas = (raw: string): { body: string; canvas: string | null } => {
-        const open = raw.indexOf("```canvas");
-        if (open < 0) return { body: raw, canvas: null };
-        // Skip to the newline after ```canvas (optional language line)
-        const afterOpen = raw.indexOf("\n", open);
+      // Count previous canvases in the conversation (for V1/V2 tags).
+      const prevCanvasCount = messages.filter(
+        (m) => m.role === "assistant" && typeof m.canvas === "string" && m.canvas.length > 0,
+      ).length;
+
+      // Parse streaming text for writing mode.
+      // Expected format:
+      //   CANVAS_EDIT: yes|no\n
+      //   [if yes] CANVAS_TITLE: <title>\n
+      //   <commentary>
+      //   ```canvas\n...\n```
+      // When CANVAS_EDIT is "no" we bypass canvas rendering entirely.
+      const splitCanvas = (raw: string): { body: string; canvas: string | null; title: string | null; editMode: "yes" | "no" | null } => {
+        let rest = raw;
+        let editMode: "yes" | "no" | null = null;
+        let title: string | null = null;
+
+        const editMatch = rest.match(/^\s*CANVAS_EDIT:\s*(yes|no)\s*\n?/i);
+        if (editMatch) {
+          editMode = editMatch[1].toLowerCase() as "yes" | "no";
+          rest = rest.slice(editMatch[0].length);
+        }
+        const titleMatch = rest.match(/^\s*CANVAS_TITLE:\s*([^\n]+?)\s*\n?/i);
+        if (titleMatch) {
+          title = titleMatch[1].trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 60);
+          rest = rest.slice(titleMatch[0].length);
+        }
+
+        // If the model explicitly said "no", everything that follows is plain chat.
+        if (editMode === "no") {
+          return { body: rest, canvas: null, title: null, editMode };
+        }
+
+        const open = rest.indexOf("```canvas");
+        if (open < 0) return { body: rest, canvas: editMode === "yes" ? "" : null, title, editMode };
+        const afterOpen = rest.indexOf("\n", open);
         if (afterOpen < 0) {
-          // Not enough streamed yet — hide the partial fence from the body.
-          return { body: raw.slice(0, open), canvas: "" };
+          return { body: rest.slice(0, open), canvas: "", title, editMode };
         }
-        const close = raw.indexOf("```", afterOpen + 1);
+        const close = rest.indexOf("```", afterOpen + 1);
         if (close < 0) {
-          // Canvas still streaming — show partial canvas, hide fence from body.
-          const canvas = raw.slice(afterOpen + 1);
-          return { body: raw.slice(0, open), canvas };
+          return { body: rest.slice(0, open), canvas: rest.slice(afterOpen + 1), title, editMode };
         }
-        // Canvas complete.
-        const canvas = raw.slice(afterOpen + 1, close).replace(/\n+$/, "");
-        const body = raw.slice(0, open) + raw.slice(close + 3);
-        return { body, canvas };
+        const canvas = rest.slice(afterOpen + 1, close).replace(/\n+$/, "");
+        const body = rest.slice(0, open) + rest.slice(close + 3);
+        return { body, canvas, title, editMode };
       };
 
       // Coalesce delta updates onto a single rAF tick so React renders
@@ -399,9 +463,10 @@ export default function Chat() {
       const flush = () => {
         pending = false;
         const snapshot = acc;
-        const { body, canvas } = writingMode
+        const parsed = writingMode
           ? splitCanvas(snapshot)
-          : { body: snapshot, canvas: null };
+          : { body: snapshot, canvas: null as string | null, title: null as string | null, editMode: null as "yes" | "no" | null };
+        const { body, canvas, title } = parsed;
         setMessages((prev) => {
           const next = prev.slice();
           const current = next[next.length - 1];
@@ -411,7 +476,13 @@ export default function Chat() {
             content: body,
             provider: sendProvider,
             model: sendModel,
-            ...(canvas !== null ? { canvas } : {}),
+            ...(canvas !== null
+              ? {
+                  canvas,
+                  canvasTitle: title ?? current.canvasTitle,
+                  canvasVersion: current.canvasVersion ?? prevCanvasCount + 1,
+                }
+              : {}),
           };
           return next;
         });
@@ -552,9 +623,10 @@ export default function Chat() {
       // Final flush to make sure we render the very last delta
       if (pending || acc) {
         pending = false;
-        const { body, canvas } = writingMode
+        const parsed = writingMode
           ? splitCanvas(acc)
-          : { body: acc, canvas: null };
+          : { body: acc, canvas: null as string | null, title: null as string | null, editMode: null as "yes" | "no" | null };
+        const { body, canvas, title } = parsed;
         setMessages((prev) => {
           const next = prev.slice();
           const current = next[next.length - 1];
@@ -564,7 +636,13 @@ export default function Chat() {
             content: body,
             provider: sendProvider,
             model: sendModel,
-            ...(canvas !== null ? { canvas } : {}),
+            ...(canvas !== null
+              ? {
+                  canvas,
+                  canvasTitle: title ?? current.canvasTitle,
+                  canvasVersion: current.canvasVersion ?? prevCanvasCount + 1,
+                }
+              : {}),
           };
           return next;
         });
@@ -789,7 +867,18 @@ export default function Chat() {
             </div>
           ) : (
             <div className="pt-8 pb-4">
-              {messages.map((m, i) => (
+              {(() => {
+                // Find the index of the most recent assistant message that has a canvas,
+                // so older canvases can be collapsed/greyed with their V{n} tag.
+                let latestCanvasIdx = -1;
+                for (let i = messages.length - 1; i >= 0; i--) {
+                  const m = messages[i];
+                  if (m.role === "assistant" && typeof m.canvas === "string" && m.canvas.length > 0) {
+                    latestCanvasIdx = i;
+                    break;
+                  }
+                }
+                return messages.map((m, i) => (
                 <ChatMessage
                   key={m.id ?? i}
                   id={m.id}
@@ -803,7 +892,10 @@ export default function Chat() {
                   sources={m.sources}
                   meta={m.meta}
                   canvas={m.canvas}
-                  onCanvasChange={m.role === "assistant" && typeof m.canvas === "string" ? (next) => {
+                  canvasTitle={m.canvasTitle}
+                  canvasVersion={m.canvasVersion}
+                  canvasCollapsed={typeof m.canvas === "string" && latestCanvasIdx >= 0 && i !== latestCanvasIdx}
+                  onCanvasChange={m.role === "assistant" && typeof m.canvas === "string" && i === latestCanvasIdx ? (next) => {
                     setMessages((prev) => {
                       const arr = prev.slice();
                       arr[i] = { ...arr[i], canvas: next };
@@ -832,7 +924,8 @@ export default function Chat() {
                     }, 0);
                   } : undefined}
                 />
-              ))}
+              ));
+              })()}
             </div>
           )}
         </div>

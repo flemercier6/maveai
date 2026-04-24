@@ -29,6 +29,9 @@ type Props = {
   sources?: Source[];
   meta?: RequestMeta;
   canvas?: string;
+  canvasTitle?: string;
+  canvasVersion?: number;
+  canvasCollapsed?: boolean;
   onCanvasChange?: (next: string) => void;
   onRetry?: () => void;
   onDelete?: () => void;
@@ -339,6 +342,9 @@ function ChatMessageImpl({
   sources,
   meta,
   canvas,
+  canvasTitle,
+  canvasVersion,
+  canvasCollapsed,
   onCanvasChange,
   onRetry,
   onDelete,
@@ -407,6 +413,9 @@ function ChatMessageImpl({
         {typeof canvas === "string" && (
           <CanvasBlock
             content={canvas}
+            title={canvasTitle}
+            version={canvasVersion}
+            collapsed={canvasCollapsed}
             streaming={streaming}
             onChange={onCanvasChange}
           />
@@ -451,6 +460,9 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.sources === next.sources &&
   prev.meta === next.meta &&
   prev.canvas === next.canvas &&
+  prev.canvasTitle === next.canvasTitle &&
+  prev.canvasVersion === next.canvasVersion &&
+  prev.canvasCollapsed === next.canvasCollapsed &&
   prev.onCanvasChange === next.onCanvasChange &&
   prev.onRetry === next.onRetry &&
   prev.onDelete === next.onDelete &&
