@@ -1003,7 +1003,7 @@ export default function Chat() {
                 {writeRequested && (
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute left-4 top-3.5 font-bold leading-relaxed select-none"
+                    className="pointer-events-none absolute left-4 top-3.5 text-sm leading-relaxed select-none"
                     style={{ color: "#0062FF" }}
                   >
                     /write
