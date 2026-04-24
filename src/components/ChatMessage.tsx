@@ -338,6 +338,25 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
   };
 }
 
+function BranchChip({ branch, onClick }: { branch: MessageBranch; onClick: () => void }) {
+  const label =
+    branch.kind === "selection"
+      ? branch.quotedText.replace(/\s+/g, " ").trim().slice(0, 36) +
+        (branch.quotedText.length > 36 ? "…" : "")
+      : "Exploration";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={branch.kind === "selection" ? `"${branch.quotedText.slice(0, 140)}"` : "Open exploration"}
+      className="pointer-events-auto inline-flex items-center gap-1.5 max-w-[220px] h-7 px-2.5 rounded-full border border-border bg-card text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors"
+    >
+      <Sparkles className="w-3.5 h-3.5 shrink-0" />
+      <span className="truncate">{label}</span>
+    </button>
+  );
+}
+
 function ChatMessageImpl({
   id,
   role,
@@ -359,6 +378,8 @@ function ChatMessageImpl({
   onDelete,
   onEdit,
   onExplore,
+  branches,
+  onBranchOpen,
 }: Props) {
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
@@ -404,8 +425,19 @@ function ChatMessageImpl({
     );
   }
 
+  const selectionBranches = (branches ?? []).filter((b) => b.kind === "selection");
+  const fullBranches = (branches ?? []).filter((b) => b.kind === "full");
+
   return (
-    <div className="w-full my-[50px]" data-assistant-message="true" data-message-id={id ?? ""}>
+    <div className="relative w-full my-[50px]" data-assistant-message="true" data-message-id={id ?? ""}>
+      {/* Selection-branch indicators: top-right of the message */}
+      {selectionBranches.length > 0 && (
+        <div className="pointer-events-none absolute top-0 right-4 flex flex-col items-end gap-1.5 z-10">
+          {selectionBranches.map((b) => (
+            <BranchChip key={b.id} branch={b} onClick={() => onBranchOpen?.(b.id)} />
+          ))}
+        </div>
+      )}
       <div className="max-w-3xl mx-auto px-4">
         {(provider || (tool && tool.status !== "failed")) && (
           <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "10px" }}>
@@ -433,7 +465,7 @@ function ChatMessageImpl({
           />
         )}
         {!streaming && content && (
-          <div className="mt-2 flex items-center gap-1 -ml-1.5">
+          <div className="relative mt-2 flex items-center gap-1 -ml-1.5">
             <ActionButton onClick={handleCopy} ariaLabel={copied ? "Copied" : "Copy"}>
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </ActionButton>
@@ -457,6 +489,14 @@ function ChatMessageImpl({
                 <Sparkles className="w-3.5 h-3.5" />
                 Explore
               </button>
+            )}
+            {/* Full-message-branch indicators: aligned with this action row, pinned to the right edge of the main column */}
+            {fullBranches.length > 0 && (
+              <div className="pointer-events-none absolute top-0 right-4 flex items-center gap-1.5">
+                {fullBranches.map((b) => (
+                  <BranchChip key={b.id} branch={b} onClick={() => onBranchOpen?.(b.id)} />
+                ))}
+              </div>
             )}
           </div>
         )}
