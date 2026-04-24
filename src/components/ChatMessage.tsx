@@ -45,6 +45,7 @@ type Props = {
   onExplore?: () => void;
   branches?: MessageBranch[];
   onBranchOpen?: (branchId: string) => void;
+  variant?: "default" | "explore";
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
