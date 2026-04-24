@@ -1003,7 +1003,7 @@ export default function Chat() {
                 {writeRequested && (
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute left-4 top-3.5 font-bold leading-relaxed select-none"
+                    className="pointer-events-none absolute left-4 top-3.5 text-sm leading-relaxed select-none"
                     style={{ color: "#0062FF" }}
                   >
                     /write
@@ -1037,7 +1037,7 @@ export default function Chat() {
                   placeholder={writeRequested ? "" : "Send a message..."}
                   rows={1}
                   className={`w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed ${
-                    writeRequested ? "!pl-[72px]" : ""
+                    writeRequested ? "!pl-[62px]" : ""
                   }`}
                 />
               </div>
