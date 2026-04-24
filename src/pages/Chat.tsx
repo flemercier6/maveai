@@ -360,6 +360,36 @@ export default function Chat() {
     const text = (overrideText ?? input).trim();
     const atts = overrideAttachments ?? attachments;
     if ((!text && atts.length === 0) || sending) return;
+
+    // /explore flow: route this request to a side exploration instead of the main chat.
+    if (exploreRequested) {
+      if (!text) {
+        toast.info("Type something to explore.");
+        return;
+      }
+      const resolved = model === AUTO_MODEL_ID ? routeAuto(text) : { provider, model };
+      const parentHistory = activeId
+        ? messages
+            .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
+            .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }))
+        : [];
+      setExploreSeed({
+        conversationId: activeId ?? null,
+        sourceMessageId: null,
+        quotedText: "",
+        parentHistory,
+        provider: resolved.provider,
+        model: resolved.model,
+        initialPrompt: text,
+      });
+      setExploreOpen(true);
+      setExploreRequested(false);
+      if (overrideText === undefined) {
+        setInput("");
+        setAttachments([]);
+      }
+      return;
+    }
     setSending(true);
     setClarify(null);
     lastSentRef.current = text;
