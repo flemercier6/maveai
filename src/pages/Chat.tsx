@@ -1292,8 +1292,11 @@ export default function Chat() {
           setBranches((prev) =>
             prev.some((x) => x.id === b.id)
               ? prev
-              : [...prev, { id: b.id, source_message_id: b.source_message_id, quoted_text: b.quoted_text }],
+              : [...prev, { id: b.id, source_message_id: b.source_message_id as any, quoted_text: b.quoted_text }],
           )
+        }
+        onBranchDeleted={(id) =>
+          setBranches((prev) => prev.filter((x) => x.id !== id))
         }
       />
     </div>
