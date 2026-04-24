@@ -9,9 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Trash2, LogOut, Sparkles, Brain, MoreHorizontal, Pencil, ChevronDown, Search, Settings, ChevronsUpDown } from "lucide-react";
+import { Plus, Trash2, LogOut, Sparkles, MoreHorizontal, Pencil, ChevronDown, Search, Settings, ChevronsUpDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SettingsDialog } from "@/components/SettingsDialog";
@@ -232,9 +231,6 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
           <DropdownMenuContent align="start" side="top" className="w-[--radix-dropdown-menu-trigger-width]">
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSettingsOpen(true); }}>
               <Settings className="w-3.5 h-3.5 mr-2 opacity-70" /> Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/memory"><Brain className="w-3.5 h-3.5 mr-2 opacity-70" /> Memory</Link>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={signOut}>
               <LogOut className="w-3.5 h-3.5 mr-2 opacity-70" /> Sign out
