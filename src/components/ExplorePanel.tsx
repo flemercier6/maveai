@@ -135,10 +135,11 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
 
   const stop = () => abortRef.current?.abort();
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (override?: string) => {
+    const text = (override ?? input).trim();
     if (!text || !seed || !branchId || sending) return;
-    setInput("");
+    if (override === undefined) setInput("");
+    else setInput("");
     setSending(true);
 
     // Persist user message in branch.
