@@ -191,6 +191,7 @@ export default function Chat() {
           quoted_text: b.quoted_text ?? "",
         })));
       });
+  }, [activeId]);
 
   // Scroll behavior:
   // - On conversation load: pin to the bottom once.
