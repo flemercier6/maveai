@@ -29,6 +29,9 @@ type Props = {
   sources?: Source[];
   meta?: RequestMeta;
   canvas?: string;
+  canvasTitle?: string;
+  canvasVersion?: number;
+  canvasCollapsed?: boolean;
   onCanvasChange?: (next: string) => void;
   onRetry?: () => void;
   onDelete?: () => void;
