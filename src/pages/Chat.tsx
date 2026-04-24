@@ -790,8 +790,11 @@ export default function Chat() {
       // Don't change model — just flag the next send as writing-canvas mode.
       setWriteRequested(true);
       toast.success("Writing canvas enabled for next message");
+    } else if (item.provider === "explore") {
+      // Flag the next send to open a side exploration instead of posting to the main chat.
+      setExploreRequested(true);
     } else {
-      setProvider(item.provider);
+      setProvider(item.provider as Provider);
       setModel(item.model);
     }
     // Restore caret position where the "/xxx" used to start
