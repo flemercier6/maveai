@@ -286,7 +286,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         `Summarize the following side exploration into a concise insight ` +
         `that can be inserted back into the main conversation. ` +
         `Keep it to 2–6 sentences. Start with a short bold headline.\n\n` +
-        `The exploration was grounded in this excerpt:\n> ${seed.quotedText}\n\n` +
+        (seed.quotedText && seed.quotedText.trim()
+          ? `The exploration was grounded in this excerpt:\n> ${seed.quotedText}\n\n`
+          : "") +
         `Exploration messages:\n` +
         messages
           .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
