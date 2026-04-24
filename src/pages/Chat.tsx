@@ -369,28 +369,52 @@ export default function Chat() {
       let buf = "";
       let acc = "";
 
-      // Parse streaming text: split out a ```canvas ... ``` block so the
-      // canvas content streams into an editable block while everything else
-      // renders as the normal assistant reply.
-      const splitCanvas = (raw: string): { body: string; canvas: string | null } => {
-        const open = raw.indexOf("```canvas");
-        if (open < 0) return { body: raw, canvas: null };
-        // Skip to the newline after ```canvas (optional language line)
-        const afterOpen = raw.indexOf("\n", open);
+      // Count previous canvases in the conversation (for V1/V2 tags).
+      const prevCanvasCount = messages.filter(
+        (m) => m.role === "assistant" && typeof m.canvas === "string" && m.canvas.length > 0,
+      ).length;
+
+      // Parse streaming text for writing mode.
+      // Expected format:
+      //   CANVAS_EDIT: yes|no\n
+      //   [if yes] CANVAS_TITLE: <title>\n
+      //   <commentary>
+      //   ```canvas\n...\n```
+      // When CANVAS_EDIT is "no" we bypass canvas rendering entirely.
+      const splitCanvas = (raw: string): { body: string; canvas: string | null; title: string | null; editMode: "yes" | "no" | null } => {
+        let rest = raw;
+        let editMode: "yes" | "no" | null = null;
+        let title: string | null = null;
+
+        const editMatch = rest.match(/^\s*CANVAS_EDIT:\s*(yes|no)\s*\n?/i);
+        if (editMatch) {
+          editMode = editMatch[1].toLowerCase() as "yes" | "no";
+          rest = rest.slice(editMatch[0].length);
+        }
+        const titleMatch = rest.match(/^\s*CANVAS_TITLE:\s*([^\n]+?)\s*\n?/i);
+        if (titleMatch) {
+          title = titleMatch[1].trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 60);
+          rest = rest.slice(titleMatch[0].length);
+        }
+
+        // If the model explicitly said "no", everything that follows is plain chat.
+        if (editMode === "no") {
+          return { body: rest, canvas: null, title: null, editMode };
+        }
+
+        const open = rest.indexOf("```canvas");
+        if (open < 0) return { body: rest, canvas: editMode === "yes" ? "" : null, title, editMode };
+        const afterOpen = rest.indexOf("\n", open);
         if (afterOpen < 0) {
-          // Not enough streamed yet — hide the partial fence from the body.
-          return { body: raw.slice(0, open), canvas: "" };
+          return { body: rest.slice(0, open), canvas: "", title, editMode };
         }
-        const close = raw.indexOf("```", afterOpen + 1);
+        const close = rest.indexOf("```", afterOpen + 1);
         if (close < 0) {
-          // Canvas still streaming — show partial canvas, hide fence from body.
-          const canvas = raw.slice(afterOpen + 1);
-          return { body: raw.slice(0, open), canvas };
+          return { body: rest.slice(0, open), canvas: rest.slice(afterOpen + 1), title, editMode };
         }
-        // Canvas complete.
-        const canvas = raw.slice(afterOpen + 1, close).replace(/\n+$/, "");
-        const body = raw.slice(0, open) + raw.slice(close + 3);
-        return { body, canvas };
+        const canvas = rest.slice(afterOpen + 1, close).replace(/\n+$/, "");
+        const body = rest.slice(0, open) + rest.slice(close + 3);
+        return { body, canvas, title, editMode };
       };
 
       // Coalesce delta updates onto a single rAF tick so React renders
@@ -399,9 +423,10 @@ export default function Chat() {
       const flush = () => {
         pending = false;
         const snapshot = acc;
-        const { body, canvas } = writingMode
+        const parsed = writingMode
           ? splitCanvas(snapshot)
-          : { body: snapshot, canvas: null };
+          : { body: snapshot, canvas: null as string | null, title: null as string | null, editMode: null as "yes" | "no" | null };
+        const { body, canvas, title } = parsed;
         setMessages((prev) => {
           const next = prev.slice();
           const current = next[next.length - 1];
@@ -411,7 +436,13 @@ export default function Chat() {
             content: body,
             provider: sendProvider,
             model: sendModel,
-            ...(canvas !== null ? { canvas } : {}),
+            ...(canvas !== null
+              ? {
+                  canvas,
+                  canvasTitle: title ?? current.canvasTitle,
+                  canvasVersion: current.canvasVersion ?? prevCanvasCount + 1,
+                }
+              : {}),
           };
           return next;
         });
