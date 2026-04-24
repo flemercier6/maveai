@@ -506,16 +506,17 @@ async function decideClarify(args: {
   hasHistory: boolean;
 }): Promise<ClarifyQuestion[] | null> {
   const { userText, hasHistory } = args;
-  if (!userText.trim() || userText.trim().length < 12) return null;
+  if (!userText.trim() || userText.trim().length < 40) return null;
 
-  const prompt = `You are a clarification assistant. Decide whether the user's request below is COMPLEX or AMBIGUOUS enough that asking 1–3 short multiple-choice questions BEFORE answering would meaningfully improve the answer.
+  const prompt = `You are a clarification gatekeeper. Your DEFAULT answer is ALWAYS {"needs_clarification": false}.
+Only return true in rare cases where an answer CANNOT be reasonably attempted without knowing one specific missing piece of information that would fundamentally change the output.
 
 Reply STRICTLY in JSON, no surrounding text.
 
-If clarification is NOT useful (simple/clear factual or chit-chat request, code request with enough info, translation, summary of provided text, follow-up that already has context, etc.):
+Default (>95% of cases):
 {"needs_clarification": false}
 
-If clarification IS useful:
+Exception (rare — genuinely blocking ambiguity):
 {
   "needs_clarification": true,
   "questions": [
@@ -524,7 +525,7 @@ If clarification IS useful:
       "question": "<one clear question ending with '?'>",
       "multi": false,
       "options": [
-        {"label": "<short option, 1-5 words>"},
+        {"label": "<short, 1-5 words>"},
         {"label": "..."},
         {"label": "..."}
       ]
@@ -532,13 +533,27 @@ If clarification IS useful:
   ]
 }
 
-STRICT RULES:
-- Maximum 3 questions, only ask what's truly needed.
-- 2–4 options per question. Keep options VERY short — ideally 1–3 words, max 24 characters. They render as inline pills, so long sentences break the layout. Make them distinct and mutually exclusive (unless multi=true).
+NEVER clarify for:
+- Any writing task where the user gave enough intent (email, note, post, article, summary, translation, rewrite, tone change). Just make reasonable assumptions.
+- Code requests, debugging, explanations, definitions, how-to questions.
+- Factual questions, research, recommendations, comparisons.
+- Opinion, chit-chat, greetings, follow-ups.
+- Anything under 40 characters.
+- Requests that can be answered by picking one sensible default and proceeding.
+
+ONLY clarify when ALL of these are true:
+- The request is genuinely complex (large project scope, strategic plan, multi-month roadmap, architecture with many trade-offs).
+- Picking a default would likely produce the WRONG output for the user's real need.
+- A single clarifying question would unblock a materially different answer.
+
+Rules when you DO clarify:
+- Maximum 2 questions, prefer 1. Only what's truly blocking.
+- 2–4 options per question. Keep options VERY short — ideally 1–3 words, max 24 characters (they render as inline pills).
 - Do NOT add an "Other" option — the UI handles that automatically.
 - Use the SAME LANGUAGE as the user's message.
-- Only return needs_clarification=true for genuinely complex/ambiguous requests (planning, creative briefs, multi-step builds, vague analysis requests, design choices, strategy, recommendations with many trade-offs, etc.).
-- Conversation already has prior turns: ${hasHistory ? "yes" : "no"}. If yes, only clarify if the new turn opens a NEW complex topic.
+- Conversation already has prior turns: ${hasHistory ? "yes" : "no"}. If yes, almost never clarify — only if the new turn opens a brand-new complex topic.
+
+When in doubt → {"needs_clarification": false}.
 
 User message:
 ${userText.slice(0, 2000)}`;
