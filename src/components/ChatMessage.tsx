@@ -3,6 +3,7 @@ import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, Arr
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
+import { MermaidDiagram } from "./MermaidDiagram";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Provider } from "@/lib/models";
 import { useSmoothText } from "@/hooks/useSmoothText";
