@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Eye } from "lucide-react";
+import { ChevronDown, ChevronRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RequestMeta } from "@/lib/requestMeta";
 
@@ -73,7 +73,7 @@ export function RequestVisualizer({ meta }: Props) {
         className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-dropdown-hover transition-colors"
       >
         <span className="flex items-center gap-2 text-xs font-medium text-foreground">
-          <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+          <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />
           What was sent to the model
           <span className="text-muted-foreground font-normal">
             · {meta.provider}/{meta.model}
