@@ -36,6 +36,7 @@ type Props = {
   onRetry?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
+  onExplore?: () => void;
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
