@@ -413,6 +413,9 @@ function ChatMessageImpl({
         {typeof canvas === "string" && (
           <CanvasBlock
             content={canvas}
+            title={canvasTitle}
+            version={canvasVersion}
+            collapsed={canvasCollapsed}
             streaming={streaming}
             onChange={onCanvasChange}
           />
