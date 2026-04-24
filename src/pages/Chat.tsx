@@ -802,6 +802,14 @@ export default function Chat() {
                   phase={m.phase}
                   sources={m.sources}
                   meta={m.meta}
+                  canvas={m.canvas}
+                  onCanvasChange={m.role === "assistant" && typeof m.canvas === "string" ? (next) => {
+                    setMessages((prev) => {
+                      const arr = prev.slice();
+                      arr[i] = { ...arr[i], canvas: next };
+                      return arr;
+                    });
+                  } : undefined}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                   onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
                   onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}
