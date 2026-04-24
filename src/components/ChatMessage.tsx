@@ -404,6 +404,13 @@ function ChatMessageImpl({
             </span>
           ) : " "}
         </div>
+        {typeof canvas === "string" && (
+          <CanvasBlock
+            content={canvas}
+            streaming={streaming}
+            onChange={onCanvasChange}
+          />
+        )}
         {!streaming && content && (
           <div className="mt-2 flex items-center gap-1 -ml-1.5">
             <ActionButton onClick={handleCopy} ariaLabel={copied ? "Copied" : "Copy"}>
