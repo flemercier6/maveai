@@ -23,6 +23,7 @@ import { SlashCommandMenu, filterSlashItems, type SlashItem } from "@/components
 import { getTextareaCaretCoords } from "@/lib/caret";
 import { ClarifyCard, type ClarifyQuestion } from "@/components/ClarifyCard";
 import type { RequestMeta } from "@/lib/requestMeta";
+import { billingMultiplier } from "@/lib/pricing";
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
