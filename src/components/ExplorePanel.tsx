@@ -509,7 +509,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-border" style={{ backgroundColor: "#F8F8F8" }}>
+      <div className="p-3" style={{ backgroundColor: "#F8F8F8" }}>
         <div className="relative bg-card border border-border rounded-2xl">
           <Textarea
             ref={textareaRef}
