@@ -439,6 +439,17 @@ function ChatMessageImpl({
                 <Trash2 className="w-4 h-4" />
               </ActionButton>
             )}
+            {onExplore && (
+              <button
+                type="button"
+                onClick={onExplore}
+                aria-label="Explore"
+                className="ml-1 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border border-border bg-card text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Explore
+              </button>
+            )}
           </div>
         )}
         {!streaming && meta && <RequestVisualizer meta={meta} />}
