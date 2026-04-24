@@ -461,6 +461,29 @@ export default function Chat() {
                 next[next.length - 1] = { ...next[next.length - 1], meta };
                 return next;
               });
+            } else if (j.type === "usage") {
+              const inputTokens = Number(j.input_tokens) || 0;
+              const outputTokens = Number(j.output_tokens) || 0;
+              const inputCostUsd = Number(j.input_cost_usd) || 0;
+              const outputCostUsd = Number(j.output_cost_usd) || 0;
+              setMessages((prev) => {
+                const next = prev.slice();
+                const last = next[next.length - 1];
+                if (!last) return prev;
+                const modelId = last.meta?.model ?? last.model ?? "";
+                const multiplier = billingMultiplier(modelId);
+                const cost = {
+                  inputTokens,
+                  outputTokens,
+                  inputCostUsd,
+                  outputCostUsd,
+                  multiplier,
+                };
+                if (last.meta) {
+                  next[next.length - 1] = { ...last, meta: { ...last.meta, cost } };
+                }
+                return next;
+              });
             } else if (j.type === "clarify") {
               const qs = Array.isArray(j.questions) ? (j.questions as ClarifyQuestion[]) : [];
               if (qs.length) {
