@@ -118,37 +118,52 @@ export default function Chat() {
   }, [activeId]);
 
   // Scroll behavior:
-  // - When NOT streaming: keep pinned to the bottom (normal chat behavior on load / new send).
-  // - When streaming starts: scroll once so the last user message sits near the top of the
-  //   viewport, then stop auto-scrolling. The user can read from the top of the answer
-  //   and scroll manually as more content streams in.
+  // - When NOT streaming: keep pinned to the bottom (load / new conversation / final message).
+  // - When streaming starts: scroll once so the last user message sits at the top of the
+  //   viewport, then stop auto-scrolling so the user can read from the start of the answer.
   const didInitialStreamScrollRef = useRef(false);
+  const lastStreamUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     if (!streaming) {
       didInitialStreamScrollRef.current = false;
+      lastStreamUserIdRef.current = null;
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }
   }, [messages, streaming]);
 
-  // When a new stream starts, align the last user message near the top — once.
   useEffect(() => {
     if (!streaming) return;
-    if (didInitialStreamScrollRef.current) return;
     const el = scrollRef.current;
     if (!el) return;
     const lastUser = [...messages].reverse().find((m) => m.role === "user" && m.id);
     if (!lastUser?.id) return;
-    const anchor = document.getElementById(`chat-anchor-${lastUser.id}`);
-    if (!anchor) return;
-    const containerTop = el.getBoundingClientRect().top;
-    const anchorTop = anchor.getBoundingClientRect().top;
-    el.scrollTo({
-      top: el.scrollTop + (anchorTop - containerTop) - 16,
-      behavior: "smooth",
-    });
-    didInitialStreamScrollRef.current = true;
+
+    // Only run once per new streaming turn (identified by the last user message id).
+    if (didInitialStreamScrollRef.current && lastStreamUserIdRef.current === lastUser.id) return;
+    lastStreamUserIdRef.current = lastUser.id;
+
+    // Wait for the DOM to mount the anchor, then align it to the top.
+    let cancelled = false;
+    const tryScroll = (attempt: number) => {
+      if (cancelled) return;
+      const anchor = document.getElementById(`chat-anchor-${lastUser.id}`);
+      if (!anchor) {
+        if (attempt < 10) requestAnimationFrame(() => tryScroll(attempt + 1));
+        return;
+      }
+      const containerTop = el.getBoundingClientRect().top;
+      const anchorTop = anchor.getBoundingClientRect().top;
+      el.scrollTo({
+        top: el.scrollTop + (anchorTop - containerTop) - 16,
+        behavior: "smooth",
+      });
+      didInitialStreamScrollRef.current = true;
+    };
+    requestAnimationFrame(() => tryScroll(0));
+    return () => { cancelled = true; };
   }, [streaming, messages]);
 
   const newConversation = () => {
