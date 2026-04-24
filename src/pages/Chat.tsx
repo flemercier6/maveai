@@ -830,11 +830,11 @@ export default function Chat() {
     setAttachments((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // Open the explore side panel with the current selection as seed.
-  const openExplore = () => {
-    if (!selection || !selection.messageId || !activeId) return;
+  // Open the explore side panel with the given text selection as seed.
+  const openExplore = (payload: SelectionPayload) => {
+    if (!activeId) return;
     // Build parent history: every message up to and including the source message.
-    const sourceIdx = messages.findIndex((m) => m.id === selection.messageId);
+    const sourceIdx = messages.findIndex((m) => m.id === payload.messageId);
     if (sourceIdx < 0) return;
     const parentHistory = messages
       .slice(0, sourceIdx + 1)
@@ -842,15 +842,13 @@ export default function Chat() {
       .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
     setExploreSeed({
       conversationId: activeId,
-      sourceMessageId: selection.messageId,
-      quotedText: selection.text,
+      sourceMessageId: payload.messageId,
+      quotedText: payload.text,
       parentHistory,
       provider,
       model: model === AUTO_MODEL_ID ? "gpt-4o-mini" : model,
     });
     setExploreOpen(true);
-    // Clear the browser selection so the button disappears.
-    window.getSelection()?.removeAllRanges();
   };
 
   // Insert a merged summary back into the main chat as a new assistant message.
