@@ -302,14 +302,56 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge }: Props) {
     }
   };
 
+  // Resizable width (px). Persisted to localStorage.
+  const [width, setWidth] = useState<number>(() => {
+    if (typeof window === "undefined") return 480;
+    const saved = Number(localStorage.getItem("explore-panel-width"));
+    return Number.isFinite(saved) && saved >= 320 ? saved : 480;
+  });
+  const resizingRef = useRef(false);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!resizingRef.current) return;
+      const next = Math.min(
+        Math.max(320, window.innerWidth - e.clientX),
+        Math.max(360, window.innerWidth - 360),
+      );
+      setWidth(next);
+    };
+    const onUp = () => {
+      if (!resizingRef.current) return;
+      resizingRef.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      localStorage.setItem("explore-panel-width", String(width));
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [width]);
+
+  if (!open) return null;
+
   return (
     <aside
-      aria-hidden={!open}
-      className={`fixed top-0 right-0 h-screen w-full sm:w-[480px] z-40 flex flex-col border-l border-border shadow-2xl transition-transform duration-300 ease-out ${
-        open ? "translate-x-0" : "translate-x-full"
-      }`}
-      style={{ backgroundColor: "#F8F8F8" }}
+      className="relative h-full shrink-0 flex flex-col border-l border-border animate-slide-in-right"
+      style={{ backgroundColor: "#F8F8F8", width }}
     >
+      {/* Resize handle */}
+      <div
+        onMouseDown={(e) => {
+          e.preventDefault();
+          resizingRef.current = true;
+          document.body.style.cursor = "col-resize";
+          document.body.style.userSelect = "none";
+        }}
+        className="absolute top-0 left-0 h-full w-1 -translate-x-1/2 cursor-col-resize hover:bg-border z-10"
+        aria-label="Resize exploration panel"
+      />
       <header className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-semibold truncate">Exploration</span>
