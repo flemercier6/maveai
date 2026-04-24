@@ -381,6 +381,7 @@ function ChatMessageImpl({
   onExplore,
   branches,
   onBranchOpen,
+  variant,
 }: Props) {
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
