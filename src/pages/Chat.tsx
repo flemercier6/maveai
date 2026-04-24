@@ -25,8 +25,7 @@ import { ClarifyCard, type ClarifyQuestion } from "@/components/ClarifyCard";
 import type { RequestMeta } from "@/lib/requestMeta";
 import { billingMultiplier } from "@/lib/pricing";
 import { looksLikeWritingRequest } from "@/lib/writingDetection";
-import { useTextSelection } from "@/hooks/useTextSelection";
-import { ExploreButton } from "@/components/ExploreButton";
+import { SelectionExploreButton, type SelectionPayload } from "@/components/SelectionExploreButton";
 import { ExplorePanel, type BranchSeed } from "@/components/ExplorePanel";
 
 type ToolStatus = "running" | "done" | "failed";
@@ -66,7 +65,6 @@ export default function Chat() {
   // ---- Explore (branch) side panel ----
   const [exploreOpen, setExploreOpen] = useState(false);
   const [exploreSeed, setExploreSeed] = useState<BranchSeed | null>(null);
-  const selection = useTextSelection('[data-assistant-message="true"]');
 
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -832,11 +830,11 @@ export default function Chat() {
     setAttachments((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // Open the explore side panel with the current selection as seed.
-  const openExplore = () => {
-    if (!selection || !selection.messageId || !activeId) return;
+  // Open the explore side panel with the given text selection as seed.
+  const openExplore = (payload: SelectionPayload) => {
+    if (!activeId) return;
     // Build parent history: every message up to and including the source message.
-    const sourceIdx = messages.findIndex((m) => m.id === selection.messageId);
+    const sourceIdx = messages.findIndex((m) => m.id === payload.messageId);
     if (sourceIdx < 0) return;
     const parentHistory = messages
       .slice(0, sourceIdx + 1)
@@ -844,15 +842,13 @@ export default function Chat() {
       .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
     setExploreSeed({
       conversationId: activeId,
-      sourceMessageId: selection.messageId,
-      quotedText: selection.text,
+      sourceMessageId: payload.messageId,
+      quotedText: payload.text,
       parentHistory,
       provider,
       model: model === AUTO_MODEL_ID ? "gpt-4o-mini" : model,
     });
     setExploreOpen(true);
-    // Clear the browser selection so the button disappears.
-    window.getSelection()?.removeAllRanges();
   };
 
   // Insert a merged summary back into the main chat as a new assistant message.
@@ -1150,9 +1146,9 @@ export default function Chat() {
         </div>
       </main>
 
-      {/* Floating Explore button over the current selection (only inside assistant messages) */}
-      {selection && !exploreOpen && activeId && (
-        <ExploreButton rect={selection.rect} onClick={openExplore} />
+      {/* Floating Explore button over the current selection (self-contained) */}
+      {activeId && (
+        <SelectionExploreButton onExplore={openExplore} disabled={exploreOpen} />
       )}
 
       {/* Right-hand exploration side panel */}
