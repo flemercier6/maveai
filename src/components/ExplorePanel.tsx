@@ -506,6 +506,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
                     role={m.role}
                     content={m.content}
                     streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
+                    variant="explore"
                   />
                 </div>
               );

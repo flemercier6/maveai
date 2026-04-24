@@ -45,6 +45,7 @@ type Props = {
   onExplore?: () => void;
   branches?: MessageBranch[];
   onBranchOpen?: (branchId: string) => void;
+  variant?: "default" | "explore";
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
@@ -380,6 +381,7 @@ function ChatMessageImpl({
   onExplore,
   branches,
   onBranchOpen,
+  variant,
 }: Props) {
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
@@ -404,7 +406,7 @@ function ChatMessageImpl({
     return (
       <div className="w-full py-3" id={id ? `chat-anchor-${id}` : undefined}>
         <div className="max-w-3xl mx-auto px-4 flex flex-col items-end gap-1.5">
-          <div className="max-w-[80%] rounded-2xl bg-bubble-user text-bubble-user-foreground px-4 py-2.5 chat-prose break-words">
+          <div className={`max-w-[80%] rounded-2xl ${variant === "explore" ? "bg-background" : "bg-bubble-user"} text-bubble-user-foreground px-4 py-2.5 chat-prose break-words`}>
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{rest || " "}</ReactMarkdown>
           </div>
           {memory && <MemoryBadge added={memory.added} updated={memory.updated} />}
@@ -532,5 +534,6 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.onEdit === next.onEdit &&
   prev.onExplore === next.onExplore &&
   prev.branches === next.branches &&
-  prev.onBranchOpen === next.onBranchOpen,
+  prev.onBranchOpen === next.onBranchOpen &&
+  prev.variant === next.variant,
 );
