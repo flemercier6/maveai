@@ -46,36 +46,36 @@ export type Database = {
       }
       chat_branches: {
         Row: {
-          conversation_id: string
+          conversation_id: string | null
           created_at: string
           id: string
           merged_summary: string | null
           quoted_text: string
-          source_message_id: string
+          source_message_id: string | null
           status: string
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          conversation_id: string
+          conversation_id?: string | null
           created_at?: string
           id?: string
           merged_summary?: string | null
           quoted_text?: string
-          source_message_id: string
+          source_message_id?: string | null
           status?: string
           title?: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          conversation_id?: string
+          conversation_id?: string | null
           created_at?: string
           id?: string
           merged_summary?: string | null
           quoted_text?: string
-          source_message_id?: string
+          source_message_id?: string | null
           status?: string
           title?: string
           updated_at?: string
