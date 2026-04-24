@@ -46,6 +46,8 @@ type Props = {
     source_message_id: string | null;
     quoted_text: string;
   }) => void;
+  /** Called when a branch is discarded (empty on close) so the parent can remove it. */
+  onBranchDeleted?: (branchId: string) => void;
 };
 
 export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated }: Props) {
