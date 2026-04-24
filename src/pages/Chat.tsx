@@ -444,6 +444,22 @@ export default function Chat() {
                   return next;
                 });
               }
+            } else if (j.type === "meta") {
+              const meta: RequestMeta = {
+                provider: String(j.provider ?? ""),
+                model: String(j.model ?? ""),
+                systems: Array.isArray(j.systems) ? j.systems : [],
+                history: Array.isArray(j.history) ? j.history : [],
+                memoryKeywords: Array.isArray(j.memoryKeywords) ? j.memoryKeywords : [],
+                memoryMatches: Array.isArray(j.memoryMatches) ? j.memoryMatches : [],
+                webContext: j.webContext ?? null,
+                approxTotalInputTokens: Number(j.approxTotalInputTokens) || 0,
+              };
+              setMessages((prev) => {
+                const next = prev.slice();
+                next[next.length - 1] = { ...next[next.length - 1], meta };
+                return next;
+              });
             } else if (j.type === "clarify") {
               const qs = Array.isArray(j.questions) ? (j.questions as ClarifyQuestion[]) : [];
               if (qs.length) {
@@ -710,6 +726,7 @@ export default function Chat() {
                   tool={m.tool}
                   phase={m.phase}
                   sources={m.sources}
+                  meta={m.meta}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                   onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
                   onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}
