@@ -444,7 +444,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       </header>
 
       {/* Quoted excerpt */}
-      {seed && (
+      {seed && seed.quotedText && seed.quotedText.trim() && (
         <div className="px-4 pt-3">
           <div className="rounded-lg border border-border bg-background/60 px-3 py-2 text-xs text-muted-foreground">
             <div className="text-[10px] uppercase tracking-wide mb-1 opacity-70">
