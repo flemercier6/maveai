@@ -4,7 +4,7 @@ import { MODELS, PROVIDERS, AUTO_MODEL_ID, type Provider } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
 
 export type SlashItem = {
-  provider: Provider | "auto" | "write";
+  provider: Provider | "auto" | "write" | "explore";
   model: string;
   label: string;
   description: string;
