@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { Settings, Sparkles, Globe } from "lucide-react";
+import { Settings, Sparkles, Globe, Brain } from "lucide-react";
 import { UsageTab } from "@/components/UsageTab";
+import { MemoryTab } from "@/components/MemoryTab";
 
-type Section = "preferences" | "integrations" | "usage";
+type Section = "preferences" | "integrations" | "memory" | "usage";
 
 const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "preferences", label: "Preferences", icon: Settings },
   { id: "integrations", label: "Integrations", icon: Globe },
+  { id: "memory", label: "Memory", icon: Brain },
   { id: "usage", label: "Usage", icon: Sparkles },
 ];
 
@@ -75,6 +77,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
               </p>
             </section>
           )}
+          {active === "memory" && <MemoryTab />}
           {active === "usage" && <UsageTab />}
         </div>
       </DialogContent>

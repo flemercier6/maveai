@@ -233,9 +233,6 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
             <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSettingsOpen(true); }}>
               <Settings className="w-3.5 h-3.5 mr-2 opacity-70" /> Settings
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/memory"><Brain className="w-3.5 h-3.5 mr-2 opacity-70" /> Memory</Link>
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={signOut}>
               <LogOut className="w-3.5 h-3.5 mr-2 opacity-70" /> Sign out
             </DropdownMenuItem>
