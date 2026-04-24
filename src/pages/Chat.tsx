@@ -65,7 +65,6 @@ export default function Chat() {
   // ---- Explore (branch) side panel ----
   const [exploreOpen, setExploreOpen] = useState(false);
   const [exploreSeed, setExploreSeed] = useState<BranchSeed | null>(null);
-  const selection = useTextSelection('[data-assistant-message="true"]');
 
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
