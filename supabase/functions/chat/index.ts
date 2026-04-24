@@ -927,10 +927,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ---------- Load & filter user memory by relevance to current query ----------
-    // Strategy: extract keywords from the latest user message, then keep only
-    // memories whose own keywords overlap. If nothing is relevant, inject NO
-    // memory at all — saves tokens and keeps unrelated facts out of the prompt.
+    // ---------- Load & inject user memory ----------
+    // Two tiers:
+    //  1) PROFILE (identity + preference): ALWAYS injected. These are core facts
+    //     about the user (name, job, response preferences, etc.) that must
+    //     influence every reply — e.g. signing an email with the real name
+    //     instead of "[Your name]".
+    //  2) CONTEXTUAL (project/context/fact): injected ONLY when keyword-relevant
+    //     to the current user message — saves tokens.
     const lastUserMsg = [...(messages as Msg[])].reverse().find((m) => m.role === "user");
     const queryKeywords = new Set(extractKeywords(lastUserMsg?.content ?? "", 20));
 
@@ -939,22 +943,35 @@ Deno.serve(async (req) => {
       .select("id,content,kind,keywords")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(100); // lightweight: just metadata, real filtering happens below
+      .limit(100);
 
-    // Score each memory; fall back to deriving keywords from content if missing
-    // (handles legacy rows persisted before the keywords column existed).
+    const PROFILE_KINDS = new Set(["identity", "preference"]);
+    const profileMems: { content: string; kind: string }[] = [];
     type ScoredMem = { content: string; kind: string; score: number };
     const scored: ScoredMem[] = [];
+
     for (const m of (memRows ?? []) as Array<{ content: string; kind: string; keywords: string[] | null }>) {
-      const kws = (m.keywords && m.keywords.length)
-        ? m.keywords
-        : extractKeywords(m.content, 12);
+      if (PROFILE_KINDS.has(m.kind)) {
+        profileMems.push({ content: m.content, kind: m.kind });
+        continue;
+      }
+      const kws = (m.keywords && m.keywords.length) ? m.keywords : extractKeywords(m.content, 12);
       const score = memoryRelevance(kws, queryKeywords);
       if (score > 0) scored.push({ content: m.content, kind: m.kind, score });
     }
     scored.sort((a, b) => b.score - a.score);
 
-    // Cap: max 8 relevant memories AND a hard char budget. Tight by design.
+    // Build profile block (always on, generous budget since it's high-value).
+    const PROFILE_MAX_ITEMS = 20;
+    const PROFILE_CHAR_BUDGET = 1500;
+    let profileBlock = "";
+    for (const m of profileMems.slice(0, PROFILE_MAX_ITEMS)) {
+      const line = `- (${m.kind}) ${m.content}`;
+      if (profileBlock.length + line.length + 1 > PROFILE_CHAR_BUDGET) break;
+      profileBlock += (profileBlock ? "\n" : "") + line;
+    }
+
+    // Build contextual block (keyword-matched only).
     const MEMORY_MAX_ITEMS = 8;
     const MEMORY_CHAR_BUDGET = 1200;
     let memoryBlock = "";
@@ -964,11 +981,21 @@ Deno.serve(async (req) => {
       memoryBlock += (memoryBlock ? "\n" : "") + line;
     }
 
-    const memorySystem: Msg | null = memoryBlock
+    const memorySystem: Msg | null = (profileBlock || memoryBlock)
       ? {
         role: "system",
         content:
-          "Relevant user memory (use implicitly, don't repeat verbatim):\n" + memoryBlock,
+          (profileBlock
+            ? "USER PROFILE (authoritative facts about the user — ALWAYS honor these). " +
+              "Use them proactively: sign messages/emails with the user's real name, tailor tone to stated preferences, " +
+              "respect their role/job context. NEVER write placeholders like \"[Your name]\", \"[Your role]\", \"[Your company]\" " +
+              "when the information is available below — fill it in directly. Do not recite this block back to the user.\n" +
+              profileBlock
+            : "") +
+          (profileBlock && memoryBlock ? "\n\n" : "") +
+          (memoryBlock
+            ? "Additional relevant context (use implicitly, don't repeat verbatim):\n" + memoryBlock
+            : ""),
       }
       : null;
 
