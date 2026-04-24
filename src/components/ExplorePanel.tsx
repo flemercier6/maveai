@@ -1,0 +1,426 @@
+import { useEffect, useRef, useState } from "react";
+import { X, ArrowRight, Square, GitMerge, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { ChatMessage } from "@/components/ChatMessage";
+import { toast } from "sonner";
+import type { Provider } from "@/lib/models";
+
+const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+
+export type BranchSeed = {
+  conversationId: string;
+  sourceMessageId: string;
+  quotedText: string;
+  // Messages preceding (and including) the source message, used as context.
+  parentHistory: { role: "user" | "assistant"; content: string }[];
+  provider: Provider;
+  model: string;
+};
+
+type BranchMsg = {
+  id?: string;
+  role: "user" | "assistant";
+  content: string;
+};
+
+type Props = {
+  open: boolean;
+  seed: BranchSeed | null;
+  userId: string;
+  onClose: () => void;
+  /** Called with a summary string when the user merges the exploration back. */
+  onMerge: (summary: string) => void;
+};
+
+export function ExplorePanel({ open, seed, userId, onClose, onMerge }: Props) {
+  const [branchId, setBranchId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<BranchMsg[]>([]);
+  const [input, setInput] = useState("");
+  const [streaming, setStreaming] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [merging, setMerging] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Create a branch record when a seed arrives and none exists yet.
+  useEffect(() => {
+    if (!open || !seed) return;
+    // Reset local state when opening a new seed.
+    setMessages([]);
+    setInput("");
+    setBranchId(null);
+    (async () => {
+      const { data, error } = await supabase
+        .from("chat_branches")
+        .insert({
+          user_id: userId,
+          conversation_id: seed.conversationId,
+          source_message_id: seed.sourceMessageId,
+          quoted_text: seed.quotedText,
+          title: "Exploration",
+          status: "open",
+        })
+        .select()
+        .single();
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      setBranchId(data.id);
+    })();
+  }, [open, seed, userId]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [input]);
+
+  // Auto scroll to bottom on new messages.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [messages]);
+
+  const stop = () => abortRef.current?.abort();
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || !seed || !branchId || sending) return;
+    setInput("");
+    setSending(true);
+
+    // Persist user message in branch.
+    const { data: userMsg } = await supabase
+      .from("branch_messages")
+      .insert({
+        user_id: userId,
+        branch_id: branchId,
+        role: "user",
+        content: text,
+      })
+      .select()
+      .single();
+
+    const baseMsgs: BranchMsg[] = [
+      ...messages,
+      { id: userMsg?.id, role: "user", content: text },
+    ];
+    setMessages([...baseMsgs, { role: "assistant", content: "" }]);
+    setStreaming(true);
+
+    // Build the payload: parent history, plus a bridge message quoting the selection,
+    // plus the branch conversation so far.
+    const bridgePreamble =
+      `The user is opening a side exploration branched from the main conversation. ` +
+      `They are focused on this excerpt from your previous response:\n\n` +
+      `> ${seed.quotedText.replace(/\n/g, "\n> ")}\n\n` +
+      `Continue the discussion grounded in this excerpt, while using the prior context above. ` +
+      `Stay concise unless the user asks for depth.`;
+
+    const payloadMessages = [
+      ...seed.parentHistory,
+      { role: "user" as const, content: bridgePreamble },
+      { role: "assistant" as const, content: "Understood — what would you like to explore?" },
+      ...baseMsgs.map((m) => ({ role: m.role, content: m.content })),
+    ];
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(FUNC_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          // No conversationId → the edge function won't persist, which is exactly
+          // what we want (we persist to branch_messages ourselves).
+          conversationId: null,
+          provider: seed.provider,
+          model: seed.model,
+          skipClarify: true,
+          writingMode: false,
+          forceCanvas: false,
+          messages: payloadMessages,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!resp.ok || !resp.body) {
+        throw new Error(await resp.text());
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let acc = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buf.indexOf("\n\n")) !== -1) {
+          const chunk = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          if (!chunk.startsWith("data: ")) continue;
+          try {
+            const j = JSON.parse(chunk.slice(6));
+            if (j.type === "delta" && typeof j.text === "string") {
+              acc += j.text;
+              setMessages((prev) => {
+                const arr = prev.slice();
+                arr[arr.length - 1] = { role: "assistant", content: acc };
+                return arr;
+              });
+            }
+          } catch { /* ignore partial */ }
+        }
+      }
+
+      // Persist the assistant reply.
+      if (acc.trim()) {
+        const { data: asstMsg } = await supabase
+          .from("branch_messages")
+          .insert({
+            user_id: userId,
+            branch_id: branchId,
+            role: "assistant",
+            content: acc,
+            model: seed.model,
+          })
+          .select()
+          .single();
+        setMessages((prev) => {
+          const arr = prev.slice();
+          arr[arr.length - 1] = {
+            id: asstMsg?.id,
+            role: "assistant",
+            content: acc,
+          };
+          return arr;
+        });
+      }
+    } catch (e: any) {
+      if (e?.name !== "AbortError") {
+        toast.error(e?.message ?? "Exploration failed");
+      }
+    } finally {
+      setStreaming(false);
+      setSending(false);
+      abortRef.current = null;
+    }
+  };
+
+  const handleMerge = async () => {
+    if (!seed || !branchId || merging) return;
+    if (messages.length === 0) {
+      toast.info("Nothing to merge yet.");
+      return;
+    }
+    setMerging(true);
+    try {
+      // Ask the same endpoint to summarize the exploration in a self-contained way.
+      const summaryPrompt =
+        `Summarize the following side exploration into a concise insight ` +
+        `that can be inserted back into the main conversation. ` +
+        `Keep it to 2–6 sentences. Start with a short bold headline.\n\n` +
+        `The exploration was grounded in this excerpt:\n> ${seed.quotedText}\n\n` +
+        `Exploration messages:\n` +
+        messages
+          .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
+          .join("\n\n");
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(FUNC_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          conversationId: null,
+          provider: seed.provider,
+          model: seed.model,
+          skipClarify: true,
+          writingMode: false,
+          forceCanvas: false,
+          messages: [{ role: "user", content: summaryPrompt }],
+        }),
+      });
+      if (!resp.ok || !resp.body) throw new Error(await resp.text());
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let acc = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buf.indexOf("\n\n")) !== -1) {
+          const chunk = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          if (!chunk.startsWith("data: ")) continue;
+          try {
+            const j = JSON.parse(chunk.slice(6));
+            if (j.type === "delta" && typeof j.text === "string") acc += j.text;
+          } catch { /* ignore */ }
+        }
+      }
+      const summary = acc.trim();
+      if (!summary) throw new Error("Empty summary");
+
+      await supabase
+        .from("chat_branches")
+        .update({ status: "merged", merged_summary: summary })
+        .eq("id", branchId);
+
+      onMerge(summary);
+      onClose();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Merge failed");
+    } finally {
+      setMerging(false);
+    }
+  };
+
+  const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  };
+
+  return (
+    <aside
+      aria-hidden={!open}
+      className={`fixed top-0 right-0 h-screen w-full sm:w-[480px] z-40 flex flex-col border-l border-border shadow-2xl transition-transform duration-300 ease-out ${
+        open ? "translate-x-0" : "translate-x-full"
+      }`}
+      style={{ backgroundColor: "#F8F8F8" }}
+    >
+      <header className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-semibold truncate">Exploration</span>
+          {seed && (
+            <span className="text-xs text-muted-foreground truncate">
+              branched from chat
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={handleMerge}
+            disabled={!branchId || messages.length === 0 || merging || streaming}
+          >
+            {merging ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <GitMerge className="w-3.5 h-3.5" />
+            )}
+            Merge
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={onClose}
+            aria-label="Close exploration"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      </header>
+
+      {/* Quoted excerpt */}
+      {seed && (
+        <div className="px-4 pt-3">
+          <div className="rounded-lg border border-border bg-background/60 px-3 py-2 text-xs text-muted-foreground">
+            <div className="text-[10px] uppercase tracking-wide mb-1 opacity-70">
+              Quoted
+            </div>
+            <blockquote className="whitespace-pre-wrap line-clamp-4 leading-snug text-foreground/80">
+              {seed.quotedText}
+            </blockquote>
+          </div>
+        </div>
+      )}
+
+      {/* Messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto py-2">
+        {messages.length === 0 ? (
+          <div className="h-full flex items-center justify-center px-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Ask anything about this excerpt. The AI has the context of your main chat.
+            </p>
+          </div>
+        ) : (
+          <div>
+            {messages.map((m, i) => (
+              <ChatMessage
+                key={m.id ?? i}
+                id={m.id}
+                role={m.role}
+                content={m.content}
+                streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Input */}
+      <div className="p-3 border-t border-border" style={{ backgroundColor: "#F8F8F8" }}>
+        <div className="relative bg-card border border-border rounded-2xl">
+          <Textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKey}
+            placeholder="Continue exploring..."
+            rows={1}
+            className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-40 overflow-y-auto py-3 px-4 leading-relaxed text-sm"
+          />
+          <div className="flex items-center justify-end px-2 pb-2">
+            {sending ? (
+              <Button
+                size="icon"
+                onClick={stop}
+                className="h-8 w-8 rounded-full"
+                aria-label="Stop"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+              </Button>
+            ) : (
+              <Button
+                size="icon"
+                onClick={send}
+                disabled={!input.trim() || !branchId}
+                className="h-8 w-8 rounded-full"
+                aria-label="Send"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}

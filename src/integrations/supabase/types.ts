@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      branch_messages: {
+        Row: {
+          branch_id: string
+          content: string
+          created_at: string
+          id: string
+          model: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          branch_id: string
+          content: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          branch_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_branches: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          merged_summary: string | null
+          quoted_text: string
+          source_message_id: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          merged_summary?: string | null
+          quoted_text?: string
+          source_message_id: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          merged_summary?: string | null
+          quoted_text?: string
+          source_message_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
