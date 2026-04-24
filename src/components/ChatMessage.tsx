@@ -15,6 +15,12 @@ type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
+export type MessageBranch = {
+  id: string;
+  quotedText: string;
+  /** "selection" = branched from a sub-selection of this message; "full" = branched with the Explore button below the message. */
+  kind: "selection" | "full";
+};
 
 type Props = {
   id?: string;
@@ -37,6 +43,8 @@ type Props = {
   onDelete?: () => void;
   onEdit?: () => void;
   onExplore?: () => void;
+  branches?: MessageBranch[];
+  onBranchOpen?: (branchId: string) => void;
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
