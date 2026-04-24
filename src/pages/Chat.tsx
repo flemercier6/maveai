@@ -583,9 +583,10 @@ export default function Chat() {
       // Final flush to make sure we render the very last delta
       if (pending || acc) {
         pending = false;
-        const { body, canvas } = writingMode
+        const parsed = writingMode
           ? splitCanvas(acc)
-          : { body: acc, canvas: null };
+          : { body: acc, canvas: null as string | null, title: null as string | null, editMode: null as "yes" | "no" | null };
+        const { body, canvas, title } = parsed;
         setMessages((prev) => {
           const next = prev.slice();
           const current = next[next.length - 1];
@@ -595,7 +596,13 @@ export default function Chat() {
             content: body,
             provider: sendProvider,
             model: sendModel,
-            ...(canvas !== null ? { canvas } : {}),
+            ...(canvas !== null
+              ? {
+                  canvas,
+                  canvasTitle: title ?? current.canvasTitle,
+                  canvasVersion: current.canvasVersion ?? prevCanvasCount + 1,
+                }
+              : {}),
           };
           return next;
         });
