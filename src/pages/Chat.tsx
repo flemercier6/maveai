@@ -827,7 +827,18 @@ export default function Chat() {
             </div>
           ) : (
             <div className="pt-8 pb-4">
-              {messages.map((m, i) => (
+              {(() => {
+                // Find the index of the most recent assistant message that has a canvas,
+                // so older canvases can be collapsed/greyed with their V{n} tag.
+                let latestCanvasIdx = -1;
+                for (let i = messages.length - 1; i >= 0; i--) {
+                  const m = messages[i];
+                  if (m.role === "assistant" && typeof m.canvas === "string" && m.canvas.length > 0) {
+                    latestCanvasIdx = i;
+                    break;
+                  }
+                }
+                return messages.map((m, i) => (
                 <ChatMessage
                   key={m.id ?? i}
                   id={m.id}
@@ -841,7 +852,10 @@ export default function Chat() {
                   sources={m.sources}
                   meta={m.meta}
                   canvas={m.canvas}
-                  onCanvasChange={m.role === "assistant" && typeof m.canvas === "string" ? (next) => {
+                  canvasTitle={m.canvasTitle}
+                  canvasVersion={m.canvasVersion}
+                  canvasCollapsed={typeof m.canvas === "string" && latestCanvasIdx >= 0 && i !== latestCanvasIdx}
+                  onCanvasChange={m.role === "assistant" && typeof m.canvas === "string" && i === latestCanvasIdx ? (next) => {
                     setMessages((prev) => {
                       const arr = prev.slice();
                       arr[i] = { ...arr[i], canvas: next };
