@@ -22,12 +22,13 @@ import { loadAttachment, type Attachment } from "@/lib/attachments";
 import { SlashCommandMenu, filterSlashItems, type SlashItem } from "@/components/SlashCommandMenu";
 import { getTextareaCaretCoords } from "@/lib/caret";
 import { ClarifyCard, type ClarifyQuestion } from "@/components/ClarifyCard";
+import type { RequestMeta } from "@/lib/requestMeta";
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[] };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -443,6 +444,22 @@ export default function Chat() {
                   return next;
                 });
               }
+            } else if (j.type === "meta") {
+              const meta: RequestMeta = {
+                provider: String(j.provider ?? ""),
+                model: String(j.model ?? ""),
+                systems: Array.isArray(j.systems) ? j.systems : [],
+                history: Array.isArray(j.history) ? j.history : [],
+                memoryKeywords: Array.isArray(j.memoryKeywords) ? j.memoryKeywords : [],
+                memoryMatches: Array.isArray(j.memoryMatches) ? j.memoryMatches : [],
+                webContext: j.webContext ?? null,
+                approxTotalInputTokens: Number(j.approxTotalInputTokens) || 0,
+              };
+              setMessages((prev) => {
+                const next = prev.slice();
+                next[next.length - 1] = { ...next[next.length - 1], meta };
+                return next;
+              });
             } else if (j.type === "clarify") {
               const qs = Array.isArray(j.questions) ? (j.questions as ClarifyQuestion[]) : [];
               if (qs.length) {
@@ -709,6 +726,7 @@ export default function Chat() {
                   tool={m.tool}
                   phase={m.phase}
                   sources={m.sources}
+                  meta={m.meta}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                   onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
                   onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}

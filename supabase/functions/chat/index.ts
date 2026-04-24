@@ -1159,6 +1159,52 @@ Deno.serve(async (req) => {
             messagesForLLM = [webSystem, ...finalMessages];
           }
 
+          // ---------- Emit a META event so the client can show what was actually sent ----------
+          // Estimate tokens with a cheap heuristic (~4 chars per token).
+          const approxTokens = (s: string) => Math.ceil((s?.length ?? 0) / 4);
+          const metaSystems = messagesForLLM
+            .filter((m) => m.role === "system")
+            .map((m, i) => {
+              const c = m.content ?? "";
+              let label = `System #${i + 1}`;
+              if (c.startsWith("Style:")) label = "Style & format";
+              else if (c.startsWith("Relevant user memory")) label = "User memory (filtered)";
+              else if (c.startsWith("Content of the requested web page")) label = "Web page content";
+              else if (c.startsWith("Web search results")) label = "Web search results";
+              return { label, content: c, approxTokens: approxTokens(c) };
+            });
+          const metaHistory = messagesForLLM
+            .filter((m) => m.role !== "system")
+            .map((m) => ({
+              role: m.role,
+              content: m.content ?? "",
+              approxTokens: approxTokens(m.content ?? ""),
+              attachments: (m.attachments ?? []).map((a) => ({
+                kind: a.kind,
+                name: a.name,
+                mime: a.mime,
+              })),
+            }));
+          const metaTotalTokens = [...metaSystems, ...metaHistory]
+            .reduce((s, x) => s + (x.approxTokens ?? 0), 0);
+          controller.enqueue(enc({
+            type: "meta",
+            provider,
+            model,
+            systems: metaSystems,
+            history: metaHistory,
+            memoryKeywords: Array.from(queryKeywords),
+            memoryMatches: scored.slice(0, MEMORY_MAX_ITEMS).map((m) => ({
+              kind: m.kind,
+              content: m.content,
+              score: Math.round(m.score * 100) / 100,
+            })),
+            webContext: webContext
+              ? { kind: webContext.kind, label: webContext.label, approxTokens: approxTokens(webContext.content) }
+              : null,
+            approxTotalInputTokens: metaTotalTokens,
+          }));
+
           let iter: AsyncGenerator<string, Usage | undefined>;
           if (provider === "openai") iter = streamOpenAI(apiKey, model, messagesForLLM);
           else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, messagesForLLM);
