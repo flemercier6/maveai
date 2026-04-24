@@ -36,13 +36,10 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
     setAnswers((prev) => {
       const next = prev.slice();
       const cur = { ...next[step] };
-      if (q.multi) {
-        cur.selected = cur.selected.includes(optIdx)
-          ? cur.selected.filter((i) => i !== optIdx)
-          : [...cur.selected, optIdx];
-      } else {
-        cur.selected = cur.selected[0] === optIdx ? [] : [optIdx];
-      }
+      // Always allow multi-select: clicking toggles the option in/out.
+      cur.selected = cur.selected.includes(optIdx)
+        ? cur.selected.filter((i) => i !== optIdx)
+        : [...cur.selected, optIdx];
       next[step] = cur;
       return next;
     });
