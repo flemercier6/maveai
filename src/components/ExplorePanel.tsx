@@ -43,7 +43,7 @@ type Props = {
   }) => void;
 };
 
-export function ExplorePanel({ open, seed, userId, onClose, onMerge }: Props) {
+export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated }: Props) {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [messages, setMessages] = useState<BranchMsg[]>([]);
   const [input, setInput] = useState("");
@@ -54,13 +54,38 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Create a branch record when a seed arrives and none exists yet.
+  // Create a branch record when a seed arrives and none exists yet,
+  // or load an existing branch when one is referenced.
   useEffect(() => {
     if (!open || !seed) return;
-    // Reset local state when opening a new seed.
     setMessages([]);
     setInput("");
     setBranchId(null);
+
+    if (seed.existingBranchId) {
+      // Reopen existing branch: load its persisted messages.
+      setBranchId(seed.existingBranchId);
+      (async () => {
+        const { data, error } = await supabase
+          .from("branch_messages")
+          .select("id, role, content")
+          .eq("branch_id", seed.existingBranchId!)
+          .order("created_at", { ascending: true });
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+        setMessages(
+          (data ?? []).map((m: any) => ({
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          })),
+        );
+      })();
+      return;
+    }
+
     (async () => {
       const { data, error } = await supabase
         .from("chat_branches")
@@ -79,6 +104,12 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge }: Props) {
         return;
       }
       setBranchId(data.id);
+      onBranchCreated?.({
+        id: data.id,
+        conversation_id: data.conversation_id,
+        source_message_id: data.source_message_id,
+        quoted_text: data.quoted_text,
+      });
     })();
   }, [open, seed, userId]);
 
