@@ -369,21 +369,49 @@ export default function Chat() {
       let buf = "";
       let acc = "";
 
+      // Parse streaming text: split out a ```canvas ... ``` block so the
+      // canvas content streams into an editable block while everything else
+      // renders as the normal assistant reply.
+      const splitCanvas = (raw: string): { body: string; canvas: string | null } => {
+        const open = raw.indexOf("```canvas");
+        if (open < 0) return { body: raw, canvas: null };
+        // Skip to the newline after ```canvas (optional language line)
+        const afterOpen = raw.indexOf("\n", open);
+        if (afterOpen < 0) {
+          // Not enough streamed yet — hide the partial fence from the body.
+          return { body: raw.slice(0, open), canvas: "" };
+        }
+        const close = raw.indexOf("```", afterOpen + 1);
+        if (close < 0) {
+          // Canvas still streaming — show partial canvas, hide fence from body.
+          const canvas = raw.slice(afterOpen + 1);
+          return { body: raw.slice(0, open), canvas };
+        }
+        // Canvas complete.
+        const canvas = raw.slice(afterOpen + 1, close).replace(/\n+$/, "");
+        const body = raw.slice(0, open) + raw.slice(close + 3);
+        return { body, canvas };
+      };
+
       // Coalesce delta updates onto a single rAF tick so React renders
       // smoothly (~60fps) instead of once per token.
       let pending = false;
       const flush = () => {
         pending = false;
         const snapshot = acc;
+        const { body, canvas } = writingMode
+          ? splitCanvas(snapshot)
+          : { body: snapshot, canvas: null };
         setMessages((prev) => {
           const next = prev.slice();
           const current = next[next.length - 1];
           next[next.length - 1] = {
             ...current,
             role: "assistant",
-            content: snapshot,
+            content: body,
             provider: sendProvider,
             model: sendModel,
+            ...(canvas !== null ? { canvas } : {}),
           };
           return next;
         });
