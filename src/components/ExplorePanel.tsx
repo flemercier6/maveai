@@ -118,6 +118,17 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     })();
   }, [open, seed, userId]);
 
+  // Auto-send an initial prompt (e.g. from /explore) once the branch is created.
+  const autoSentRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!open || !seed || !branchId) return;
+    if (!seed.initialPrompt || !seed.initialPrompt.trim()) return;
+    if (autoSentRef.current === branchId) return;
+    autoSentRef.current = branchId;
+    void send(seed.initialPrompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, seed, branchId]);
+
   // Auto-resize textarea
   useEffect(() => {
     const el = textareaRef.current;
