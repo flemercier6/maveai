@@ -179,10 +179,22 @@ function canNavigate(
 }
 
 export function UsageTab() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Row[]>([]);
   const [data, setData] = useState<Aggregate | null>(null);
   const [range, setRange] = useState<Range>("week");
+  const [offset, setOffset] = useState(0);
+
+  const signupDate = useMemo(
+    () => (user?.created_at ? new Date(user.created_at) : new Date()),
+    [user?.created_at],
+  );
+
+  // Reset offset when switching range
+  useEffect(() => {
+    setOffset(0);
+  }, [range]);
 
   useEffect(() => {
     let cancelled = false;
@@ -266,12 +278,15 @@ export function UsageTab() {
     };
   }, []);
 
+  const { buckets, title } = useMemo(
+    () => buildBuckets(range, offset, signupDate),
+    [range, offset, signupDate],
+  );
+
   const chartData = useMemo(() => {
-    const buckets = buildBuckets(range);
     const totals = new Array(buckets.length).fill(0);
     for (const row of rows) {
       const t = new Date(row.created_at).getTime();
-      // Binary-friendly linear scan: buckets are short (max 30)
       for (let i = 0; i < buckets.length; i++) {
         if (t >= buckets[i].start.getTime() && t < buckets[i].end.getTime()) {
           totals[i] += Number(row.total_cost_usd ?? 0) * 3; // billed price ×3
@@ -280,12 +295,15 @@ export function UsageTab() {
       }
     }
     return buckets.map((b, i) => ({ label: b.label, spend: totals[i] }));
-  }, [rows, range]);
+  }, [rows, buckets]);
 
   const periodTotal = useMemo(
     () => chartData.reduce((sum, d) => sum + d.spend, 0),
     [chartData],
   );
+
+  const canPrev = canNavigate(range, offset, -1, signupDate);
+  const canNext = canNavigate(range, offset, 1, signupDate);
 
   if (loading) {
     return (
