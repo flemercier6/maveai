@@ -1,5 +1,6 @@
 import { memo, useEffect, useId, useRef, useState } from "react";
 import mermaid from "mermaid";
+import { SkeletonShimmer } from "./SkeletonShimmer";
 
 let initialized = false;
 function ensureInit() {
@@ -61,8 +62,14 @@ function MermaidDiagramImpl({ code }: Props) {
 
   if (!svg) {
     return (
-      <div className="my-4 rounded-lg border border-border bg-muted/40 p-4 text-xs text-muted-foreground">
-        Rendering diagram…
+      <div className="my-4 rounded-lg border border-border bg-card p-4 space-y-2">
+        <SkeletonShimmer className="h-4 w-1/3" />
+        <SkeletonShimmer className="h-24 w-full" />
+        <div className="flex gap-2">
+          <SkeletonShimmer className="h-3 w-20" />
+          <SkeletonShimmer className="h-3 w-32" />
+          <SkeletonShimmer className="h-3 w-16" />
+        </div>
       </div>
     );
   }
