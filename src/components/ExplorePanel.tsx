@@ -50,7 +50,7 @@ type Props = {
   onBranchDeleted?: (branchId: string) => void;
 };
 
-export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated }: Props) {
+export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted }: Props) {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [messages, setMessages] = useState<BranchMsg[]>([]);
   const [input, setInput] = useState("");
