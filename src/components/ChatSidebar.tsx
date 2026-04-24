@@ -9,9 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Trash2, LogOut, Sparkles, Brain, MoreHorizontal, Pencil, ChevronDown, Search, Settings, ChevronsUpDown } from "lucide-react";
+import { Plus, Trash2, LogOut, Sparkles, MoreHorizontal, Pencil, ChevronDown, Search, Settings, ChevronsUpDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SettingsDialog } from "@/components/SettingsDialog";
