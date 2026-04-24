@@ -463,7 +463,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close exploration"
           >
             <X className="w-4 h-4" />
