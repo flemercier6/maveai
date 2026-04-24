@@ -471,20 +471,6 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         </div>
       </header>
 
-      {/* Quoted excerpt */}
-      {seed && seed.quotedText && seed.quotedText.trim() && (
-        <div className="px-4 pt-3">
-          <div className="rounded-lg border border-border bg-background/60 px-3 py-2 text-xs text-muted-foreground">
-            <div className="text-[10px] uppercase tracking-wide mb-1 opacity-70">
-              Quoted
-            </div>
-            <blockquote className="whitespace-pre-wrap line-clamp-4 leading-snug text-foreground/80">
-              {seed.quotedText}
-            </blockquote>
-          </div>
-        </div>
-      )}
-
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto py-2">
         {messages.length === 0 ? (
@@ -495,15 +481,35 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           </div>
         ) : (
           <div>
-            {messages.map((m, i) => (
-              <ChatMessage
-                key={m.id ?? i}
-                id={m.id}
-                role={m.role}
-                content={m.content}
-                streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
-              />
-            ))}
+            {messages.map((m, i) => {
+              const isFirstUser =
+                m.role === "user" &&
+                i === messages.findIndex((x) => x.role === "user");
+              const showQuote =
+                isFirstUser && !!(seed && seed.quotedText && seed.quotedText.trim());
+              return (
+                <div key={m.id ?? i}>
+                  {showQuote && (
+                    <div className="px-4 pt-3">
+                      <div className="ml-auto max-w-[85%] rounded-lg border border-border bg-background/60 px-3 py-2 text-xs text-muted-foreground">
+                        <div className="text-[10px] uppercase tracking-wide mb-1 opacity-70">
+                          Quoted
+                        </div>
+                        <blockquote className="whitespace-pre-wrap line-clamp-4 leading-snug text-foreground/80">
+                          {seed!.quotedText}
+                        </blockquote>
+                      </div>
+                    </div>
+                  )}
+                  <ChatMessage
+                    id={m.id}
+                    role={m.role}
+                    content={m.content}
+                    streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
