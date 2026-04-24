@@ -117,12 +117,39 @@ export default function Chat() {
     }
   }, [activeId]);
 
+  // Scroll behavior:
+  // - When NOT streaming: keep pinned to the bottom (normal chat behavior on load / new send).
+  // - When streaming starts: scroll once so the last user message sits near the top of the
+  //   viewport, then stop auto-scrolling. The user can read from the top of the answer
+  //   and scroll manually as more content streams in.
+  const didInitialStreamScrollRef = useRef(false);
   useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: streaming ? "auto" : "smooth",
-    });
+    const el = scrollRef.current;
+    if (!el) return;
+    if (!streaming) {
+      didInitialStreamScrollRef.current = false;
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
   }, [messages, streaming]);
+
+  // When a new stream starts, align the last user message near the top — once.
+  useEffect(() => {
+    if (!streaming) return;
+    if (didInitialStreamScrollRef.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const lastUser = [...messages].reverse().find((m) => m.role === "user" && m.id);
+    if (!lastUser?.id) return;
+    const anchor = document.getElementById(`chat-anchor-${lastUser.id}`);
+    if (!anchor) return;
+    const containerTop = el.getBoundingClientRect().top;
+    const anchorTop = anchor.getBoundingClientRect().top;
+    el.scrollTo({
+      top: el.scrollTop + (anchorTop - containerTop) - 16,
+      behavior: "smooth",
+    });
+    didInitialStreamScrollRef.current = true;
+  }, [streaming, messages]);
 
   const newConversation = () => {
     setActiveId(null);
