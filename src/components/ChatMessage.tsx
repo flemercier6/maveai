@@ -370,16 +370,46 @@ function ChatMessageImpl({
   if (isUser) {
     const writeMatch = content.match(/^\/write(\s+|$)/);
     const rest = writeMatch ? content.slice(writeMatch[0].length) : content;
+    // When /write is present, inject it as a styled inline span at the start
+    // of the first paragraph so the whole message reads as a single sentence.
+    const writePrefix = writeMatch ? (
+      <span className="font-bold" style={{ color: "#0062FF" }}>/write </span>
+    ) : null;
+    const userMdComponents = writeMatch
+      ? {
+          ...mdComponents,
+          p: ({ node: _node, children, ...props }: any) => {
+            const injected = writePrefix;
+            // Clear the flag so only the FIRST <p> gets the prefix.
+            // We mutate a local closure var via a trick: use a ref-like object.
+            return <p {...props}>{injected}{children}</p>;
+          },
+        }
+      : mdComponents;
+    // Use a one-shot wrapper so only the first <p> receives the prefix.
+    let injected = false;
+    const finalComponents = writeMatch
+      ? {
+          ...mdComponents,
+          p: ({ node: _node, children, ...props }: any) => {
+            if (!injected) {
+              injected = true;
+              return (
+                <p {...props}>
+                  <span className="font-bold" style={{ color: "#0062FF" }}>/write </span>
+                  {children}
+                </p>
+              );
+            }
+            return <p {...props}>{children}</p>;
+          },
+        }
+      : mdComponents;
     return (
       <div className="w-full py-3" id={id ? `chat-anchor-${id}` : undefined}>
         <div className="max-w-3xl mx-auto px-4 flex flex-col items-end gap-1.5">
           <div className="max-w-[80%] rounded-2xl bg-bubble-user text-bubble-user-foreground px-4 py-2.5 chat-prose break-words">
-            {writeMatch && (
-              <span className="font-bold" style={{ color: "#0062FF" }}>
-                /write{" "}
-              </span>
-            )}
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{rest}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={finalComponents}>{rest || " "}</ReactMarkdown>
           </div>
           {memory && <MemoryBadge added={memory.added} updated={memory.updated} />}
           {(onEdit || content) && (
