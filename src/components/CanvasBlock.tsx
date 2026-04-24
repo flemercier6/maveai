@@ -46,7 +46,7 @@ function CanvasBlockImpl({ content, title, version, collapsed, streaming, onChan
 
   return (
     <div
-      className={`mt-3 mb-1 rounded-xl border border-border overflow-hidden transition-colors ${
+      className={`mt-3 mb-1 mx-auto w-[92%] rounded-xl border border-border overflow-hidden transition-colors ${
         isCollapsed ? "bg-muted/40 opacity-75" : "bg-card"
       }`}
     >
