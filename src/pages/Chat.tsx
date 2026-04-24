@@ -1238,6 +1238,13 @@ export default function Chat() {
         userId={user.id}
         onClose={() => setExploreOpen(false)}
         onMerge={handleMergeSummary}
+        onBranchCreated={(b) =>
+          setBranches((prev) =>
+            prev.some((x) => x.id === b.id)
+              ? prev
+              : [...prev, { id: b.id, source_message_id: b.source_message_id, quoted_text: b.quoted_text }],
+          )
+        }
       />
     </div>
   );
