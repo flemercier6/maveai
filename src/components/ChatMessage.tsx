@@ -460,6 +460,9 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.sources === next.sources &&
   prev.meta === next.meta &&
   prev.canvas === next.canvas &&
+  prev.canvasTitle === next.canvasTitle &&
+  prev.canvasVersion === next.canvasVersion &&
+  prev.canvasCollapsed === next.canvasCollapsed &&
   prev.onCanvasChange === next.onCanvasChange &&
   prev.onRetry === next.onRetry &&
   prev.onDelete === next.onDelete &&
