@@ -102,11 +102,51 @@ export default function Chat() {
     const convModel = conv?.model;
     supabase.from("messages").select("*").eq("conversation_id", activeId).order("created_at")
       .then(({ data }) => {
+        // Re-parse persisted assistant text to recover canvas blocks & titles.
+        const parseStored = (raw: string): { body: string; canvas?: string; canvasTitle?: string } => {
+          let rest = raw ?? "";
+          const editMatch = rest.match(/^\s*CANVAS_EDIT:\s*(yes|no)\s*\n?/i);
+          let editMode: "yes" | "no" | null = null;
+          if (editMatch) {
+            editMode = editMatch[1].toLowerCase() as "yes" | "no";
+            rest = rest.slice(editMatch[0].length);
+          }
+          let title: string | undefined;
+          const titleMatch = rest.match(/^\s*CANVAS_TITLE:\s*([^\n]+?)\s*\n?/i);
+          if (titleMatch) {
+            title = titleMatch[1].trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 60);
+            rest = rest.slice(titleMatch[0].length);
+          }
+          if (editMode === "no") return { body: rest };
+          const open = rest.indexOf("```canvas");
+          if (open < 0) return { body: rest };
+          const afterOpen = rest.indexOf("\n", open);
+          if (afterOpen < 0) return { body: rest };
+          const close = rest.indexOf("```", afterOpen + 1);
+          if (close < 0) return { body: rest };
+          const canvas = rest.slice(afterOpen + 1, close).replace(/\n+$/, "");
+          const body = rest.slice(0, open) + rest.slice(close + 3);
+          return { body, canvas, canvasTitle: title };
+        };
+        let canvasCounter = 0;
         setMessages(((data ?? []) as any[]).map((m) => {
           const msgModel = m.model ?? convModel;
           const msgProvider = m.role === "assistant"
             ? (msgModel && msgModel !== "auto" ? providerForModel(msgModel) : convProvider)
             : undefined;
+          if (m.role === "assistant") {
+            const parsed = parseStored(m.content);
+            const hasCanvas = typeof parsed.canvas === "string";
+            if (hasCanvas) canvasCounter += 1;
+            return {
+              id: m.id,
+              role: m.role,
+              content: parsed.body,
+              provider: msgProvider,
+              model: msgModel,
+              ...(hasCanvas ? { canvas: parsed.canvas, canvasTitle: parsed.canvasTitle, canvasVersion: canvasCounter } : {}),
+            };
+          }
           return {
             id: m.id,
             role: m.role,
