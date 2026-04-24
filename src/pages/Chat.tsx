@@ -884,7 +884,8 @@ export default function Chat() {
                     }, 0);
                   } : undefined}
                 />
-              ))}
+              ));
+              })()}
             </div>
           )}
         </div>
