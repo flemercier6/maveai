@@ -943,6 +943,29 @@ Deno.serve(async (req) => {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // ---------- Auto-generate title on the FIRST user message of the conversation ----------
+          // Done early so the sidebar gets a real title even if clarify intercepts the stream.
+          const firstUserMessage = messages.filter((m) => m.role === "user").length <= 1;
+          if (firstUserMessage && lastUserText) {
+            // Fire and forward — don't block the response on it for too long.
+            generateTitle({
+              openaiKey: Deno.env.get("OPENAI_API_KEY"),
+              googleKey: Deno.env.get("GOOGLE_API_KEY"),
+              anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+              userText: lastUserText,
+            })
+              .then(async (title) => {
+                if (!title) return;
+                try {
+                  await supabase.from("conversations").update({ title }).eq("id", conversationId);
+                  controller.enqueue(enc({ type: "title", title }));
+                } catch (e) {
+                  console.error("title enqueue/update failed", e);
+                }
+              })
+              .catch((e) => console.error("title gen failed", e));
+          }
+
           // ---------- Clarifying questions (asked BEFORE running anything else) ----------
           if (!skipClarify && lastUserText) {
             const userTurns = messages.filter((m) => m.role === "user").length;
@@ -956,6 +979,8 @@ Deno.serve(async (req) => {
             });
             if (clarify && clarify.length) {
               controller.enqueue(enc({ type: "clarify", questions: clarify }));
+              // Give the title generation a moment to land before closing.
+              await new Promise((r) => setTimeout(r, 1200));
               controller.enqueue(enc({ type: "done" }));
               controller.close();
               return;
