@@ -1129,7 +1129,7 @@ Deno.serve(async (req) => {
           // ---------- Auto-generate title on the FIRST user message of the conversation ----------
           // Done early so the sidebar gets a real title even if clarify intercepts the stream.
           const firstUserMessage = messages.filter((m) => m.role === "user").length <= 1;
-          if (firstUserMessage && lastUserText) {
+          if (!ephemeral && firstUserMessage && lastUserText) {
             // Fire and forward — don't block the response on it for too long.
             generateTitle({
               openaiKey: Deno.env.get("OPENAI_API_KEY"),
@@ -1150,7 +1150,7 @@ Deno.serve(async (req) => {
           }
 
           // ---------- Clarifying questions (asked BEFORE running anything else) ----------
-          if (!skipClarify && !writingMode && lastUserText) {
+          if (!ephemeral && !skipClarify && !writingMode && lastUserText) {
             const userTurns = messages.filter((m) => m.role === "user").length;
             controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
             const clarify = await decideClarify({
