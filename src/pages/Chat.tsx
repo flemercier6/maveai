@@ -25,8 +25,7 @@ import { ClarifyCard, type ClarifyQuestion } from "@/components/ClarifyCard";
 import type { RequestMeta } from "@/lib/requestMeta";
 import { billingMultiplier } from "@/lib/pricing";
 import { looksLikeWritingRequest } from "@/lib/writingDetection";
-import { useTextSelection } from "@/hooks/useTextSelection";
-import { ExploreButton } from "@/components/ExploreButton";
+import { SelectionExploreButton, type SelectionPayload } from "@/components/SelectionExploreButton";
 import { ExplorePanel, type BranchSeed } from "@/components/ExplorePanel";
 
 type ToolStatus = "running" | "done" | "failed";
