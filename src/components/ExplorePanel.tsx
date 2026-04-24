@@ -10,15 +10,20 @@ import type { Provider } from "@/lib/models";
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export type BranchSeed = {
-  conversationId: string;
-  sourceMessageId: string;
-  quotedText: string;
+  /** Optional — absent for standalone `/explore` explorations. */
+  conversationId?: string | null;
+  /** Optional — absent for standalone `/explore` explorations. */
+  sourceMessageId?: string | null;
+  /** Optional — the selected excerpt, if branched from a message. */
+  quotedText?: string;
   // Messages preceding (and including) the source message, used as context.
   parentHistory: { role: "user" | "assistant"; content: string }[];
   provider: Provider;
   model: string;
   /** When set, reopen an existing branch instead of creating a new one. */
   existingBranchId?: string;
+  /** Optional — first user prompt to auto-send when the panel opens. */
+  initialPrompt?: string;
 };
 
 type BranchMsg = {
@@ -37,8 +42,8 @@ type Props = {
   /** Called when a brand-new branch is created (so the parent can show indicators). */
   onBranchCreated?: (branch: {
     id: string;
-    conversation_id: string;
-    source_message_id: string;
+    conversation_id: string | null;
+    source_message_id: string | null;
     quoted_text: string;
   }) => void;
 };
@@ -91,9 +96,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         .from("chat_branches")
         .insert({
           user_id: userId,
-          conversation_id: seed.conversationId,
-          source_message_id: seed.sourceMessageId,
-          quoted_text: seed.quotedText,
+          conversation_id: seed.conversationId ?? null,
+          source_message_id: seed.sourceMessageId ?? null,
+          quoted_text: seed.quotedText ?? "",
           title: "Exploration",
           status: "open",
         })
@@ -113,6 +118,17 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     })();
   }, [open, seed, userId]);
 
+  // Auto-send an initial prompt (e.g. from /explore) once the branch is created.
+  const autoSentRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!open || !seed || !branchId) return;
+    if (!seed.initialPrompt || !seed.initialPrompt.trim()) return;
+    if (autoSentRef.current === branchId) return;
+    autoSentRef.current = branchId;
+    void send(seed.initialPrompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, seed, branchId]);
+
   // Auto-resize textarea
   useEffect(() => {
     const el = textareaRef.current;
@@ -130,10 +146,11 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
 
   const stop = () => abortRef.current?.abort();
 
-  const send = async () => {
-    const text = input.trim();
+  const send = async (override?: string) => {
+    const text = (override ?? input).trim();
     if (!text || !seed || !branchId || sending) return;
-    setInput("");
+    if (override === undefined) setInput("");
+    else setInput("");
     setSending(true);
 
     // Persist user message in branch.
@@ -155,19 +172,25 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     setMessages([...baseMsgs, { role: "assistant", content: "" }]);
     setStreaming(true);
 
-    // Build the payload: parent history, plus a bridge message quoting the selection,
-    // plus the branch conversation so far.
-    const bridgePreamble =
-      `The user is opening a side exploration branched from the main conversation. ` +
-      `They are focused on this excerpt from your previous response:\n\n` +
-      `> ${seed.quotedText.replace(/\n/g, "\n> ")}\n\n` +
-      `Continue the discussion grounded in this excerpt, while using the prior context above. ` +
-      `Stay concise unless the user asks for depth.`;
+    // Build the payload: parent history (if any), an optional bridge message
+    // quoting the selection, plus the branch conversation so far.
+    const hasQuote = !!(seed.quotedText && seed.quotedText.trim());
+    const bridgePreamble = hasQuote
+      ? `The user is opening a side exploration branched from the main conversation. ` +
+        `They are focused on this excerpt from your previous response:\n\n` +
+        `> ${seed.quotedText!.replace(/\n/g, "\n> ")}\n\n` +
+        `Continue the discussion grounded in this excerpt, while using the prior context above. ` +
+        `Stay concise unless the user asks for depth.`
+      : null;
 
     const payloadMessages = [
       ...seed.parentHistory,
-      { role: "user" as const, content: bridgePreamble },
-      { role: "assistant" as const, content: "Understood — what would you like to explore?" },
+      ...(bridgePreamble
+        ? [
+            { role: "user" as const, content: bridgePreamble },
+            { role: "assistant" as const, content: "Understood — what would you like to explore?" },
+          ]
+        : []),
       ...baseMsgs.map((m) => ({ role: m.role, content: m.content })),
     ];
 
@@ -275,7 +298,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         `Summarize the following side exploration into a concise insight ` +
         `that can be inserted back into the main conversation. ` +
         `Keep it to 2–6 sentences. Start with a short bold headline.\n\n` +
-        `The exploration was grounded in this excerpt:\n> ${seed.quotedText}\n\n` +
+        (seed.quotedText && seed.quotedText.trim()
+          ? `The exploration was grounded in this excerpt:\n> ${seed.quotedText}\n\n`
+          : "") +
         `Exploration messages:\n` +
         messages
           .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
@@ -431,7 +456,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       </header>
 
       {/* Quoted excerpt */}
-      {seed && (
+      {seed && seed.quotedText && seed.quotedText.trim() && (
         <div className="px-4 pt-3">
           <div className="rounded-lg border border-border bg-background/60 px-3 py-2 text-xs text-muted-foreground">
             <div className="text-[10px] uppercase tracking-wide mb-1 opacity-70">
@@ -492,7 +517,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             ) : (
               <Button
                 size="icon"
-                onClick={send}
+                onClick={() => send()}
                 disabled={!input.trim() || !branchId}
                 className="h-8 w-8 rounded-full"
                 aria-label="Send"

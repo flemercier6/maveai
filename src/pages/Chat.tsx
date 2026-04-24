@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2 } from "lucide-react";
+import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 import { loadAttachment, type Attachment } from "@/lib/attachments";
@@ -60,6 +60,8 @@ export default function Chat() {
   const [clarify, setClarify] = useState<ClarifyQuestion[] | null>(null);
   // User explicitly invoked /write for the next message (forces writing canvas mode).
   const [writeRequested, setWriteRequested] = useState(false);
+  // User explicitly invoked /explore — next send opens a side exploration instead of posting.
+  const [exploreRequested, setExploreRequested] = useState(false);
   // Title generation animation: convId -> { target, shown }. "pending" = not yet received.
   const [titleAnim, setTitleAnim] = useState<Record<string, { target: string | null; shown: string }>>({});
   const titleTimerRef = useRef<Record<string, number>>({});
@@ -358,6 +360,36 @@ export default function Chat() {
     const text = (overrideText ?? input).trim();
     const atts = overrideAttachments ?? attachments;
     if ((!text && atts.length === 0) || sending) return;
+
+    // /explore flow: route this request to a side exploration instead of the main chat.
+    if (exploreRequested) {
+      if (!text) {
+        toast.info("Type something to explore.");
+        return;
+      }
+      const resolved = model === AUTO_MODEL_ID ? routeAuto(text) : { provider, model };
+      const parentHistory = activeId
+        ? messages
+            .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
+            .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }))
+        : [];
+      setExploreSeed({
+        conversationId: activeId ?? null,
+        sourceMessageId: null,
+        quotedText: "",
+        parentHistory,
+        provider: resolved.provider,
+        model: resolved.model,
+        initialPrompt: text,
+      });
+      setExploreOpen(true);
+      setExploreRequested(false);
+      if (overrideText === undefined) {
+        setInput("");
+        setAttachments([]);
+      }
+      return;
+    }
     setSending(true);
     setClarify(null);
     lastSentRef.current = text;
@@ -790,8 +822,11 @@ export default function Chat() {
       // Don't change model — just flag the next send as writing-canvas mode.
       setWriteRequested(true);
       toast.success("Writing canvas enabled for next message");
+    } else if (item.provider === "explore") {
+      // Flag the next send to open a side exploration instead of posting to the main chat.
+      setExploreRequested(true);
     } else {
-      setProvider(item.provider);
+      setProvider(item.provider as Provider);
       setModel(item.model);
     }
     // Restore caret position where the "/xxx" used to start
@@ -1186,6 +1221,21 @@ export default function Chat() {
                         <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
                       </span>
                       Note
+                    </button>
+                  )}
+                  {exploreRequested && (
+                    <button
+                      type="button"
+                      onClick={() => setExploreRequested(false)}
+                      aria-label="Remove Explore"
+                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-[#E6F1FF] transition-colors"
+                      style={{ color: "#0062FF" }}
+                    >
+                      <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                        <Sparkles className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
+                        <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
+                      </span>
+                      Explore
                     </button>
                   )}
                 </div>

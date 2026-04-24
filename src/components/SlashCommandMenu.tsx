@@ -4,7 +4,7 @@ import { MODELS, PROVIDERS, AUTO_MODEL_ID, type Provider } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
 
 export type SlashItem = {
-  provider: Provider | "auto" | "write";
+  provider: Provider | "auto" | "write" | "explore";
   model: string;
   label: string;
   description: string;
@@ -28,6 +28,13 @@ export function buildSlashItems(): SlashItem[] {
       label: "Note",
       description: "Open an editable canvas for drafting",
       slug: "note",
+    },
+    {
+      provider: "explore",
+      model: "",
+      label: "Explore",
+      description: "Open a side exploration for this request",
+      slug: "explore",
     },
   ];
   for (const p of PROVIDERS) {
@@ -131,8 +138,10 @@ export function SlashCommandMenu({ query, position, onSelect, onClose }: Props) 
                 <Sparkles className="w-4 h-4 text-muted-foreground" />
               ) : it.provider === "write" ? (
                 <Pencil className="w-4 h-4 text-muted-foreground" />
+              ) : it.provider === "explore" ? (
+                <Sparkles className="w-4 h-4 text-muted-foreground" />
               ) : (
-                <ProviderLogo provider={it.provider} className="w-4 h-4" />
+                <ProviderLogo provider={it.provider as Provider} className="w-4 h-4" />
               )}
             </span>
             <span className="text-[13px] text-foreground truncate">{it.label}</span>
