@@ -117,9 +117,17 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
         <div className="mt-2 space-y-0.5">
           <button
             onClick={onNew}
-            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-sm"
+            className="group w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-sm"
           >
-            <Plus className="w-4 h-4 opacity-70" /> New chat
+            <Plus className="w-4 h-4 opacity-70" />
+            <span>New chat</span>
+            <kbd
+              aria-label="Keyboard shortcut"
+              className="ml-auto inline-flex items-center gap-0.5 rounded-[3px] border border-sidebar-border bg-background/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground opacity-60 group-hover:opacity-100 transition-opacity"
+            >
+              {isMac ? "⌘" : "Ctrl"}
+              <span>N</span>
+            </kbd>
           </button>
           <button
             type="button"
