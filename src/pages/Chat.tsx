@@ -580,6 +580,7 @@ export default function Chat() {
         }}
         userEmail={user.email}
         userName={displayName ?? (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0]}
+        titleAnim={titleAnim}
       />
 
       <main className="flex-1 flex flex-col min-w-0 relative">
