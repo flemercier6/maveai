@@ -49,6 +49,8 @@ export default function Chat() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachLoading, setAttachLoading] = useState(false);
   const [clarify, setClarify] = useState<ClarifyQuestion[] | null>(null);
+  // User explicitly invoked /write for the next message (forces writing canvas mode).
+  const [writeRequested, setWriteRequested] = useState(false);
   // Title generation animation: convId -> { target, shown }. "pending" = not yet received.
   const [titleAnim, setTitleAnim] = useState<Record<string, { target: string | null; shown: string }>>({});
   const titleTimerRef = useRef<Record<string, number>>({});
