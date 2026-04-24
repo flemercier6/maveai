@@ -999,29 +999,12 @@ export default function Chat() {
                   )}
                 </div>
               )}
-              {writeRequested && (
-                <div className="px-3 pt-3">
-                  <button
-                    type="button"
-                    onClick={() => setWriteRequested(false)}
-                    aria-label="Remove Note"
-                    className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-[#E6F1FF] hover:text-[#0062FF]"
-                  >
-                    <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
-                      <FileText className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
-                      <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
-                    </span>
-                    Note
-                  </button>
-                </div>
-              )}
               <div className="relative">
                 <Textarea
                   ref={textareaRef}
                   value={input}
                   onChange={(e) => {
                     setInput(e.target.value);
-                    // Defer so selectionStart reflects post-update value
                     requestAnimationFrame(updateSlashFromTextarea);
                   }}
                   onKeyDown={onKey}
@@ -1042,25 +1025,42 @@ export default function Chat() {
                 />
               )}
               <div className="flex items-center justify-between gap-[15px] px-2 pb-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
+                <div className="flex items-center gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
+                        aria-label="Add attachment"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-56">
+                      <DropdownMenuItem onClick={openFilePicker}>
+                        <Paperclip className="w-4 h-4 mr-2" />
+                        Attach files or images
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  {writeRequested && (
+                    <button
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
-                      aria-label="Add attachment"
+                      onClick={() => setWriteRequested(false)}
+                      aria-label="Remove Note"
+                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-[#E6F1FF] transition-colors"
+                      style={{ color: "#0062FF" }}
                     >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    <DropdownMenuItem onClick={openFilePicker}>
-                      <Paperclip className="w-4 h-4 mr-2" />
-                      Attach files or images
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                        <FileText className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
+                        <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
+                      </span>
+                      Note
+                    </button>
+                  )}
+                </div>
                 <div className="flex items-center gap-[15px]">
                   <ModelPicker
                     provider={provider}
