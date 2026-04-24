@@ -346,9 +346,11 @@ export default function Chat() {
                 });
               }
             } else if (j.type === "title" && j.title) {
+              const newTitle = String(j.title);
               setConversations((prev) =>
-                prev.map((c) => (c.id === convId ? { ...c, title: j.title } : c)),
+                prev.map((c) => (c.id === convId ? { ...c, title: newTitle } : c)),
               );
+              startTitleAnimation(convId, newTitle);
             } else if (j.type === "memory") {
               const mem = { added: Number(j.added) || 0, updated: Number(j.updated) || 0 };
               if (mem.added + mem.updated > 0) {
