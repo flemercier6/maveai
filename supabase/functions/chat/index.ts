@@ -1147,7 +1147,7 @@ Deno.serve(async (req) => {
           }
 
           // ---------- Clarifying questions (asked BEFORE running anything else) ----------
-          if (!skipClarify && lastUserText) {
+          if (!skipClarify && !writingMode && lastUserText) {
             const userTurns = messages.filter((m) => m.role === "user").length;
             controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
             const clarify = await decideClarify({
