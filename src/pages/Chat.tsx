@@ -345,13 +345,17 @@ export default function Chat() {
     const convProvider = userPickedAuto ? provider : sendProvider;
     const convModel = userPickedAuto ? AUTO_MODEL_ID : sendModel;
 
-    // Build the textual portion of the user message (visible in history)
+    // Build the textual portion of the user message (visible in history).
+    // If /write was invoked, keep the "/write " prefix in the stored/displayed
+    // content so the bubble can highlight it — but strip it before sending to
+    // the AI (handled below when building the payload).
     const attachmentSummary = atts.length
       ? "\n\n" + atts.map((a) =>
           a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
         ).join("\n")
       : "";
-    const displayContent = text + attachmentSummary;
+    const writePrefix = writeRequested ? "/write " : "";
+    const displayContent = writePrefix + text + attachmentSummary;
 
     const convId = await ensureConversation(text || atts[0]?.name || "Attachment");
     if (!convId) { setSending(false); return; }
