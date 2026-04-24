@@ -17,6 +17,8 @@ export type BranchSeed = {
   parentHistory: { role: "user" | "assistant"; content: string }[];
   provider: Provider;
   model: string;
+  /** When set, reopen an existing branch instead of creating a new one. */
+  existingBranchId?: string;
 };
 
 type BranchMsg = {
@@ -32,6 +34,13 @@ type Props = {
   onClose: () => void;
   /** Called with a summary string when the user merges the exploration back. */
   onMerge: (summary: string) => void;
+  /** Called when a brand-new branch is created (so the parent can show indicators). */
+  onBranchCreated?: (branch: {
+    id: string;
+    conversation_id: string;
+    source_message_id: string;
+    quoted_text: string;
+  }) => void;
 };
 
 export function ExplorePanel({ open, seed, userId, onClose, onMerge }: Props) {
