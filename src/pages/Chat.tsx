@@ -282,6 +282,16 @@ export default function Chat() {
       setAttachments([]);
     }
 
+    // ---- Writing canvas mode ----
+    // Enabled when the user typed "/write" or the message looks like a drafting task,
+    // OR when the most recent assistant reply already contains a canvas (follow-up edits).
+    const lastAssistantWithCanvas = [...messages].reverse().find(
+      (m) => m.role === "assistant" && typeof m.canvas === "string" && m.canvas.length > 0,
+    );
+    const writingMode = writeRequested || looksLikeWritingRequest(text) || !!lastAssistantWithCanvas;
+    const previousCanvas = lastAssistantWithCanvas?.canvas ?? null;
+    if (writeRequested) setWriteRequested(false);
+
     // Resolve Auto → concrete provider/model for this turn (Auto preference is preserved)
     const userPickedAuto = model === AUTO_MODEL_ID;
     const hasImage = atts.some((a) => a.kind === "image");
@@ -334,6 +344,8 @@ export default function Chat() {
           provider: sendProvider,
           model: sendModel,
           skipClarify: opts?.skipClarify === true,
+          writingMode,
+          previousCanvas,
           messages: baseMsgs.map((m, i) => {
             // Only the LAST user message carries the live attachments
             const isLast = i === baseMsgs.length - 1;
