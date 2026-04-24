@@ -120,7 +120,7 @@ export function ChatIndex({ items, scrollContainer }: Props) {
                   isActive ? "text-foreground" : "text-foreground/60 group-hover:text-foreground",
                 )}
               >
-                {it.preview}
+                {it.preview.charAt(0).toUpperCase() + it.preview.slice(1)}
               </span>
             </button>
           );
