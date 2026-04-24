@@ -51,16 +51,16 @@ const fmtUSD = (v: number) =>
   v.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: v < 1 ? 4 : 2,
-    maximumFractionDigits: v < 1 ? 6 : 2,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 3,
   });
 
 const fmtUSDShort = (v: number) =>
   v.toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: v < 1 ? 3 : 2,
-    maximumFractionDigits: v < 1 ? 3 : 2,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 3,
   });
 
 const fmtTokens = (v: number) => v.toLocaleString("en-US");
