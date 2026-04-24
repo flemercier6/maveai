@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, ArrowRight, Square, GitMerge, Loader2 } from "lucide-react";
+import { X, ArrowRight, Square, ChevronDown, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -331,7 +331,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge }: Props) {
             {merging ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <GitMerge className="w-3.5 h-3.5" />
+              <ChevronDown className="w-3.5 h-3.5" />
             )}
             Merge
           </Button>
