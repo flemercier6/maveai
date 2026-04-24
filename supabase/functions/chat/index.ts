@@ -1030,7 +1030,6 @@ Deno.serve(async (req) => {
     let assistantText = "";
 
     // ---------- Web tools: detect & fetch BEFORE streaming ----------
-    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
     const lastUserText = lastUserMsg?.content ?? "";
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     const linkupKey = Deno.env.get("LINKUP_API_KEY");
