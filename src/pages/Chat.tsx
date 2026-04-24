@@ -27,6 +27,13 @@ import { billingMultiplier } from "@/lib/pricing";
 import { looksLikeWritingRequest } from "@/lib/writingDetection";
 import { SelectionExploreButton, type SelectionPayload } from "@/components/SelectionExploreButton";
 import { ExplorePanel, type BranchSeed } from "@/components/ExplorePanel";
+import type { MessageBranch } from "@/components/ChatMessage";
+
+type StoredBranch = {
+  id: string;
+  source_message_id: string;
+  quoted_text: string;
+};
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
@@ -65,6 +72,7 @@ export default function Chat() {
   // ---- Explore (branch) side panel ----
   const [exploreOpen, setExploreOpen] = useState(false);
   const [exploreSeed, setExploreSeed] = useState<BranchSeed | null>(null);
+  const [branches, setBranches] = useState<StoredBranch[]>([]);
 
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -166,6 +174,23 @@ export default function Chat() {
       setProvider(conv.provider as Provider);
       setModel(conv.model);
     }
+  }, [activeId]);
+
+  // Load existing branches (explorations) for this conversation.
+  useEffect(() => {
+    if (!activeId) { setBranches([]); return; }
+    supabase
+      .from("chat_branches")
+      .select("id, source_message_id, quoted_text")
+      .eq("conversation_id", activeId)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => {
+        setBranches(((data ?? []) as any[]).map((b) => ({
+          id: b.id,
+          source_message_id: b.source_message_id,
+          quoted_text: b.quoted_text ?? "",
+        })));
+      });
   }, [activeId]);
 
   // Scroll behavior:
@@ -865,6 +890,44 @@ export default function Chat() {
     setExploreOpen(true);
   };
 
+  // Reopen an existing branch by id (clicked on a chat indicator tag).
+  const openExistingBranch = (branchId: string) => {
+    if (!activeId) return;
+    const branch = branches.find((b) => b.id === branchId);
+    if (!branch) return;
+    const sourceIdx = messages.findIndex((m) => m.id === branch.source_message_id);
+    if (sourceIdx < 0) return;
+    const parentHistory = messages
+      .slice(0, sourceIdx + 1)
+      .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
+      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+    setExploreSeed({
+      conversationId: activeId,
+      sourceMessageId: branch.source_message_id,
+      quotedText: branch.quoted_text,
+      parentHistory,
+      provider,
+      model: model === AUTO_MODEL_ID ? "gpt-4o-mini" : model,
+      existingBranchId: branch.id,
+    });
+    setExploreOpen(true);
+  };
+
+  // Compute per-message branch chips. "selection" when quoted text differs
+  // from the full message content; "full" otherwise.
+  const branchesByMessage: Record<string, MessageBranch[]> = {};
+  for (const b of branches) {
+    const msg = messages.find((m) => m.id === b.source_message_id);
+    if (!msg) continue;
+    const isFull = !b.quoted_text || b.quoted_text.trim() === msg.content.trim();
+    const entry: MessageBranch = {
+      id: b.id,
+      quotedText: b.quoted_text,
+      kind: isFull ? "full" : "selection",
+    };
+    (branchesByMessage[b.source_message_id] ??= []).push(entry);
+  }
+
   // Insert a merged summary back into the main chat as a new assistant message.
   const handleMergeSummary = async (summary: string) => {
     if (!activeId || !user) return;
@@ -981,6 +1044,8 @@ export default function Chat() {
                   onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
                   onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}
                   onExplore={m.role === "assistant" && m.id && m.content ? () => openExplore({ text: m.content, messageId: m.id as string }) : undefined}
+                  branches={m.role === "assistant" && m.id ? branchesByMessage[m.id] : undefined}
+                  onBranchOpen={m.role === "assistant" ? openExistingBranch : undefined}
                   onEdit={m.role === "user" ? () => {
                     if (sending) return;
                     const userMsg = messages[i];
@@ -1173,6 +1238,13 @@ export default function Chat() {
         userId={user.id}
         onClose={() => setExploreOpen(false)}
         onMerge={handleMergeSummary}
+        onBranchCreated={(b) =>
+          setBranches((prev) =>
+            prev.some((x) => x.id === b.id)
+              ? prev
+              : [...prev, { id: b.id, source_message_id: b.source_message_id, quoted_text: b.quoted_text }],
+          )
+        }
       />
     </div>
   );
