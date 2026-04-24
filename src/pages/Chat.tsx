@@ -552,15 +552,19 @@ export default function Chat() {
       // Final flush to make sure we render the very last delta
       if (pending || acc) {
         pending = false;
+        const { body, canvas } = writingMode
+          ? splitCanvas(acc)
+          : { body: acc, canvas: null };
         setMessages((prev) => {
           const next = prev.slice();
           const current = next[next.length - 1];
           next[next.length - 1] = {
             ...current,
             role: "assistant",
-            content: acc,
+            content: body,
             provider: sendProvider,
             model: sendModel,
+            ...(canvas !== null ? { canvas } : {}),
           };
           return next;
         });
