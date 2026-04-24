@@ -387,12 +387,6 @@ export function UsageTab() {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h3 className="text-sm font-semibold">Spend over time</h3>
-            <p className="text-xs text-muted-foreground">
-              Billed price (×3) ·{" "}
-              <span className="font-medium text-foreground tabular-nums">
-                {fmtUSD(periodTotal)}
-              </span>
-            </p>
           </div>
           <div className="inline-flex rounded-[6px] border border-border p-0.5 bg-[hsl(var(--dropdown-hover))]">
             {RANGES.map((r) => (
