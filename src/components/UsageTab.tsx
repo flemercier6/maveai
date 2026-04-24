@@ -304,6 +304,12 @@ export function UsageTab() {
     [chartData],
   );
 
+  // Total billed across the whole dataset (per-model markup applied row by row).
+  const totalBilled = useMemo(
+    () => rows.reduce((s, r) => s + billedCost(Number(r.total_cost_usd ?? 0), r.model), 0),
+    [rows],
+  );
+
   const canPrev = canNavigate(range, offset, -1, signupDate);
   const canNext = canNavigate(range, offset, 1, signupDate);
 
@@ -372,14 +378,14 @@ export function UsageTab() {
               Billed price
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-wider rounded-full bg-background/15 px-2 py-0.5">
-              ×3
+              Per-model markup
             </span>
           </div>
           <div className="mt-2 font-semibold tracking-tight tabular-nums text-xl">
-            {fmtUSD(data.totalCost * 3)}
+            {fmtUSD(totalBilled)}
           </div>
           <div className="mt-3 text-xs opacity-70">
-            Margin applied on top of provider list price.
+            Cheaper models carry a higher multiplier, premium models a lower one.
           </div>
         </div>
       </div>
@@ -491,12 +497,14 @@ export function UsageTab() {
                 <th className="text-right font-medium px-3 py-2">Input</th>
                 <th className="text-right font-medium px-3 py-2">Output</th>
                 <th className="text-right font-medium px-3 py-2">Cost</th>
-                <th className="text-right font-medium px-3 py-2">×3</th>
+                <th className="text-right font-medium px-3 py-2">Markup</th>
+                <th className="text-right font-medium px-3 py-2">Billed</th>
               </tr>
             </thead>
             <tbody>
               {data.byModel.map((row) => {
                 const provider = providerForModel(row.model);
+                const mult = billingMultiplier(row.model);
                 return (
                   <tr key={row.model} className="border-t border-border">
                     <td className="px-3 py-2.5">
@@ -517,8 +525,11 @@ export function UsageTab() {
                     <td className="px-3 py-2.5 text-right tabular-nums font-medium">
                       {fmtUSD(row.cost)}
                     </td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">
+                      ×{mult}
+                    </td>
                     <td className="px-3 py-2.5 text-right tabular-nums font-semibold">
-                      {fmtUSD(row.cost * 3)}
+                      {fmtUSD(row.cost * mult)}
                     </td>
                   </tr>
                 );
