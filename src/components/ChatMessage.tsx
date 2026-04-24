@@ -395,7 +395,7 @@ function ChatMessageImpl({
   }
 
   return (
-    <div className="w-full my-[50px]">
+    <div className="w-full my-[50px]" data-assistant-message="true" data-message-id={id ?? ""}>
       <div className="max-w-3xl mx-auto px-4">
         {(provider || (tool && tool.status !== "failed")) && (
           <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "10px" }}>
