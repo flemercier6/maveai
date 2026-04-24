@@ -66,6 +66,60 @@ function priceFor(model: string): Price {
   return { input: 0, output: 0 };
 }
 
+// ---------- Keyword extraction (no LLM, free) ----------
+// Used both when persisting memories (so we can index them) and when matching
+// memories against the current user message at chat time.
+const STOPWORDS = new Set<string>([
+  // English
+  "the","a","an","and","or","but","if","then","else","of","in","on","at","to","for","with","from","by",
+  "is","are","was","were","be","been","being","am","do","does","did","done","doing","have","has","had",
+  "having","i","you","he","she","it","we","they","me","him","her","us","them","my","your","his","its",
+  "our","their","this","that","these","those","there","here","what","which","who","whom","whose","when",
+  "where","why","how","not","no","yes","ok","okay","so","than","too","very","just","also","as","than",
+  "can","could","should","would","may","might","must","will","shall","want","need","like","know","get",
+  "got","let","make","made","go","goes","went","come","came","take","took","see","saw","look","one","two",
+  // French
+  "le","la","les","un","une","des","de","du","et","ou","mais","si","alors","sinon","dans","sur","au","aux",
+  "pour","avec","sans","par","est","sont","était","étaient","être","fait","faire","ai","as","a","avons",
+  "avez","ont","avoir","je","tu","il","elle","on","nous","vous","ils","elles","me","te","se","mon","ton",
+  "son","ma","ta","sa","mes","tes","ses","notre","votre","leur","nos","vos","leurs","ce","cet","cette",
+  "ces","ça","celui","celle","ceux","celles","qui","que","quoi","dont","où","quand","comment","pourquoi",
+  "pas","ne","non","oui","plus","moins","très","trop","aussi","encore","déjà","peu","beaucoup","tout",
+  "tous","toute","toutes","peut","peux","pouvoir","veux","veut","vouloir","dois","doit","devoir","fait",
+  "vais","va","aller","sais","sait","savoir","comme","car","donc","puis","aux","cela","ceci",
+]);
+
+/** Extract a normalized set of topical keywords from arbitrary text. */
+function extractKeywords(text: string, max = 12): string[] {
+  if (!text) return [];
+  // Lowercase, strip diacritics, keep letters/digits as token boundaries.
+  const norm = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  const tokens = norm.match(/[a-z0-9]{3,}/g) ?? [];
+  const counts = new Map<string, number>();
+  for (const t of tokens) {
+    if (STOPWORDS.has(t)) continue;
+    if (/^\d+$/.test(t)) continue; // pure numbers aren't useful keywords
+    counts.set(t, (counts.get(t) ?? 0) + 1);
+  }
+  // Sort by frequency, then alpha for stability.
+  return Array.from(counts.entries())
+    .sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0]))
+    .slice(0, max)
+    .map(([t]) => t);
+}
+
+/** Score a memory's relevance to a user message via keyword overlap. */
+function memoryRelevance(memKeywords: string[], queryKeywords: Set<string>): number {
+  if (!memKeywords.length || !queryKeywords.size) return 0;
+  let hits = 0;
+  for (const k of memKeywords) if (queryKeywords.has(k)) hits++;
+  // Normalize by memory length so 2/3 beats 2/12 — favors focused memories.
+  return hits / Math.sqrt(memKeywords.length);
+}
+
 function sseEncoder() {
   const encoder = new TextEncoder();
   return (obj: unknown) => encoder.encode(`data: ${JSON.stringify(obj)}\n\n`);
@@ -786,24 +840,26 @@ ${assistantText.slice(0, 2000)}`;
   const validKinds = ["preference", "identity", "project", "context", "fact"];
   const norm = (s: string) => s.toLowerCase().trim();
 
-  const toInsert: { user_id: string; content: string; kind: string }[] = [];
-  const toUpdate: { id: string; content: string; kind: string }[] = [];
+  const toInsert: { user_id: string; content: string; kind: string; keywords: string[] }[] = [];
+  const toUpdate: { id: string; content: string; kind: string; keywords: string[] }[] = [];
 
   for (const a of actions.slice(0, 10)) {
     if (!a?.content || typeof a.content !== "string") continue;
     const content = a.content.slice(0, 500).trim();
     if (!content) continue;
     const kind = validKinds.includes(a.kind) ? a.kind : "fact";
+    // Derive keywords from the memory content (no extra LLM call).
+    const keywords = extractKeywords(content, 12);
 
     if (a.op === "update" && a.id && existingById.has(a.id)) {
       const prev = existingById.get(a.id)!;
       if (norm(prev.content) === norm(content)) continue; // no-op
-      toUpdate.push({ id: a.id, content, kind });
+      toUpdate.push({ id: a.id, content, kind, keywords });
       existingContents.delete(norm(prev.content));
       existingContents.add(norm(content));
     } else if (a.op === "add") {
       if (existingContents.has(norm(content))) continue; // dedup
-      toInsert.push({ user_id: userId, content, kind });
+      toInsert.push({ user_id: userId, content, kind, keywords });
       existingContents.add(norm(content));
     }
     // "skip" → nothing
@@ -818,7 +874,7 @@ ${assistantText.slice(0, 2000)}`;
   for (const u of toUpdate) {
     const { error } = await supabase
       .from("user_memories")
-      .update({ content: u.content, kind: u.kind, updated_at: new Date().toISOString() })
+      .update({ content: u.content, kind: u.kind, keywords: u.keywords, updated_at: new Date().toISOString() })
       .eq("id", u.id)
       .eq("user_id", userId);
     if (!error) updated += 1;
@@ -869,18 +925,38 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ---------- Load cross-provider user memory (kept compact) ----------
+    // ---------- Load & filter user memory by relevance to current query ----------
+    // Strategy: extract keywords from the latest user message, then keep only
+    // memories whose own keywords overlap. If nothing is relevant, inject NO
+    // memory at all — saves tokens and keeps unrelated facts out of the prompt.
+    const lastUserMsg = [...(messages as Msg[])].reverse().find((m) => m.role === "user");
+    const queryKeywords = new Set(extractKeywords(lastUserMsg?.content ?? "", 20));
+
     const { data: memRows } = await supabase
       .from("user_memories")
-      .select("content,kind,created_at")
+      .select("id,content,kind,keywords")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .limit(100); // lightweight: just metadata, real filtering happens below
 
-    // Build memory block with a hard char budget so it never dominates the prompt.
-    const MEMORY_CHAR_BUDGET = 2000;
+    // Score each memory; fall back to deriving keywords from content if missing
+    // (handles legacy rows persisted before the keywords column existed).
+    type ScoredMem = { content: string; kind: string; score: number };
+    const scored: ScoredMem[] = [];
+    for (const m of (memRows ?? []) as Array<{ content: string; kind: string; keywords: string[] | null }>) {
+      const kws = (m.keywords && m.keywords.length)
+        ? m.keywords
+        : extractKeywords(m.content, 12);
+      const score = memoryRelevance(kws, queryKeywords);
+      if (score > 0) scored.push({ content: m.content, kind: m.kind, score });
+    }
+    scored.sort((a, b) => b.score - a.score);
+
+    // Cap: max 8 relevant memories AND a hard char budget. Tight by design.
+    const MEMORY_MAX_ITEMS = 8;
+    const MEMORY_CHAR_BUDGET = 1200;
     let memoryBlock = "";
-    for (const m of (memRows ?? []) as any[]) {
+    for (const m of scored.slice(0, MEMORY_MAX_ITEMS)) {
       const line = `- (${m.kind}) ${m.content}`;
       if (memoryBlock.length + line.length + 1 > MEMORY_CHAR_BUDGET) break;
       memoryBlock += (memoryBlock ? "\n" : "") + line;
@@ -890,7 +966,7 @@ Deno.serve(async (req) => {
       ? {
         role: "system",
         content:
-          "User memory (use implicitly, don't repeat verbatim):\n" + memoryBlock,
+          "Relevant user memory (use implicitly, don't repeat verbatim):\n" + memoryBlock,
       }
       : null;
 

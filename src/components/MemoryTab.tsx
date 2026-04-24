@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { extractKeywords } from "@/lib/keywords";
 
 type Memory = {
   id: string;
@@ -49,7 +50,7 @@ export function MemoryTab() {
     if (!c || !user) return;
     const { error } = await supabase
       .from("user_memories")
-      .insert({ user_id: user.id, content: c, kind: "fact" });
+      .insert({ user_id: user.id, content: c, kind: "fact", keywords: extractKeywords(c) });
     if (error) return toast.error(error.message);
     setNewContent("");
     load();
@@ -113,6 +114,7 @@ export function MemoryTab() {
       user_id: user.id,
       content: it.content,
       kind: it.kind || "fact",
+      keywords: extractKeywords(it.content),
     }));
     const { error } = await supabase.from("user_memories").insert(rows);
     setImporting(false);

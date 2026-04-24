@@ -1,0 +1,1 @@
+ALTER TABLE public.user_memories ADD COLUMN IF NOT EXISTS keywords text[] NOT NULL DEFAULT '{}'; CREATE INDEX IF NOT EXISTS user_memories_keywords_idx ON public.user_memories USING GIN (keywords);
