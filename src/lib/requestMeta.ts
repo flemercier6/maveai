@@ -27,6 +27,16 @@ export type MetaWebContext = {
   approxTokens: number;
 };
 
+export type MetaCost = {
+  inputTokens: number;
+  outputTokens: number;
+  /** Provider list cost (USD) before Lovable markup. */
+  inputCostUsd: number;
+  outputCostUsd: number;
+  /** Markup applied for this model (e.g. 3 = ×3). */
+  multiplier: number;
+};
+
 export type RequestMeta = {
   provider: string;
   model: string;
@@ -36,4 +46,5 @@ export type RequestMeta = {
   memoryMatches: MetaMemoryMatch[];
   webContext: MetaWebContext | null;
   approxTotalInputTokens: number;
+  cost?: MetaCost;
 };

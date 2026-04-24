@@ -23,6 +23,7 @@ import { SlashCommandMenu, filterSlashItems, type SlashItem } from "@/components
 import { getTextareaCaretCoords } from "@/lib/caret";
 import { ClarifyCard, type ClarifyQuestion } from "@/components/ClarifyCard";
 import type { RequestMeta } from "@/lib/requestMeta";
+import { billingMultiplier } from "@/lib/pricing";
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
@@ -458,6 +459,29 @@ export default function Chat() {
               setMessages((prev) => {
                 const next = prev.slice();
                 next[next.length - 1] = { ...next[next.length - 1], meta };
+                return next;
+              });
+            } else if (j.type === "usage") {
+              const inputTokens = Number(j.input_tokens) || 0;
+              const outputTokens = Number(j.output_tokens) || 0;
+              const inputCostUsd = Number(j.input_cost_usd) || 0;
+              const outputCostUsd = Number(j.output_cost_usd) || 0;
+              setMessages((prev) => {
+                const next = prev.slice();
+                const last = next[next.length - 1];
+                if (!last) return prev;
+                const modelId = last.meta?.model ?? last.model ?? "";
+                const multiplier = billingMultiplier(modelId);
+                const cost = {
+                  inputTokens,
+                  outputTokens,
+                  inputCostUsd,
+                  outputCostUsd,
+                  multiplier,
+                };
+                if (last.meta) {
+                  next[next.length - 1] = { ...last, meta: { ...last.meta, cost } };
+                }
                 return next;
               });
             } else if (j.type === "clarify") {

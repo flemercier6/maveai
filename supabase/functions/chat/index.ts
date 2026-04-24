@@ -1262,6 +1262,8 @@ Deno.serve(async (req) => {
               type: "usage",
               input_tokens: usage.input_tokens,
               output_tokens: usage.output_tokens,
+              input_cost_usd: inputCost,
+              output_cost_usd: outputCost,
               cost_usd: inputCost + outputCost,
             }));
           } else {
