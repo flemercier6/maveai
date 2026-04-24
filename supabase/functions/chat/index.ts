@@ -869,60 +869,72 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ---------- Load cross-provider user memory ----------
+    // ---------- Load cross-provider user memory (kept compact) ----------
     const { data: memRows } = await supabase
       .from("user_memories")
       .select("content,kind,created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(100);
+      .limit(30);
 
-    const memoryBlock = (memRows ?? [])
-      .map((m: any) => `- (${m.kind}) ${m.content}`)
-      .join("\n");
+    // Build memory block with a hard char budget so it never dominates the prompt.
+    const MEMORY_CHAR_BUDGET = 2000;
+    let memoryBlock = "";
+    for (const m of (memRows ?? []) as any[]) {
+      const line = `- (${m.kind}) ${m.content}`;
+      if (memoryBlock.length + line.length + 1 > MEMORY_CHAR_BUDGET) break;
+      memoryBlock += (memoryBlock ? "\n" : "") + line;
+    }
 
     const memorySystem: Msg | null = memoryBlock
       ? {
         role: "system",
         content:
-          "Persistent user memory (facts, preferences, context) — use it implicitly to personalize your responses, without repeating it verbatim:\n" +
-          memoryBlock,
+          "User memory (use implicitly, don't repeat verbatim):\n" + memoryBlock,
       }
       : null;
 
+    // Compact style/system prompt — same intent, ~70% fewer tokens.
     const styleSystem: Msg = {
       role: "system",
       content:
-        "Format your responses for excellent readability:\n" +
-        "- Use generous whitespace, short paragraphs (2–4 sentences max), and frequent line breaks.\n" +
-        "- Structure longer answers with markdown headings (##, ###) and bullet lists.\n" +
-        "- Use horizontal dividers (---) to separate distinct sections or topics in long answers.\n" +
-        "- Use markdown tables (with | and ---) whenever you present comparisons, structured data, specs, or any information with multiple columns. Tables are strongly preferred over repeated bullet lists for comparative content.\n" +
-        "- When a diagram would clarify the answer (architecture, flowchart, decision tree, sequence, state machine, pipeline, user journey…), output it as a fenced code block tagged `flow` containing **JSON** (not Mermaid). Schema:\n" +
-        "  ```flow\n" +
-        "  {\n" +
-        "    \"title\": \"Optional short title\",\n" +
-        "    \"direction\": \"TB\" | \"LR\" | \"RL\" | \"BT\",\n" +
-        "    \"nodes\": [ { \"id\": \"a\", \"label\": \"Step name\", \"kind\": \"default|input|output|decision|success|warning|danger|muted\" } ],\n" +
-        "    \"edges\": [ { \"source\": \"a\", \"target\": \"b\", \"label\": \"optional\", \"animated\": false, \"dashed\": false } ]\n" +
-        "  }\n" +
-        "  ```\n" +
-        "  Rules: ids are short slugs, labels are concise (≤6 words), prefer `LR` for linear flows and `TB` for hierarchies, use `decision` for branching points, `input`/`output` for endpoints, `success`/`warning`/`danger` to highlight outcomes. Do NOT include `position` — layout is automatic. Do NOT use Mermaid syntax. Keep diagrams focused (typically 4–12 nodes).\n" +
-        "- Avoid dense walls of text. Prefer airy, scannable layouts.\n" +
-        "- You may use emojis when relevant; one well-placed emoji beats ten.\n" +
-        "- Always respond in the same language as the user's last message.",
+        "Style: airy markdown — short paragraphs, headings, bullets, dividers. Use tables for comparisons. Emojis sparingly. Reply in the user's language.\n" +
+        "Diagrams: when a flow/architecture/decision diagram clarifies the answer, output a fenced ```flow block containing JSON: " +
+        "{ title?, direction?: 'TB'|'LR'|'RL'|'BT', nodes: [{id,label,kind?: 'default'|'input'|'output'|'decision'|'success'|'warning'|'danger'|'muted'}], edges: [{source,target,label?,animated?,dashed?}] }. " +
+        "Short slug ids, ≤6-word labels, no positions, 4–12 nodes. Not Mermaid.",
     };
 
-    // Prepend system messages (style + memory) and drop any previous duplicates from the client
+    // Prepend system messages (style + memory) and drop any previous duplicates from the client.
     const baseSystems: Msg[] = [styleSystem, ...(memorySystem ? [memorySystem] : [])];
-    const finalMessages: Msg[] = [
-      ...baseSystems,
-      ...messages.filter(
-        (m) =>
-          m.role !== "system" ||
-          (!m.content.startsWith("Persistent user memory") && !m.content.startsWith("You may use emojis") && !m.content.startsWith("Format your responses")),
-      ),
-    ];
+    const cleanedClientMessages = messages.filter(
+      (m) =>
+        m.role !== "system" ||
+        (!m.content.startsWith("Persistent user memory") &&
+          !m.content.startsWith("User memory") &&
+          !m.content.startsWith("You may use emojis") &&
+          !m.content.startsWith("Format your responses") &&
+          !m.content.startsWith("Style:")),
+    );
+
+    // Trim history: keep at most the last N turns within a char budget, but always keep the last user message intact.
+    const HISTORY_MAX_MSGS = 16;
+    const HISTORY_CHAR_BUDGET = 12000;
+    const trimmedHistory: Msg[] = (() => {
+      const recent = cleanedClientMessages.slice(-HISTORY_MAX_MSGS);
+      let total = 0;
+      const kept: Msg[] = [];
+      // Walk from newest to oldest, stop when budget exceeded (always keep at least the last 2 messages).
+      for (let i = recent.length - 1; i >= 0; i--) {
+        const m = recent[i];
+        const len = (m.content ?? "").length;
+        if (kept.length >= 2 && total + len > HISTORY_CHAR_BUDGET) break;
+        kept.unshift(m);
+        total += len;
+      }
+      return kept;
+    })();
+
+    const finalMessages: Msg[] = [...baseSystems, ...trimmedHistory];
 
     const ENV_KEY: Record<string, string | undefined> = {
       openai: Deno.env.get("OPENAI_API_KEY"),
