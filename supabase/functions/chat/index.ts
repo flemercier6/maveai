@@ -1307,26 +1307,30 @@ Deno.serve(async (req) => {
             controller.enqueue(enc({ type: "delta", text: chunk }));
           }
 
-          // Persist assistant message
-          const { data: insertedMsg } = await supabase
-            .from("messages")
-            .insert({
-              conversation_id: conversationId,
-              user_id: user.id,
-              role: "assistant",
-              content: assistantText,
-              model,
-            })
-            .select("id")
-            .single();
-          await supabase
-            .from("conversations")
-            .update({ updated_at: new Date().toISOString() })
-            .eq("id", conversationId);
+          // Persist assistant message (skip entirely in ephemeral/branch mode)
+          let insertedMsg: { id: string } | null = null;
+          if (!ephemeral) {
+            const { data } = await supabase
+              .from("messages")
+              .insert({
+                conversation_id: conversationId,
+                user_id: user.id,
+                role: "assistant",
+                content: assistantText,
+                model,
+              })
+              .select("id")
+              .single();
+            insertedMsg = data;
+            await supabase
+              .from("conversations")
+              .update({ updated_at: new Date().toISOString() })
+              .eq("id", conversationId);
+          }
 
           // ---------- Persist usage event with computed cost ----------
           console.log("[usage] provider=", provider, "model=", model, "usage=", JSON.stringify(usage));
-          if (usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) {
+          if (!ephemeral && usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) {
             const price = priceFor(model);
             const inputCost = (usage.input_tokens / 1_000_000) * price.input;
             const outputCost = (usage.output_tokens / 1_000_000) * price.output;
@@ -1352,7 +1356,7 @@ Deno.serve(async (req) => {
               output_cost_usd: outputCost,
               cost_usd: inputCost + outputCost,
             }));
-          } else {
+          } else if (!ephemeral) {
             console.warn("[usage] skipped — no usage data returned by provider");
           }
 
@@ -1360,21 +1364,23 @@ Deno.serve(async (req) => {
           const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
 
           // ---------- Extract memorable facts (await so we can notify the client) ----------
-          try {
-            const memResult = await extractAndSaveMemory({
-              supabase,
-              userId: user.id,
-              openaiKey: Deno.env.get("OPENAI_API_KEY"),
-              googleKey: Deno.env.get("GOOGLE_API_KEY"),
-              anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
-              userText: lastUser,
-              assistantText,
-            });
-            if (memResult && (memResult.added > 0 || memResult.updated > 0)) {
-              controller.enqueue(enc({ type: "memory", added: memResult.added, updated: memResult.updated }));
+          if (!ephemeral) {
+            try {
+              const memResult = await extractAndSaveMemory({
+                supabase,
+                userId: user.id,
+                openaiKey: Deno.env.get("OPENAI_API_KEY"),
+                googleKey: Deno.env.get("GOOGLE_API_KEY"),
+                anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+                userText: lastUser,
+                assistantText,
+              });
+              if (memResult && (memResult.added > 0 || memResult.updated > 0)) {
+                controller.enqueue(enc({ type: "memory", added: memResult.added, updated: memResult.updated }));
+              }
+            } catch (err) {
+              console.error("memory extract failed:", err);
             }
-          } catch (err) {
-            console.error("memory extract failed:", err);
           }
 
           controller.enqueue(enc({ type: "done" }));
