@@ -1223,6 +1223,21 @@ export default function Chat() {
                       Note
                     </button>
                   )}
+                  {exploreRequested && (
+                    <button
+                      type="button"
+                      onClick={() => setExploreRequested(false)}
+                      aria-label="Remove Explore"
+                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-[#E6F1FF] transition-colors"
+                      style={{ color: "#0062FF" }}
+                    >
+                      <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                        <Sparkles className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
+                        <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
+                      </span>
+                      Explore
+                    </button>
+                  )}
                 </div>
                 <div className="flex items-center gap-[15px]">
                   <ModelPicker
