@@ -350,6 +350,7 @@ function ChatMessageImpl({
   onRetry,
   onDelete,
   onEdit,
+  onExplore,
 }: Props) {
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
