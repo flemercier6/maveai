@@ -381,7 +381,7 @@ function ChatMessageImpl({
               injected = true;
               return (
                 <p {...props}>
-                  <span className="font-bold" style={{ color: "#0062FF" }}>/write </span>
+                  <span className="font-normal" style={{ color: "#0062FF" }}>/write </span>
                   {children}
                 </p>
               );
