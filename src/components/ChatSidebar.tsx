@@ -171,9 +171,39 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
                         onClick={() => onSelect(c.id)}
                         className="min-w-0 overflow-hidden text-left text-xs pl-[10px] pr-[4px] py-[5px]"
                       >
-                        <span className="block truncate text-sm">
-                          {c.title}
-                        </span>
+                        {(() => {
+                          const anim = titleAnim?.[c.id];
+                          // Waiting for the AI-generated title -> shimmer placeholder
+                          if (anim && anim.target === null) {
+                            return (
+                              <span
+                                className="block h-3.5 w-2/3 rounded-[3px] bg-gradient-to-r from-[hsl(var(--muted))] via-[hsl(var(--border))] to-[hsl(var(--muted))] bg-[length:200%_100%] animate-title-shimmer"
+                                aria-label="Generating title…"
+                              />
+                            );
+                          }
+                          // Streaming the AI title char by char
+                          if (anim && anim.target) {
+                            const done = anim.shown.length >= anim.target.length;
+                            return (
+                              <span
+                                className={cn(
+                                  "block truncate text-sm bg-clip-text",
+                                  !done &&
+                                    "text-transparent bg-gradient-to-r from-foreground via-muted-foreground to-foreground bg-[length:200%_100%] animate-title-shimmer",
+                                )}
+                              >
+                                {anim.shown}
+                                {!done && (
+                                  <span className="ml-0.5 inline-block w-[1px] h-3 align-middle bg-foreground/60 animate-pulse" />
+                                )}
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="block truncate text-sm">{c.title}</span>
+                          );
+                        })()}
                       </button>
                       <DropdownMenu
                         open={menuOpenId === c.id}
