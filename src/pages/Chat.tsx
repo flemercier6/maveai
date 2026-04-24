@@ -988,22 +988,48 @@ export default function Chat() {
                   )}
                 </div>
               )}
-              <Textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  // Defer so selectionStart reflects post-update value
-                  requestAnimationFrame(updateSlashFromTextarea);
-                }}
-                onKeyDown={onKey}
-                onKeyUp={updateSlashFromTextarea}
-                onClick={updateSlashFromTextarea}
-                onBlur={() => setTimeout(() => setSlash(null), 100)}
-                placeholder="Send a message..."
-                rows={1}
-                className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
-              />
+              <div className="relative">
+                {writeRequested && (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute left-4 top-3.5 font-bold leading-relaxed select-none"
+                    style={{ color: "#0062FF" }}
+                  >
+                    /write
+                  </span>
+                )}
+                <Textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    // Defer so selectionStart reflects post-update value
+                    requestAnimationFrame(updateSlashFromTextarea);
+                  }}
+                  onKeyDown={(e) => {
+                    // Backspace at the very start removes the /write badge.
+                    if (
+                      writeRequested &&
+                      e.key === "Backspace" &&
+                      textareaRef.current?.selectionStart === 0 &&
+                      textareaRef.current?.selectionEnd === 0
+                    ) {
+                      e.preventDefault();
+                      setWriteRequested(false);
+                      return;
+                    }
+                    onKey(e);
+                  }}
+                  onKeyUp={updateSlashFromTextarea}
+                  onClick={updateSlashFromTextarea}
+                  onBlur={() => setTimeout(() => setSlash(null), 100)}
+                  placeholder={writeRequested ? "" : "Send a message..."}
+                  rows={1}
+                  className={`w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed ${
+                    writeRequested ? "!pl-[72px]" : ""
+                  }`}
+                />
+              </div>
               {slash && (
                 <SlashCommandMenu
                   query={slash.query}
