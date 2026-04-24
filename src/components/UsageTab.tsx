@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { modelLabel, providerForModel, PROVIDER_LABEL } from "@/lib/models";
+import { billingMultiplier, billedCost } from "@/lib/pricing";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -289,7 +290,8 @@ export function UsageTab() {
       const t = new Date(row.created_at).getTime();
       for (let i = 0; i < buckets.length; i++) {
         if (t >= buckets[i].start.getTime() && t < buckets[i].end.getTime()) {
-          totals[i] += Number(row.total_cost_usd ?? 0) * 3; // billed price ×3
+          // Per-model markup: cheap models get a higher multiplier.
+          totals[i] += billedCost(Number(row.total_cost_usd ?? 0), row.model);
           break;
         }
       }
