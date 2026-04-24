@@ -112,7 +112,7 @@ export default function Chat() {
             rest = rest.slice(editMatch[0].length);
           }
           let title: string | undefined;
-          const titleMatch = rest.match(/^\s*CANVAS_TITLE:\s*([^\n]+?)\s*\n?/i);
+          const titleMatch = rest.match(/^\s*CANVAS_TITLE:\s*([^\n]+?)[ \t]*\n/i);
           if (titleMatch) {
             title = titleMatch[1].trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 60);
             rest = rest.slice(titleMatch[0].length);
@@ -431,7 +431,9 @@ export default function Chat() {
           editMode = editMatch[1].toLowerCase() as "yes" | "no";
           rest = rest.slice(editMatch[0].length);
         }
-        const titleMatch = rest.match(/^\s*CANVAS_TITLE:\s*([^\n]+?)\s*\n?/i);
+        // Require the newline to be present — otherwise during streaming the
+        // lazy quantifier would capture only the first character of the title.
+        const titleMatch = rest.match(/^\s*CANVAS_TITLE:\s*([^\n]+?)[ \t]*\n/i);
         if (titleMatch) {
           title = titleMatch[1].trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 60);
           rest = rest.slice(titleMatch[0].length);
