@@ -1005,11 +1005,11 @@ export default function Chat() {
                     type="button"
                     onClick={() => setWriteRequested(false)}
                     aria-label="Remove Note"
-                    className="group inline-flex items-center gap-1.5 rounded-full border border-border bg-background pl-2 pr-2.5 py-1 text-xs font-medium text-foreground hover:bg-dropdown-hover transition-colors"
+                    className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-[#E6F1FF] hover:text-[#0062FF]"
                   >
                     <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
-                      <FileText className="w-3.5 h-3.5 text-muted-foreground group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
-                      <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+                      <FileText className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
+                      <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
                     </span>
                     Note
                   </button>
