@@ -58,60 +58,61 @@ export function providerForModel(modelId: string): Provider {
 
 /**
  * Heuristic router for the "Auto" mode.
- * Evaluated in order — first match wins.
+ *
+ * Cost-aware policy (cheapest → most expensive):
+ *   1. Gemini 2.5 Flash       — ~$0.30/M in   (default & conversational)
+ *   2. GPT-4o mini            — ~$0.15/M in   (short creative / rewrites)
+ *   3. Gemini 2.5 Pro         — ~$1.25/M in   (multimodal, structured, Google)
+ *   4. GPT 5.4                — ~$2.50/M in   (creative / generative)
+ *   5. Claude Sonnet 4.6      — ~$3.00/M in   (only when reasoning needed)
+ *   6. Claude Opus 4.7        — ~$15/M in     (only for very heavy reasoning)
+ *
+ * Anthropic is reserved for cases where cheaper models clearly underperform.
  * Returns { provider, model } to actually call.
  */
 export function routeAuto(message: string): { provider: Provider; model: string } {
   const text = message.trim();
   const lower = text.toLowerCase();
   const wordCount = text.split(/\s+/).filter(Boolean).length;
-  const sentenceCount = (text.match(/[.!?]+/g) || []).length || 1;
   const hasCode = /```|\bfunction\b|\bclass\b|=>|;\s*$|<\/?\w+>|console\.log|def\s+\w+\(/i.test(text);
   const hasImageOrFile = /\b(image|photo|picture|screenshot|file|pdf|attached|attachment|document)\b/i.test(lower);
   const mentionsGoogle = /\b(google|gmail|gdocs|google docs|google sheets|google drive|youtube|android)\b/i.test(lower);
-  const wantsStructured = /\b(table|chart|spreadsheet|csv|json|parse|extract)\b/i.test(lower);
+  const wantsStructured = /\b(table|chart|spreadsheet|csv|json|parse|extract|diagram|flowchart)\b/i.test(lower);
   const multiStep = /\b(first[,.\s].*then[,.\s].*(finally|lastly|after that))\b/i.test(lower)
     || /\bstep\s*1\b.*\bstep\s*2\b/i.test(lower);
-  const heavyDomain = /\b(architecture|system design|legal|contract|financial|medical|diagnos|clinical|jurispr)\b/i.test(lower);
-  const deepCritique = /\b(deep (critique|analysis|review)|exhaustive|comprehensive analysis|in-?depth)\b/i.test(lower);
+  // Restricted: only the most demanding domains route to Anthropic
+  const veryHeavyDomain = /\b(legal contract|case law|jurispr|medical diagnos|clinical trial|differential diagnosis)\b/i.test(lower);
+  const deepCritique = /\b(deep (critique|analysis|review)|exhaustive|comprehensive analysis|in-?depth analysis)\b/i.test(lower);
   const creative = /\b(story|storytelling|poem|novel|marketing copy|brainstorm|tagline|slogan|creative|imagine|ideation)\b/i.test(lower);
   const shortCreative = /\b(rewrite|translate|emoji|one-?liner|short list|quick list|tweet)\b/i.test(lower);
-  const conversational = /^(hi|hello|hey|yo|salut|bonjour|hola|thanks|thank you|ok|okay|yes|no|sure|cool|nice)\b/i.test(lower)
-    || /^what is\b/i.test(lower)
-    || /^who is\b/i.test(lower);
 
-  // 6. Opus — heavy reasoning / long docs / deep analysis
-  if (wordCount > 500 || multiStep || heavyDomain || deepCritique) {
+  // 1. Opus — only for VERY heavy reasoning (long legal/medical docs, exhaustive analysis)
+  //    Threshold raised from 500 → 1200 words to avoid overusing the most expensive model.
+  if (wordCount > 1200 || (veryHeavyDomain && wordCount > 200) || (deepCritique && wordCount > 400)) {
     return { provider: "anthropic", model: "claude-opus-4-7" };
   }
 
-  // 1. Gemini fastest — short conversational
-  if (
-    sentenceCount <= 2 &&
-    wordCount <= 25 &&
-    !hasCode &&
-    (conversational || /\?$/.test(text) === false || wordCount <= 8)
-  ) {
-    if (conversational || wordCount <= 12) {
-      return { provider: "google", model: "gemini-2.5-flash" };
-    }
+  // 2. Sonnet — only when we genuinely need stronger reasoning than Gemini Pro can offer
+  //    (multi-step plans on long inputs, or deep critique on medium-length text)
+  if ((multiStep && wordCount > 150) || (deepCritique && wordCount > 100)) {
+    return { provider: "anthropic", model: "claude-sonnet-4-6" };
   }
 
-  // 3. Gemini Pro — image/file, Google products, structured data
-  if (hasImageOrFile || mentionsGoogle || wantsStructured) {
+  // 3. Gemini Pro — multimodal, Google ecosystem, structured data, or longer reasoning
+  if (hasImageOrFile || mentionsGoogle || wantsStructured || wordCount > 300 || hasCode) {
     return { provider: "google", model: "gemini-2.5-pro" };
   }
 
-  // 2. ChatGPT fastest — short creative / quick rewrites
-  if (shortCreative && wordCount <= 40) {
+  // 4. GPT-4o mini — short creative / quick rewrites (very cheap)
+  if (shortCreative && wordCount <= 60) {
     return { provider: "openai", model: "gpt-4o-mini" };
   }
 
-  // 4. GPT 5.4 — creative / generative
+  // 5. GPT 5.4 — creative / generative work where prose quality matters
   if (creative) {
     return { provider: "openai", model: "gpt-5.4" };
   }
 
-  // 5. Sonnet 4.6 — default
-  return { provider: "anthropic", model: "claude-sonnet-4-6" };
+  // 6. Default — Gemini 2.5 Flash (cheapest capable model)
+  return { provider: "google", model: "gemini-2.5-flash" };
 }
