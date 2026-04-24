@@ -338,6 +338,8 @@ function ChatMessageImpl({
   phase,
   sources,
   meta,
+  canvas,
+  onCanvasChange,
   onRetry,
   onDelete,
   onEdit,
