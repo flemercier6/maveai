@@ -840,24 +840,26 @@ ${assistantText.slice(0, 2000)}`;
   const validKinds = ["preference", "identity", "project", "context", "fact"];
   const norm = (s: string) => s.toLowerCase().trim();
 
-  const toInsert: { user_id: string; content: string; kind: string }[] = [];
-  const toUpdate: { id: string; content: string; kind: string }[] = [];
+  const toInsert: { user_id: string; content: string; kind: string; keywords: string[] }[] = [];
+  const toUpdate: { id: string; content: string; kind: string; keywords: string[] }[] = [];
 
   for (const a of actions.slice(0, 10)) {
     if (!a?.content || typeof a.content !== "string") continue;
     const content = a.content.slice(0, 500).trim();
     if (!content) continue;
     const kind = validKinds.includes(a.kind) ? a.kind : "fact";
+    // Derive keywords from the memory content (no extra LLM call).
+    const keywords = extractKeywords(content, 12);
 
     if (a.op === "update" && a.id && existingById.has(a.id)) {
       const prev = existingById.get(a.id)!;
       if (norm(prev.content) === norm(content)) continue; // no-op
-      toUpdate.push({ id: a.id, content, kind });
+      toUpdate.push({ id: a.id, content, kind, keywords });
       existingContents.delete(norm(prev.content));
       existingContents.add(norm(content));
     } else if (a.op === "add") {
       if (existingContents.has(norm(content))) continue; // dedup
-      toInsert.push({ user_id: userId, content, kind });
+      toInsert.push({ user_id: userId, content, kind, keywords });
       existingContents.add(norm(content));
     }
     // "skip" → nothing
@@ -872,7 +874,7 @@ ${assistantText.slice(0, 2000)}`;
   for (const u of toUpdate) {
     const { error } = await supabase
       .from("user_memories")
-      .update({ content: u.content, kind: u.kind, updated_at: new Date().toISOString() })
+      .update({ content: u.content, kind: u.kind, keywords: u.keywords, updated_at: new Date().toISOString() })
       .eq("id", u.id)
       .eq("user_id", userId);
     if (!error) updated += 1;
