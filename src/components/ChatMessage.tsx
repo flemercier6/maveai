@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
 import { FlowDiagram } from "./FlowDiagram";
 import { RequestVisualizer } from "./RequestVisualizer";
+import { CanvasBlock } from "./CanvasBlock";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Provider } from "@/lib/models";
 import type { RequestMeta } from "@/lib/requestMeta";
@@ -27,6 +28,8 @@ type Props = {
   phase?: Phase;
   sources?: Source[];
   meta?: RequestMeta;
+  canvas?: string;
+  onCanvasChange?: (next: string) => void;
   onRetry?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
