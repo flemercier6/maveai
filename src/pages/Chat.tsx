@@ -966,6 +966,7 @@ export default function Chat() {
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                   onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
                   onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}
+                  onExplore={m.role === "assistant" && m.id && m.content ? () => openExplore({ text: m.content, messageId: m.id as string }) : undefined}
                   onEdit={m.role === "user" ? () => {
                     if (sending) return;
                     const userMsg = messages[i];
