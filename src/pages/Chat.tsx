@@ -832,6 +832,50 @@ export default function Chat() {
     setAttachments((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  // Open the explore side panel with the current selection as seed.
+  const openExplore = () => {
+    if (!selection || !selection.messageId || !activeId) return;
+    // Build parent history: every message up to and including the source message.
+    const sourceIdx = messages.findIndex((m) => m.id === selection.messageId);
+    if (sourceIdx < 0) return;
+    const parentHistory = messages
+      .slice(0, sourceIdx + 1)
+      .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
+      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+    setExploreSeed({
+      conversationId: activeId,
+      sourceMessageId: selection.messageId,
+      quotedText: selection.text,
+      parentHistory,
+      provider,
+      model: model === AUTO_MODEL_ID ? "gpt-4o-mini" : model,
+    });
+    setExploreOpen(true);
+    // Clear the browser selection so the button disappears.
+    window.getSelection()?.removeAllRanges();
+  };
+
+  // Insert a merged summary back into the main chat as a new assistant message.
+  const handleMergeSummary = async (summary: string) => {
+    if (!activeId || !user) return;
+    const body = `**Merged from exploration**\n\n${summary}`;
+    const { data } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: activeId,
+        user_id: user.id,
+        role: "assistant",
+        content: body,
+      })
+      .select()
+      .single();
+    setMessages((prev) => [
+      ...prev,
+      { id: data?.id, role: "assistant", content: body, provider, model },
+    ]);
+    toast.success("Exploration merged into the main chat");
+  };
+
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
