@@ -563,13 +563,16 @@ async function generateTitle(args: {
   const { userText } = args;
   if (!userText.trim()) return null;
 
-  const prompt = `Generate a VERY short title (3 to 6 words maximum) summarizing the topic of this message. No quotes, no ending punctuation, no emoji. Reply with the title only.
+  const prompt = `You generate VERY short conversation titles. Return a 3 to 6 word title that captures the TOPIC of the user's message (a noun phrase, no verbs starting with "I"). No quotes, no ending punctuation, no emoji, no markdown. Reply with the title only — nothing else.
 
-Message:
-${userText.slice(0, 1000)}`;
+User message:
+${userText.slice(0, 1500)}`;
 
-  try {
-    if (args.googleKey) {
+  // Try providers in fallback order. Use the smallest/fastest model of each.
+  const attempts: Array<() => Promise<string | null>> = [];
+
+  if (args.googleKey) {
+    attempts.push(async () => {
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${args.googleKey}`,
         {
@@ -577,24 +580,37 @@ ${userText.slice(0, 1000)}`;
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 32 },
           }),
         },
       );
+      if (!r.ok) return null;
       const j = await r.json();
       const t = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
       return cleanTitle(t);
-    } else if (args.openaiKey) {
+    });
+  }
+
+  if (args.openaiKey) {
+    attempts.push(async () => {
       const r = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${args.openaiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gpt-5-nano",
+          model: "gpt-4o-mini",
           messages: [{ role: "user", content: prompt }],
+          temperature: 0.2,
+          max_tokens: 32,
         }),
       });
+      if (!r.ok) return null;
       const j = await r.json();
       return cleanTitle(j.choices?.[0]?.message?.content ?? "");
-    } else if (args.anthropicKey) {
+    });
+  }
+
+  if (args.anthropicKey) {
+    attempts.push(async () => {
       const r = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -608,19 +624,50 @@ ${userText.slice(0, 1000)}`;
           messages: [{ role: "user", content: prompt }],
         }),
       });
+      if (!r.ok) return null;
       const j = await r.json();
       return cleanTitle(j.content?.[0]?.text ?? "");
-    }
-  } catch (e) {
-    console.error("title gen failed", e);
+    });
   }
-  return null;
+
+  for (const attempt of attempts) {
+    try {
+      const t = await attempt();
+      if (t && t.length >= 2) return t;
+    } catch (e) {
+      console.error("title gen attempt failed", e);
+    }
+  }
+
+  // Final fallback: derive a clean topic from the user text itself.
+  return fallbackTitleFromText(userText);
 }
 
 function cleanTitle(s: string): string | null {
-  const t = s.replace(/^["'`]+|["'`]+$/g, "").replace(/[.!?]+$/g, "").trim();
+  // Strip surrounding quotes, trailing punctuation, leading "Title:" labels, and any newline noise.
+  let t = (s ?? "")
+    .replace(/^\s*(title|titre)\s*[:\-]\s*/i, "")
+    .replace(/^["'`«»“”]+|["'`«»“”]+$/g, "")
+    .replace(/[.!?]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!t) return null;
+  // Take first line only.
+  t = t.split("\n")[0].trim();
   if (!t) return null;
   return t.slice(0, 60);
+}
+
+function fallbackTitleFromText(raw: string): string {
+  const cleaned = raw
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = cleaned.split(" ").filter(Boolean).slice(0, 6);
+  const title = words.join(" ").replace(/[.!?,;:]+$/g, "").trim();
+  return (title || "New conversation").slice(0, 60);
 }
 
 // ---------- Memory extraction (uses cheapest available provider) ----------
