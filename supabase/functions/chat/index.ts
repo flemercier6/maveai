@@ -926,7 +926,7 @@ Deno.serve(async (req) => {
     const user = { id: userData.user.id };
 
     const { conversationId, provider, model, messages, skipClarify, writingMode, previousCanvas, forceCanvas } = await req.json() as {
-      conversationId: string;
+      conversationId: string | null;
       provider: "openai" | "anthropic" | "google";
       model: string;
       messages: Msg[];
@@ -935,8 +935,11 @@ Deno.serve(async (req) => {
       previousCanvas?: string | null;
       forceCanvas?: boolean;
     };
+    // When conversationId is null, we are in "branch/ephemeral" mode: stream
+    // a reply but skip all persistence (messages, usage, memory, title).
+    const ephemeral = !conversationId;
 
-    if (!conversationId || !provider || !model || !Array.isArray(messages)) {
+    if (!provider || !model || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "Invalid payload" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
