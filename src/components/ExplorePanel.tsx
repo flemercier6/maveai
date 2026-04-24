@@ -61,6 +61,20 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Close handler: if the branch is empty (no messages persisted), discard it
+  // so empty explorations don't pollute the conversation indicators.
+  const handleClose = async () => {
+    abortRef.current?.abort();
+    const isEmpty = messages.length === 0 || messages.every((m) => !m.content || !m.content.trim());
+    if (branchId && !seed?.existingBranchId && isEmpty) {
+      const idToDelete = branchId;
+      await supabase.from("branch_messages").delete().eq("branch_id", idToDelete);
+      await supabase.from("chat_branches").delete().eq("id", idToDelete);
+      onBranchDeleted?.(idToDelete);
+    }
+    onClose();
+  };
+
   // Create a branch record when a seed arrives and none exists yet,
   // or load an existing branch when one is referenced.
   useEffect(() => {
