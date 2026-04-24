@@ -66,64 +66,116 @@ const fmtUSDShort = (v: number) =>
 const fmtTokens = (v: number) => v.toLocaleString("en-US");
 
 // Build buckets ending at "now", going back N units.
-function buildBuckets(range: Range): { key: string; label: string; start: Date; end: Date }[] {
+type Bucket = { label: string; start: Date; end: Date };
+
+function startOfDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function startOfMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+// ISO-like week start (Monday)
+function startOfWeek(d: Date) {
+  const x = startOfDay(d);
+  const day = (x.getDay() + 6) % 7; // Mon=0..Sun=6
+  x.setDate(x.getDate() - day);
+  return x;
+}
+
+// Build buckets for a given range + offset.
+// offset = 0 means current period; -1 = previous; +1 = next.
+function buildBuckets(
+  range: Range,
+  offset: number,
+  signupDate: Date,
+): { buckets: Bucket[]; title: string } {
   const now = new Date();
-  const buckets: { key: string; label: string; start: Date; end: Date }[] = [];
 
   if (range === "day") {
-    // Last 24 hours, hourly
-    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
-    for (let i = 23; i >= 0; i--) {
-      const start = new Date(base.getTime() - i * 3600_000);
-      const end = new Date(start.getTime() + 3600_000);
+    const ref = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    const year = ref.getFullYear();
+    const month = ref.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const buckets: Bucket[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
       buckets.push({
-        key: start.toISOString(),
-        label: start.toLocaleTimeString("en-US", { hour: "2-digit", hour12: false }),
-        start,
-        end,
+        label: String(d),
+        start: new Date(year, month, d),
+        end: new Date(year, month, d + 1),
       });
     }
-  } else if (range === "week") {
-    // Last 7 days
-    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    for (let i = 6; i >= 0; i--) {
-      const start = new Date(base.getTime() - i * 86_400_000);
-      const end = new Date(start.getTime() + 86_400_000);
-      buckets.push({
-        key: start.toISOString(),
-        label: start.toLocaleDateString("en-US", { weekday: "short" }),
-        start,
-        end,
-      });
-    }
-  } else if (range === "month") {
-    // Last 30 days
-    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    for (let i = 29; i >= 0; i--) {
-      const start = new Date(base.getTime() - i * 86_400_000);
-      const end = new Date(start.getTime() + 86_400_000);
-      buckets.push({
-        key: start.toISOString(),
-        label: start.toLocaleDateString("en-US", { day: "2-digit", month: "short" }),
-        start,
-        end,
-      });
-    }
-  } else {
-    // Year: last 12 months
-    for (let i = 11; i >= 0; i--) {
-      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-      buckets.push({
-        key: start.toISOString(),
-        label: start.toLocaleDateString("en-US", { month: "short" }),
-        start,
-        end,
-      });
-    }
+    return {
+      buckets,
+      title: ref.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    };
   }
 
-  return buckets;
+  if (range === "week") {
+    const ref = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    const monthStart = startOfMonth(ref);
+    const monthEnd = new Date(ref.getFullYear(), ref.getMonth() + 1, 1);
+    const buckets: Bucket[] = [];
+    let cur = startOfWeek(monthStart);
+    while (cur < monthEnd) {
+      const end = new Date(cur.getTime() + 7 * 86_400_000);
+      buckets.push({
+        label: `${cur.getDate()}/${cur.getMonth() + 1}`,
+        start: new Date(cur),
+        end,
+      });
+      cur = end;
+    }
+    return {
+      buckets,
+      title: ref.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    };
+  }
+
+  if (range === "month") {
+    const year = now.getFullYear() + offset;
+    const buckets: Bucket[] = [];
+    for (let m = 0; m < 12; m++) {
+      const start = new Date(year, m, 1);
+      buckets.push({
+        label: start.toLocaleDateString("en-US", { month: "short" }),
+        start,
+        end: new Date(year, m + 1, 1),
+      });
+    }
+    return { buckets, title: String(year) };
+  }
+
+  // year — from signup year to current year
+  const startYear = signupDate.getFullYear();
+  const endYear = now.getFullYear();
+  const buckets: Bucket[] = [];
+  for (let y = startYear; y <= endYear; y++) {
+    buckets.push({
+      label: String(y),
+      start: new Date(y, 0, 1),
+      end: new Date(y + 1, 0, 1),
+    });
+  }
+  return { buckets, title: `${startYear} – ${endYear}` };
+}
+
+function canNavigate(
+  range: Range,
+  offset: number,
+  direction: -1 | 1,
+  signupDate: Date,
+): boolean {
+  if (range === "year") return false;
+  const now = new Date();
+  const next = offset + direction;
+  if (range === "day" || range === "week") {
+    const target = new Date(now.getFullYear(), now.getMonth() + next, 1);
+    if (direction > 0) return target <= startOfMonth(now);
+    return target >= startOfMonth(signupDate);
+  }
+  const targetYear = now.getFullYear() + next;
+  if (direction > 0) return targetYear <= now.getFullYear();
+  return targetYear >= signupDate.getFullYear();
 }
 
 export function UsageTab() {
