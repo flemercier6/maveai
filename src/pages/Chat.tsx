@@ -588,7 +588,15 @@ export default function Chat() {
           scrollContainer={scrollEl}
           items={messages
             .map((m, i) => ({ m, i }))
-            .filter(({ m }) => m.role === "user" && !!m.id)
+            .filter(({ m }) => {
+              if (m.role !== "user" || !m.id) return false;
+              // Exclude clarify answer messages (built by ClarifyCard as lines starting with `**question** answer`).
+              const trimmed = m.content.trim();
+              if (!trimmed.startsWith("**")) return true;
+              const lines = trimmed.split("\n").filter((l) => l.trim().length > 0);
+              const allClarify = lines.every((l) => /^\*\*[^*]+\*\*\s/.test(l.trim()));
+              return !allClarify;
+            })
             .map(({ m }) => ({
               id: m.id as string,
               preview: m.content.replace(/\n+/g, " ").trim().slice(0, 60) +
