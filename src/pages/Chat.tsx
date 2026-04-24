@@ -606,6 +606,10 @@ export default function Chat() {
     if (item.provider === "auto") {
       // Keep the previously chosen provider as the persistence target; switch model to AUTO
       setModel(AUTO_MODEL_ID);
+    } else if (item.provider === "write") {
+      // Don't change model — just flag the next send as writing-canvas mode.
+      setWriteRequested(true);
+      toast.success("Writing canvas enabled for next message");
     } else {
       setProvider(item.provider);
       setModel(item.model);
