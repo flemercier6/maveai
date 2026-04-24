@@ -993,7 +993,7 @@ Deno.serve(async (req) => {
     );
 
     // Trim history: keep at most the last N turns within a char budget, but always keep the last user message intact.
-    const HISTORY_MAX_MSGS = 16;
+    const HISTORY_MAX_MSGS = 3;
     const HISTORY_CHAR_BUDGET = 12000;
     const trimmedHistory: Msg[] = (() => {
       const recent = cleanedClientMessages.slice(-HISTORY_MAX_MSGS);
