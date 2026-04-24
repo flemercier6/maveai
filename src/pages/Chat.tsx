@@ -24,12 +24,13 @@ import { getTextareaCaretCoords } from "@/lib/caret";
 import { ClarifyCard, type ClarifyQuestion } from "@/components/ClarifyCard";
 import type { RequestMeta } from "@/lib/requestMeta";
 import { billingMultiplier } from "@/lib/pricing";
+import { looksLikeWritingRequest } from "@/lib/writingDetection";
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
