@@ -305,6 +305,19 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
     p: ({ node, children, ...props }: any) => renderBlock("p", children, props),
     li: ({ node, children, ...props }: any) => renderBlock("li", children, props),
     blockquote: ({ node, children, ...props }: any) => renderBlock("blockquote", children, props),
+    code: ({ node, inline, className, children, ...props }: any) => {
+      const lang = /language-(\w+)/.exec(className || "")?.[1];
+      const raw = String(children ?? "").replace(/\n$/, "");
+      if (!inline && lang === "mermaid") {
+        // Don't render partial diagrams while streaming — wait for the closing fence.
+        return <MermaidDiagram code={raw} />;
+      }
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    },
   };
 }
 
