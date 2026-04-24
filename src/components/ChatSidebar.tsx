@@ -31,6 +31,8 @@ type Props = {
   onDeleted: (id: string) => void;
   userEmail?: string;
   userName?: string;
+  /** Per-conversation streaming title state. target=null while waiting for the AI title. */
+  titleAnim?: Record<string, { target: string | null; shown: string }>;
 };
 
 const MIN_WIDTH = 200;
@@ -38,7 +40,7 @@ const MAX_WIDTH = 480;
 const DEFAULT_WIDTH = 240;
 const STORAGE_KEY = "chat-sidebar-width";
 
-export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail, userName }: Props) {
+export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail, userName, titleAnim }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
