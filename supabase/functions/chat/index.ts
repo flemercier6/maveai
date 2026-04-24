@@ -563,13 +563,16 @@ async function generateTitle(args: {
   const { userText } = args;
   if (!userText.trim()) return null;
 
-  const prompt = `Generate a VERY short title (3 to 6 words maximum) summarizing the topic of this message. No quotes, no ending punctuation, no emoji. Reply with the title only.
+  const prompt = `You generate VERY short conversation titles. Return a 3 to 6 word title that captures the TOPIC of the user's message (a noun phrase, no verbs starting with "I"). No quotes, no ending punctuation, no emoji, no markdown. Reply with the title only — nothing else.
 
-Message:
-${userText.slice(0, 1000)}`;
+User message:
+${userText.slice(0, 1500)}`;
 
-  try {
-    if (args.googleKey) {
+  // Try providers in fallback order. Use the smallest/fastest model of each.
+  const attempts: Array<() => Promise<string | null>> = [];
+
+  if (args.googleKey) {
+    attempts.push(async () => {
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${args.googleKey}`,
         {
@@ -577,24 +580,37 @@ ${userText.slice(0, 1000)}`;
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 32 },
           }),
         },
       );
+      if (!r.ok) return null;
       const j = await r.json();
       const t = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
       return cleanTitle(t);
-    } else if (args.openaiKey) {
+    });
+  }
+
+  if (args.openaiKey) {
+    attempts.push(async () => {
       const r = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${args.openaiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gpt-5-nano",
+          model: "gpt-4o-mini",
           messages: [{ role: "user", content: prompt }],
+          temperature: 0.2,
+          max_tokens: 32,
         }),
       });
+      if (!r.ok) return null;
       const j = await r.json();
       return cleanTitle(j.choices?.[0]?.message?.content ?? "");
-    } else if (args.anthropicKey) {
+    });
+  }
+
+  if (args.anthropicKey) {
+    attempts.push(async () => {
       const r = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -608,19 +624,50 @@ ${userText.slice(0, 1000)}`;
           messages: [{ role: "user", content: prompt }],
         }),
       });
+      if (!r.ok) return null;
       const j = await r.json();
       return cleanTitle(j.content?.[0]?.text ?? "");
-    }
-  } catch (e) {
-    console.error("title gen failed", e);
+    });
   }
-  return null;
+
+  for (const attempt of attempts) {
+    try {
+      const t = await attempt();
+      if (t && t.length >= 2) return t;
+    } catch (e) {
+      console.error("title gen attempt failed", e);
+    }
+  }
+
+  // Final fallback: derive a clean topic from the user text itself.
+  return fallbackTitleFromText(userText);
 }
 
 function cleanTitle(s: string): string | null {
-  const t = s.replace(/^["'`]+|["'`]+$/g, "").replace(/[.!?]+$/g, "").trim();
+  // Strip surrounding quotes, trailing punctuation, leading "Title:" labels, and any newline noise.
+  let t = (s ?? "")
+    .replace(/^\s*(title|titre)\s*[:\-]\s*/i, "")
+    .replace(/^["'`«»“”]+|["'`«»“”]+$/g, "")
+    .replace(/[.!?]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!t) return null;
+  // Take first line only.
+  t = t.split("\n")[0].trim();
   if (!t) return null;
   return t.slice(0, 60);
+}
+
+function fallbackTitleFromText(raw: string): string {
+  const cleaned = raw
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = cleaned.split(" ").filter(Boolean).slice(0, 6);
+  const title = words.join(" ").replace(/[.!?,;:]+$/g, "").trim();
+  return (title || "New conversation").slice(0, 60);
 }
 
 // ---------- Memory extraction (uses cheapest available provider) ----------
@@ -896,6 +943,29 @@ Deno.serve(async (req) => {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // ---------- Auto-generate title on the FIRST user message of the conversation ----------
+          // Done early so the sidebar gets a real title even if clarify intercepts the stream.
+          const firstUserMessage = messages.filter((m) => m.role === "user").length <= 1;
+          if (firstUserMessage && lastUserText) {
+            // Fire and forward — don't block the response on it for too long.
+            generateTitle({
+              openaiKey: Deno.env.get("OPENAI_API_KEY"),
+              googleKey: Deno.env.get("GOOGLE_API_KEY"),
+              anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+              userText: lastUserText,
+            })
+              .then(async (title) => {
+                if (!title) return;
+                try {
+                  await supabase.from("conversations").update({ title }).eq("id", conversationId);
+                  controller.enqueue(enc({ type: "title", title }));
+                } catch (e) {
+                  console.error("title enqueue/update failed", e);
+                }
+              })
+              .catch((e) => console.error("title gen failed", e));
+          }
+
           // ---------- Clarifying questions (asked BEFORE running anything else) ----------
           if (!skipClarify && lastUserText) {
             const userTurns = messages.filter((m) => m.role === "user").length;
@@ -909,6 +979,8 @@ Deno.serve(async (req) => {
             });
             if (clarify && clarify.length) {
               controller.enqueue(enc({ type: "clarify", questions: clarify }));
+              // Give the title generation a moment to land before closing.
+              await new Promise((r) => setTimeout(r, 1200));
               controller.enqueue(enc({ type: "done" }));
               controller.close();
               return;
@@ -1053,28 +1125,8 @@ Deno.serve(async (req) => {
             console.warn("[usage] skipped — no usage data returned by provider");
           }
 
-          // ---------- Auto-generate title if this is the first user message ----------
-          const userMessagesCount = messages.filter((m) => m.role === "user").length;
+          // (Title generation moved to the start of the stream so it runs even on early returns.)
           const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
-          if (userMessagesCount <= 1 && lastUser) {
-            try {
-              const title = await generateTitle({
-                openaiKey: Deno.env.get("OPENAI_API_KEY"),
-                googleKey: Deno.env.get("GOOGLE_API_KEY"),
-                anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
-                userText: lastUser,
-              });
-              if (title) {
-                await supabase
-                  .from("conversations")
-                  .update({ title })
-                  .eq("id", conversationId);
-                controller.enqueue(enc({ type: "title", title }));
-              }
-            } catch (err) {
-              console.error("title update failed:", err);
-            }
-          }
 
           // ---------- Extract memorable facts (await so we can notify the client) ----------
           try {
