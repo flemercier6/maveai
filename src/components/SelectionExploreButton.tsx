@@ -110,7 +110,7 @@ export function SelectionExploreButton({ onExplore, disabled }: Props) {
       className="fixed z-50 inline-flex items-center gap-1.5 rounded-full bg-foreground text-background px-3 py-1.5 text-xs font-medium shadow-lg animate-fade-in hover:opacity-90 transition-opacity"
       style={{ top, left, transform: "translateX(-50%)" }}
     >
-      <Compass className="w-3.5 h-3.5" />
+      <Sparkles className="w-3.5 h-3.5" />
       Explore
     </button>
   );
