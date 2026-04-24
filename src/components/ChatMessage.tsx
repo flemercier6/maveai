@@ -372,21 +372,6 @@ function ChatMessageImpl({
     const rest = writeMatch ? content.slice(writeMatch[0].length) : content;
     // When /write is present, inject it as a styled inline span at the start
     // of the first paragraph so the whole message reads as a single sentence.
-    const writePrefix = writeMatch ? (
-      <span className="font-bold" style={{ color: "#0062FF" }}>/write </span>
-    ) : null;
-    const userMdComponents = writeMatch
-      ? {
-          ...mdComponents,
-          p: ({ node: _node, children, ...props }: any) => {
-            const injected = writePrefix;
-            // Clear the flag so only the FIRST <p> gets the prefix.
-            // We mutate a local closure var via a trick: use a ref-like object.
-            return <p {...props}>{injected}{children}</p>;
-          },
-        }
-      : mdComponents;
-    // Use a one-shot wrapper so only the first <p> receives the prefix.
     let injected = false;
     const finalComponents = writeMatch
       ? {
