@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement, memo, useState, type ReactNode } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText } from "lucide-react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
@@ -36,6 +36,7 @@ type Props = {
   onRetry?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
+  onExplore?: () => void;
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
@@ -349,6 +350,7 @@ function ChatMessageImpl({
   onRetry,
   onDelete,
   onEdit,
+  onExplore,
 }: Props) {
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
@@ -437,6 +439,17 @@ function ChatMessageImpl({
                 <Trash2 className="w-4 h-4" />
               </ActionButton>
             )}
+            {onExplore && (
+              <button
+                type="button"
+                onClick={onExplore}
+                aria-label="Explore"
+                className="ml-1 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border border-border bg-card text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Explore
+              </button>
+            )}
           </div>
         )}
         {!streaming && meta && <RequestVisualizer meta={meta} />}
@@ -468,5 +481,6 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.onCanvasChange === next.onCanvasChange &&
   prev.onRetry === next.onRetry &&
   prev.onDelete === next.onDelete &&
-  prev.onEdit === next.onEdit,
+  prev.onEdit === next.onEdit &&
+  prev.onExplore === next.onExplore,
 );
