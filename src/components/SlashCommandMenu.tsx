@@ -138,8 +138,10 @@ export function SlashCommandMenu({ query, position, onSelect, onClose }: Props) 
                 <Sparkles className="w-4 h-4 text-muted-foreground" />
               ) : it.provider === "write" ? (
                 <Pencil className="w-4 h-4 text-muted-foreground" />
+              ) : it.provider === "explore" ? (
+                <Sparkles className="w-4 h-4 text-muted-foreground" />
               ) : (
-                <ProviderLogo provider={it.provider} className="w-4 h-4" />
+                <ProviderLogo provider={it.provider as Provider} className="w-4 h-4" />
               )}
             </span>
             <span className="text-[13px] text-foreground truncate">{it.label}</span>
