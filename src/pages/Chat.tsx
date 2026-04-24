@@ -354,7 +354,7 @@ export default function Chat() {
           a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
         ).join("\n")
       : "";
-    const writePrefix = writeRequested ? "/write " : "";
+    const writePrefix = writeRequested ? "/note " : "";
     const displayContent = writePrefix + text + attachmentSummary;
 
     const convId = await ensureConversation(text || atts[0]?.name || "Attachment");
@@ -396,9 +396,9 @@ export default function Chat() {
           messages: baseMsgs.map((m, i) => {
             // Only the LAST user message carries the live attachments
             const isLast = i === baseMsgs.length - 1;
-            // Strip the visible "/write " prefix from the content sent to the AI.
+            // Strip the visible "/note " prefix from the content sent to the AI.
             const cleaned = m.role === "user"
-              ? m.content.replace(/^\/write\s+/, "")
+              ? m.content.replace(/^\/note\s+/, "")
               : m.content;
             return {
               role: m.role,
