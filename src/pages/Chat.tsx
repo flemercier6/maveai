@@ -1044,6 +1044,8 @@ export default function Chat() {
                   onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
                   onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}
                   onExplore={m.role === "assistant" && m.id && m.content ? () => openExplore({ text: m.content, messageId: m.id as string }) : undefined}
+                  branches={m.role === "assistant" && m.id ? branchesByMessage[m.id] : undefined}
+                  onBranchOpen={m.role === "assistant" ? openExistingBranch : undefined}
                   onEdit={m.role === "user" ? () => {
                     if (sending) return;
                     const userMsg = messages[i];
