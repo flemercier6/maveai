@@ -57,6 +57,12 @@ function CodeBlock({ children, max = 800 }: { children: string; max?: number }) 
 }
 
 const fmtTokens = (n: number) => `~${n.toLocaleString("en-US")} tok`;
+const fmtUsd = (n: number) => {
+  if (n === 0) return "$0";
+  if (n < 0.01) return `$${n.toFixed(5)}`;
+  if (n < 1) return `$${n.toFixed(4)}`;
+  return `$${n.toFixed(3)}`;
+};
 
 export function RequestVisualizer({ meta }: Props) {
   const [open, setOpen] = useState(false);
