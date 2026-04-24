@@ -27,6 +27,13 @@ import { billingMultiplier } from "@/lib/pricing";
 import { looksLikeWritingRequest } from "@/lib/writingDetection";
 import { SelectionExploreButton, type SelectionPayload } from "@/components/SelectionExploreButton";
 import { ExplorePanel, type BranchSeed } from "@/components/ExplorePanel";
+import type { MessageBranch } from "@/components/ChatMessage";
+
+type StoredBranch = {
+  id: string;
+  source_message_id: string;
+  quoted_text: string;
+};
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
