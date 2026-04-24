@@ -176,6 +176,22 @@ export default function Chat() {
     }
   }, [activeId]);
 
+  // Load existing branches (explorations) for this conversation.
+  useEffect(() => {
+    if (!activeId) { setBranches([]); return; }
+    supabase
+      .from("chat_branches")
+      .select("id, source_message_id, quoted_text")
+      .eq("conversation_id", activeId)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => {
+        setBranches(((data ?? []) as any[]).map((b) => ({
+          id: b.id,
+          source_message_id: b.source_message_id,
+          quoted_text: b.quoted_text ?? "",
+        })));
+      });
+
   // Scroll behavior:
   // - On conversation load: pin to the bottom once.
   // - When streaming starts: scroll once so the last user message sits at the top of the
