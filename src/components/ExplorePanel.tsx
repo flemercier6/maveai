@@ -42,8 +42,8 @@ type Props = {
   /** Called when a brand-new branch is created (so the parent can show indicators). */
   onBranchCreated?: (branch: {
     id: string;
-    conversation_id: string;
-    source_message_id: string;
+    conversation_id: string | null;
+    source_message_id: string | null;
     quoted_text: string;
   }) => void;
 };
