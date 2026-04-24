@@ -46,9 +46,11 @@ type Props = {
     source_message_id: string | null;
     quoted_text: string;
   }) => void;
+  /** Called when a branch is discarded (empty on close) so the parent can remove it. */
+  onBranchDeleted?: (branchId: string) => void;
 };
 
-export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated }: Props) {
+export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted }: Props) {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [messages, setMessages] = useState<BranchMsg[]>([]);
   const [input, setInput] = useState("");
@@ -58,6 +60,20 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Close handler: if the branch is empty (no messages persisted), discard it
+  // so empty explorations don't pollute the conversation indicators.
+  const handleClose = async () => {
+    abortRef.current?.abort();
+    const isEmpty = messages.length === 0 || messages.every((m) => !m.content || !m.content.trim());
+    if (branchId && !seed?.existingBranchId && isEmpty) {
+      const idToDelete = branchId;
+      await supabase.from("branch_messages").delete().eq("branch_id", idToDelete);
+      await supabase.from("chat_branches").delete().eq("id", idToDelete);
+      onBranchDeleted?.(idToDelete);
+    }
+    onClose();
+  };
 
   // Create a branch record when a seed arrives and none exists yet,
   // or load an existing branch when one is referenced.
@@ -447,7 +463,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close exploration"
           >
             <X className="w-4 h-4" />

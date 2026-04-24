@@ -179,20 +179,34 @@ export default function Chat() {
   }, [activeId]);
 
   // Load existing branches (explorations) for this conversation.
+  // Only show branches that actually contain at least one message — empty
+  // explorations (discarded by the user) are hidden and cleaned up.
   useEffect(() => {
     if (!activeId) { setBranches([]); return; }
-    supabase
-      .from("chat_branches")
-      .select("id, source_message_id, quoted_text")
-      .eq("conversation_id", activeId)
-      .order("created_at", { ascending: true })
-      .then(({ data }) => {
-        setBranches(((data ?? []) as any[]).map((b) => ({
-          id: b.id,
-          source_message_id: b.source_message_id,
-          quoted_text: b.quoted_text ?? "",
-        })));
-      });
+    (async () => {
+      const { data: rows } = await supabase
+        .from("chat_branches")
+        .select("id, source_message_id, quoted_text")
+        .eq("conversation_id", activeId)
+        .order("created_at", { ascending: true });
+      const all = (rows ?? []) as any[];
+      if (all.length === 0) { setBranches([]); return; }
+      const ids = all.map((b) => b.id);
+      const { data: msgs } = await supabase
+        .from("branch_messages")
+        .select("branch_id")
+        .in("branch_id", ids);
+      const nonEmpty = new Set<string>((msgs ?? []).map((m: any) => m.branch_id));
+      setBranches(
+        all
+          .filter((b) => nonEmpty.has(b.id))
+          .map((b) => ({
+            id: b.id,
+            source_message_id: b.source_message_id,
+            quoted_text: b.quoted_text ?? "",
+          })),
+      );
+    })();
   }, [activeId]);
 
   // Scroll behavior:
@@ -1292,8 +1306,11 @@ export default function Chat() {
           setBranches((prev) =>
             prev.some((x) => x.id === b.id)
               ? prev
-              : [...prev, { id: b.id, source_message_id: b.source_message_id, quoted_text: b.quoted_text }],
+              : [...prev, { id: b.id, source_message_id: b.source_message_id as any, quoted_text: b.quoted_text }],
           )
+        }
+        onBranchDeleted={(id) =>
+          setBranches((prev) => prev.filter((x) => x.id !== id))
         }
       />
     </div>
