@@ -910,12 +910,14 @@ Deno.serve(async (req) => {
     }
     const user = { id: userData.user.id };
 
-    const { conversationId, provider, model, messages, skipClarify } = await req.json() as {
+    const { conversationId, provider, model, messages, skipClarify, writingMode, previousCanvas } = await req.json() as {
       conversationId: string;
       provider: "openai" | "anthropic" | "google";
       model: string;
       messages: Msg[];
       skipClarify?: boolean;
+      writingMode?: boolean;
+      previousCanvas?: string | null;
     };
 
     if (!conversationId || !provider || !model || !Array.isArray(messages)) {
@@ -980,8 +982,32 @@ Deno.serve(async (req) => {
         "Short slug ids, ≤6-word labels, no positions, 4–12 nodes. Not Mermaid.",
     };
 
+    // Writing-canvas mode: the full drafted document goes into a ```canvas fenced block.
+    // The short commentary BEFORE the block is normal chat (what you changed, etc.).
+    // On follow-up edits, the client sends the previous canvas content so the model rewrites it.
+    const writingSystem: Msg | null = writingMode
+      ? {
+        role: "system",
+        content:
+          "WRITING CANVAS MODE.\n" +
+          "The user is drafting a document (email, report, article, note, etc.).\n" +
+          "Rules for your response:\n" +
+          "1) Start with ONE short sentence (≤20 words) in the user's language describing what you did.\n" +
+          "2) Then output the ENTIRE document inside a fenced block opened with ```canvas and closed with ```.\n" +
+          "3) Do NOT write anything after the closing ```.\n" +
+          "4) The canvas block must contain plain prose only (no markdown headings unless the document type needs them). Do not wrap it in quotes.\n" +
+          (previousCanvas
+            ? "5) EDIT MODE: a previous version of the document is provided below. Apply the user's requested changes and output the FULL updated document — keep everything that wasn't asked to change.\n\nPREVIOUS DOCUMENT:\n" + previousCanvas
+            : "5) CREATION MODE: write the document from scratch based on the user's request."),
+      }
+      : null;
+
     // Prepend system messages (style + memory) and drop any previous duplicates from the client.
-    const baseSystems: Msg[] = [styleSystem, ...(memorySystem ? [memorySystem] : [])];
+    const baseSystems: Msg[] = [
+      ...(writingMode ? [] : [styleSystem]),
+      ...(writingSystem ? [writingSystem] : []),
+      ...(memorySystem ? [memorySystem] : []),
+    ];
     const cleanedClientMessages = messages.filter(
       (m) =>
         m.role !== "system" ||

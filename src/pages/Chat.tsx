@@ -24,12 +24,13 @@ import { getTextareaCaretCoords } from "@/lib/caret";
 import { ClarifyCard, type ClarifyQuestion } from "@/components/ClarifyCard";
 import type { RequestMeta } from "@/lib/requestMeta";
 import { billingMultiplier } from "@/lib/pricing";
+import { looksLikeWritingRequest } from "@/lib/writingDetection";
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -48,6 +49,8 @@ export default function Chat() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachLoading, setAttachLoading] = useState(false);
   const [clarify, setClarify] = useState<ClarifyQuestion[] | null>(null);
+  // User explicitly invoked /write for the next message (forces writing canvas mode).
+  const [writeRequested, setWriteRequested] = useState(false);
   // Title generation animation: convId -> { target, shown }. "pending" = not yet received.
   const [titleAnim, setTitleAnim] = useState<Record<string, { target: string | null; shown: string }>>({});
   const titleTimerRef = useRef<Record<string, number>>({});
@@ -279,6 +282,16 @@ export default function Chat() {
       setAttachments([]);
     }
 
+    // ---- Writing canvas mode ----
+    // Enabled when the user typed "/write" or the message looks like a drafting task,
+    // OR when the most recent assistant reply already contains a canvas (follow-up edits).
+    const lastAssistantWithCanvas = [...messages].reverse().find(
+      (m) => m.role === "assistant" && typeof m.canvas === "string" && m.canvas.length > 0,
+    );
+    const writingMode = writeRequested || looksLikeWritingRequest(text) || !!lastAssistantWithCanvas;
+    const previousCanvas = lastAssistantWithCanvas?.canvas ?? null;
+    if (writeRequested) setWriteRequested(false);
+
     // Resolve Auto → concrete provider/model for this turn (Auto preference is preserved)
     const userPickedAuto = model === AUTO_MODEL_ID;
     const hasImage = atts.some((a) => a.kind === "image");
@@ -331,6 +344,8 @@ export default function Chat() {
           provider: sendProvider,
           model: sendModel,
           skipClarify: opts?.skipClarify === true,
+          writingMode,
+          previousCanvas,
           messages: baseMsgs.map((m, i) => {
             // Only the LAST user message carries the live attachments
             const isLast = i === baseMsgs.length - 1;
@@ -354,21 +369,49 @@ export default function Chat() {
       let buf = "";
       let acc = "";
 
+      // Parse streaming text: split out a ```canvas ... ``` block so the
+      // canvas content streams into an editable block while everything else
+      // renders as the normal assistant reply.
+      const splitCanvas = (raw: string): { body: string; canvas: string | null } => {
+        const open = raw.indexOf("```canvas");
+        if (open < 0) return { body: raw, canvas: null };
+        // Skip to the newline after ```canvas (optional language line)
+        const afterOpen = raw.indexOf("\n", open);
+        if (afterOpen < 0) {
+          // Not enough streamed yet — hide the partial fence from the body.
+          return { body: raw.slice(0, open), canvas: "" };
+        }
+        const close = raw.indexOf("```", afterOpen + 1);
+        if (close < 0) {
+          // Canvas still streaming — show partial canvas, hide fence from body.
+          const canvas = raw.slice(afterOpen + 1);
+          return { body: raw.slice(0, open), canvas };
+        }
+        // Canvas complete.
+        const canvas = raw.slice(afterOpen + 1, close).replace(/\n+$/, "");
+        const body = raw.slice(0, open) + raw.slice(close + 3);
+        return { body, canvas };
+      };
+
       // Coalesce delta updates onto a single rAF tick so React renders
       // smoothly (~60fps) instead of once per token.
       let pending = false;
       const flush = () => {
         pending = false;
         const snapshot = acc;
+        const { body, canvas } = writingMode
+          ? splitCanvas(snapshot)
+          : { body: snapshot, canvas: null };
         setMessages((prev) => {
           const next = prev.slice();
           const current = next[next.length - 1];
           next[next.length - 1] = {
             ...current,
             role: "assistant",
-            content: snapshot,
+            content: body,
             provider: sendProvider,
             model: sendModel,
+            ...(canvas !== null ? { canvas } : {}),
           };
           return next;
         });
@@ -509,15 +552,19 @@ export default function Chat() {
       // Final flush to make sure we render the very last delta
       if (pending || acc) {
         pending = false;
+        const { body, canvas } = writingMode
+          ? splitCanvas(acc)
+          : { body: acc, canvas: null };
         setMessages((prev) => {
           const next = prev.slice();
           const current = next[next.length - 1];
           next[next.length - 1] = {
             ...current,
             role: "assistant",
-            content: acc,
+            content: body,
             provider: sendProvider,
             model: sendModel,
+            ...(canvas !== null ? { canvas } : {}),
           };
           return next;
         });
@@ -603,6 +650,10 @@ export default function Chat() {
     if (item.provider === "auto") {
       // Keep the previously chosen provider as the persistence target; switch model to AUTO
       setModel(AUTO_MODEL_ID);
+    } else if (item.provider === "write") {
+      // Don't change model — just flag the next send as writing-canvas mode.
+      setWriteRequested(true);
+      toast.success("Writing canvas enabled for next message");
     } else {
       setProvider(item.provider);
       setModel(item.model);
@@ -751,6 +802,14 @@ export default function Chat() {
                   phase={m.phase}
                   sources={m.sources}
                   meta={m.meta}
+                  canvas={m.canvas}
+                  onCanvasChange={m.role === "assistant" && typeof m.canvas === "string" ? (next) => {
+                    setMessages((prev) => {
+                      const arr = prev.slice();
+                      arr[i] = { ...arr[i], canvas: next };
+                      return arr;
+                    });
+                  } : undefined}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                   onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
                   onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}

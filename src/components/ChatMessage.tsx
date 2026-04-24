@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
 import { FlowDiagram } from "./FlowDiagram";
 import { RequestVisualizer } from "./RequestVisualizer";
+import { CanvasBlock } from "./CanvasBlock";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Provider } from "@/lib/models";
 import type { RequestMeta } from "@/lib/requestMeta";
@@ -27,6 +28,8 @@ type Props = {
   phase?: Phase;
   sources?: Source[];
   meta?: RequestMeta;
+  canvas?: string;
+  onCanvasChange?: (next: string) => void;
   onRetry?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
@@ -335,6 +338,8 @@ function ChatMessageImpl({
   phase,
   sources,
   meta,
+  canvas,
+  onCanvasChange,
   onRetry,
   onDelete,
   onEdit,
@@ -399,6 +404,13 @@ function ChatMessageImpl({
             </span>
           ) : " "}
         </div>
+        {typeof canvas === "string" && (
+          <CanvasBlock
+            content={canvas}
+            streaming={streaming}
+            onChange={onCanvasChange}
+          />
+        )}
         {!streaming && content && (
           <div className="mt-2 flex items-center gap-1 -ml-1.5">
             <ActionButton onClick={handleCopy} ariaLabel={copied ? "Copied" : "Copy"}>
@@ -438,6 +450,8 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.phase === next.phase &&
   prev.sources === next.sources &&
   prev.meta === next.meta &&
+  prev.canvas === next.canvas &&
+  prev.onCanvasChange === next.onCanvasChange &&
   prev.onRetry === next.onRetry &&
   prev.onDelete === next.onDelete &&
   prev.onEdit === next.onEdit,

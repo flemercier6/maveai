@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, PenLine } from "lucide-react";
 import { MODELS, PROVIDERS, AUTO_MODEL_ID, type Provider } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
 
 export type SlashItem = {
-  provider: Provider | "auto";
+  provider: Provider | "auto" | "write";
   model: string;
   label: string;
   description: string;
@@ -12,7 +12,7 @@ export type SlashItem = {
   slug: string;
 };
 
-/** Build the full list of selectable items (Auto + all models). */
+/** Build the full list of selectable items (Auto + Write + all models). */
 export function buildSlashItems(): SlashItem[] {
   const items: SlashItem[] = [
     {
@@ -21,6 +21,13 @@ export function buildSlashItems(): SlashItem[] {
       label: "Auto",
       description: "Pick the best model for me",
       slug: "auto",
+    },
+    {
+      provider: "write",
+      model: "",
+      label: "Write",
+      description: "Open an editable canvas for drafting",
+      slug: "write",
     },
   ];
   for (const p of PROVIDERS) {
@@ -122,6 +129,8 @@ export function SlashCommandMenu({ query, position, onSelect, onClose }: Props) 
             <span className="inline-flex items-center justify-center w-4 h-4 shrink-0">
               {it.provider === "auto" ? (
                 <Sparkles className="w-4 h-4 text-muted-foreground" />
+              ) : it.provider === "write" ? (
+                <PenLine className="w-4 h-4 text-muted-foreground" />
               ) : (
                 <ProviderLogo provider={it.provider} className="w-4 h-4" />
               )}
