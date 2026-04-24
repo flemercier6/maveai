@@ -25,9 +25,9 @@ export function buildSlashItems(): SlashItem[] {
     {
       provider: "write",
       model: "",
-      label: "Write",
+      label: "Note",
       description: "Open an editable canvas for drafting",
-      slug: "write",
+      slug: "note",
     },
   ];
   for (const p of PROVIDERS) {

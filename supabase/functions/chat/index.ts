@@ -1037,7 +1037,7 @@ Deno.serve(async (req) => {
           "WRITING CANVAS MODE.\n" +
           "The user is drafting a document (email, report, article, note, etc.).\n" +
           (forceCanvas
-            ? "The user EXPLICITLY invoked the /write command. You MUST produce a canvas document. CANVAS_EDIT: yes is mandatory. Do NOT output CANVAS_EDIT: no under any circumstance. Even for very short requests (e.g. \"hello\", \"test\"), write a minimal but real document matching the request.\n"
+            ? "The user EXPLICITLY invoked the /note command. You MUST produce a canvas document. CANVAS_EDIT: yes is mandatory. Do NOT output CANVAS_EDIT: no under any circumstance. Even for very short requests (e.g. \"hello\", \"test\"), write a minimal but real document matching the request.\n"
             : previousCanvas
               ? "A previous version of the document exists (shown below).\n" +
                 "FIRST, decide: is the user's NEW message a request to MODIFY that document, or a totally different question/topic?\n" +

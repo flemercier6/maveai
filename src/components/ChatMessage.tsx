@@ -368,7 +368,7 @@ function ChatMessageImpl({
   };
 
   if (isUser) {
-    const writeMatch = content.match(/^\/write(\s+|$)/);
+    const writeMatch = content.match(/^\/note(\s+|$)/);
     const rest = writeMatch ? content.slice(writeMatch[0].length) : content;
     return (
       <div className="w-full py-3" id={id ? `chat-anchor-${id}` : undefined}>
