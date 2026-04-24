@@ -374,8 +374,8 @@ function ChatMessageImpl({
       <div className="w-full py-3" id={id ? `chat-anchor-${id}` : undefined}>
         <div className="max-w-3xl mx-auto px-4 flex flex-col items-end gap-1.5">
           {writeMatch && (
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card pl-2 pr-2.5 py-1 text-xs font-medium text-foreground">
-              <FileText className="w-3.5 h-3.5" style={{ color: "#0062FF" }} />
+            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium" style={{ color: "#0062FF" }}>
+              <FileText className="w-3.5 h-3.5" />
               Note
             </div>
           )}
