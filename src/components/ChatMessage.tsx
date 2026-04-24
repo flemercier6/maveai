@@ -3,7 +3,7 @@ import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, Arr
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
-import { MermaidDiagram } from "./MermaidDiagram";
+import { FlowDiagram } from "./FlowDiagram";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Provider } from "@/lib/models";
 import { useSmoothText } from "@/hooks/useSmoothText";
@@ -308,9 +308,8 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
     code: ({ node, inline, className, children, ...props }: any) => {
       const lang = /language-(\w+)/.exec(className || "")?.[1];
       const raw = String(children ?? "").replace(/\n$/, "");
-      if (!inline && lang === "mermaid") {
-        // Don't render partial diagrams while streaming — wait for the closing fence.
-        return <MermaidDiagram code={raw} />;
+      if (!inline && (lang === "flow" || lang === "reactflow" || lang === "diagram")) {
+        return <FlowDiagram code={raw} />;
       }
       return (
         <code className={className} {...props}>
