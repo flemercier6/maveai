@@ -46,6 +46,9 @@ export default function Chat() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachLoading, setAttachLoading] = useState(false);
   const [clarify, setClarify] = useState<ClarifyQuestion[] | null>(null);
+  // Title generation animation: convId -> { target, shown }. "pending" = not yet received.
+  const [titleAnim, setTitleAnim] = useState<Record<string, { target: string | null; shown: string }>>({});
+  const titleTimerRef = useRef<Record<string, number>>({});
   const [slash, setSlash] = useState<{
     query: string;
     start: number;
@@ -126,17 +129,58 @@ export default function Chat() {
     setMessages([]);
   };
 
-  const ensureConversation = async (firstUserContent: string): Promise<string | null> => {
+  const ensureConversation = async (_firstUserContent: string): Promise<string | null> => {
     if (activeId) return activeId;
-    const title = firstUserContent.slice(0, 60).trim() || "New conversation";
+    // Use a placeholder; the AI-generated title will arrive via the SSE "title" event.
+    const title = "New conversation";
     const { data, error } = await supabase.from("conversations").insert({
       user_id: user!.id, title, provider, model,
     }).select().single();
     if (error || !data) { toast.error(error?.message ?? "Error"); return null; }
     setConversations((prev) => [data as Conversation, ...prev]);
     setActiveId(data.id);
+    // Mark this conversation as awaiting an AI-generated title (sidebar will show a shimmer).
+    setTitleAnim((prev) => ({ ...prev, [data.id]: { target: null, shown: "" } }));
     return data.id;
   };
+
+  // Animate the AI-generated title character-by-character into the sidebar.
+  const startTitleAnimation = (convId: string, target: string) => {
+    // Cancel any prior animation for this conv.
+    const prev = titleTimerRef.current[convId];
+    if (prev) window.clearInterval(prev);
+
+    setTitleAnim((p) => ({ ...p, [convId]: { target, shown: "" } }));
+
+    let i = 0;
+    const intervalId = window.setInterval(() => {
+      i += 1;
+      setTitleAnim((p) => {
+        const cur = p[convId];
+        if (!cur || cur.target !== target) return p;
+        const shown = target.slice(0, i);
+        return { ...p, [convId]: { ...cur, shown } };
+      });
+      if (i >= target.length) {
+        window.clearInterval(intervalId);
+        delete titleTimerRef.current[convId];
+        // Clear the entry shortly after so we render the static title.
+        window.setTimeout(() => {
+          setTitleAnim((p) => {
+            const next = { ...p };
+            delete next[convId];
+            return next;
+          });
+        }, 250);
+      }
+    }, 28);
+    titleTimerRef.current[convId] = intervalId;
+  };
+
+  // Cleanup any running interval on unmount.
+  useEffect(() => () => {
+    Object.values(titleTimerRef.current).forEach((id) => window.clearInterval(id));
+  }, []);
 
   const stop = () => {
     abortRef.current?.abort();
