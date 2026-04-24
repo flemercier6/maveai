@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, PenLine } from "lucide-react";
+import { Sparkles, Pencil } from "lucide-react";
 import { MODELS, PROVIDERS, AUTO_MODEL_ID, type Provider } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
 
@@ -130,7 +130,7 @@ export function SlashCommandMenu({ query, position, onSelect, onClose }: Props) 
               {it.provider === "auto" ? (
                 <Sparkles className="w-4 h-4 text-muted-foreground" />
               ) : it.provider === "write" ? (
-                <PenLine className="w-4 h-4 text-muted-foreground" />
+                <Pencil className="w-4 h-4 text-muted-foreground" />
               ) : (
                 <ProviderLogo provider={it.provider} className="w-4 h-4" />
               )}
