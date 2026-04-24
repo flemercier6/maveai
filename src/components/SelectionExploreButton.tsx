@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Compass } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 export type SelectionPayload = {
   text: string;
