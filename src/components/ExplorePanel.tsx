@@ -10,15 +10,20 @@ import type { Provider } from "@/lib/models";
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export type BranchSeed = {
-  conversationId: string;
-  sourceMessageId: string;
-  quotedText: string;
+  /** Optional — absent for standalone `/explore` explorations. */
+  conversationId?: string | null;
+  /** Optional — absent for standalone `/explore` explorations. */
+  sourceMessageId?: string | null;
+  /** Optional — the selected excerpt, if branched from a message. */
+  quotedText?: string;
   // Messages preceding (and including) the source message, used as context.
   parentHistory: { role: "user" | "assistant"; content: string }[];
   provider: Provider;
   model: string;
   /** When set, reopen an existing branch instead of creating a new one. */
   existingBranchId?: string;
+  /** Optional — first user prompt to auto-send when the panel opens. */
+  initialPrompt?: string;
 };
 
 type BranchMsg = {
