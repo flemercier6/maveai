@@ -1149,6 +1149,20 @@ export default function Chat() {
           </div>
         </div>
       </main>
+
+      {/* Floating Explore button over the current selection (only inside assistant messages) */}
+      {selection && !exploreOpen && activeId && (
+        <ExploreButton rect={selection.rect} onClick={openExplore} />
+      )}
+
+      {/* Right-hand exploration side panel */}
+      <ExplorePanel
+        open={exploreOpen}
+        seed={exploreSeed}
+        userId={user.id}
+        onClose={() => setExploreOpen(false)}
+        onMerge={handleMergeSummary}
+      />
     </div>
   );
 }
