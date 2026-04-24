@@ -506,7 +506,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             ) : (
               <Button
                 size="icon"
-                onClick={send}
+                onClick={() => send()}
                 disabled={!input.trim() || !branchId}
                 className="h-8 w-8 rounded-full"
                 aria-label="Send"
