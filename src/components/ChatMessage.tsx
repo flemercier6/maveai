@@ -370,31 +370,17 @@ function ChatMessageImpl({
   if (isUser) {
     const writeMatch = content.match(/^\/write(\s+|$)/);
     const rest = writeMatch ? content.slice(writeMatch[0].length) : content;
-    // When /write is present, inject it as a styled inline span at the start
-    // of the first paragraph so the whole message reads as a single sentence.
-    let injected = false;
-    const finalComponents = writeMatch
-      ? {
-          ...mdComponents,
-          p: ({ node: _node, children, ...props }: any) => {
-            if (!injected) {
-              injected = true;
-              return (
-                <p {...props}>
-                  <span className="font-normal" style={{ color: "#0062FF" }}>/write </span>
-                  {children}
-                </p>
-              );
-            }
-            return <p {...props}>{children}</p>;
-          },
-        }
-      : mdComponents;
     return (
       <div className="w-full py-3" id={id ? `chat-anchor-${id}` : undefined}>
         <div className="max-w-3xl mx-auto px-4 flex flex-col items-end gap-1.5">
+          {writeMatch && (
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card pl-2 pr-2.5 py-1 text-xs font-medium text-foreground">
+              <FileText className="w-3.5 h-3.5" style={{ color: "#0062FF" }} />
+              Note
+            </div>
+          )}
           <div className="max-w-[80%] rounded-2xl bg-bubble-user text-bubble-user-foreground px-4 py-2.5 chat-prose break-words">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={finalComponents}>{rest || " "}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{rest || " "}</ReactMarkdown>
           </div>
           {memory && <MemoryBadge added={memory.added} updated={memory.updated} />}
           {(onEdit || content) && (
