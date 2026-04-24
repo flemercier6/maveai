@@ -338,7 +338,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge }: Props) {
 
   return (
     <aside
-      className="relative h-full shrink-0 flex flex-col border-l border-border animate-slide-in-right"
+      className="relative h-full shrink-0 flex flex-col border-l border-border animate-in slide-in-from-right duration-300"
       style={{ backgroundColor: "#F8F8F8", width }}
     >
       {/* Resize handle */}
