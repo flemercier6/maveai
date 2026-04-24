@@ -1021,15 +1021,17 @@ Deno.serve(async (req) => {
         content:
           "WRITING CANVAS MODE.\n" +
           "The user is drafting a document (email, report, article, note, etc.).\n" +
-          (previousCanvas
-            ? "A previous version of the document exists (shown below).\n" +
-              "FIRST, decide: is the user's NEW message a request to MODIFY that document, or a totally different question/topic?\n" +
-              "- If it's a modification (edit, rewrite, translate, shorten, change tone, add a paragraph…): CANVAS_EDIT: yes\n" +
-              "- If it's a NEW unrelated question or chit-chat: CANVAS_EDIT: no → answer normally, no canvas.\n"
-            : "This is a new drafting request: CANVAS_EDIT: yes.\n") +
+          (forceCanvas
+            ? "The user EXPLICITLY invoked the /write command. You MUST produce a canvas document. CANVAS_EDIT: yes is mandatory. Do NOT output CANVAS_EDIT: no under any circumstance. Even for very short requests (e.g. \"hello\", \"test\"), write a minimal but real document matching the request.\n"
+            : previousCanvas
+              ? "A previous version of the document exists (shown below).\n" +
+                "FIRST, decide: is the user's NEW message a request to MODIFY that document, or a totally different question/topic?\n" +
+                "- If it's a modification (edit, rewrite, translate, shorten, change tone, add a paragraph…): CANVAS_EDIT: yes\n" +
+                "- If it's a NEW unrelated question or chit-chat: CANVAS_EDIT: no → answer normally, no canvas.\n"
+              : "This is a new drafting request: CANVAS_EDIT: yes.\n") +
           "\nResponse format (STRICT):\n" +
           "Line 1 must be exactly: CANVAS_EDIT: yes    OR    CANVAS_EDIT: no\n" +
-          "\nIf CANVAS_EDIT: no → after line 1, just answer the user normally. Do NOT output a canvas block.\n" +
+          (forceCanvas ? "" : "\nIf CANVAS_EDIT: no → after line 1, just answer the user normally. Do NOT output a canvas block.\n") +
           "\nIf CANVAS_EDIT: yes:\n" +
           "  Line 2: CANVAS_TITLE: <2 to 5 words, in the user's language, describing the document topic — no quotes, no punctuation>\n" +
           "  Line 3: ONE short sentence (≤20 words) in the user's language describing what you did.\n" +
