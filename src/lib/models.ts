@@ -11,7 +11,7 @@ export type ModelOption = { id: string; label: string; description: string };
 
 export const MODELS: Record<Provider, ModelOption[]> = {
   openai: [
-    { id: "gpt-5.4", label: "GPT 5.4", description: "OpenAI's latest model" },
+    { id: "gpt-5.5", label: "GPT 5.5", description: "OpenAI's latest model" },
     { id: "gpt-4o-mini", label: "GPT-4o mini", description: "OpenAI's fastest model" },
   ],
   anthropic: [
@@ -25,7 +25,7 @@ export const MODELS: Record<Provider, ModelOption[]> = {
 };
 
 export const DEFAULT_MODEL: Record<Provider, string> = {
-  openai: "gpt-5.4",
+  openai: "gpt-5.5",
   anthropic: "claude-opus-4-7",
   google: "gemini-2.5-pro",
 };
@@ -63,7 +63,7 @@ export function providerForModel(modelId: string): Provider {
  *   1. Gemini 2.5 Flash       — ~$0.30/M in   (default & conversational)
  *   2. GPT-4o mini            — ~$0.15/M in   (short creative / rewrites)
  *   3. Gemini 2.5 Pro         — ~$1.25/M in   (multimodal, structured, Google)
- *   4. GPT 5.4                — ~$2.50/M in   (creative / generative)
+ *   4. GPT 5.5                — ~$2.50/M in   (creative / generative)
  *   5. Claude Sonnet 4.6      — ~$3.00/M in   (only when reasoning needed)
  *   6. Claude Opus 4.7        — ~$15/M in     (only for very heavy reasoning)
  *
@@ -108,9 +108,9 @@ export function routeAuto(message: string): { provider: Provider; model: string 
     return { provider: "openai", model: "gpt-4o-mini" };
   }
 
-  // 5. GPT 5.4 — creative / generative work where prose quality matters
+  // 5. GPT 5.5 — creative / generative work where prose quality matters
   if (creative) {
-    return { provider: "openai", model: "gpt-5.4" };
+    return { provider: "openai", model: "gpt-5.5" };
   }
 
   // 6. Default — Gemini 2.5 Flash (cheapest capable model)

@@ -39,7 +39,7 @@ function mergeTextAttachments(content: string, atts: Attachment[] | undefined): 
 type Price = { input: number; output: number };
 const MODEL_PRICES: Record<string, Price> = {
   // OpenAI
-  "gpt-5.4": { input: 2.5, output: 10 },
+  "gpt-5.5": { input: 2.5, output: 10 },
   "gpt-4o": { input: 2.5, output: 10 },
   "gpt-4o-mini": { input: 0.15, output: 0.6 },
   // Anthropic
@@ -62,7 +62,7 @@ function priceFor(model: string): Price {
   if (m.includes("flash")) return MODEL_PRICES["gemini-2.5-flash"];
   if (m.includes("gemini")) return MODEL_PRICES["gemini-2.5-pro"];
   if (m.includes("mini")) return MODEL_PRICES["gpt-4o-mini"];
-  if (m.includes("gpt")) return MODEL_PRICES["gpt-5.4"];
+  if (m.includes("gpt")) return MODEL_PRICES["gpt-5.5"];
   return { input: 0, output: 0 };
 }
 
