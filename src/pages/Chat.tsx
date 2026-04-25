@@ -1023,6 +1023,9 @@ export default function Chat() {
         className="flex-1 flex flex-col min-w-0 relative bg-background"
         style={exploreOpen ? { borderTopRightRadius: 15, borderBottomRightRadius: 15, overflow: "hidden" } : undefined}
       >
+        <header className="flex items-center px-4 py-3 border-b border-border shrink-0">
+          <span className="text-sm font-semibold truncate">Chat</span>
+        </header>
         <ChatIndex
           scrollContainer={scrollEl}
           items={messages
