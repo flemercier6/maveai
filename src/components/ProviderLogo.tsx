@@ -2,7 +2,7 @@ import type { Provider } from "@/lib/models";
 import claudeLogo from "@/assets/claude-logo.png";
 import geminiLogo from "@/assets/gemini-logo.png";
 import openaiLogo from "@/assets/openai-logo.png";
-import mistralLogo from "@/assets/mistral-logo.png";
+import mistralLogo from "@/assets/mistral-logo.jpg";
 
 function OpenAILogo({ className }: { className?: string }) {
   return (
