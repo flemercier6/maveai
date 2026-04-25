@@ -1018,7 +1018,11 @@ export default function Chat() {
         titleAnim={titleAnim}
       />
 
-      <main className="flex-1 flex flex-col min-w-0 relative">
+      <div className="flex-1 flex min-w-0 relative" style={{ backgroundColor: "#F8F8F8" }}>
+      <main
+        className="flex-1 flex flex-col min-w-0 relative bg-background"
+        style={exploreOpen ? { borderTopRightRadius: 8, borderBottomRightRadius: 8, overflow: "hidden" } : undefined}
+      >
         <ChatIndex
           scrollContainer={scrollEl}
           items={messages
@@ -1313,6 +1317,7 @@ export default function Chat() {
           setBranches((prev) => prev.filter((x) => x.id !== id))
         }
       />
+      </div>
     </div>
   );
 }
