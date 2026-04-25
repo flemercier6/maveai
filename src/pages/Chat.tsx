@@ -1317,6 +1317,7 @@ export default function Chat() {
           setBranches((prev) => prev.filter((x) => x.id !== id))
         }
       />
+      </div>
     </div>
   );
 }
