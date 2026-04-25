@@ -64,6 +64,8 @@ function priceFor(model: string): Price {
   if (m.includes("flash-lite")) return MODEL_PRICES["gemini-2.5-flash-lite"];
   if (m.includes("flash")) return MODEL_PRICES["gemini-2.5-flash"];
   if (m.includes("gemini")) return MODEL_PRICES["gemini-2.5-pro"];
+  if (m.startsWith("mistral-large")) return MODEL_PRICES["mistral-large-latest"];
+  if (m.startsWith("mistral")) return MODEL_PRICES["mistral-small-latest"];
   if (m.includes("mini")) return MODEL_PRICES["gpt-4o-mini"];
   if (m.includes("gpt")) return MODEL_PRICES["gpt-5.5"];
   return { input: 0, output: 0 };
