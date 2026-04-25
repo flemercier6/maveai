@@ -50,6 +50,9 @@ const MODEL_PRICES: Record<string, Price> = {
   "gemini-2.5-pro": { input: 1.25, output: 10 },
   "gemini-2.5-flash": { input: 0.3, output: 2.5 },
   "gemini-2.5-flash-lite": { input: 0.1, output: 0.4 },
+  // Mistral
+  "mistral-large-latest": { input: 2, output: 6 },
+  "mistral-small-latest": { input: 0.2, output: 0.6 },
 };
 function priceFor(model: string): Price {
   if (MODEL_PRICES[model]) return MODEL_PRICES[model];
@@ -61,6 +64,8 @@ function priceFor(model: string): Price {
   if (m.includes("flash-lite")) return MODEL_PRICES["gemini-2.5-flash-lite"];
   if (m.includes("flash")) return MODEL_PRICES["gemini-2.5-flash"];
   if (m.includes("gemini")) return MODEL_PRICES["gemini-2.5-pro"];
+  if (m.startsWith("mistral-large")) return MODEL_PRICES["mistral-large-latest"];
+  if (m.startsWith("mistral")) return MODEL_PRICES["mistral-small-latest"];
   if (m.includes("mini")) return MODEL_PRICES["gpt-4o-mini"];
   if (m.includes("gpt")) return MODEL_PRICES["gpt-5.5"];
   return { input: 0, output: 0 };
@@ -319,7 +324,53 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]): As
   return usage;
 }
 
+// ---------- Mistral (OpenAI-compatible SSE) ----------
+async function* streamMistral(apiKey: string, model: string, messages: Msg[]): AsyncGenerator<string, Usage | undefined> {
+  // Mistral's chat-completions API mirrors OpenAI's. Images aren't supported on
+  // text models, so we inline text attachments and ignore image attachments.
+  const mistralMessages = messages.map((m) => ({
+    role: m.role,
+    content: mergeTextAttachments(m.content, m.attachments),
+  }));
+  const r = await fetch("https://api.mistral.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+    },
+    body: JSON.stringify({
+      model,
+      messages: mistralMessages,
+      stream: true,
+    }),
+  });
+  if (!r.ok || !r.body) {
+    const t = await r.text();
+    throw new Error(`Mistral ${r.status}: ${t}`);
+  }
+  let usage: Usage | undefined;
+  for await (const line of parseSSELines(r.body.getReader())) {
+    if (!line.startsWith("data: ")) continue;
+    const data = line.slice(6).trim();
+    if (data === "[DONE]") break;
+    try {
+      const j = JSON.parse(data);
+      const delta = j.choices?.[0]?.delta?.content;
+      if (delta) yield delta as string;
+      if (j.usage) {
+        usage = {
+          input_tokens: Number(j.usage.prompt_tokens ?? 0),
+          output_tokens: Number(j.usage.completion_tokens ?? 0),
+        };
+      }
+    } catch { /* partial */ }
+  }
+  return usage;
+}
+
 // ---------- Web tools (Firecrawl) ----------
+
 type WebDecision =
   | { action: "none" }
   | { action: "scrape"; url: string }
@@ -927,7 +978,7 @@ Deno.serve(async (req) => {
 
     const { conversationId, provider, model, messages, skipClarify, writingMode, previousCanvas, forceCanvas } = await req.json() as {
       conversationId: string | null;
-      provider: "openai" | "anthropic" | "google";
+      provider: "openai" | "anthropic" | "google" | "mistral";
       model: string;
       messages: Msg[];
       skipClarify?: boolean;
@@ -1102,6 +1153,7 @@ Deno.serve(async (req) => {
       openai: Deno.env.get("OPENAI_API_KEY"),
       anthropic: Deno.env.get("ANTHROPIC_API_KEY"),
       google: Deno.env.get("GOOGLE_API_KEY"),
+      mistral: Deno.env.get("MISTRAL_API_KEY"),
     };
     const apiKey = ENV_KEY[provider];
 
@@ -1293,6 +1345,7 @@ Deno.serve(async (req) => {
           let iter: AsyncGenerator<string, Usage | undefined>;
           if (provider === "openai") iter = streamOpenAI(apiKey, model, messagesForLLM);
           else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, messagesForLLM);
+          else if (provider === "mistral") iter = streamMistral(apiKey, model, messagesForLLM);
           else iter = streamGemini(apiKey, model, messagesForLLM);
 
           let usage: Usage | undefined;

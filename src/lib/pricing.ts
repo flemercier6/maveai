@@ -26,6 +26,9 @@ const PRICES: Record<string, ProviderPrice> = {
   // Google
   "gemini-2.5-pro": { input: 1.25, output: 10 },
   "gemini-2.5-flash": { input: 0.3, output: 2.5 },
+  // Mistral
+  "mistral-large-latest": { input: 2, output: 6 },
+  "mistral-small-latest": { input: 0.2, output: 0.6 },
 };
 
 // Reference blended price (USD/M tokens) that maps to a ×3 multiplier.

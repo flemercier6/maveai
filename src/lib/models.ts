@@ -1,10 +1,11 @@
 // Available models per provider — defaults set to latest flagship
-export type Provider = "openai" | "anthropic" | "google";
+export type Provider = "openai" | "anthropic" | "google" | "mistral";
 
 export const PROVIDERS: { id: Provider; label: string }[] = [
   { id: "openai", label: "ChatGPT" },
   { id: "anthropic", label: "Claude" },
   { id: "google", label: "Gemini" },
+  { id: "mistral", label: "Mistral" },
 ];
 
 export type ModelOption = { id: string; label: string; description: string };
@@ -22,18 +23,24 @@ export const MODELS: Record<Provider, ModelOption[]> = {
     { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", description: "Google's most capable model" },
     { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", description: "Google's fastest model" },
   ],
+  mistral: [
+    { id: "mistral-large-latest", label: "Mistral Large", description: "Mistral's latest flagship model" },
+    { id: "mistral-small-latest", label: "Mistral Small", description: "Mistral's fastest model" },
+  ],
 };
 
 export const DEFAULT_MODEL: Record<Provider, string> = {
   openai: "gpt-5.5",
   anthropic: "claude-opus-4-7",
   google: "gemini-2.5-pro",
+  mistral: "mistral-large-latest",
 };
 
 export const PROVIDER_LABEL: Record<Provider, string> = {
   openai: "ChatGPT",
   anthropic: "Claude",
   google: "Gemini",
+  mistral: "Mistral",
 };
 
 // Special "Auto" sentinel — handled by routeAuto() before sending
