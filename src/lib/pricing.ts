@@ -18,7 +18,7 @@ type ProviderPrice = { input: number; output: number }; // USD per 1M tokens
 // supabase/functions/chat/index.ts pricing if it changes.
 const PRICES: Record<string, ProviderPrice> = {
   // OpenAI
-  "gpt-5.4": { input: 2.5, output: 10 },
+  "gpt-5.5": { input: 2.5, output: 10 },
   "gpt-4o-mini": { input: 0.15, output: 0.6 },
   // Anthropic
   "claude-opus-4-7": { input: 15, output: 75 },
