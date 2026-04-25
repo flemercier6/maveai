@@ -1345,6 +1345,7 @@ Deno.serve(async (req) => {
           let iter: AsyncGenerator<string, Usage | undefined>;
           if (provider === "openai") iter = streamOpenAI(apiKey, model, messagesForLLM);
           else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, messagesForLLM);
+          else if (provider === "mistral") iter = streamMistral(apiKey, model, messagesForLLM);
           else iter = streamGemini(apiKey, model, messagesForLLM);
 
           let usage: Usage | undefined;
