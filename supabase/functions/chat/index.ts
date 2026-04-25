@@ -1153,6 +1153,7 @@ Deno.serve(async (req) => {
       openai: Deno.env.get("OPENAI_API_KEY"),
       anthropic: Deno.env.get("ANTHROPIC_API_KEY"),
       google: Deno.env.get("GOOGLE_API_KEY"),
+      mistral: Deno.env.get("MISTRAL_API_KEY"),
     };
     const apiKey = ENV_KEY[provider];
 
