@@ -369,6 +369,7 @@ async function* streamMistral(apiKey: string, model: string, messages: Msg[]): A
   return usage;
 }
 
+// ---------- Web tools (Firecrawl) ----------
 
 type WebDecision =
   | { action: "none" }
