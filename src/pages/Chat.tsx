@@ -1021,7 +1021,7 @@ export default function Chat() {
       <div className="flex-1 flex min-w-0 relative" style={{ backgroundColor: "#F8F8F8" }}>
       <main
         className="flex-1 flex flex-col min-w-0 relative bg-background"
-        style={exploreOpen ? { borderTopRightRadius: 8, borderBottomRightRadius: 8, overflow: "hidden" } : undefined}
+        style={exploreOpen ? { borderTopRightRadius: 15, borderBottomRightRadius: 15, overflow: "hidden" } : undefined}
       >
         <ChatIndex
           scrollContainer={scrollEl}
