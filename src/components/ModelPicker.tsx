@@ -76,6 +76,11 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
                 <span className="flex items-center gap-2 leading-none">
                   <ProviderLogo provider={p.id} className="w-5 h-5 shrink-0" />
                   <span className="leading-none">{m.label}</span>
+                  {m.id === "gpt-5.5" && (
+                    <span className="ml-1 rounded-sm bg-blue-500 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white leading-none">
+                      New
+                    </span>
+                  )}
                 </span>
               </SelectItem>
             )),
