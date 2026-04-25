@@ -324,7 +324,52 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]): As
   return usage;
 }
 
-// ---------- Web tools (Firecrawl) ----------
+// ---------- Mistral (OpenAI-compatible SSE) ----------
+async function* streamMistral(apiKey: string, model: string, messages: Msg[]): AsyncGenerator<string, Usage | undefined> {
+  // Mistral's chat-completions API mirrors OpenAI's. Images aren't supported on
+  // text models, so we inline text attachments and ignore image attachments.
+  const mistralMessages = messages.map((m) => ({
+    role: m.role,
+    content: mergeTextAttachments(m.content, m.attachments),
+  }));
+  const r = await fetch("https://api.mistral.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+    },
+    body: JSON.stringify({
+      model,
+      messages: mistralMessages,
+      stream: true,
+    }),
+  });
+  if (!r.ok || !r.body) {
+    const t = await r.text();
+    throw new Error(`Mistral ${r.status}: ${t}`);
+  }
+  let usage: Usage | undefined;
+  for await (const line of parseSSELines(r.body.getReader())) {
+    if (!line.startsWith("data: ")) continue;
+    const data = line.slice(6).trim();
+    if (data === "[DONE]") break;
+    try {
+      const j = JSON.parse(data);
+      const delta = j.choices?.[0]?.delta?.content;
+      if (delta) yield delta as string;
+      if (j.usage) {
+        usage = {
+          input_tokens: Number(j.usage.prompt_tokens ?? 0),
+          output_tokens: Number(j.usage.completion_tokens ?? 0),
+        };
+      }
+    } catch { /* partial */ }
+  }
+  return usage;
+}
+
+
 type WebDecision =
   | { action: "none" }
   | { action: "scrape"; url: string }
