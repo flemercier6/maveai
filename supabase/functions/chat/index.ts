@@ -1074,8 +1074,9 @@ Deno.serve(async (req) => {
       role: "system",
       content:
         "Style: airy markdown — short paragraphs, headings, bullets, dividers. Use tables for comparisons. Emojis sparingly. Reply in the user's language.\n" +
-        "Diagrams: when a flow/architecture/decision diagram clarifies the answer, output a fenced ```flow block containing JSON: " +
-        "{ title?, direction?: 'TB'|'LR'|'RL'|'BT', nodes: [{id,label,kind?: 'default'|'input'|'output'|'decision'|'success'|'warning'|'danger'|'muted'}], edges: [{source,target,label?,animated?,dashed?}] }. " +
+        "Diagrams: use SPARINGLY. Only emit a ```flow block when the question genuinely involves a multi-step process, system architecture, decision tree, state machine, or an abstract/hard-to-explain concept where a visual schema materially aids understanding beyond what prose, lists or tables can convey. " +
+        "DO NOT use diagrams for: simple factual questions, definitions, short how-tos, comparisons (use a table), lists of items, code explanations, opinions, or anything a short paragraph already answers clearly. When in doubt, do NOT emit a diagram. " +
+        "Format when used: fenced ```flow block containing JSON: { title?, direction?: 'TB'|'LR'|'RL'|'BT', nodes: [{id,label,kind?: 'default'|'input'|'output'|'decision'|'success'|'warning'|'danger'|'muted'}], edges: [{source,target,label?,animated?,dashed?}] }. " +
         "Short slug ids, ≤6-word labels, no positions, 4–12 nodes. Not Mermaid.",
     };
 
