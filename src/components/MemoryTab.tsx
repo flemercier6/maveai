@@ -38,6 +38,7 @@ export function MemoryTab() {
   const [consolidating, setConsolidating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
+  const [editingTitle, setEditingTitle] = useState("");
 
   const load = async () => {
     const { data } = await supabase
@@ -72,22 +73,25 @@ export function MemoryTab() {
   const startEdit = (m: Memory) => {
     setEditingId(m.id);
     setEditingContent(m.content);
+    setEditingTitle(m.title ?? "");
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditingContent("");
+    setEditingTitle("");
   };
 
   const saveEdit = async (id: string) => {
     const c = editingContent.trim();
     if (!c) return;
+    const t = editingTitle.trim() || null;
     const { error } = await supabase
       .from("user_memories")
-      .update({ content: c, keywords: extractKeywords(c) })
+      .update({ content: c, title: t, keywords: extractKeywords(`${t ?? ""} ${c}`) })
       .eq("id", id);
     if (error) return toast.error(error.message);
-    setMemories((p) => p.map((m) => (m.id === id ? { ...m, content: c } : m)));
+    setMemories((p) => p.map((m) => (m.id === id ? { ...m, content: c, title: t } : m)));
     cancelEdit();
   };
 
