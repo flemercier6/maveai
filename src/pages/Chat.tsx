@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 import { loadAttachment, type Attachment } from "@/lib/attachments";
@@ -83,6 +83,8 @@ export default function Chat() {
   const lastAttachmentsRef = useRef<Attachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounterRef = useRef(0);
 
   // Auto-resize textarea height based on content
   useEffect(() => {
@@ -1022,7 +1024,41 @@ export default function Chat() {
       <main
         className="flex-1 flex flex-col min-w-0 relative bg-background"
         style={exploreOpen ? { borderTopRightRadius: 15, borderBottomRightRadius: 15, overflow: "hidden" } : undefined}
+        onDragEnter={(e) => {
+          if (!Array.from(e.dataTransfer?.types ?? []).includes("Files")) return;
+          e.preventDefault();
+          dragCounterRef.current += 1;
+          setIsDragging(true);
+        }}
+        onDragOver={(e) => {
+          if (!Array.from(e.dataTransfer?.types ?? []).includes("Files")) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+        }}
+        onDragLeave={(e) => {
+          if (!Array.from(e.dataTransfer?.types ?? []).includes("Files")) return;
+          e.preventDefault();
+          dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+          if (dragCounterRef.current === 0) setIsDragging(false);
+        }}
+        onDrop={(e) => {
+          if (!Array.from(e.dataTransfer?.types ?? []).includes("Files")) return;
+          e.preventDefault();
+          dragCounterRef.current = 0;
+          setIsDragging(false);
+          const files = e.dataTransfer?.files;
+          if (files && files.length) void handleFiles(files);
+        }}
       >
+        {isDragging && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none cursor-copy bg-background/60 backdrop-blur-md">
+            <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border bg-card/90 px-8 py-6 shadow-lg">
+              <Upload className="w-8 h-8 text-foreground" />
+              <div className="text-base font-semibold text-foreground">Drop to add to context</div>
+              <div className="text-xs text-muted-foreground">Image, PDF or text — up to 15 MB</div>
+            </div>
+          </div>
+        )}
         <header className="flex items-center h-12 px-4 border-b border-border shrink-0">
           <span className="text-sm font-semibold truncate">Chat</span>
         </header>
