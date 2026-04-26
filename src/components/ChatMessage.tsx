@@ -47,6 +47,7 @@ type Props = {
   branches?: MessageBranch[];
   onBranchOpen?: (branchId: string) => void;
   variant?: "default" | "explore";
+  attachments?: MessageAttachmentPreview[];
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
