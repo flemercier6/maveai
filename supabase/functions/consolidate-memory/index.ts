@@ -81,7 +81,7 @@ Rules:
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "google/gemini-2.5-flash-lite",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Memories to consolidate:\n\n${numbered}` },
@@ -183,15 +183,18 @@ Deno.serve(async (req) => {
         counts.set(r.user_id, (counts.get(r.user_id) ?? 0) + 1);
       }
       const targets = [...counts.entries()].filter(([, c]) => c >= 4).map(([u]) => u);
-      const results: any[] = [];
-      for (const uid of targets) {
-        try {
-          results.push({ user_id: uid, ...(await consolidateForUser(uid)) });
-        } catch (e) {
-          results.push({ user_id: uid, error: String(e) });
+      // @ts-ignore EdgeRuntime is provided by Supabase
+      EdgeRuntime.waitUntil((async () => {
+        for (const uid of targets) {
+          try {
+            await consolidateForUser(uid);
+          } catch (e) {
+            console.error("cron consolidation error", uid, e);
+          }
         }
-      }
-      return new Response(JSON.stringify({ ran: results.length, results }), {
+      })());
+      return new Response(JSON.stringify({ queued: targets.length }), {
+        status: 202,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -213,8 +216,15 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const result = await consolidateForUser(userData.user.id);
-    return new Response(JSON.stringify(result), {
+    // Run in background so the HTTP response returns immediately (avoid 150s gateway timeout).
+    // The UI polls memory_consolidation_runs to know when it's done.
+    const userId = userData.user.id;
+    // @ts-ignore EdgeRuntime is provided by Supabase
+    EdgeRuntime.waitUntil(
+      consolidateForUser(userId).catch((e) => console.error("bg consolidation error", e)),
+    );
+    return new Response(JSON.stringify({ queued: true }), {
+      status: 202,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

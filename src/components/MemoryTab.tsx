@@ -104,21 +104,43 @@ export function MemoryTab() {
     try {
       const { data: sess } = await supabase.auth.getSession();
       const token = sess.session?.access_token;
-      const { data, error } = await supabase.functions.invoke("consolidate-memory", {
+      const { error } = await supabase.functions.invoke("consolidate-memory", {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (error) throw error;
-      if ((data as any)?.skipped) {
-        toast.info((data as any).reason ?? "Nothing to consolidate.");
-      } else {
-        toast.success(
-          `Consolidated ${(data as any).before} → ${(data as any).after} memories.`,
-        );
-      }
-      load();
+      toast.info("Consolidation started…");
+
+      // Poll the runs table until the latest run finishes (max ~3 min)
+      const startedAt = Date.now();
+      const poll = async (): Promise<void> => {
+        const { data: runs } = await supabase
+          .from("memory_consolidation_runs")
+          .select("*")
+          .order("started_at", { ascending: false })
+          .limit(1);
+        const run = runs?.[0] as any;
+        if (run && run.status !== "running" && new Date(run.started_at).getTime() > startedAt - 10000) {
+          if (run.status === "success") {
+            toast.success(`Consolidated ${run.before_count} → ${run.after_count} memories.`);
+          } else if (run.status === "skipped") {
+            toast.info("Nothing to consolidate.");
+          } else {
+            toast.error(run.error ?? "Consolidation failed");
+          }
+          await load();
+          setConsolidating(false);
+          return;
+        }
+        if (Date.now() - startedAt > 180000) {
+          toast.error("Consolidation timed out. Try again later.");
+          setConsolidating(false);
+          return;
+        }
+        setTimeout(poll, 3000);
+      };
+      poll();
     } catch (e: any) {
       toast.error(e?.message ?? "Consolidation failed");
-    } finally {
       setConsolidating(false);
     }
   };
