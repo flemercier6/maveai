@@ -1144,6 +1144,7 @@ export default function Chat() {
                   meta={m.meta}
                   canvas={m.canvas}
                   canvasTitle={m.canvasTitle}
+                  attachments={m.attachments}
                   canvasVersion={m.canvasVersion}
                   canvasCollapsed={typeof m.canvas === "string" && latestCanvasIdx >= 0 && i !== latestCanvasIdx}
                   onCanvasChange={m.role === "assistant" && typeof m.canvas === "string" && i === latestCanvasIdx ? (next) => {
