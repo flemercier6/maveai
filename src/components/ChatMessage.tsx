@@ -409,9 +409,33 @@ function ChatMessageImpl({
     return (
       <div className="w-full py-3" id={id ? `chat-anchor-${id}` : undefined}>
         <div className="max-w-3xl mx-auto px-4 flex flex-col items-end gap-1.5">
-          <div className={`max-w-[80%] rounded-2xl ${variant === "explore" ? "bg-background" : "bg-bubble-user"} text-bubble-user-foreground px-4 py-2.5 chat-prose break-words`}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{rest || " "}</ReactMarkdown>
-          </div>
+          {attachments && attachments.length > 0 && (
+            <div className="max-w-[80%] flex flex-wrap gap-2 justify-end">
+              {attachments.map((a, i) =>
+                a.kind === "image" && a.dataUrl ? (
+                  <img
+                    key={i}
+                    src={a.dataUrl}
+                    alt={a.name}
+                    className="w-20 h-20 rounded-lg object-cover border border-border"
+                  />
+                ) : (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground"
+                  >
+                    <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="max-w-[160px] truncate">{a.name}</span>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
+          {(rest || !attachments || attachments.length === 0) && (
+            <div className={`max-w-[80%] rounded-2xl ${variant === "explore" ? "bg-background" : "bg-bubble-user"} text-bubble-user-foreground px-4 py-2.5 chat-prose break-words`}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{rest || " "}</ReactMarkdown>
+            </div>
+          )}
           {memory && <MemoryBadge added={memory.added} updated={memory.updated} />}
           {(onEdit || content) && (
             <div className="flex items-center gap-1 -mr-1.5">
