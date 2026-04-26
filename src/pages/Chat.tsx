@@ -39,7 +39,8 @@ type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number };
+export type MsgAttachmentPreview = { kind: "image" | "file"; name: string; dataUrl?: string };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[] };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -165,12 +166,26 @@ export default function Chat() {
               ...(hasCanvas ? { canvas: parsed.canvas, canvasTitle: parsed.canvasTitle, canvasVersion: canvasCounter } : {}),
             };
           }
+          // Parse legacy "📎 Image: name" / "📎 File: name" trailing lines into attachment chips.
+          const raw = (m.content ?? "") as string;
+          const attRe = /\n*📎\s+(Image|File):\s*([^\n]+)\s*$/;
+          const userAtts: MsgAttachmentPreview[] = [];
+          let body = raw;
+          let match: RegExpMatchArray | null;
+          while ((match = body.match(attRe))) {
+            userAtts.unshift({
+              kind: match[1] === "Image" ? "image" : "file",
+              name: match[2].trim(),
+            });
+            body = body.slice(0, match.index!).replace(/\s+$/, "");
+          }
           return {
             id: m.id,
             role: m.role,
-            content: m.content,
+            content: body,
             provider: msgProvider,
             model: m.role === "assistant" ? msgModel : undefined,
+            ...(userAtts.length ? { attachments: userAtts } : {}),
           };
         }));
       });
@@ -442,13 +457,13 @@ export default function Chat() {
     // If /write was invoked, keep the "/write " prefix in the stored/displayed
     // content so the bubble can highlight it — but strip it before sending to
     // the AI (handled below when building the payload).
-    const attachmentSummary = atts.length
-      ? "\n\n" + atts.map((a) =>
-          a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
-        ).join("\n")
-      : "";
     const writePrefix = writeRequested ? "/note " : "";
-    const displayContent = writePrefix + text + attachmentSummary;
+    const displayContent = writePrefix + text;
+    const attachmentPreviews: MsgAttachmentPreview[] = atts.map((a) =>
+      a.kind === "image"
+        ? { kind: "image" as const, name: a.name, dataUrl: a.dataUrl }
+        : { kind: "file" as const, name: a.name },
+    );
 
     const convId = await ensureConversation(text || atts[0]?.name || "Attachment");
     if (!convId) { setSending(false); return; }
@@ -456,12 +471,18 @@ export default function Chat() {
     // Update conversation provider/model in case it changed
     await supabase.from("conversations").update({ provider: convProvider, model: convModel }).eq("id", convId);
 
-    // Persist user message (text only — we don't store binary attachments)
+    // Persist user message. We append a compact textual summary of attachments
+    // so reloads can still show that something was attached (binary data is not stored).
+    const persistedSummary = atts.length
+      ? "\n\n" + atts.map((a) =>
+          a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
+        ).join("\n")
+      : "";
     const { data: userMsg } = await supabase.from("messages").insert({
-      conversation_id: convId, user_id: user!.id, role: "user", content: displayContent,
+      conversation_id: convId, user_id: user!.id, role: "user", content: displayContent + persistedSummary,
     }).select().single();
 
-    const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: displayContent }];
+    const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
     setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel }]);
     setStreaming(true);
 
@@ -1123,6 +1144,7 @@ export default function Chat() {
                   meta={m.meta}
                   canvas={m.canvas}
                   canvasTitle={m.canvasTitle}
+                  attachments={m.attachments}
                   canvasVersion={m.canvasVersion}
                   canvasCollapsed={typeof m.canvas === "string" && latestCanvasIdx >= 0 && i !== latestCanvasIdx}
                   onCanvasChange={m.role === "assistant" && typeof m.canvas === "string" && i === latestCanvasIdx ? (next) => {
