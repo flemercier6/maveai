@@ -136,9 +136,9 @@ export function MemoryTab() {
           setConsolidating(false);
           return;
         }
-        setTimeout(poll, 3000);
+        setTimeout(poll, 1000);
       };
-      poll();
+      setTimeout(poll, 800);
     } catch (e: any) {
       toast.error(e?.message ?? "Consolidation failed");
       setConsolidating(false);

@@ -55,24 +55,13 @@ async function consolidateForUser(userId: string) {
 
   const numbered = memories.map((m, i) => `[${i + 1}] (${m.kind}) ${m.content}`).join("\n");
 
-  const systemPrompt = `You are a memory consolidator. The user has accumulated many small memory entries from past conversations. Group entries that talk about the SAME topic, project, person, or fact, and produce ONE concise summarized entry per group. Keep entries that are unique on their own as-is. Do NOT lose important specific details (names, dates, preferences, numbers).
+  const systemPrompt = `You compact a list of small memory entries about a single user into a shorter list. Group entries that talk about the SAME topic (project, person, preference, fact) into ONE consolidated entry. Keep unique entries as-is. Never lose specific names, numbers or dates.
 
-Return STRICT JSON with this shape:
-{
-  "groups": [
-    {
-      "summary": "Concise consolidated memory in one or two sentences, written as a fact about the user.",
-      "kind": "fact" | "preference" | "project" | "skill" | "goal",
-      "source_indices": [1, 4, 7]
-    }
-  ]
-}
+Return STRICT JSON: {"groups":[{"summary":"...","kind":"fact|preference|project|identity|context","source_count":N}]}
 
-Rules:
-- Every input index from 1 to ${memories.length} MUST appear in exactly one group's source_indices.
-- A group with a single index = entry kept as-is (you may still rewrite the summary slightly for clarity).
-- Prefer fewer, denser entries over many small ones, but never merge unrelated topics.
-- Write summaries in English, neutral first-person-about-user style ("The user works on project ABC...").`;
+- summary: 1-2 sentences, neutral third-person about the user.
+- source_count: how many input entries were merged (1 if kept as-is).
+- Do NOT include any other field. No prose outside JSON.`;
 
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -125,7 +114,7 @@ Rules:
   const newRows = groups
     .filter((g: any) => typeof g.summary === "string" && g.summary.trim().length > 0)
     .map((g: any) => {
-      const sourceCount = Array.isArray(g.source_indices) ? g.source_indices.length : 1;
+      const sourceCount = typeof g.source_count === "number" && g.source_count > 0 ? g.source_count : 1;
       const content = String(g.summary).trim();
       return {
         user_id: userId,
