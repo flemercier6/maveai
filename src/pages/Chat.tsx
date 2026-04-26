@@ -443,13 +443,13 @@ export default function Chat() {
     // If /write was invoked, keep the "/write " prefix in the stored/displayed
     // content so the bubble can highlight it — but strip it before sending to
     // the AI (handled below when building the payload).
-    const attachmentSummary = atts.length
-      ? "\n\n" + atts.map((a) =>
-          a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
-        ).join("\n")
-      : "";
     const writePrefix = writeRequested ? "/note " : "";
-    const displayContent = writePrefix + text + attachmentSummary;
+    const displayContent = writePrefix + text;
+    const attachmentPreviews: MsgAttachmentPreview[] = atts.map((a) =>
+      a.kind === "image"
+        ? { kind: "image" as const, name: a.name, dataUrl: a.dataUrl }
+        : { kind: "file" as const, name: a.name },
+    );
 
     const convId = await ensureConversation(text || atts[0]?.name || "Attachment");
     if (!convId) { setSending(false); return; }
@@ -457,12 +457,18 @@ export default function Chat() {
     // Update conversation provider/model in case it changed
     await supabase.from("conversations").update({ provider: convProvider, model: convModel }).eq("id", convId);
 
-    // Persist user message (text only — we don't store binary attachments)
+    // Persist user message. We append a compact textual summary of attachments
+    // so reloads can still show that something was attached (binary data is not stored).
+    const persistedSummary = atts.length
+      ? "\n\n" + atts.map((a) =>
+          a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
+        ).join("\n")
+      : "";
     const { data: userMsg } = await supabase.from("messages").insert({
-      conversation_id: convId, user_id: user!.id, role: "user", content: displayContent,
+      conversation_id: convId, user_id: user!.id, role: "user", content: displayContent + persistedSummary,
     }).select().single();
 
-    const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: displayContent }];
+    const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
     setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel }]);
     setStreaming(true);
 
