@@ -20,6 +20,7 @@ import { extractKeywords } from "@/lib/keywords";
 
 type Memory = {
   id: string;
+  title: string | null;
   content: string;
   kind: string;
   created_at: string;
@@ -37,6 +38,7 @@ export function MemoryTab() {
   const [consolidating, setConsolidating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
+  const [editingTitle, setEditingTitle] = useState("");
 
   const load = async () => {
     const { data } = await supabase
@@ -71,22 +73,25 @@ export function MemoryTab() {
   const startEdit = (m: Memory) => {
     setEditingId(m.id);
     setEditingContent(m.content);
+    setEditingTitle(m.title ?? "");
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditingContent("");
+    setEditingTitle("");
   };
 
   const saveEdit = async (id: string) => {
     const c = editingContent.trim();
     if (!c) return;
+    const t = editingTitle.trim() || null;
     const { error } = await supabase
       .from("user_memories")
-      .update({ content: c, keywords: extractKeywords(c) })
+      .update({ content: c, title: t, keywords: extractKeywords(`${t ?? ""} ${c}`) })
       .eq("id", id);
     if (error) return toast.error(error.message);
-    setMemories((p) => p.map((m) => (m.id === id ? { ...m, content: c } : m)));
+    setMemories((p) => p.map((m) => (m.id === id ? { ...m, content: c, title: t } : m)));
     cancelEdit();
   };
 
@@ -316,15 +321,29 @@ export function MemoryTab() {
                 )}
               </div>
               {isEditing ? (
-                <Textarea
-                  value={editingContent}
-                  onChange={(e) => setEditingContent(e.target.value)}
-                  rows={2}
-                  className="flex-1 text-sm"
-                  autoFocus
-                />
+                <div className="flex-1 flex flex-col gap-2">
+                  <input
+                    type="text"
+                    value={editingTitle}
+                    onChange={(e) => setEditingTitle(e.target.value)}
+                    placeholder="Title (optional)"
+                    className="w-full text-sm font-semibold bg-transparent border-b border-border focus:outline-none focus:border-primary px-1 py-0.5"
+                  />
+                  <Textarea
+                    value={editingContent}
+                    onChange={(e) => setEditingContent(e.target.value)}
+                    rows={3}
+                    className="text-sm"
+                    autoFocus
+                  />
+                </div>
               ) : (
-                <p className="flex-1 text-sm whitespace-pre-wrap">{m.content}</p>
+                <div className="flex-1 min-w-0">
+                  {m.title && (
+                    <div className="text-sm font-semibold mb-1">{m.title}</div>
+                  )}
+                  <p className="text-sm whitespace-pre-wrap text-muted-foreground">{m.content}</p>
+                </div>
               )}
               <div className="flex items-center gap-1 shrink-0">
                 {isEditing ? (
