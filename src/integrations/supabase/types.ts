@@ -113,6 +113,39 @@ export type Database = {
         }
         Relationships: []
       }
+      memory_consolidation_runs: {
+        Row: {
+          after_count: number
+          before_count: number
+          error: string | null
+          finished_at: string | null
+          id: string
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          after_count?: number
+          before_count?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          after_count?: number
+          before_count?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -219,29 +252,35 @@ export type Database = {
       }
       user_memories: {
         Row: {
+          consolidated_at: string | null
           content: string
           created_at: string
           id: string
           keywords: string[]
           kind: string
+          source_count: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          consolidated_at?: string | null
           content: string
           created_at?: string
           id?: string
           keywords?: string[]
           kind?: string
+          source_count?: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          consolidated_at?: string | null
           content?: string
           created_at?: string
           id?: string
           keywords?: string[]
           kind?: string
+          source_count?: number
           updated_at?: string
           user_id?: string
         }

@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Upload } from "lucide-react";
+import { Plus, Trash2, Upload, Sparkles, Check, X, Pencil, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { extractKeywords } from "@/lib/keywords";
 
@@ -23,6 +23,8 @@ type Memory = {
   content: string;
   kind: string;
   created_at: string;
+  consolidated_at: string | null;
+  source_count: number;
 };
 
 export function MemoryTab() {
@@ -32,11 +34,15 @@ export function MemoryTab() {
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importing, setImporting] = useState(false);
+  const [consolidating, setConsolidating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState("");
 
   const load = async () => {
     const { data } = await supabase
       .from("user_memories")
       .select("*")
+      .order("consolidated_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
     setMemories((data ?? []) as Memory[]);
   };
@@ -62,12 +68,59 @@ export function MemoryTab() {
     setMemories((p) => p.filter((m) => m.id !== id));
   };
 
+  const startEdit = (m: Memory) => {
+    setEditingId(m.id);
+    setEditingContent(m.content);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingContent("");
+  };
+
+  const saveEdit = async (id: string) => {
+    const c = editingContent.trim();
+    if (!c) return;
+    const { error } = await supabase
+      .from("user_memories")
+      .update({ content: c, keywords: extractKeywords(c) })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    setMemories((p) => p.map((m) => (m.id === id ? { ...m, content: c } : m)));
+    cancelEdit();
+  };
+
   const clearAll = async () => {
     if (!user) return;
     if (!confirm("Erase all memory?")) return;
     const { error } = await supabase.from("user_memories").delete().eq("user_id", user.id);
     if (error) return toast.error(error.message);
     setMemories([]);
+  };
+
+  const consolidate = async () => {
+    if (!user) return;
+    setConsolidating(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      const { data, error } = await supabase.functions.invoke("consolidate-memory", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (error) throw error;
+      if ((data as any)?.skipped) {
+        toast.info((data as any).reason ?? "Nothing to consolidate.");
+      } else {
+        toast.success(
+          `Consolidated ${(data as any).before} → ${(data as any).after} memories.`,
+        );
+      }
+      load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Consolidation failed");
+    } finally {
+      setConsolidating(false);
+    }
   };
 
   const parseImport = (raw: string): { content: string; kind: string }[] => {
@@ -131,53 +184,69 @@ export function MemoryTab() {
         <h2 className="text-lg font-semibold">Memory</h2>
         <p className="text-sm text-muted-foreground">
           These memories are automatically injected into all your conversations, no matter the model or
-          provider (OpenAI, Anthropic, Google).
+          provider (OpenAI, Anthropic, Google). They are auto-consolidated weekly, or whenever you ask.
         </p>
       </div>
 
       <Card className="p-4 space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="text-sm font-medium">Add a memory</h3>
-          <Dialog open={importOpen} onOpenChange={setImportOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Upload className="w-4 h-4 mr-1" /> Import from another AI
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Import memory from another AI</DialogTitle>
-                <DialogDescription>
-                  Paste here the memory exported from ChatGPT, Claude, Gemini, etc. Accepted formats: one
-                  memory per line, bullet/numbered list, or JSON (array of strings or of objects
-                  {" "}
-                  <code>{`{content, kind}`}</code>).
-                </DialogDescription>
-              </DialogHeader>
-              <Textarea
-                value={importText}
-                onChange={(e) => setImportText(e.target.value)}
-                placeholder={`- I work as a full-stack developer\n- I prefer TypeScript and React\n- I live in Paris`}
-                rows={10}
-                className="font-mono text-xs"
-              />
-              <p className="text-xs text-muted-foreground">
-                {parseImport(importText).length} memor{parseImport(importText).length === 1 ? "y" : "ies"} detected.
-              </p>
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => setImportOpen(false)}>
-                  Cancel
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={consolidate}
+              disabled={consolidating || memories.length < 4}
+              title={memories.length < 4 ? "Need at least 4 memories to consolidate" : "Group similar memories into summaries"}
+            >
+              {consolidating ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-1" />
+              )}
+              Consolidate now
+            </Button>
+            <Dialog open={importOpen} onOpenChange={setImportOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Upload className="w-4 h-4 mr-1" /> Import from another AI
                 </Button>
-                <Button
-                  onClick={importMemories}
-                  disabled={importing || parseImport(importText).length === 0}
-                >
-                  <Upload className="w-4 h-4 mr-1" />
-                  Import {parseImport(importText).length || ""}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Import memory from another AI</DialogTitle>
+                  <DialogDescription>
+                    Paste here the memory exported from ChatGPT, Claude, Gemini, etc. Accepted formats: one
+                    memory per line, bullet/numbered list, or JSON (array of strings or of objects
+                    {" "}
+                    <code>{`{content, kind}`}</code>).
+                  </DialogDescription>
+                </DialogHeader>
+                <Textarea
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  placeholder={`- I work as a full-stack developer\n- I prefer TypeScript and React\n- I live in Paris`}
+                  rows={10}
+                  className="font-mono text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {parseImport(importText).length} memor{parseImport(importText).length === 1 ? "y" : "ies"} detected.
+                </p>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setImportOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={importMemories}
+                    disabled={importing || parseImport(importText).length === 0}
+                  >
+                    <Upload className="w-4 h-4 mr-1" />
+                    Import {parseImport(importText).length || ""}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
         <Textarea
           value={newContent}
@@ -207,15 +276,64 @@ export function MemoryTab() {
             No memories yet. They will be created automatically as you chat.
           </p>
         )}
-        {memories.map((m) => (
-          <Card key={m.id} className="p-3 flex items-start gap-3">
-            <Badge variant="secondary" className="shrink-0 capitalize">{m.kind}</Badge>
-            <p className="flex-1 text-sm">{m.content}</p>
-            <Button variant="ghost" size="icon" onClick={() => remove(m.id)} className="h-7 w-7 shrink-0">
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          </Card>
-        ))}
+        {memories.map((m) => {
+          const isEditing = editingId === m.id;
+          const isConsolidated = !!m.consolidated_at && m.source_count > 1;
+          return (
+            <Card key={m.id} className="p-3 flex items-start gap-3">
+              <div className="flex flex-col gap-1 shrink-0">
+                <Badge variant="secondary" className="capitalize">{m.kind}</Badge>
+                {isConsolidated && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] border-primary/30 text-primary gap-0.5"
+                    title={`Summary of ${m.source_count} entries`}
+                  >
+                    <Sparkles className="w-2.5 h-2.5" /> ×{m.source_count}
+                  </Badge>
+                )}
+              </div>
+              {isEditing ? (
+                <Textarea
+                  value={editingContent}
+                  onChange={(e) => setEditingContent(e.target.value)}
+                  rows={2}
+                  className="flex-1 text-sm"
+                  autoFocus
+                />
+              ) : (
+                <p className="flex-1 text-sm whitespace-pre-wrap">{m.content}</p>
+              )}
+              <div className="flex items-center gap-1 shrink-0">
+                {isEditing ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => saveEdit(m.id)}
+                      disabled={!editingContent.trim()}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={cancelEdit}>
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(m)}>
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(m.id)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </Card>
+          );
+        })}
       </div>
     </section>
   );
