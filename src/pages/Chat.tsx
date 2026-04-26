@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 import { loadAttachment, type Attachment } from "@/lib/attachments";
