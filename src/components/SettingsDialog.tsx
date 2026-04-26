@@ -25,7 +25,8 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="p-0 overflow-hidden max-w-3xl w-[min(880px,92vw)] h-[min(560px,80vh)] flex gap-0"
+        overlayClassName="bg-background/60 backdrop-blur-md"
+        className="p-0 overflow-hidden max-w-5xl w-[min(1100px,95vw)] h-[min(720px,90vh)] flex gap-0"
       >
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <DialogDescription className="sr-only">
