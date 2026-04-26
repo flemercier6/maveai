@@ -166,12 +166,26 @@ export default function Chat() {
               ...(hasCanvas ? { canvas: parsed.canvas, canvasTitle: parsed.canvasTitle, canvasVersion: canvasCounter } : {}),
             };
           }
+          // Parse legacy "📎 Image: name" / "📎 File: name" trailing lines into attachment chips.
+          const raw = (m.content ?? "") as string;
+          const attRe = /\n*📎\s+(Image|File):\s*([^\n]+)\s*$/;
+          const userAtts: MsgAttachmentPreview[] = [];
+          let body = raw;
+          let match: RegExpMatchArray | null;
+          while ((match = body.match(attRe))) {
+            userAtts.unshift({
+              kind: match[1] === "Image" ? "image" : "file",
+              name: match[2].trim(),
+            });
+            body = body.slice(0, match.index!).replace(/\s+$/, "");
+          }
           return {
             id: m.id,
             role: m.role,
-            content: m.content,
+            content: body,
             provider: msgProvider,
             model: m.role === "assistant" ? msgModel : undefined,
+            ...(userAtts.length ? { attachments: userAtts } : {}),
           };
         }));
       });
