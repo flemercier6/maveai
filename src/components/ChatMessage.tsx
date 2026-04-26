@@ -1,5 +1,4 @@
 import { cloneElement, isValidElement, memo, useState, type ReactNode } from "react";
-import { FileText as FileTextIcon } from "lucide-react";
 import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
