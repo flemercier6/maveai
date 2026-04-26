@@ -114,7 +114,7 @@ Return STRICT JSON: {"groups":[{"summary":"...","kind":"fact|preference|project|
   const newRows = groups
     .filter((g: any) => typeof g.summary === "string" && g.summary.trim().length > 0)
     .map((g: any) => {
-      const sourceCount = Array.isArray(g.source_indices) ? g.source_indices.length : 1;
+      const sourceCount = typeof g.source_count === "number" && g.source_count > 0 ? g.source_count : 1;
       const content = String(g.summary).trim();
       return {
         user_id: userId,
