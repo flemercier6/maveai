@@ -1073,7 +1073,7 @@ export default function Chat() {
       >
         {isDragging && (
           <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none cursor-copy bg-background/60 backdrop-blur-md">
-            <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border bg-card/90 px-8 py-6 shadow-lg">
+            <div className="flex flex-col items-center gap-3 px-8 py-6">
               <Upload className="w-8 h-8 text-foreground" />
               <div className="text-base font-semibold text-foreground">Drop to add to context</div>
               <div className="text-xs text-muted-foreground">Image, PDF or text — up to 15 MB</div>
