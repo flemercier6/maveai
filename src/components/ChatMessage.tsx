@@ -538,5 +538,6 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.onExplore === next.onExplore &&
   prev.branches === next.branches &&
   prev.onBranchOpen === next.onBranchOpen &&
-  prev.variant === next.variant,
+  prev.variant === next.variant &&
+  prev.attachments === next.attachments,
 );
