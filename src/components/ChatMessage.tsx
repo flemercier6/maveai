@@ -15,6 +15,7 @@ type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
+export type MessageAttachmentPreview = { kind: "image" | "file"; name: string; dataUrl?: string };
 export type MessageBranch = {
   id: string;
   quotedText: string;
