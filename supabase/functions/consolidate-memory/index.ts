@@ -183,15 +183,18 @@ Deno.serve(async (req) => {
         counts.set(r.user_id, (counts.get(r.user_id) ?? 0) + 1);
       }
       const targets = [...counts.entries()].filter(([, c]) => c >= 4).map(([u]) => u);
-      const results: any[] = [];
-      for (const uid of targets) {
-        try {
-          results.push({ user_id: uid, ...(await consolidateForUser(uid)) });
-        } catch (e) {
-          results.push({ user_id: uid, error: String(e) });
+      // @ts-ignore EdgeRuntime is provided by Supabase
+      EdgeRuntime.waitUntil((async () => {
+        for (const uid of targets) {
+          try {
+            await consolidateForUser(uid);
+          } catch (e) {
+            console.error("cron consolidation error", uid, e);
+          }
         }
-      }
-      return new Response(JSON.stringify({ ran: results.length, results }), {
+      })());
+      return new Response(JSON.stringify({ queued: targets.length }), {
+        status: 202,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
