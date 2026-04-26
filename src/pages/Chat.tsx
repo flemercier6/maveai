@@ -83,6 +83,8 @@ export default function Chat() {
   const lastAttachmentsRef = useRef<Attachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounterRef = useRef(0);
 
   // Auto-resize textarea height based on content
   useEffect(() => {
