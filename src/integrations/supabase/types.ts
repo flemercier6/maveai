@@ -259,6 +259,7 @@ export type Database = {
           keywords: string[]
           kind: string
           source_count: number
+          title: string | null
           updated_at: string
           user_id: string
         }
@@ -270,6 +271,7 @@ export type Database = {
           keywords?: string[]
           kind?: string
           source_count?: number
+          title?: string | null
           updated_at?: string
           user_id: string
         }
@@ -281,6 +283,7 @@ export type Database = {
           keywords?: string[]
           kind?: string
           source_count?: number
+          title?: string | null
           updated_at?: string
           user_id?: string
         }
