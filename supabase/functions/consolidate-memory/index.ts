@@ -55,13 +55,27 @@ async function consolidateForUser(userId: string) {
 
   const numbered = memories.map((m, i) => `[${i + 1}] (${m.kind}) ${m.content}`).join("\n");
 
-  const systemPrompt = `You compact a list of small memory entries about a single user into a shorter list. Group entries that talk about the SAME topic (project, person, preference, fact) into ONE consolidated entry. Keep unique entries as-is. Never lose specific names, numbers or dates.
+  const targetMax = Math.max(3, Math.min(10, Math.ceil(memories.length / 5)));
 
-Return STRICT JSON: {"groups":[{"summary":"...","kind":"fact|preference|project|identity|context","source_count":N}]}
+  const systemPrompt = `You aggressively compact a list of small memory entries about a single user into a SHORT list of THEMED entries.
 
-- summary: 1-2 sentences, neutral third-person about the user.
-- source_count: how many input entries were merged (1 if kept as-is).
-- Do NOT include any other field. No prose outside JSON.`;
+GOAL: produce around ${targetMax} entries (NEVER more than ${targetMax + 2}). Be bold: merge anything related under a single theme even if the link is loose.
+
+GROUPING RULES:
+- Group by THEME, not by exact topic. Examples of valid themes: "Project Explorer AI", "Identity & background", "Email writing preferences", "Client work — Danone", "AI/tech preferences".
+- All identity facts (name, job, location, role) → ONE entry titled "Identity".
+- All preferences about a single domain (emails, tone, writing style) → ONE entry.
+- All facts about ONE project → ONE entry, even if they cover features, pricing, UX, tech stack.
+- All facts about ONE client → ONE entry.
+- Only keep an entry alone if it truly doesn't fit any theme.
+- Preserve specific names, numbers, dates, tools — but write densely, no filler.
+
+Return STRICT JSON: {"groups":[{"title":"Short label (2-5 words)","summary":"Dense paragraph merging all relevant facts.","kind":"identity|preference|project|context|fact","source_count":N}]}
+
+- title: 2-5 words, like a section heading.
+- summary: dense paragraph (can be 3-6 sentences if many facts merged), neutral third-person about the user.
+- source_count: how many input entries were merged.
+- No prose outside JSON.`;
 
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -116,11 +130,13 @@ Return STRICT JSON: {"groups":[{"summary":"...","kind":"fact|preference|project|
     .map((g: any) => {
       const sourceCount = typeof g.source_count === "number" && g.source_count > 0 ? g.source_count : 1;
       const content = String(g.summary).trim();
+      const title = typeof g.title === "string" && g.title.trim() ? String(g.title).trim().slice(0, 80) : null;
       return {
         user_id: userId,
+        title,
         content,
         kind: typeof g.kind === "string" ? g.kind : "fact",
-        keywords: extractKeywords(content),
+        keywords: extractKeywords(`${title ?? ""} ${content}`),
         consolidated_at: now,
         source_count: sourceCount,
       };
