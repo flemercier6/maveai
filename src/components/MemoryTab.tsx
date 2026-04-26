@@ -20,6 +20,7 @@ import { extractKeywords } from "@/lib/keywords";
 
 type Memory = {
   id: string;
+  title: string | null;
   content: string;
   kind: string;
   created_at: string;
