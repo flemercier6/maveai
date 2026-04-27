@@ -38,6 +38,8 @@ type StoredBranch = {
   id: string;
   source_message_id: string;
   quoted_text: string;
+  reply_count: number;
+  last_activity: string | null;
 };
 
 type ToolStatus = "running" | "done" | "failed";
@@ -205,33 +207,52 @@ export default function Chat() {
   // Load existing branches (explorations) for this conversation.
   // Only show branches that actually contain at least one message — empty
   // explorations (discarded by the user) are hidden and cleaned up.
+  const reloadBranches = async (convId: string) => {
+    const { data: rows } = await supabase
+      .from("chat_branches")
+      .select("id, source_message_id, quoted_text")
+      .eq("conversation_id", convId)
+      .order("created_at", { ascending: true });
+    const all = (rows ?? []) as any[];
+    if (all.length === 0) { setBranches([]); return; }
+    const ids = all.map((b) => b.id);
+    const { data: msgs } = await supabase
+      .from("branch_messages")
+      .select("branch_id, role, created_at")
+      .in("branch_id", ids);
+    const stats = new Map<string, { count: number; last: string | null }>();
+    for (const m of (msgs ?? []) as any[]) {
+      const cur = stats.get(m.branch_id) ?? { count: 0, last: null };
+      // Count assistant replies as "replies"; user prompts also bump activity.
+      if (m.role === "assistant") cur.count += 1;
+      if (!cur.last || cur.last < m.created_at) cur.last = m.created_at;
+      stats.set(m.branch_id, cur);
+    }
+    setBranches(
+      all
+        .filter((b) => stats.has(b.id))
+        .map((b) => ({
+          id: b.id,
+          source_message_id: b.source_message_id,
+          quoted_text: b.quoted_text ?? "",
+          reply_count: stats.get(b.id)?.count ?? 0,
+          last_activity: stats.get(b.id)?.last ?? null,
+        })),
+    );
+  };
+
   useEffect(() => {
     if (!activeId) { setBranches([]); return; }
-    (async () => {
-      const { data: rows } = await supabase
-        .from("chat_branches")
-        .select("id, source_message_id, quoted_text")
-        .eq("conversation_id", activeId)
-        .order("created_at", { ascending: true });
-      const all = (rows ?? []) as any[];
-      if (all.length === 0) { setBranches([]); return; }
-      const ids = all.map((b) => b.id);
-      const { data: msgs } = await supabase
-        .from("branch_messages")
-        .select("branch_id")
-        .in("branch_id", ids);
-      const nonEmpty = new Set<string>((msgs ?? []).map((m: any) => m.branch_id));
-      setBranches(
-        all
-          .filter((b) => nonEmpty.has(b.id))
-          .map((b) => ({
-            id: b.id,
-            source_message_id: b.source_message_id,
-            quoted_text: b.quoted_text ?? "",
-          })),
-      );
-    })();
+    void reloadBranches(activeId);
   }, [activeId]);
+
+  // Refresh branch stats whenever the explore panel closes (so reply counts /
+  // last-activity timestamps shown in the main view stay up to date).
+  useEffect(() => {
+    if (exploreOpen) return;
+    if (!activeId) return;
+    void reloadBranches(activeId);
+  }, [exploreOpen, activeId]);
 
   // Scroll behavior:
   // - On conversation load: pin to the bottom once.
@@ -1044,6 +1065,8 @@ export default function Chat() {
       id: b.id,
       quotedText: b.quoted_text,
       kind: isFull ? "full" : "selection",
+      replyCount: b.reply_count,
+      lastActivity: b.last_activity,
     };
     (branchesByMessage[b.source_message_id] ??= []).push(entry);
   }
@@ -1428,7 +1451,7 @@ export default function Chat() {
           setBranches((prev) =>
             prev.some((x) => x.id === b.id)
               ? prev
-              : [...prev, { id: b.id, source_message_id: b.source_message_id as any, quoted_text: b.quoted_text }],
+              : [...prev, { id: b.id, source_message_id: b.source_message_id as any, quoted_text: b.quoted_text, reply_count: 1, last_activity: new Date().toISOString() }],
           )
         }
         onBranchDeleted={(id) =>

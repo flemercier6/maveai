@@ -22,6 +22,10 @@ export type MessageBranch = {
   quotedText: string;
   /** "selection" = branched from a sub-selection of this message; "full" = branched with the Explore button below the message. */
   kind: "selection" | "full";
+  /** Number of assistant replies inside this exploration thread. */
+  replyCount?: number;
+  /** ISO timestamp of the last activity in the exploration thread. */
+  lastActivity?: string | null;
 };
 
 type Props = {
@@ -347,21 +351,55 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
   };
 }
 
-function BranchChip({ branch, onClick }: { branch: MessageBranch; onClick: () => void }) {
-  const label =
+function formatRelativeTime(iso?: string | null): string {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const diff = Math.max(0, Date.now() - then);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+function ThreadEntry({ branch, onClick }: { branch: MessageBranch; onClick: () => void }) {
+  const preview =
     branch.kind === "selection"
-      ? branch.quotedText.replace(/\s+/g, " ").trim().slice(0, 36) +
-        (branch.quotedText.length > 36 ? "…" : "")
-      : "Exploration";
+      ? `"${branch.quotedText.replace(/\s+/g, " ").trim().slice(0, 80)}${branch.quotedText.length > 80 ? "…" : ""}"`
+      : "Exploration of this answer";
+  const count = branch.replyCount ?? 0;
+  const replyLabel =
+    count === 0 ? "Open thread" : `${count} ${count === 1 ? "reply" : "replies"}`;
+  const time = formatRelativeTime(branch.lastActivity);
   return (
     <button
       type="button"
       onClick={onClick}
-      title={branch.kind === "selection" ? `"${branch.quotedText.slice(0, 140)}"` : "Open exploration"}
-      className="pointer-events-auto inline-flex items-center gap-1.5 max-w-[220px] h-7 px-2.5 rounded-full border border-border bg-card text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors"
+      className="group w-full flex items-center gap-2.5 px-2 py-1.5 -mx-2 rounded-lg text-left hover:bg-dropdown-hover transition-colors"
     >
-      <Sparkles className="w-3.5 h-3.5 shrink-0" />
-      <span className="truncate">{label}</span>
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-secondary text-foreground/70">
+        <Sparkles className="w-3.5 h-3.5" />
+      </span>
+      <div className="min-w-0 flex-1 flex items-baseline gap-2">
+        <span className="text-[12px] font-medium text-foreground whitespace-nowrap">
+          {replyLabel}
+        </span>
+        {time && (
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+            Last reply {time}
+          </span>
+        )}
+        <span className="text-[12px] text-muted-foreground truncate italic">
+          {preview}
+        </span>
+      </div>
+      <span className="text-[11px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+        View thread
+      </span>
     </button>
   );
 }
@@ -460,19 +498,10 @@ function ChatMessageImpl({
     );
   }
 
-  const selectionBranches = (branches ?? []).filter((b) => b.kind === "selection");
-  const fullBranches = (branches ?? []).filter((b) => b.kind === "full");
+  const allBranches = branches ?? [];
 
   return (
     <div className="relative w-full my-[50px]" data-assistant-message="true" data-message-id={id ?? ""}>
-      {/* Selection-branch indicators: top-right of the message */}
-      {selectionBranches.length > 0 && (
-        <div className="pointer-events-none absolute top-0 right-4 flex flex-col items-end gap-1.5 z-10">
-          {selectionBranches.map((b) => (
-            <BranchChip key={b.id} branch={b} onClick={() => onBranchOpen?.(b.id)} />
-          ))}
-        </div>
-      )}
       <div className="max-w-3xl mx-auto px-4">
         {(provider || (tool && tool.status !== "failed")) && (
           <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "10px" }}>
@@ -525,14 +554,18 @@ function ChatMessageImpl({
                 Explore
               </button>
             )}
-            {/* Full-message-branch indicators: aligned with this action row, pinned to the right edge of the main column */}
-            {fullBranches.length > 0 && (
-              <div className="pointer-events-none absolute top-0 right-4 flex items-center gap-1.5">
-                {fullBranches.map((b) => (
-                  <BranchChip key={b.id} branch={b} onClick={() => onBranchOpen?.(b.id)} />
-                ))}
-              </div>
-            )}
+          </div>
+        )}
+        {/* Slack-thread style explorations list, shown under the assistant response */}
+        {!streaming && allBranches.length > 0 && (
+          <div className="mt-3 border-l-2 border-border pl-3 flex flex-col gap-0.5">
+            {allBranches.map((b) => (
+              <ThreadEntry
+                key={b.id}
+                branch={b}
+                onClick={() => onBranchOpen?.(b.id)}
+              />
+            ))}
           </div>
         )}
         {!streaming && meta && <RequestVisualizer meta={meta} />}
