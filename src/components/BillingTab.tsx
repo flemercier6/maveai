@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Check, Loader2, FileText } from "lucide-react";
+import { Trash2, Check, Loader2, FileText, Sparkles } from "lucide-react";
 
 type Cycle = "daily" | "weekly" | "monthly";
 type Card = {
@@ -110,6 +110,7 @@ export function BillingTab() {
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
   const [cycle, setCycle] = useState<Cycle>("monthly");
+  const [showUpgradeForm, setShowUpgradeForm] = useState(false);
 
   async function reload() {
     setLoading(true);
