@@ -69,7 +69,7 @@ const STORAGE_KEY = "chat-sidebar-width";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
-export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail, userName, titleAnim, branchesByConv, activeBranchId, onOpenBranch }: Props) {
+export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, onMoveToFolder, userEmail, userName, titleAnim, branchesByConv, activeBranchId, onOpenBranch }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [expandedConvs, setExpandedConvs] = useState<Record<string, boolean>>({});
   const isConvExpanded = (id: string) => {
@@ -89,6 +89,65 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
   });
   const [resizing, setResizing] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Folders state ------------------------------------------------------------
+  const [folders, setFolders] = useState<FolderRow[]>([]);
+  const [foldersLoaded, setFoldersLoaded] = useState(false);
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<FolderRow | null>(null);
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+  const [dragConvId, setDragConvId] = useState<string | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | "unfiled" | null>(null);
+
+  const isFolderExpanded = (id: string) => expandedFolders[id] ?? true;
+  const toggleFolder = (id: string) =>
+    setExpandedFolders((prev) => ({ ...prev, [id]: !isFolderExpanded(id) }));
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("folders")
+        .select("*")
+        .order("position", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      setFolders((data ?? []) as FolderRow[]);
+      setFoldersLoaded(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Group conversations by folder.
+  const { byFolder, unfiled } = useMemo(() => {
+    const m = new Map<string, Conversation[]>();
+    const u: Conversation[] = [];
+    for (const c of conversations) {
+      if (c.folder_id) {
+        const arr = m.get(c.folder_id) ?? [];
+        arr.push(c);
+        m.set(c.folder_id, arr);
+      } else {
+        u.push(c);
+      }
+    }
+    return { byFolder: m, unfiled: u };
+  }, [conversations]);
+
+  async function moveConvToFolder(convId: string, folderId: string | null) {
+    const { error } = await supabase
+      .from("conversations")
+      .update({ folder_id: folderId })
+      .eq("id", convId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    onMoveToFolder?.(convId, folderId);
+  }
+
   const asideRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
