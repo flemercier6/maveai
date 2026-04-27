@@ -5,12 +5,13 @@ import { Settings, Sparkles, Globe, Brain } from "lucide-react";
 import { UsageTab } from "@/components/UsageTab";
 import { MemoryTab } from "@/components/MemoryTab";
 import { BillingTab } from "@/components/BillingTab";
+import { PreferencesTab } from "@/components/PreferencesTab";
 import { usePlan } from "@/hooks/usePlan";
 
 type Section = "preferences" | "integrations" | "memory" | "usage" | "billing";
 
 const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?: string }>; soon?: boolean }[] = [
-  { id: "preferences", label: "Preferences", icon: Settings, soon: true },
+  { id: "preferences", label: "Preferences", icon: Settings },
   { id: "integrations", label: "Integrations", icon: Globe, soon: true },
   { id: "memory", label: "Memory", icon: Brain },
   { id: "usage", label: "Usage", icon: Sparkles },
@@ -21,10 +22,11 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialSection?: Section;
+  onProfileUpdated?: () => void;
 };
 
-export function SettingsDialog({ open, onOpenChange, initialSection }: Props) {
-  const [active, setActive] = useState<Section>(initialSection ?? "memory");
+export function SettingsDialog({ open, onOpenChange, initialSection, onProfileUpdated }: Props) {
+  const [active, setActive] = useState<Section>(initialSection ?? "preferences");
   const { isFree } = usePlan();
   const visibleNav = NAV.filter((item) => !(isFree && item.id === "usage"));
 
@@ -83,12 +85,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection }: Props) {
         {/* Content */}
         <div className="flex-1 min-w-0 overflow-y-auto p-6">
           {active === "preferences" && (
-            <section className="space-y-2">
-              <h2 className="text-lg font-semibold">Preferences</h2>
-              <p className="text-sm text-muted-foreground">
-                Customize how the app looks and behaves.
-              </p>
-            </section>
+            <PreferencesTab onProfileUpdated={onProfileUpdated} />
           )}
           {active === "integrations" && (
             <section className="space-y-2">

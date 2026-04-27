@@ -57,6 +57,9 @@ type Props = {
   onMoveToFolder?: (conversationId: string, folderId: string | null) => void;
   userEmail?: string;
   userName?: string;
+  userAvatarUrl?: string | null;
+  /** Called when the user updates their profile from the settings dialog. */
+  onProfileUpdated?: () => void;
   /** Per-conversation streaming title state. target=null while waiting for the AI title. */
   titleAnim?: Record<string, { target: string | null; shown: string }>;
   /** Explorations grouped by conversation id, displayed as collapsible sub-items. */
@@ -78,7 +81,7 @@ const STORAGE_KEY = "chat-sidebar-width";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
-export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEphemeral, onDeleted, onMoveToFolder, userEmail, userName, titleAnim, branchesByConv, activeBranchId, onOpenBranch, isFree, onLockedFeature }: Props) {
+export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEphemeral, onDeleted, onMoveToFolder, userEmail, userName, userAvatarUrl, onProfileUpdated, titleAnim, branchesByConv, activeBranchId, onOpenBranch, isFree, onLockedFeature }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [expandedConvs, setExpandedConvs] = useState<Record<string, boolean>>({});
   const isConvExpanded = (id: string) => {
@@ -653,8 +656,12 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
             <button
               className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[4px] hover:bg-sidebar-accent text-sidebar-foreground"
             >
-              <div className="w-7 h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-xs font-medium uppercase">
-                {(userName?.[0] ?? userEmail?.[0] ?? "?")}
+              <div className="w-7 h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-xs font-medium uppercase overflow-hidden">
+                {userAvatarUrl ? (
+                  <img src={userAvatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  (userName?.[0] ?? userEmail?.[0] ?? "?")
+                )}
               </div>
               <span className="flex-1 min-w-0 text-left text-xs truncate">
                 {userName ?? userEmail?.split("@")[0] ?? "User"}
@@ -689,6 +696,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         open={settingsOpen}
         onOpenChange={(o) => { setSettingsOpen(o); if (!o) setSettingsInitialSection(undefined); }}
         initialSection={settingsInitialSection}
+        onProfileUpdated={onProfileUpdated}
       />
       <SearchChatsDialog
         open={searchOpen}

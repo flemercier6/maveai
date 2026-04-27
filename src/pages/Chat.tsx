@@ -59,6 +59,7 @@ export default function Chat() {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [ephemeral, setEphemeral] = useState(false);
   const plan = usePlan();
@@ -126,11 +127,21 @@ export default function Chat() {
       .then(({ data }) => {
         setConversations((data ?? []) as Conversation[]);
       });
-    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle()
+    supabase.from("profiles").select("display_name, avatar_url").eq("id", user.id).maybeSingle()
       .then(({ data }) => {
         setDisplayName((data?.display_name as string | null) ?? null);
+        setAvatarUrl((data?.avatar_url as string | null) ?? null);
       });
   }, [user]);
+
+  const reloadProfile = () => {
+    if (!user) return;
+    supabase.from("profiles").select("display_name, avatar_url").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        setDisplayName((data?.display_name as string | null) ?? null);
+        setAvatarUrl((data?.avatar_url as string | null) ?? null);
+      });
+  };
 
   // Load messages when active changes
   useEffect(() => {
@@ -1255,6 +1266,8 @@ export default function Chat() {
         }}
         userEmail={user.email}
         userName={displayName ?? (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0]}
+        userAvatarUrl={avatarUrl}
+        onProfileUpdated={reloadProfile}
         titleAnim={titleAnim}
         branchesByConv={sidebarBranchesByConv}
         activeBranchId={exploreOpen ? exploreSeed?.existingBranchId ?? null : null}
