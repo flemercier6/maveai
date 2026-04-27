@@ -111,6 +111,7 @@ export function BillingTab() {
   const [loading, setLoading] = useState(true);
   const [cycle, setCycle] = useState<Cycle>("monthly");
   const [showUpgradeForm, setShowUpgradeForm] = useState(false);
+  const [showAddCardForm, setShowAddCardForm] = useState(false);
 
   async function reload() {
     setLoading(true);
