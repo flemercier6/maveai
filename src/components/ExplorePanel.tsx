@@ -96,6 +96,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   // the ModelPicker below the textarea.
   const [provider, setProvider] = useState<Provider>(seed?.provider ?? "google");
   const [model, setModel] = useState<string>(seed?.model ?? "");
+  // When `/note` is selected the next assistant reply opens a writing canvas,
+  // identical to the main chat behavior — but scoped to the panel.
+  const [writeRequested, setWriteRequested] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
