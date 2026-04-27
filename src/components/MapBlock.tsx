@@ -159,11 +159,11 @@ function MapBlockImpl({ code }: Props) {
   })();
 
   return (
-    <div className="my-4 rounded-xl border border-border bg-card overflow-hidden">
+    <div className="my-4 rounded-xl border border-border bg-primary-foreground overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <div className="flex items-center gap-2 min-w-0">
           <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
-          <span className="text-sm font-medium text-foreground truncate">
+          <span className="text-sm font-medium text-foreground truncate font-sans">
             {spec.title || (spec.markers && spec.markers.length > 1 ? `${spec.markers.length} locations` : "Map")}
           </span>
         </div>
