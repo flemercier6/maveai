@@ -97,6 +97,22 @@ export default function Chat() {
   const [exploreSeed, setExploreSeed] = useState<BranchSeed | null>(null);
   const [branches, setBranches] = useState<StoredBranch[]>([]);
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Mobile horizontal swipe: right = open sidebar / close explore, left = close sidebar / open explore (if seed exists).
+  useSwipe(rootRef, {
+    onSwipeRight: () => {
+      if (exploreOpen) { setExploreOpen(false); return; }
+      if (!sidebarMobileOpen) setSidebarMobileOpen(true);
+    },
+    onSwipeLeft: () => {
+      if (sidebarMobileOpen) { setSidebarMobileOpen(false); return; }
+      if (!exploreOpen && exploreSeed) setExploreOpen(true);
+    },
+    // Don't hijack swipes inside scrollable lists, inputs, code blocks, or the resize handle.
+    ignoreSelector:
+      "textarea, input, [contenteditable='true'], .overflow-x-auto, pre, code, [data-no-swipe]",
+  });
 
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
