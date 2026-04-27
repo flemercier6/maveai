@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Square, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowRight, Square, ChevronDown, Loader2, FileText, X } from "lucide-react";
 
 /** Custom "sidebar-right" icon (inherits color via currentColor). */
 const SidebarRightIcon = ({ className }: { className?: string }) => (
