@@ -1351,7 +1351,7 @@ export default function Chat() {
         >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
-              <h2 className="text-2xl font-semibold mb-2">How can I help you?</h2>
+              <h2 className="font-semibold mb-2 text-4xl">How can I help you?</h2>
             </div>
           ) : (
             <div className="pt-8 pb-4">
