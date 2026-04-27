@@ -544,10 +544,12 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   // unmounting. We animate width and translate together so the slot itself
   // shrinks/grows in lockstep with the content — no naked gap appears
   // behind the sliding content.
-  const ANIM_MS = 420;
-  // Smooth, "iOS-like" easing — symmetric in/out so opening and closing
-  // feel identical and decelerate gently at the end.
-  const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+  const OPEN_MS = 420;
+  const CLOSE_MS = 240;
+  // Opening: decelerate (iOS-like). Closing: accelerate so motion starts
+  // immediately under the cursor with no perceived delay.
+  const OPEN_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+  const CLOSE_EASE = "cubic-bezier(0.4, 0, 1, 1)";
   const [mounted, setMounted] = useState(false);
   const [entered, setEntered] = useState(false);
 
@@ -560,7 +562,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     if (!mounted) return;
     // Trigger close transition first.
     setEntered(false);
-    const t = window.setTimeout(() => setMounted(false), ANIM_MS);
+    const t = window.setTimeout(() => setMounted(false), CLOSE_MS);
     return () => window.clearTimeout(t);
   }, [open]);
 
@@ -580,13 +582,16 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
 
   if (!mounted) return null;
 
+  const activeMs = entered ? OPEN_MS : CLOSE_MS;
+  const activeEase = entered ? OPEN_EASE : CLOSE_EASE;
+
   return (
     <aside
       className="relative h-full shrink-0 flex flex-col overflow-hidden"
       style={{
         backgroundColor: "#F8F8F8",
         width: entered ? width : 0,
-        transition: `width ${ANIM_MS}ms ${EASE}`,
+        transition: `width ${activeMs}ms ${activeEase}`,
         willChange: "width",
       }}
     >
@@ -595,9 +600,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         style={{
           width,
           transform: entered ? "translateX(0)" : "translateX(100%)",
-          transition: `transform ${ANIM_MS}ms ${EASE}`,
+          transition: `transform ${activeMs}ms ${activeEase}`,
           willChange: "transform",
-}}
+        }}
       >
       {/* Resize handle */}
       <div
