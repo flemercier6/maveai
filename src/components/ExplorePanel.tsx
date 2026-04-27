@@ -540,21 +540,26 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   }, [width]);
 
   // Keep the panel mounted briefly after `open` flips to false so the
-  // horizontal slide-out animation can play before unmounting.
+  // horizontal slide-out animation (width + translate) can play before
+  // unmounting. We animate width and translate together so the slot itself
+  // shrinks/grows in lockstep with the content — no naked gap appears
+  // behind the sliding content.
+  const ANIM_MS = 300;
   const [mounted, setMounted] = useState(open);
-  const [closing, setClosing] = useState(false);
+  const [entered, setEntered] = useState(false);
   useEffect(() => {
     if (open) {
       setMounted(true);
-      setClosing(false);
+      // Start collapsed (width 0, translated off-screen), then on next
+      // frame flip `entered` so CSS transitions to the open state.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setEntered(true));
+      });
       return;
     }
     if (!mounted) return;
-    setClosing(true);
-    const t = setTimeout(() => {
-      setMounted(false);
-      setClosing(false);
-    }, 300);
+    setEntered(false);
+    const t = setTimeout(() => setMounted(false), ANIM_MS);
     return () => clearTimeout(t);
   }, [open, mounted]);
 
@@ -562,13 +567,21 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
 
   return (
     <aside
-      className={`relative h-full shrink-0 flex flex-col duration-300 ${
-        closing
-          ? "animate-out slide-out-to-right fill-mode-forwards"
-          : "animate-in slide-in-from-right"
-      }`}
-      style={{ backgroundColor: "#F8F8F8", width }}
+      className="relative h-full shrink-0 flex flex-col overflow-hidden"
+      style={{
+        backgroundColor: "#F8F8F8",
+        width: entered ? width : 0,
+        transition: `width ${ANIM_MS}ms ease-out`,
+      }}
     >
+      <div
+        className="flex flex-col h-full"
+        style={{
+          width,
+          transform: entered ? "translateX(0)" : "translateX(100%)",
+          transition: `transform ${ANIM_MS}ms ease-out`,
+        }}
+      >
       {/* Resize handle */}
       <div
         onMouseDown={(e) => {
