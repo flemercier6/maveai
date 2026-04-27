@@ -1,6 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Square, ChevronDown, Loader2 } from "lucide-react";
-import SidebarRightIcon from "@/assets/sidebar-right.svg?react";
+
+/** Custom "sidebar-right" icon (inherits color via currentColor). */
+const SidebarRightIcon = ({ className }: { className?: string }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    aria-hidden="true"
+  >
+    <path
+      d="M10.6944 4.47222V10.6944M6.80547 0.583328H8.36103C11.2942 0.583328 12.7608 0.583328 13.672 1.49455C14.5833 2.40578 14.5833 3.87236 14.5833 6.80555V8.36111C14.5833 11.2943 14.5833 12.7609 13.672 13.6721C12.7608 14.5833 11.2942 14.5833 8.36103 14.5833H6.80547C3.87229 14.5833 2.4057 14.5833 1.49447 13.6721C0.583252 12.7609 0.583252 11.2943 0.583252 8.36111V6.80555C0.583252 3.87236 0.583252 2.40578 1.49447 1.49455C2.4057 0.583328 3.87229 0.583328 6.80547 0.583328Z"
+      stroke="currentColor"
+      strokeWidth="1.16667"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
