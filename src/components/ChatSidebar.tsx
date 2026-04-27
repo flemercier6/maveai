@@ -570,7 +570,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                         >
                           <div
                             className={cn(
-                              "group flex items-center gap-1 px-[6px] py-[4px] rounded-[4px] hover:bg-sidebar-accent text-sidebar-foreground cursor-pointer",
+                              "group flex items-center gap-1.5 md:gap-1 px-[8px] md:px-[6px] py-[8px] md:py-[4px] rounded-[6px] md:rounded-[4px] hover:bg-sidebar-accent text-sidebar-foreground cursor-pointer",
                             )}
                             onClick={() => toggleFolder(f.id)}
                           >
