@@ -1326,16 +1326,16 @@ export default function Chat() {
             </div>
           </div>
         )}
-        <header className="flex items-center gap-2 h-12 px-3 sm:px-4 border-b border-border/50 shrink-0">
+        <header className="flex items-center gap-2 h-14 md:h-12 px-3 sm:px-4 border-b border-border/50 shrink-0">
           <button
             type="button"
             onClick={() => setSidebarMobileOpen(true)}
-            className="md:hidden inline-flex items-center justify-center w-8 h-8 -ml-1 rounded-[6px] hover:bg-dropdown-hover text-foreground"
+            className="md:hidden inline-flex items-center justify-center w-10 h-10 -ml-1 rounded-[6px] hover:bg-dropdown-hover text-foreground"
             aria-label="Open menu"
           >
-            <Menu className="w-4 h-4" />
+            <Menu className="w-6 h-6 md:w-4 md:h-4" />
           </button>
-          <span className="text-sm font-semibold truncate">
+          <span className="text-base md:text-sm font-semibold truncate">
             {ephemeral
               ? "Ephemeral chat"
               : conversations.find((c) => c.id === activeId)?.title?.trim() || "Chat"}
