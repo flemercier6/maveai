@@ -320,12 +320,9 @@ export default function Chat() {
   const [pendingBranchId, setPendingBranchId] = useState<string | null>(null);
 
   const handleSidebarOpenBranch = (convId: string, branchId: string) => {
+    setPendingBranchId(branchId);
     if (activeId !== convId) {
       setActiveId(convId);
-      setPendingBranchId(branchId);
-    } else {
-      // Same conversation already loaded — open immediately.
-      openExistingBranchById(branchId);
     }
   };
 
