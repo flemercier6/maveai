@@ -633,6 +633,35 @@ export default function Chat() {
             const j = JSON.parse(line.slice(6));
             if (j.type === "delta") {
               acc += j.text;
+              // Detect ```map fenced block to surface a "Map" tool badge
+              const openIdx = acc.indexOf("```map");
+              if (openIdx !== -1) {
+                const afterOpen = acc.slice(openIdx + 6);
+                const closeRel = afterOpen.indexOf("```");
+                const isClosed = closeRel !== -1;
+                const inner = isClosed ? afterOpen.slice(0, closeRel) : afterOpen;
+                let label = "";
+                const titleMatch = inner.match(/"title"\s*:\s*"([^"]{1,80})"/);
+                if (titleMatch) label = titleMatch[1];
+                setMessages((prev) => {
+                  const next = prev.slice();
+                  const cur = next[next.length - 1];
+                  const prevTool = cur?.tool;
+                  const desiredStatus: ToolStatus = isClosed ? "done" : "running";
+                  if (
+                    prevTool?.tool === "map" &&
+                    prevTool.label === label &&
+                    prevTool.status === desiredStatus
+                  ) {
+                    return prev;
+                  }
+                  next[next.length - 1] = {
+                    ...cur,
+                    tool: { tool: "map", label, status: desiredStatus },
+                  };
+                  return next;
+                });
+              }
               scheduleFlush();
             } else if (j.type === "phase") {
               const phase: Phase = j.phase;
