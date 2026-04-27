@@ -27,7 +27,13 @@ import { Button } from "@/components/ui/button";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ModelPicker } from "@/components/ModelPicker";
 import { toast } from "sonner";
-import { providerForModel, type Provider } from "@/lib/models";
+import { AUTO_MODEL_ID, providerForModel, type Provider } from "@/lib/models";
+import {
+  SlashCommandMenu,
+  filterSlashItems,
+  type SlashItem,
+} from "@/components/SlashCommandMenu";
+import { getTextareaCaretCoords } from "@/lib/caret";
 import {
   notifyComposerBlur,
   notifyComposerFocus,
@@ -76,9 +82,12 @@ type Props = {
   }) => void;
   /** Called when a branch is discarded (empty on close) so the parent can remove it. */
   onBranchDeleted?: (branchId: string) => void;
+  /** Triggered when the user picks `/note` inside the panel — the parent
+   *  should focus the main chat composer in writing-canvas mode. */
+  onRequestWrite?: () => void;
 };
 
-export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted }: Props) {
+export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted, onRequestWrite }: Props) {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [messages, setMessages] = useState<BranchMsg[]>([]);
   const [input, setInput] = useState("");
@@ -95,6 +104,72 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const activeComposer = useActiveComposer();
   const dimmed = activeComposer === "main";
+
+  // Slash-command menu state (mirrors the main chat composer's behavior).
+  const [slash, setSlash] = useState<{
+    query: string;
+    start: number;
+    pos: { left: number; top: number } | null;
+  } | null>(null);
+
+  const detectSlash = (value: string, caret: number) => {
+    const before = value.slice(0, caret);
+    const m = before.match(/(?:^|\s)(\/[A-Za-z0-9.\-]*)$/);
+    if (!m) return null;
+    const token = m[1];
+    const start = before.length - token.length;
+    return { start, query: token.slice(1) };
+  };
+
+  const updateSlashFromTextarea = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const caret = el.selectionStart ?? el.value.length;
+    const found = detectSlash(el.value, caret);
+    if (!found) {
+      setSlash((s) => (s ? null : s));
+      return;
+    }
+    const { left } = getTextareaCaretCoords(el, found.start);
+    setSlash({
+      query: found.query,
+      start: found.start,
+      pos: { left: el.offsetLeft + left, top: el.offsetTop - 8 },
+    });
+  };
+
+  const applySlashSelection = (item: SlashItem) => {
+    const el = textareaRef.current;
+    if (!el || !slash) return;
+    const before = el.value.slice(0, slash.start);
+    const after = el.value.slice(el.selectionStart ?? slash.start);
+    const next = before + after;
+    setInput(next);
+    setSlash(null);
+
+    if (item.provider === "auto") {
+      setModel(AUTO_MODEL_ID);
+    } else if (item.provider === "write") {
+      // /note opens the writing canvas in the MAIN chat (the side panel
+      // is reserved for explorations).
+      onRequestWrite?.();
+      toast.success("Writing canvas enabled in the main chat");
+    } else if (item.provider === "explore") {
+      // We're already inside an exploration — surfaced as disabled below,
+      // but guard here too.
+      toast.info("You're already in an exploration");
+    } else {
+      setProvider(item.provider as Provider);
+      setModel(item.model);
+    }
+
+    setTimeout(() => {
+      const node = textareaRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(slash.start, slash.start);
+    }, 0);
+  };
 
   // Close handler: if the branch is empty (no messages persisted), discard it
   // so empty explorations don't pollute the conversation indicators.
@@ -419,6 +494,10 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   };
 
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // When the slash menu is open, let it consume navigation/confirm keys.
+    if (slash && ["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.key)) {
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
@@ -564,14 +643,31 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           <Textarea
             ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              requestAnimationFrame(updateSlashFromTextarea);
+            }}
             onKeyDown={onKey}
+            onKeyUp={updateSlashFromTextarea}
+            onClick={updateSlashFromTextarea}
             onFocus={() => notifyComposerFocus("explore")}
-            onBlur={() => notifyComposerBlur("explore")}
+            onBlur={() => {
+              notifyComposerBlur("explore");
+              setTimeout(() => setSlash(null), 100);
+            }}
             placeholder="Continue exploring..."
             rows={1}
             className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
           />
+          {slash && (
+            <SlashCommandMenu
+              query={slash.query}
+              position={slash.pos}
+              onSelect={applySlashSelection}
+              onClose={() => setSlash(null)}
+              excludeProviders={["explore"]}
+            />
+          )}
           <div className="flex items-center justify-end gap-[15px] px-2 pb-2">
             <ModelPicker
               provider={provider}
