@@ -442,19 +442,6 @@ export default function Chat() {
     textareaRef.current?.focus();
   };
 
-  // Global shortcut: Cmd/Ctrl + N → new chat
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (!mod || e.shiftKey || e.altKey) return;
-      if (e.key.toLowerCase() !== "n") return;
-      e.preventDefault();
-      newConversation();
-      textareaRef.current?.focus();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   const ensureConversation = async (_firstUserContent: string): Promise<string | null> => {
     if (activeId) return activeId;
