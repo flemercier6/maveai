@@ -22,6 +22,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialSection?: Section;
+  onProfileUpdated?: () => void;
 };
 
 export function SettingsDialog({ open, onOpenChange, initialSection }: Props) {
