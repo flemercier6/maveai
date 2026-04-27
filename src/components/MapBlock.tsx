@@ -298,7 +298,7 @@ function MapBlockImpl({ code }: Props) {
   })();
 
   return (
-    <div className="my-4 rounded-xl border border-border bg-primary-foreground overflow-hidden max-w-xl mx-auto">
+    <div className="my-4 rounded-xl border border-border bg-background overflow-hidden max-w-xl mx-auto">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
