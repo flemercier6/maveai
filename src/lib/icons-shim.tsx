@@ -39,6 +39,7 @@ import {
   SquareIcon,
   Tick02Icon,
   Delete02Icon,
+  Hamburger01Icon,
   // Folder icon set
   Folder01Icon,
   FolderAddIcon,
@@ -112,6 +113,7 @@ export const Settings = make(Settings02Icon, "Settings");
 export const LogOut = make(Logout01Icon, "LogOut");
 export const Upload = make(CloudUploadIcon, "Upload");
 export const Paperclip = make(AttachmentIcon, "Paperclip");
+export const Menu = make(Hamburger01Icon, "Menu");
 
 // Misc
 export const Brain = make(BrainIcon, "Brain");
