@@ -150,10 +150,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     if (item.provider === "auto") {
       setModel(AUTO_MODEL_ID);
     } else if (item.provider === "write") {
-      // /note opens the writing canvas in the MAIN chat (the side panel
-      // is reserved for explorations).
-      onRequestWrite?.();
-      toast.success("Writing canvas enabled in the main chat");
+      // /note flags the next reply in this panel as writing-canvas mode.
+      setWriteRequested(true);
+      toast.success("Writing canvas enabled for next message");
     } else if (item.provider === "explore") {
       // We're already inside an exploration — surfaced as disabled below,
       // but guard here too.
