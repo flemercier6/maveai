@@ -5,6 +5,7 @@ import { modelLabel, providerForModel, PROVIDER_LABEL } from "@/lib/models";
 import { billingMultiplier, billedCost, USD_TO_EUR } from "@/lib/pricing";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CostThresholdCard } from "@/components/CostThresholdCard";
 import {
   Bar,
   BarChart,
