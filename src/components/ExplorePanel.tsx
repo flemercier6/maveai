@@ -765,6 +765,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           &nbsp;
         </div>
       </div>
+      </div>
     </aside>
   );
 }
