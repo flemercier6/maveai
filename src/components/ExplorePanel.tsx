@@ -417,9 +417,14 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     if (override === undefined) setInput("");
     else setInput("");
     setSending(true);
-    // Snapshot the writing-canvas flag, then clear the tag immediately
-    // (matches the main chat: the badge disappears once the message is sent).
-    const useWriting = writeRequested;
+    // Determine writing-canvas mode: explicit /note tag, a writing-style
+    // request detected from the text, OR a follow-up to an existing canvas.
+    const lastAssistantWithCanvas = [...messages].reverse().find(
+      (m) => m.role === "assistant" && typeof m.canvas === "string" && (m.canvas as string).length > 0,
+    );
+    const useWriting =
+      writeRequested || looksLikeWritingRequest(text) || !!lastAssistantWithCanvas;
+    const forceCanvas = writeRequested === true;
     if (writeRequested) setWriteRequested(false);
 
     // Persist user message in branch.
@@ -463,6 +468,11 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       ...baseMsgs.map((m) => ({ role: m.role, content: m.content })),
     ];
 
+    // Pre-compute the canvas version number for the upcoming reply.
+    const prevCanvasCount = messages.filter(
+      (m) => m.role === "assistant" && typeof m.canvas === "string" && (m.canvas as string).length > 0,
+    ).length;
+
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -475,14 +485,13 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           Authorization: `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
-          // No conversationId → the edge function won't persist, which is exactly
-          // what we want (we persist to branch_messages ourselves).
           conversationId: null,
           provider,
           model,
           skipClarify: true,
           writingMode: useWriting,
-          forceCanvas: useWriting,
+          forceCanvas,
+          previousCanvas: lastAssistantWithCanvas?.canvas ?? null,
           messages: payloadMessages,
         }),
         signal: controller.signal,
@@ -512,7 +521,25 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
               acc += j.text;
               setMessages((prev) => {
                 const arr = prev.slice();
-                arr[arr.length - 1] = { role: "assistant", content: acc, model };
+                const current = arr[arr.length - 1] ?? { role: "assistant", content: "" };
+                if (useWriting) {
+                  const parsed = splitCanvas(acc);
+                  arr[arr.length - 1] = {
+                    ...current,
+                    role: "assistant",
+                    content: parsed.body,
+                    model,
+                    ...(parsed.canvas !== null
+                      ? {
+                          canvas: parsed.canvas,
+                          canvasTitle: parsed.title ?? current.canvasTitle,
+                          canvasVersion: current.canvasVersion ?? prevCanvasCount + 1,
+                        }
+                      : {}),
+                  };
+                } else {
+                  arr[arr.length - 1] = { ...current, role: "assistant", content: acc, model };
+                }
                 return arr;
               });
             }
@@ -520,7 +547,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         }
       }
 
-      // Persist the assistant reply.
+      // Persist the assistant reply (raw `acc` so canvas blocks survive reload).
       if (acc.trim()) {
         const { data: asstMsg } = await supabase
           .from("branch_messages")
@@ -535,12 +562,32 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           .single();
         setMessages((prev) => {
           const arr = prev.slice();
-          arr[arr.length - 1] = {
-            id: asstMsg?.id,
-            role: "assistant",
-            content: acc,
-            model,
-          };
+          const current = arr[arr.length - 1] ?? { role: "assistant", content: "" };
+          if (useWriting) {
+            const parsed = splitCanvas(acc);
+            arr[arr.length - 1] = {
+              ...current,
+              id: asstMsg?.id,
+              role: "assistant",
+              content: parsed.body,
+              model,
+              ...(parsed.canvas !== null
+                ? {
+                    canvas: parsed.canvas,
+                    canvasTitle: parsed.title ?? current.canvasTitle,
+                    canvasVersion: current.canvasVersion ?? prevCanvasCount + 1,
+                  }
+                : {}),
+            };
+          } else {
+            arr[arr.length - 1] = {
+              ...current,
+              id: asstMsg?.id,
+              role: "assistant",
+              content: acc,
+              model,
+            };
+          }
           return arr;
         });
       }
