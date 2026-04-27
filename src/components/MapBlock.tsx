@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { ExternalLink, MapPin, AlertCircle } from "lucide-react";
+import { ExternalLink, Globe } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/googleMaps";
 import { SkeletonShimmer } from "./SkeletonShimmer";
 
