@@ -1057,12 +1057,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { data: memRows } = await supabase
-      .from("user_memories")
-      .select("id,content,kind,keywords,folder_id")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(100);
+    // Free-tier: no memory injection at all.
+    const { data: memRows } = isFreeUser
+      ? { data: [] as Array<{ id: string; content: string; kind: string; keywords: string[] | null; folder_id: string | null }> }
+      : await supabase
+          .from("user_memories")
+          .select("id,content,kind,keywords,folder_id")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(100);
 
     const PROFILE_KINDS = new Set(["identity", "preference"]);
     const profileMems: { content: string; kind: string }[] = [];
