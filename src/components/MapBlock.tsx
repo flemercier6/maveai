@@ -268,7 +268,7 @@ function MapBlockImpl({ code }: Props) {
 
   if (!spec) {
     return (
-      <div className="my-4 rounded-xl border border-border bg-primary-foreground p-4 text-sm text-muted-foreground">
+      <div className="my-4 rounded-xl border border-border bg-background p-4 text-sm text-muted-foreground">
         <Globe className="inline w-4 h-4 mr-1.5 -mt-0.5" />
         Invalid map data
       </div>
