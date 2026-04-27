@@ -560,7 +560,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   return (
     <aside
       className={`relative h-full shrink-0 flex flex-col duration-300 ${
-        closing ? "animate-slide-out-right" : "animate-in slide-in-from-right"
+        closing
+          ? "animate-out slide-out-to-right fill-mode-forwards"
+          : "animate-in slide-in-from-right"
       }`}
       style={{ backgroundColor: "#F8F8F8", width }}
     >
