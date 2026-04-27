@@ -33,6 +33,8 @@ import {
   notifyComposerFocus,
   useActiveComposer,
 } from "@/hooks/useActiveComposer";
+import { usePlan, isPremiumModel, FREE_DAILY_LIMIT } from "@/hooks/usePlan";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 type StoredBranch = {
   id: string;
@@ -59,6 +61,14 @@ export default function Chat() {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [ephemeral, setEphemeral] = useState(false);
+  const plan = usePlan();
+  const isFree = plan.isFree;
+  const [upgradeReason, setUpgradeReason] = useState<null | "daily-limit" | "premium-model" | "memory" | "folder" | "save-chat">(null);
+
+  // Free users: every chat is forced into ephemeral mode (no persistence).
+  useEffect(() => {
+    if (isFree && !ephemeral) setEphemeral(true);
+  }, [isFree, ephemeral]);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [provider, setProvider] = useState<Provider>("openai");
@@ -509,6 +519,18 @@ export default function Chat() {
     const atts = overrideAttachments ?? attachments;
     if ((!text && atts.length === 0) || sending) return;
 
+    // ---- Free-tier checks ----
+    if (isFree) {
+      if (plan.remaining <= 0) {
+        setUpgradeReason("daily-limit");
+        return;
+      }
+      if (model !== AUTO_MODEL_ID && isPremiumModel(model)) {
+        setUpgradeReason("premium-model");
+        return;
+      }
+    }
+
     // /explore flow: route this request to a side exploration instead of the main chat.
     if (exploreRequested) {
       if (!text) {
@@ -649,6 +671,23 @@ export default function Chat() {
 
       if (!resp.ok || !resp.body) {
         const t = await resp.text();
+        try {
+          const j = JSON.parse(t) as { error?: string };
+          if (resp.status === 429 && j.error === "daily_limit") {
+            setUpgradeReason("daily-limit");
+            void plan.refresh();
+            // Remove the assistant placeholder + user msg we just appended.
+            setMessages((prev) => prev.slice(0, -2));
+            setStreaming(false);
+            return;
+          }
+          if (resp.status === 403 && j.error === "premium_model") {
+            setUpgradeReason("premium-model");
+            setMessages((prev) => prev.slice(0, -2));
+            setStreaming(false);
+            return;
+          }
+        } catch { /* fall through */ }
         throw new Error(t || `HTTP ${resp.status}`);
       }
 
@@ -962,6 +1001,7 @@ export default function Chat() {
       abortRef.current = null;
       setStreaming(false);
       setSending(false);
+      if (isFree) void plan.refresh();
     }
   };
 
@@ -1233,6 +1273,14 @@ export default function Chat() {
         branchesByConv={sidebarBranchesByConv}
         activeBranchId={exploreOpen ? exploreSeed?.existingBranchId ?? null : null}
         onOpenBranch={handleSidebarOpenBranch}
+        isFree={isFree}
+        onLockedFeature={(reason) => setUpgradeReason(reason)}
+      />
+
+      <UpgradeDialog
+        open={upgradeReason !== null}
+        onOpenChange={(o) => { if (!o) setUpgradeReason(null); }}
+        reason={upgradeReason ?? "daily-limit"}
       />
 
       <div className="flex-1 flex min-w-0 relative" style={{ backgroundColor: "#F8F8F8" }}>
@@ -1534,6 +1582,8 @@ export default function Chat() {
                     model={model}
                     onChange={(p, m) => { setProvider(p); setModel(m); }}
                     disabled={streaming}
+                    isFree={isFree}
+                    onPremiumLocked={() => setUpgradeReason("premium-model")}
                   />
                   {sending ? (
                     <Button

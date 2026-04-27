@@ -2,17 +2,20 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from "@/components/ui/select";
 import { MODELS, PROVIDERS, type Provider, providerForModel, AUTO_MODEL_ID } from "@/lib/models";
+import { isPremiumModel } from "@/hooks/usePlan";
 import { ProviderLogo } from "./ProviderLogo";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Lock } from "lucide-react";
 
 type Props = {
   provider: Provider;
   model: string;
   onChange: (p: Provider, m: string) => void;
   disabled?: boolean;
+  isFree?: boolean;
+  onPremiumLocked?: () => void;
 };
 
-export function ModelPicker({ provider, model, onChange, disabled }: Props) {
+export function ModelPicker({ provider, model, onChange, disabled, isFree, onPremiumLocked }: Props) {
   const isAuto = model === AUTO_MODEL_ID;
   const currentModel = MODELS[provider].find((m) => m.id === model);
   const [tip, setTip] = useState<{ text: string; top: number; left: number } | null>(null);
@@ -29,8 +32,11 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
         value={model}
         onValueChange={(v) => {
           if (v === AUTO_MODEL_ID) {
-            // Keep provider as-is; routing happens at send time
             onChange(provider, AUTO_MODEL_ID);
+            return;
+          }
+          if (isFree && isPremiumModel(v)) {
+            onPremiumLocked?.();
             return;
           }
           const p = providerForModel(v);
@@ -64,26 +70,35 @@ export function ModelPicker({ provider, model, onChange, disabled }: Props) {
           </SelectItem>
           <SelectSeparator />
           {PROVIDERS.map((p) =>
-            MODELS[p.id].map((m) => (
-              <SelectItem
-                key={m.id}
-                value={m.id}
-                onMouseEnter={(e) => showTip(e, m.description)}
-                onMouseLeave={hideTip}
-                onFocus={(e) => showTip(e, m.description)}
-                onBlur={hideTip}
-              >
-                <span className="flex items-center gap-2 leading-none">
-                  <ProviderLogo provider={p.id} className="w-5 h-5 shrink-0" />
-                  <span className="leading-none">{m.label}</span>
-                  {m.id === "gpt-5.5" && (
-                    <span className="ml-1 rounded-sm bg-blue-500 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white leading-none">
-                      New
-                    </span>
-                  )}
-                </span>
-              </SelectItem>
-            )),
+            MODELS[p.id].map((m) => {
+              const locked = isFree && isPremiumModel(m.id);
+              return (
+                <SelectItem
+                  key={m.id}
+                  value={m.id}
+                  onMouseEnter={(e) => showTip(e, locked ? "Plus only" : m.description)}
+                  onMouseLeave={hideTip}
+                  onFocus={(e) => showTip(e, locked ? "Plus only" : m.description)}
+                  onBlur={hideTip}
+                  className={locked ? "opacity-60" : undefined}
+                >
+                  <span className="flex items-center gap-2 leading-none">
+                    <ProviderLogo provider={p.id} className="w-5 h-5 shrink-0" />
+                    <span className="leading-none">{m.label}</span>
+                    {m.id === "gpt-5.5" && !locked && (
+                      <span className="ml-1 rounded-sm bg-blue-500 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white leading-none">
+                        New
+                      </span>
+                    )}
+                    {locked && (
+                      <span className="ml-1 inline-flex items-center gap-0.5 rounded-sm bg-foreground/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-foreground/70 leading-none">
+                        <Lock className="w-2.5 h-2.5" /> Plus
+                      </span>
+                    )}
+                  </span>
+                </SelectItem>
+              );
+            }),
           )}
         </SelectContent>
       </Select>
