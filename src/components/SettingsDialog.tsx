@@ -5,6 +5,7 @@ import { Settings, Sparkles, Globe, Brain } from "lucide-react";
 import { UsageTab } from "@/components/UsageTab";
 import { MemoryTab } from "@/components/MemoryTab";
 import { BillingTab } from "@/components/BillingTab";
+import { usePlan } from "@/hooks/usePlan";
 
 type Section = "preferences" | "integrations" | "memory" | "usage" | "billing";
 
@@ -23,6 +24,8 @@ type Props = {
 
 export function SettingsDialog({ open, onOpenChange }: Props) {
   const [active, setActive] = useState<Section>("memory");
+  const { isFree } = usePlan();
+  const visibleNav = NAV.filter((item) => !(isFree && item.id === "usage"));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -40,7 +43,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
           <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
             Settings
           </div>
-          {NAV.map((item) => {
+          {visibleNav.map((item) => {
             const Icon = item.icon;
             const isActive = item.id === active;
             const disabled = !!item.soon;
