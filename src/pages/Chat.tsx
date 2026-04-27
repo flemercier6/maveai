@@ -1366,9 +1366,6 @@ export default function Chat() {
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
               <h2 className="text-2xl font-semibold mb-2">How can I help you?</h2>
-              <p className="text-muted-foreground max-w-md">
-                Pick a provider and a model, then ask your question. Remember to add your API keys in the settings.
-              </p>
             </div>
           ) : (
             <div className="pt-8 pb-4">
