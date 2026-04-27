@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { modelLabel, providerForModel, PROVIDER_LABEL } from "@/lib/models";
-import { billingMultiplier, billedCost } from "@/lib/pricing";
+import { billingMultiplier, billedCost, USD_TO_EUR } from "@/lib/pricing";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -48,18 +48,18 @@ const RANGES: { id: Range; label: string }[] = [
   { id: "year", label: "Year" },
 ];
 
-const fmtUSD = (v: number) =>
-  v.toLocaleString("en-US", {
+const fmtEUR = (v: number) =>
+  (v * USD_TO_EUR).toLocaleString("fr-FR", {
     style: "currency",
-    currency: "USD",
+    currency: "EUR",
     minimumFractionDigits: 2,
     maximumFractionDigits: 3,
   });
 
-const fmtUSDShort = (v: number) =>
-  v.toLocaleString("en-US", {
+const fmtEURShort = (v: number) =>
+  (v * USD_TO_EUR).toLocaleString("fr-FR", {
     style: "currency",
-    currency: "USD",
+    currency: "EUR",
     minimumFractionDigits: 2,
     maximumFractionDigits: 3,
   });
@@ -348,7 +348,7 @@ export function UsageTab() {
             Total spent on AI
           </div>
           <div className="mt-2 font-semibold tracking-tight text-foreground tabular-nums text-xl">
-            {fmtUSD(data.totalCost)}
+            {fmtEUR(data.totalCost)}
           </div>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span>
@@ -382,7 +382,7 @@ export function UsageTab() {
             </span>
           </div>
           <div className="mt-2 font-semibold tracking-tight tabular-nums text-xl">
-            {fmtUSD(totalBilled)}
+            {fmtEUR(totalBilled)}
           </div>
           <div className="mt-3 text-xs opacity-70">
             Cheaper models carry a higher multiplier, premium models a lower one.
@@ -463,7 +463,7 @@ export function UsageTab() {
                 tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(v) => fmtUSDShort(Number(v))}
+                tickFormatter={(v) => fmtEURShort(Number(v))}
                 width={56}
               />
               <Tooltip
@@ -474,7 +474,7 @@ export function UsageTab() {
                   return (
                     <div className="rounded-[4px] bg-tooltip text-tooltip-foreground text-xs px-2 py-1 shadow-md">
                       <div className="opacity-70">{label}</div>
-                      <div className="font-semibold tabular-nums">{fmtUSD(v)}</div>
+                      <div className="font-semibold tabular-nums">{fmtEUR(v)}</div>
                     </div>
                   );
                 }}
@@ -523,13 +523,13 @@ export function UsageTab() {
                       {fmtTokens(row.output_tokens)}
                     </td>
                     <td className="px-3 py-2.5 text-right tabular-nums font-medium">
-                      {fmtUSD(row.cost)}
+                      {fmtEUR(row.cost)}
                     </td>
                     <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">
                       ×{mult}
                     </td>
                     <td className="px-3 py-2.5 text-right tabular-nums font-semibold">
-                      {fmtUSD(row.cost * mult)}
+                      {fmtEUR(row.cost * mult)}
                     </td>
                   </tr>
                 );

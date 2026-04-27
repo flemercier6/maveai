@@ -62,7 +62,16 @@ export function billingMultiplier(modelId: string): number {
   return Math.round(clamped * 10) / 10;
 }
 
-/** Bill amount for a given base cost + model id. */
+/** Bill amount for a given base cost + model id (in USD). */
 export function billedCost(baseCostUsd: number, modelId: string): number {
   return baseCostUsd * billingMultiplier(modelId);
+}
+
+// Conversion rate USD → EUR. Must stay in sync with
+// supabase/functions/billing-status & billing-charge.
+export const USD_TO_EUR = 0.92;
+
+/** Bill amount in EUR (markup + currency conversion). */
+export function billedCostEur(baseCostUsd: number, modelId: string): number {
+  return billedCost(baseCostUsd, modelId) * USD_TO_EUR;
 }
