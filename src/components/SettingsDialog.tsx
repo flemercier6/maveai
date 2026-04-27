@@ -13,7 +13,7 @@ const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?:
   { id: "integrations", label: "Integrations", icon: Globe },
   { id: "memory", label: "Memory", icon: Brain },
   { id: "usage", label: "Usage", icon: Sparkles },
-  { id: "billing", label: "Billing", icon: CreditCard },
+  { id: "billing", label: "Billing", icon: Sparkles },
 ];
 
 type Props = {
