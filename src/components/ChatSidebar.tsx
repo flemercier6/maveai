@@ -666,9 +666,14 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                   (userName?.[0] ?? userEmail?.[0] ?? "?")
                 )}
               </div>
-              <span className="flex-1 min-w-0 text-left text-xs truncate">
-                {userName ?? userEmail?.split("@")[0] ?? "User"}
-              </span>
+              <div className="flex-1 min-w-0 text-left">
+                <div className="text-xs truncate">
+                  {userName ?? userEmail?.split("@")[0] ?? "User"}
+                </div>
+                <div className="text-[10px] text-muted-foreground truncate leading-tight">
+                  {planLabel}
+                </div>
+              </div>
               <ChevronsUpDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
             </button>
           </DropdownMenuTrigger>
