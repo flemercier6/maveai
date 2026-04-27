@@ -105,6 +105,72 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   const activeComposer = useActiveComposer();
   const dimmed = activeComposer === "main";
 
+  // Slash-command menu state (mirrors the main chat composer's behavior).
+  const [slash, setSlash] = useState<{
+    query: string;
+    start: number;
+    pos: { left: number; top: number } | null;
+  } | null>(null);
+
+  const detectSlash = (value: string, caret: number) => {
+    const before = value.slice(0, caret);
+    const m = before.match(/(?:^|\s)(\/[A-Za-z0-9.\-]*)$/);
+    if (!m) return null;
+    const token = m[1];
+    const start = before.length - token.length;
+    return { start, query: token.slice(1) };
+  };
+
+  const updateSlashFromTextarea = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const caret = el.selectionStart ?? el.value.length;
+    const found = detectSlash(el.value, caret);
+    if (!found) {
+      setSlash((s) => (s ? null : s));
+      return;
+    }
+    const { left } = getTextareaCaretCoords(el, found.start);
+    setSlash({
+      query: found.query,
+      start: found.start,
+      pos: { left: el.offsetLeft + left, top: el.offsetTop - 8 },
+    });
+  };
+
+  const applySlashSelection = (item: SlashItem) => {
+    const el = textareaRef.current;
+    if (!el || !slash) return;
+    const before = el.value.slice(0, slash.start);
+    const after = el.value.slice(el.selectionStart ?? slash.start);
+    const next = before + after;
+    setInput(next);
+    setSlash(null);
+
+    if (item.provider === "auto") {
+      setModel(AUTO_MODEL_ID);
+    } else if (item.provider === "write") {
+      // /note opens the writing canvas in the MAIN chat (the side panel
+      // is reserved for explorations).
+      onRequestWrite?.();
+      toast.success("Writing canvas enabled in the main chat");
+    } else if (item.provider === "explore") {
+      // We're already inside an exploration — surfaced as disabled below,
+      // but guard here too.
+      toast.info("You're already in an exploration");
+    } else {
+      setProvider(item.provider as Provider);
+      setModel(item.model);
+    }
+
+    setTimeout(() => {
+      const node = textareaRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(slash.start, slash.start);
+    }, 0);
+  };
+
   // Close handler: if the branch is empty (no messages persisted), discard it
   // so empty explorations don't pollute the conversation indicators.
   const handleClose = async () => {
