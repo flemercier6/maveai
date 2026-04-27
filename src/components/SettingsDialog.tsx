@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { Settings, Sparkles, Globe, Brain } from "lucide-react";
+import { Settings, Sparkles, Globe, Brain, BarChart3, CreditCard } from "lucide-react";
 import { UsageTab } from "@/components/UsageTab";
 import { MemoryTab } from "@/components/MemoryTab";
 import { BillingTab } from "@/components/BillingTab";
