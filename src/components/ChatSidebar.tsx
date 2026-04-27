@@ -33,6 +33,12 @@ type Props = {
   userName?: string;
   /** Per-conversation streaming title state. target=null while waiting for the AI title. */
   titleAnim?: Record<string, { target: string | null; shown: string }>;
+  /** Explorations grouped by conversation id, displayed as collapsible sub-items. */
+  branchesByConv?: Record<string, { id: string; title: string }[]>;
+  /** Currently open branch id (when the explore panel is open). */
+  activeBranchId?: string | null;
+  /** Open the given branch in the explore panel (switches conversation if needed). */
+  onOpenBranch?: (conversationId: string, branchId: string) => void;
 };
 
 const MIN_WIDTH = 200;
