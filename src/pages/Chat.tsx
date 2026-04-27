@@ -36,7 +36,7 @@ type StoredBranch = {
 };
 
 type ToolStatus = "running" | "done" | "failed";
-type ToolUse = { tool: "scrape" | "search"; label: string; status?: ToolStatus };
+type ToolUse = { tool: "scrape" | "search" | "map"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
 export type MsgAttachmentPreview = { kind: "image" | "file"; name: string; dataUrl?: string };
