@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { modelLabel, providerForModel, PROVIDER_LABEL } from "@/lib/models";
-import { billingMultiplier, billedCost } from "@/lib/pricing";
+import { billingMultiplier, billedCost, USD_TO_EUR } from "@/lib/pricing";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
