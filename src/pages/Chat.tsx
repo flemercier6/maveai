@@ -1001,6 +1001,7 @@ export default function Chat() {
       abortRef.current = null;
       setStreaming(false);
       setSending(false);
+      if (isFree) void plan.refresh();
     }
   };
 
