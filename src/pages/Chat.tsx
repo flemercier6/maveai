@@ -59,6 +59,7 @@ export default function Chat() {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [ephemeral, setEphemeral] = useState(false);
   const plan = usePlan();
