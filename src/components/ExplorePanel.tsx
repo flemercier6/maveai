@@ -528,6 +528,8 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
                     content={m.content}
                     streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                     variant="explore"
+                    provider={m.model ? providerForModel(m.model) : undefined}
+                    model={m.model ?? undefined}
                   />
                 </div>
               );
