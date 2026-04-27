@@ -64,6 +64,10 @@ type Props = {
   activeBranchId?: string | null;
   /** Open the given branch in the explore panel (switches conversation if needed). */
   onOpenBranch?: (conversationId: string, branchId: string) => void;
+  /** True when the user is on the free plan — disables Plus-only features. */
+  isFree?: boolean;
+  /** Called when a free user tries to use a Plus-only feature. */
+  onLockedFeature?: (reason: "save-chat" | "folder") => void;
 };
 
 const MIN_WIDTH = 200;
@@ -73,7 +77,7 @@ const STORAGE_KEY = "chat-sidebar-width";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
-export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEphemeral, onDeleted, onMoveToFolder, userEmail, userName, titleAnim, branchesByConv, activeBranchId, onOpenBranch }: Props) {
+export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEphemeral, onDeleted, onMoveToFolder, userEmail, userName, titleAnim, branchesByConv, activeBranchId, onOpenBranch, isFree, onLockedFeature }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [expandedConvs, setExpandedConvs] = useState<Record<string, boolean>>({});
   const isConvExpanded = (id: string) => {
@@ -217,18 +221,27 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         <div className="mt-2 space-y-0.5">
           <div className="group flex items-stretch w-full">
             <button
-              onClick={onNew}
+              onClick={() => {
+                if (isFree) { onLockedFeature?.("save-chat"); return; }
+                onNew();
+              }}
               className="flex-1 flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-sm"
             >
               <Plus className="w-4 h-4 opacity-70" />
               <span>New chat</span>
-              <kbd
-                aria-label="Keyboard shortcut"
-                className="ml-auto inline-flex items-center gap-0.5 rounded-[3px] border border-sidebar-border bg-background/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground opacity-60 group-hover:opacity-100 transition-opacity"
-              >
-                {isMac ? "⌘" : "Ctrl"}
-                <span>N</span>
-              </kbd>
+              {isFree ? (
+                <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider rounded-full bg-foreground/10 text-foreground/60 px-1.5 py-0.5">
+                  Plus
+                </span>
+              ) : (
+                <kbd
+                  aria-label="Keyboard shortcut"
+                  className="ml-auto inline-flex items-center gap-0.5 rounded-[3px] border border-sidebar-border bg-background/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground opacity-60 group-hover:opacity-100 transition-opacity"
+                >
+                  {isMac ? "⌘" : "Ctrl"}
+                  <span>N</span>
+                </kbd>
+              )}
             </button>
             {onNewEphemeral && (
               <Tooltip>
@@ -472,8 +485,12 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     </CollapsibleTrigger>
                     <button
                       type="button"
-                      onClick={() => { setEditingFolder(null); setFolderDialogOpen(true); }}
-                      title="New folder"
+                      onClick={() => {
+                        if (isFree) { onLockedFeature?.("folder"); return; }
+                        setEditingFolder(null);
+                        setFolderDialogOpen(true);
+                      }}
+                      title={isFree ? "Folders are a Plus feature" : "New folder"}
                       className="h-6 w-6 flex items-center justify-center rounded-[4px] text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
                     >
                       <FolderPlus className="w-3.5 h-3.5" />
