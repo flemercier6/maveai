@@ -987,13 +987,25 @@ export default function Chat() {
       .slice(0, sourceIdx + 1)
       .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
       .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+    // Default the explore panel to the same model/provider that produced the
+    // associated assistant response — fall back to the nearest assistant
+    // message above the source if the source itself is a user message.
+    const sourceMsg = messages[sourceIdx];
+    const assistantMsg =
+      sourceMsg?.role === "assistant"
+        ? sourceMsg
+        : [...messages.slice(0, sourceIdx + 1)].reverse().find((m) => m.role === "assistant");
+    const seedProvider = (assistantMsg?.provider ?? provider) as Provider;
+    const seedModel =
+      assistantMsg?.model ||
+      (model === AUTO_MODEL_ID ? "gpt-4o-mini" : model);
     setExploreSeed({
       conversationId: activeId,
       sourceMessageId: payload.messageId,
       quotedText: payload.text,
       parentHistory,
-      provider,
-      model: model === AUTO_MODEL_ID ? "gpt-4o-mini" : model,
+      provider: seedProvider,
+      model: seedModel,
     });
     setExploreOpen(true);
   };
