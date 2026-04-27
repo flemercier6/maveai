@@ -38,6 +38,8 @@ type StoredBranch = {
   id: string;
   source_message_id: string;
   quoted_text: string;
+  reply_count: number;
+  last_activity: string | null;
 };
 
 type ToolStatus = "running" | "done" | "failed";
