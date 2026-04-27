@@ -351,21 +351,55 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
   };
 }
 
-function BranchChip({ branch, onClick }: { branch: MessageBranch; onClick: () => void }) {
-  const label =
+function formatRelativeTime(iso?: string | null): string {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const diff = Math.max(0, Date.now() - then);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+function ThreadEntry({ branch, onClick }: { branch: MessageBranch; onClick: () => void }) {
+  const preview =
     branch.kind === "selection"
-      ? branch.quotedText.replace(/\s+/g, " ").trim().slice(0, 36) +
-        (branch.quotedText.length > 36 ? "…" : "")
-      : "Exploration";
+      ? `"${branch.quotedText.replace(/\s+/g, " ").trim().slice(0, 80)}${branch.quotedText.length > 80 ? "…" : ""}"`
+      : "Exploration of this answer";
+  const count = branch.replyCount ?? 0;
+  const replyLabel =
+    count === 0 ? "Open thread" : `${count} ${count === 1 ? "reply" : "replies"}`;
+  const time = formatRelativeTime(branch.lastActivity);
   return (
     <button
       type="button"
       onClick={onClick}
-      title={branch.kind === "selection" ? `"${branch.quotedText.slice(0, 140)}"` : "Open exploration"}
-      className="pointer-events-auto inline-flex items-center gap-1.5 max-w-[220px] h-7 px-2.5 rounded-full border border-border bg-card text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors"
+      className="group w-full flex items-center gap-2.5 px-2 py-1.5 -mx-2 rounded-lg text-left hover:bg-dropdown-hover transition-colors"
     >
-      <Sparkles className="w-3.5 h-3.5 shrink-0" />
-      <span className="truncate">{label}</span>
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-secondary text-foreground/70">
+        <Sparkles className="w-3.5 h-3.5" />
+      </span>
+      <div className="min-w-0 flex-1 flex items-baseline gap-2">
+        <span className="text-[12px] font-medium text-foreground whitespace-nowrap">
+          {replyLabel}
+        </span>
+        {time && (
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+            Last reply {time}
+          </span>
+        )}
+        <span className="text-[12px] text-muted-foreground truncate italic">
+          {preview}
+        </span>
+      </div>
+      <span className="text-[11px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+        View thread
+      </span>
     </button>
   );
 }
