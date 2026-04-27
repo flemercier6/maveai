@@ -39,6 +39,27 @@ import {
   SquareIcon,
   Tick02Icon,
   Delete02Icon,
+  // Folder icon set
+  Folder01Icon,
+  FolderAddIcon,
+  Image01Icon,
+  Bookmark01Icon,
+  Briefcase01Icon,
+  FavouriteIcon,
+  StarIcon,
+  CodeIcon,
+  CoffeeIcon,
+  Camera01Icon,
+  MusicNote01Icon,
+  RocketIcon,
+  BulbIcon,
+  Library01Icon,
+  Target01Icon,
+  Home01Icon,
+  GameController01Icon,
+  School01Icon,
+  PaintBoardIcon,
+  Tag01Icon,
 } from "@hugeicons/core-free-icons";
 
 export type LucideProps = SVGProps<SVGSVGElement> & {
