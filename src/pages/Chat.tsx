@@ -61,6 +61,14 @@ export default function Chat() {
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [ephemeral, setEphemeral] = useState(false);
+  const plan = usePlan();
+  const isFree = plan.isFree;
+  const [upgradeReason, setUpgradeReason] = useState<null | "daily-limit" | "premium-model" | "memory" | "folder" | "save-chat">(null);
+
+  // Free users: every chat is forced into ephemeral mode (no persistence).
+  useEffect(() => {
+    if (isFree && !ephemeral) setEphemeral(true);
+  }, [isFree, ephemeral]);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [provider, setProvider] = useState<Provider>("openai");
