@@ -53,7 +53,7 @@ import {
   MusicNote01Icon,
   RocketIcon,
   BulbIcon,
-  Library01Icon,
+  LibraryIcon,
   Target01Icon,
   Home01Icon,
   GameController01Icon,
