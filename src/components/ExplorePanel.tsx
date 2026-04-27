@@ -279,7 +279,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
               acc += j.text;
               setMessages((prev) => {
                 const arr = prev.slice();
-                arr[arr.length - 1] = { role: "assistant", content: acc };
+                arr[arr.length - 1] = { role: "assistant", content: acc, model };
                 return arr;
               });
             }
