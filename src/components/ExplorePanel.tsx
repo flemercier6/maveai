@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ChatMessage } from "@/components/ChatMessage";
+import { ModelPicker } from "@/components/ModelPicker";
 import { toast } from "sonner";
-import type { Provider } from "@/lib/models";
+import { providerForModel, type Provider } from "@/lib/models";
 import {
   notifyComposerBlur,
   notifyComposerFocus,
