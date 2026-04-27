@@ -425,6 +425,13 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     const forceCanvas = writeRequested === true;
     if (writeRequested) setWriteRequested(false);
 
+    // Resolve Auto → concrete provider/model for this turn. Preserve the user's
+    // Auto choice in panel state so the chip stays on Auto after sending.
+    const userPickedAuto = model === AUTO_MODEL_ID;
+    const resolved = userPickedAuto ? routeAuto(text) : { provider, model };
+    const sendProvider = resolved.provider;
+    const sendModel = resolved.model;
+
     // Persist user message in branch.
     const { data: userMsg } = await supabase
       .from("branch_messages")
