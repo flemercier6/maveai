@@ -192,7 +192,7 @@ export function BillingTab() {
   if (!pk) {
     return (
       <section className="space-y-2 max-w-xl">
-        <h2 className="text-lg font-semibold">Billing</h2>
+        <h2 className="text-lg font-semibold">Plans & Billing</h2>
         <p className="text-sm text-muted-foreground">
           The payment system is not configured yet. Please try again in a few moments.
         </p>
@@ -218,7 +218,7 @@ export function BillingTab() {
       <Elements stripe={getStripe(pk)}>
         <section className="space-y-6 max-w-2xl">
           <div>
-            <h2 className="text-lg font-semibold">Billing</h2>
+            <h2 className="text-lg font-semibold">Plans & Billing</h2>
             <p className="text-sm text-muted-foreground">
               You're on the <strong>Free</strong> plan. Upgrade to Plus for full access, pay-as-you-go.
             </p>
@@ -311,7 +311,7 @@ export function BillingTab() {
     <Elements stripe={getStripe(pk)}>
       <section className="space-y-6 max-w-2xl">
         <div>
-          <h2 className="text-lg font-semibold">Billing</h2>
+          <h2 className="text-lg font-semibold">Plans & Billing</h2>
           <p className="text-sm text-muted-foreground">
             Plan{" "}
             <strong>{isPlus ? "Plus (pay-as-you-go)" : "Free"}</strong>
