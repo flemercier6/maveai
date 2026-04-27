@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { Settings, Sparkles, Globe, Brain } from "lucide-react";
+import { Settings, Sparkles, Globe, Brain, CreditCard } from "lucide-react";
 import { UsageTab } from "@/components/UsageTab";
 import { MemoryTab } from "@/components/MemoryTab";
+import { BillingTab } from "@/components/BillingTab";
 
-type Section = "preferences" | "integrations" | "memory" | "usage";
+type Section = "preferences" | "integrations" | "memory" | "usage" | "billing";
 
 const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "preferences", label: "Preferences", icon: Settings },
   { id: "integrations", label: "Integrations", icon: Globe },
   { id: "memory", label: "Memory", icon: Brain },
   { id: "usage", label: "Usage", icon: Sparkles },
+  { id: "billing", label: "Billing", icon: CreditCard },
 ];
 
 type Props = {
