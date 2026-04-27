@@ -64,6 +64,9 @@ type BranchMsg = {
   role: "user" | "assistant";
   content: string;
   model?: string | null;
+  canvas?: string;
+  canvasTitle?: string;
+  canvasVersion?: number;
 };
 
 type Props = {
