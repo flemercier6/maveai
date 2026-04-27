@@ -514,12 +514,16 @@ async function linkupSearch(
       const t = (res.type ?? "").toString().toLowerCase();
       return t === "image" || /\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(res.url ?? "");
     });
-    const top = textResults.slice(0, 8);
+    // Token-cost optimization: keep fewer sources and shorter snippets.
+    // Linkup is already on `depth: "standard"` (not "deep"), so the API call
+    // itself is cheap; the bulk of token cost comes from the snippets we
+    // re-inject into the LLM prompt below.
+    const top = textResults.slice(0, 5);
     const sources: WebSource[] = top.map((res) => ({
       title: (res.name ?? res.title ?? "Untitled").toString(),
       url: (res.url ?? "").toString(),
     }));
-    const images: WebImage[] = imageResults.slice(0, 6).map((res) => ({
+    const images: WebImage[] = imageResults.slice(0, 4).map((res) => ({
       url: (res.url ?? "").toString(),
       title: (res.name ?? res.title ?? "").toString() || undefined,
       sourceUrl: (res.sourceUrl ?? res.referrer ?? undefined) as string | undefined,
@@ -527,11 +531,11 @@ async function linkupSearch(
     const blocks = top.map((res, i) => {
       const title = sources[i].title;
       const url = sources[i].url;
-      const content = (res.content ?? res.snippet ?? res.description ?? "").toString().slice(0, 2000);
+      const content = (res.content ?? res.snippet ?? res.description ?? "").toString().slice(0, 900);
       return `### Source ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
     });
     return {
-      content: blocks.join("\n\n---\n\n").slice(0, 15000),
+      content: blocks.join("\n\n---\n\n").slice(0, 5000),
       sources,
       images,
     };
