@@ -693,12 +693,25 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     }
   };
 
-  // Resizable width (px). Persisted to localStorage.
+  // Track mobile to render the panel as a full-screen overlay.
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 767px)").matches : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Resizable width (px). Persisted to localStorage. On mobile we ignore
+  // the saved width and use the full viewport instead.
   const [width, setWidth] = useState<number>(() => {
     if (typeof window === "undefined") return 480;
     const saved = Number(localStorage.getItem("explore-panel-width"));
     return Number.isFinite(saved) && saved >= 320 ? saved : 480;
   });
+  const effectiveWidth = isMobile && typeof window !== "undefined" ? window.innerWidth : width;
   const resizingRef = useRef(false);
 
   useEffect(() => {
