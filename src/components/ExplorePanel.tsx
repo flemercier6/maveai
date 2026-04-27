@@ -65,6 +65,8 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const activeComposer = useActiveComposer();
+  const dimmed = activeComposer === "main";
 
   // Close handler: if the branch is empty (no messages persisted), discard it
   // so empty explorations don't pollute the conversation indicators.
