@@ -28,6 +28,7 @@ import { ChatMessage } from "@/components/ChatMessage";
 import { ModelPicker } from "@/components/ModelPicker";
 import { toast } from "sonner";
 import { AUTO_MODEL_ID, providerForModel, type Provider } from "@/lib/models";
+import { looksLikeWritingRequest } from "@/lib/writingDetection";
 import {
   SlashCommandMenu,
   filterSlashItems,
@@ -64,6 +65,9 @@ type BranchMsg = {
   role: "user" | "assistant";
   content: string;
   model?: string | null;
+  canvas?: string;
+  canvasTitle?: string;
+  canvasVersion?: number;
 };
 
 type Props = {
@@ -83,6 +87,49 @@ type Props = {
   /** Called when a branch is discarded (empty on close) so the parent can remove it. */
   onBranchDeleted?: (branchId: string) => void;
 };
+
+// Parse a streamed assistant string into body / canvas / title.
+// Mirrors the main chat's splitCanvas so the writing-canvas (/note) feature
+// works identically inside the exploration side panel.
+function splitCanvas(raw: string): {
+  body: string;
+  canvas: string | null;
+  title: string | null;
+  editMode: "yes" | "no" | null;
+} {
+  let rest = raw;
+  let editMode: "yes" | "no" | null = null;
+  let title: string | null = null;
+
+  const editMatch = rest.match(/^\s*CANVAS_EDIT:\s*(yes|no)\s*\n?/i);
+  if (editMatch) {
+    editMode = editMatch[1].toLowerCase() as "yes" | "no";
+    rest = rest.slice(editMatch[0].length);
+  }
+  const titleMatch = rest.match(/^\s*CANVAS_TITLE:\s*([^\n]+?)[ \t]*\n/i);
+  if (titleMatch) {
+    title = titleMatch[1].trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 60);
+    rest = rest.slice(titleMatch[0].length);
+  }
+  if (editMode === "no") return { body: rest, canvas: null, title: null, editMode };
+
+  const open = rest.indexOf("```canvas");
+  if (open < 0) return { body: rest, canvas: editMode === "yes" ? "" : null, title, editMode };
+  const afterOpen = rest.indexOf("\n", open);
+  if (afterOpen < 0) return { body: rest.slice(0, open), canvas: "", title, editMode };
+  const close = rest.indexOf("```", afterOpen + 1);
+  if (close < 0) return { body: rest.slice(0, open), canvas: rest.slice(afterOpen + 1), title, editMode };
+  const canvas = rest.slice(afterOpen + 1, close).replace(/\n+$/, "");
+  const body = rest.slice(0, open) + rest.slice(close + 3);
+  return { body, canvas, title, editMode };
+}
+
+// Parse a persisted assistant message back into body + optional canvas/title.
+function parseStored(raw: string): { body: string; canvas?: string; canvasTitle?: string } {
+  const r = splitCanvas(raw ?? "");
+  if (r.canvas === null) return { body: r.body };
+  return { body: r.body, canvas: r.canvas, canvasTitle: r.title ?? undefined };
+}
 
 export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted }: Props) {
   const [branchId, setBranchId] = useState<string | null>(null);
@@ -209,13 +256,30 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           toast.error(error.message);
           return;
         }
+        let canvasCounter = 0;
         setMessages(
-          (data ?? []).map((m: any) => ({
-            id: m.id,
-            role: m.role as "user" | "assistant",
-            content: m.content,
-            model: m.model ?? null,
-          })),
+          (data ?? []).map((m: any) => {
+            if (m.role === "assistant") {
+              const parsed = parseStored(m.content ?? "");
+              const hasCanvas = typeof parsed.canvas === "string";
+              if (hasCanvas) canvasCounter += 1;
+              return {
+                id: m.id,
+                role: "assistant" as const,
+                content: parsed.body,
+                model: m.model ?? null,
+                ...(hasCanvas
+                  ? { canvas: parsed.canvas, canvasTitle: parsed.canvasTitle, canvasVersion: canvasCounter }
+                  : {}),
+              };
+            }
+            return {
+              id: m.id,
+              role: m.role as "user" | "assistant",
+              content: m.content,
+              model: m.model ?? null,
+            };
+          }),
         );
       })();
       return;
@@ -353,9 +417,14 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     if (override === undefined) setInput("");
     else setInput("");
     setSending(true);
-    // Snapshot the writing-canvas flag, then clear the tag immediately
-    // (matches the main chat: the badge disappears once the message is sent).
-    const useWriting = writeRequested;
+    // Determine writing-canvas mode: explicit /note tag, a writing-style
+    // request detected from the text, OR a follow-up to an existing canvas.
+    const lastAssistantWithCanvas = [...messages].reverse().find(
+      (m) => m.role === "assistant" && typeof m.canvas === "string" && (m.canvas as string).length > 0,
+    );
+    const useWriting =
+      writeRequested || looksLikeWritingRequest(text) || !!lastAssistantWithCanvas;
+    const forceCanvas = writeRequested === true;
     if (writeRequested) setWriteRequested(false);
 
     // Persist user message in branch.
@@ -399,6 +468,11 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       ...baseMsgs.map((m) => ({ role: m.role, content: m.content })),
     ];
 
+    // Pre-compute the canvas version number for the upcoming reply.
+    const prevCanvasCount = messages.filter(
+      (m) => m.role === "assistant" && typeof m.canvas === "string" && (m.canvas as string).length > 0,
+    ).length;
+
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -411,14 +485,13 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           Authorization: `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
-          // No conversationId → the edge function won't persist, which is exactly
-          // what we want (we persist to branch_messages ourselves).
           conversationId: null,
           provider,
           model,
           skipClarify: true,
           writingMode: useWriting,
-          forceCanvas: useWriting,
+          forceCanvas,
+          previousCanvas: lastAssistantWithCanvas?.canvas ?? null,
           messages: payloadMessages,
         }),
         signal: controller.signal,
@@ -448,7 +521,25 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
               acc += j.text;
               setMessages((prev) => {
                 const arr = prev.slice();
-                arr[arr.length - 1] = { role: "assistant", content: acc, model };
+                const current = arr[arr.length - 1] ?? { role: "assistant", content: "" };
+                if (useWriting) {
+                  const parsed = splitCanvas(acc);
+                  arr[arr.length - 1] = {
+                    ...current,
+                    role: "assistant",
+                    content: parsed.body,
+                    model,
+                    ...(parsed.canvas !== null
+                      ? {
+                          canvas: parsed.canvas,
+                          canvasTitle: parsed.title ?? current.canvasTitle,
+                          canvasVersion: current.canvasVersion ?? prevCanvasCount + 1,
+                        }
+                      : {}),
+                  };
+                } else {
+                  arr[arr.length - 1] = { ...current, role: "assistant", content: acc, model };
+                }
                 return arr;
               });
             }
@@ -456,7 +547,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         }
       }
 
-      // Persist the assistant reply.
+      // Persist the assistant reply (raw `acc` so canvas blocks survive reload).
       if (acc.trim()) {
         const { data: asstMsg } = await supabase
           .from("branch_messages")
@@ -471,12 +562,32 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           .single();
         setMessages((prev) => {
           const arr = prev.slice();
-          arr[arr.length - 1] = {
-            id: asstMsg?.id,
-            role: "assistant",
-            content: acc,
-            model,
-          };
+          const current = arr[arr.length - 1] ?? { role: "assistant", content: "" };
+          if (useWriting) {
+            const parsed = splitCanvas(acc);
+            arr[arr.length - 1] = {
+              ...current,
+              id: asstMsg?.id,
+              role: "assistant",
+              content: parsed.body,
+              model,
+              ...(parsed.canvas !== null
+                ? {
+                    canvas: parsed.canvas,
+                    canvasTitle: parsed.title ?? current.canvasTitle,
+                    canvasVersion: current.canvasVersion ?? prevCanvasCount + 1,
+                  }
+                : {}),
+            };
+          } else {
+            arr[arr.length - 1] = {
+              ...current,
+              id: asstMsg?.id,
+              role: "assistant",
+              content: acc,
+              model,
+            };
+          }
           return arr;
         });
       }
@@ -756,6 +867,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
                     variant="explore"
                     provider={m.model ? providerForModel(m.model) : undefined}
                     model={m.model ?? undefined}
+                    canvas={m.canvas}
+                    canvasTitle={m.canvasTitle}
+                    canvasVersion={m.canvasVersion}
                   />
                 </div>
               );
