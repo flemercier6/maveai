@@ -1475,7 +1475,7 @@ Deno.serve(async (req) => {
           const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
 
           // ---------- Extract memorable facts (await so we can notify the client) ----------
-          if (!ephemeral) {
+          if (!ephemeral && !isFreeUser) {
             try {
               const memResult = await extractAndSaveMemory({
                 supabase,
