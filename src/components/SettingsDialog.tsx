@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Settings, Sparkles, Globe, Brain } from "lucide-react";
@@ -20,12 +20,18 @@ const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?:
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialSection?: Section;
 };
 
-export function SettingsDialog({ open, onOpenChange }: Props) {
-  const [active, setActive] = useState<Section>("memory");
+export function SettingsDialog({ open, onOpenChange, initialSection }: Props) {
+  const [active, setActive] = useState<Section>(initialSection ?? "memory");
   const { isFree } = usePlan();
   const visibleNav = NAV.filter((item) => !(isFree && item.id === "usage"));
+
+  // When the dialog opens with a requested section, jump to it.
+  useEffect(() => {
+    if (open && initialSection) setActive(initialSection);
+  }, [open, initialSection]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
