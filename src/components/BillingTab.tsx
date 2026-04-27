@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { CreditCard, Trash2, Star, Loader2 } from "lucide-react";
+import { Trash2, Check, Loader2 } from "lucide-react";
 
 type Cycle = "daily" | "weekly" | "monthly";
 type Card = {
@@ -302,7 +302,6 @@ export function BillingTab() {
               className="flex items-center justify-between border border-border rounded-md p-3"
             >
               <div className="flex items-center gap-2 text-sm">
-                <CreditCard className="w-4 h-4 text-muted-foreground" />
                 <span className="capitalize">{c.brand}</span>
                 <span>•••• {c.last4}</span>
                 <span className="text-muted-foreground">
