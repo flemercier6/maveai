@@ -11,11 +11,20 @@ type Marker = {
   description?: string;
 };
 
+type RouteProfile = "driving" | "walking" | "cycling" | "driving-traffic";
+
+type RouteSpec = {
+  profile?: RouteProfile;
+  /** Ordered list of waypoints (≥2). If omitted, falls back to `markers` order. */
+  waypoints?: { lat: number; lng: number }[];
+};
+
 type Spec = {
   title?: string;
   center?: { lat: number; lng: number };
   zoom?: number;
   markers?: Marker[];
+  route?: RouteSpec;
 };
 
 type Props = { code: string };
@@ -58,11 +67,24 @@ function parseSpec(code: string): Spec | null {
       raw.center && typeof raw.center.lat === "number" && typeof raw.center.lng === "number"
         ? { lat: raw.center.lat, lng: raw.center.lng }
         : undefined;
+    let route: RouteSpec | undefined;
+    if (raw.route && typeof raw.route === "object") {
+      const profile: RouteProfile = ["driving", "walking", "cycling", "driving-traffic"].includes(raw.route.profile)
+        ? raw.route.profile
+        : "driving";
+      const wps = Array.isArray(raw.route.waypoints)
+        ? raw.route.waypoints
+            .filter((w: any) => typeof w?.lat === "number" && typeof w?.lng === "number")
+            .map((w: any) => ({ lat: w.lat, lng: w.lng }))
+        : undefined;
+      route = { profile, waypoints: wps };
+    }
     return {
       title: typeof raw.title === "string" ? raw.title : undefined,
       center,
       zoom: typeof raw.zoom === "number" ? raw.zoom : undefined,
       markers,
+      route,
     };
   } catch {
     return null;
@@ -78,6 +100,39 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function formatDistance(m: number): string {
+  if (m < 1000) return `${Math.round(m)} m`;
+  return `${(m / 1000).toFixed(m < 10000 ? 1 : 0)} km`;
+}
+
+function formatDuration(s: number): string {
+  const mins = Math.round(s / 60);
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m === 0 ? `${h} h` : `${h} h ${m}`;
+}
+
+type RouteData = { geometry: GeoJSON.LineString; distance: number; duration: number };
+
+async function fetchRoute(token: string, spec: Spec): Promise<RouteData | null> {
+  const route = spec.route;
+  if (!route) return null;
+  const wps = route.waypoints?.length
+    ? route.waypoints
+    : (spec.markers ?? []).map((m) => ({ lat: m.lat, lng: m.lng }));
+  if (wps.length < 2) return null;
+  const coords = wps.map((w) => `${w.lng},${w.lat}`).join(";");
+  const profile = route.profile || "driving";
+  const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coords}?geometries=geojson&overview=full&access_token=${encodeURIComponent(token)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Directions API ${res.status}`);
+  const data = await res.json();
+  const r = data?.routes?.[0];
+  if (!r?.geometry) return null;
+  return { geometry: r.geometry, distance: r.distance, duration: r.duration };
+}
+
 function MapBlockImpl({ code }: Props) {
   const spec = useMemo(() => parseSpec(code), [code]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -85,6 +140,7 @@ function MapBlockImpl({ code }: Props) {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
+  const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number; profile: RouteProfile } | null>(null);
 
   // Init map
   useEffect(() => {
@@ -131,7 +187,7 @@ function MapBlockImpl({ code }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync markers
+  // Sync markers + route
   useEffect(() => {
     if (status !== "ready" || !spec || !mapRef.current) return;
     const map = mapRef.current;
@@ -140,10 +196,10 @@ function MapBlockImpl({ code }: Props) {
     markersRef.current = [];
 
     const markers = spec.markers ?? [];
-    if (markers.length === 0) return;
-
     const bounds = new mapboxgl.LngLatBounds();
-    markers.forEach((m, i) => {
+    let hasBounds = false;
+
+    markers.forEach((m) => {
       const popupHtml = `
         <div style="font-family: inherit; max-width: 220px;">
           ${m.label ? `<div style="font-weight:600;font-size:13px;margin-bottom:2px;">${escapeHtml(m.label)}</div>` : ""}
@@ -158,14 +214,56 @@ function MapBlockImpl({ code }: Props) {
       marker.addTo(map);
       markersRef.current.push(marker);
       bounds.extend([m.lng, m.lat]);
+      hasBounds = true;
     });
 
-    if (markers.length > 1) {
+    // Cleanup any previous route layer
+    if (map.getLayer("map-route-line")) map.removeLayer("map-route-line");
+    if (map.getSource("map-route")) map.removeSource("map-route");
+    setRouteInfo(null);
+
+    let cancelled = false;
+    const drawRoute = async () => {
+      if (!spec.route) return;
+      try {
+        const token = await fetchToken();
+        const data = await fetchRoute(token, spec);
+        if (cancelled || !data || !mapRef.current) return;
+        const m = mapRef.current;
+        m.addSource("map-route", { type: "geojson", data: { type: "Feature", properties: {}, geometry: data.geometry } });
+        m.addLayer({
+          id: "map-route-line",
+          type: "line",
+          source: "map-route",
+          layout: { "line-join": "round", "line-cap": "round" },
+          paint: {
+            "line-color": "hsl(var(--primary))",
+            "line-width": 4,
+            "line-opacity": 0.9,
+          },
+        });
+        // Extend bounds to route
+        const rb = new mapboxgl.LngLatBounds();
+        for (const c of data.geometry.coordinates) rb.extend(c as [number, number]);
+        const merged = hasBounds ? bounds.extend(rb.getNorthEast()).extend(rb.getSouthWest()) : rb;
+        m.fitBounds(merged, { padding: 60, duration: 0 });
+        setRouteInfo({ distance: data.distance, duration: data.duration, profile: spec.route.profile || "driving" });
+      } catch (e) {
+        console.error("Route fetch failed", e);
+      }
+    };
+
+    if (markers.length > 1 && !spec.route) {
       map.fitBounds(bounds, { padding: 60, duration: 0 });
-    } else if (markers.length === 1) {
+    } else if (markers.length === 1 && !spec.route) {
       map.setCenter([markers[0].lng, markers[0].lat]);
       map.setZoom(spec.zoom ?? 14);
     }
+    drawRoute();
+
+    return () => {
+      cancelled = true;
+    };
   }, [spec, status]);
 
   if (!spec) {
@@ -178,6 +276,21 @@ function MapBlockImpl({ code }: Props) {
   }
 
   const openInMapsUrl = (() => {
+    const wps = spec.route?.waypoints ?? (spec.markers ?? []).map((m) => ({ lat: m.lat, lng: m.lng }));
+    if (spec.route && wps.length >= 2) {
+      const profileMap: Record<RouteProfile, string> = {
+        driving: "driving",
+        "driving-traffic": "driving",
+        walking: "walking",
+        cycling: "bicycling",
+      };
+      const travel = profileMap[spec.route.profile || "driving"];
+      const origin = `${wps[0].lat},${wps[0].lng}`;
+      const destination = `${wps[wps.length - 1].lat},${wps[wps.length - 1].lng}`;
+      const waypoints = wps.slice(1, -1).map((w) => `${w.lat},${w.lng}`).join("|");
+      const wpParam = waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : "";
+      return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=${travel}${wpParam}`;
+    }
     const m = spec.markers?.[0];
     if (m) return `https://www.google.com/maps/search/?api=1&query=${m.lat},${m.lng}`;
     if (spec.center) return `https://www.google.com/maps/@${spec.center.lat},${spec.center.lng},${spec.zoom ?? 12}z`;
@@ -186,23 +299,30 @@ function MapBlockImpl({ code }: Props) {
 
   return (
     <div className="my-4 rounded-xl border border-border bg-primary-foreground overflow-hidden max-w-xl mx-auto">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
           <span className="text-sm font-medium text-foreground truncate font-sans">
             {spec.title || (spec.markers && spec.markers.length > 1 ? `${spec.markers.length} locations` : "Map")}
           </span>
         </div>
-        {openInMapsUrl && (
-          <a
-            href={openInMapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
-          >
-            Open ↗ <ExternalLink className="w-3 h-3" />
-          </a>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {routeInfo && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+              {formatDistance(routeInfo.distance)} · {formatDuration(routeInfo.duration)}
+            </span>
+          )}
+          {openInMapsUrl && (
+            <a
+              href={openInMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              Open <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </div>
       </div>
       <div className="relative w-full h-[320px] bg-muted">
         {status === "loading" && (
