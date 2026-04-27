@@ -79,8 +79,10 @@ export function UpgradeDialog({ open, onOpenChange, reason }: Props) {
           <Button
             size="sm"
             onClick={() => {
-              // TODO: hook up to Stripe checkout when Plus is enabled.
               onOpenChange(false);
+              window.dispatchEvent(
+                new CustomEvent("open-settings", { detail: { section: "billing" } }),
+              );
             }}
           >
             <Sparkles className="w-4 h-4 mr-1" /> Upgrade to Plus
