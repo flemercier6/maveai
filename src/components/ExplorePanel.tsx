@@ -457,7 +457,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         className="absolute top-0 left-0 h-full w-1 -translate-x-1/2 cursor-col-resize hover:bg-border z-10"
         aria-label="Resize exploration panel"
       />
-      <header className="flex items-center justify-between h-12 px-4 border-b border-border shrink-0">
+      <header className="flex items-center justify-between h-12 px-4 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-semibold truncate">
             {conversationTitle?.trim() || "Exploration"}
