@@ -35,6 +35,7 @@ import { SettingsDialog } from "@/components/SettingsDialog";
 import { SearchChatsDialog } from "@/components/SearchChatsDialog";
 import { FolderDialog } from "@/components/FolderDialog";
 import { getColor, getIcon, type FolderRow } from "@/lib/folders";
+import { usePlan } from "@/hooks/usePlan";
 
 export type Conversation = {
   id: string;
