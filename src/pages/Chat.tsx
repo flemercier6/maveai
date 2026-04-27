@@ -35,6 +35,7 @@ import {
 } from "@/hooks/useActiveComposer";
 import { usePlan, isPremiumModel, FREE_DAILY_LIMIT } from "@/hooks/usePlan";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { useSwipe } from "@/hooks/useSwipe";
 
 type StoredBranch = {
   id: string;
