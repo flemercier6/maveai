@@ -126,29 +126,6 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       return;
     }
 
-    if (seed.existingBranchId) {
-      // Reopen existing branch: load its persisted messages.
-      setBranchId(seed.existingBranchId);
-      (async () => {
-        const { data, error } = await supabase
-          .from("branch_messages")
-          .select("id, role, content")
-          .eq("branch_id", seed.existingBranchId!)
-          .order("created_at", { ascending: true });
-        if (error) {
-          toast.error(error.message);
-          return;
-        }
-        setMessages(
-          (data ?? []).map((m: any) => ({
-            id: m.id,
-            role: m.role as "user" | "assistant",
-            content: m.content,
-          })),
-        );
-      })();
-      return;
-    }
 
     (async () => {
       const { data, error } = await supabase
