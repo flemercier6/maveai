@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ChatMessage } from "@/components/ChatMessage";
+import { ModelPicker } from "@/components/ModelPicker";
 import { toast } from "sonner";
-import type { Provider } from "@/lib/models";
+import { providerForModel, type Provider } from "@/lib/models";
 import {
   notifyComposerBlur,
   notifyComposerFocus,
@@ -35,6 +36,7 @@ type BranchMsg = {
   id?: string;
   role: "user" | "assistant";
   content: string;
+  model?: string | null;
 };
 
 type Props = {
@@ -62,6 +64,11 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   const [streaming, setStreaming] = useState(false);
   const [sending, setSending] = useState(false);
   const [merging, setMerging] = useState(false);
+  // The model used for the next assistant reply. Initialized from the seed
+  // (so we inherit the main chat's pick), but the user can override it via
+  // the ModelPicker below the textarea.
+  const [provider, setProvider] = useState<Provider>(seed?.provider ?? "google");
+  const [model, setModel] = useState<string>(seed?.model ?? "");
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -89,6 +96,10 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     setMessages([]);
     setInput("");
     setBranchId(null);
+    // Reset model selection to the seed's defaults whenever the panel opens
+    // for a new seed (new branch or reopened branch).
+    setProvider(seed.provider);
+    setModel(seed.model);
 
     if (seed.existingBranchId) {
       // Reopen existing branch: load its persisted messages.
@@ -96,7 +107,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       (async () => {
         const { data, error } = await supabase
           .from("branch_messages")
-          .select("id, role, content")
+          .select("id, role, content, model")
           .eq("branch_id", seed.existingBranchId!)
           .order("created_at", { ascending: true });
         if (error) {
@@ -108,11 +119,13 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             id: m.id,
             role: m.role as "user" | "assistant",
             content: m.content,
+            model: m.model ?? null,
           })),
         );
       })();
       return;
     }
+
 
     (async () => {
       const { data, error } = await supabase
@@ -232,8 +245,8 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           // No conversationId → the edge function won't persist, which is exactly
           // what we want (we persist to branch_messages ourselves).
           conversationId: null,
-          provider: seed.provider,
-          model: seed.model,
+          provider,
+          model,
           skipClarify: true,
           writingMode: false,
           forceCanvas: false,
@@ -266,7 +279,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
               acc += j.text;
               setMessages((prev) => {
                 const arr = prev.slice();
-                arr[arr.length - 1] = { role: "assistant", content: acc };
+                arr[arr.length - 1] = { role: "assistant", content: acc, model };
                 return arr;
               });
             }
@@ -283,7 +296,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             branch_id: branchId,
             role: "assistant",
             content: acc,
-            model: seed.model,
+            model,
           })
           .select()
           .single();
@@ -293,6 +306,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             id: asstMsg?.id,
             role: "assistant",
             content: acc,
+            model,
           };
           return arr;
         });
@@ -514,6 +528,8 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
                     content={m.content}
                     streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                     variant="explore"
+                    provider={m.model ? providerForModel(m.model) : undefined}
+                    model={m.model ?? undefined}
                   />
                 </div>
               );
@@ -540,7 +556,16 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             rows={1}
             className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
           />
-          <div className="flex items-center justify-end px-2 pb-2">
+          <div className="flex items-center justify-end gap-[15px] px-2 pb-2">
+            <ModelPicker
+              provider={provider}
+              model={model}
+              onChange={(p, m) => {
+                setProvider(p);
+                setModel(m);
+              }}
+              disabled={streaming}
+            />
             {sending ? (
               <Button
                 size="icon"
