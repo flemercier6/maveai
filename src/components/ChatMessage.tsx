@@ -390,11 +390,6 @@ function ThreadEntry({ branch, onClick }: { branch: MessageBranch; onClick: () =
         <span className="text-[12px] font-medium text-foreground whitespace-nowrap">
           {replyLabel}
         </span>
-        {time && (
-          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-            Dernière exploration {time}
-          </span>
-        )}
         <span className="text-[12px] text-muted-foreground truncate italic">
           {preview}
         </span>
