@@ -26,6 +26,8 @@ export type MessageBranch = {
   replyCount?: number;
   /** ISO timestamp of the last activity in the exploration thread. */
   lastActivity?: string | null;
+  /** First user prompt inside the exploration thread, used as a preview. */
+  firstPrompt?: string | null;
 };
 
 type Props = {
