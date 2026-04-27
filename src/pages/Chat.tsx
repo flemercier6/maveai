@@ -254,6 +254,81 @@ export default function Chat() {
     void reloadBranches(activeId);
   }, [exploreOpen, activeId]);
 
+  // ---- Sidebar branches: all explorations across all conversations ----
+  type SidebarBranch = {
+    id: string;
+    conversation_id: string;
+    source_message_id: string | null;
+    title: string;
+  };
+  const [sidebarBranches, setSidebarBranches] = useState<SidebarBranch[]>([]);
+
+  const reloadSidebarBranches = async () => {
+    const { data: rows } = await supabase
+      .from("chat_branches")
+      .select("id, conversation_id, source_message_id, quoted_text")
+      .order("created_at", { ascending: true });
+    const all = (rows ?? []) as any[];
+    if (all.length === 0) { setSidebarBranches([]); return; }
+    const ids = all.map((b) => b.id);
+    const { data: bmsgs } = await supabase
+      .from("branch_messages")
+      .select("branch_id, role, content, created_at")
+      .in("branch_id", ids)
+      .order("created_at", { ascending: true });
+    const firstUserByBranch = new Map<string, string>();
+    const hasMsg = new Set<string>();
+    for (const m of (bmsgs ?? []) as any[]) {
+      hasMsg.add(m.branch_id);
+      if (m.role === "user" && !firstUserByBranch.has(m.branch_id)) {
+        firstUserByBranch.set(m.branch_id, (m.content ?? "").toString());
+      }
+    }
+    const cleanTitle = (s: string) =>
+      s.replace(/^\/(note|explore)(\s+|$)/i, "").replace(/\s+/g, " ").trim().slice(0, 80) ||
+      "Exploration";
+    setSidebarBranches(
+      all
+        .filter((b) => hasMsg.has(b.id) && b.conversation_id)
+        .map((b) => ({
+          id: b.id,
+          conversation_id: b.conversation_id,
+          source_message_id: b.source_message_id,
+          title: cleanTitle(firstUserByBranch.get(b.id) ?? b.quoted_text ?? ""),
+        })),
+    );
+  };
+
+  useEffect(() => {
+    if (!user) { setSidebarBranches([]); return; }
+    void reloadSidebarBranches();
+  }, [user?.id]);
+
+  // Refresh sidebar branches whenever the explore panel closes.
+  useEffect(() => {
+    if (exploreOpen) return;
+    if (!user) return;
+    void reloadSidebarBranches();
+  }, [exploreOpen, user?.id]);
+
+  // Group sidebar branches by conversation for the sidebar render.
+  const sidebarBranchesByConv: Record<string, { id: string; title: string }[]> = {};
+  for (const b of sidebarBranches) {
+    (sidebarBranchesByConv[b.conversation_id] ??= []).push({ id: b.id, title: b.title });
+  }
+  // Pending branch to open once its conversation finishes loading.
+  const [pendingBranchId, setPendingBranchId] = useState<string | null>(null);
+
+  const handleSidebarOpenBranch = (convId: string, branchId: string) => {
+    if (activeId !== convId) {
+      setActiveId(convId);
+      setPendingBranchId(branchId);
+    } else {
+      // Same conversation already loaded — open immediately.
+      openExistingBranchById(branchId);
+    }
+  };
+
   // Scroll behavior:
   // - On conversation load: pin to the bottom once.
   // - When streaming starts: scroll once so the last user message sits at the top of the
