@@ -786,10 +786,14 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
 
   return (
     <aside
-      className="relative h-full shrink-0 flex flex-col overflow-hidden"
+      className={
+        isMobile
+          ? "fixed inset-0 z-50 h-full flex flex-col overflow-hidden"
+          : "relative h-full shrink-0 flex flex-col overflow-hidden"
+      }
       style={{
         backgroundColor: "#F8F8F8",
-        width: entered ? width : 0,
+        width: entered ? effectiveWidth : 0,
         transition: `width ${activeMs}ms ${activeEase}`,
         willChange: "width",
       }}
@@ -797,23 +801,25 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       <div
         className="flex flex-col h-full"
         style={{
-          width,
+          width: effectiveWidth,
           transform: entered ? "translateX(0)" : "translateX(100%)",
           transition: `transform ${activeMs}ms ${activeEase}`,
           willChange: "transform",
         }}
       >
-      {/* Resize handle */}
-      <div
-        onMouseDown={(e) => {
-          e.preventDefault();
-          resizingRef.current = true;
-          document.body.style.cursor = "col-resize";
-          document.body.style.userSelect = "none";
-        }}
-        className="absolute top-0 left-0 h-full w-1 -translate-x-1/2 cursor-col-resize hover:bg-border z-10"
-        aria-label="Resize exploration panel"
-      />
+      {/* Resize handle — desktop only */}
+      {!isMobile && (
+        <div
+          onMouseDown={(e) => {
+            e.preventDefault();
+            resizingRef.current = true;
+            document.body.style.cursor = "col-resize";
+            document.body.style.userSelect = "none";
+          }}
+          className="absolute top-0 left-0 h-full w-1 -translate-x-1/2 cursor-col-resize hover:bg-border z-10"
+          aria-label="Resize exploration panel"
+        />
+      )}
       <header className="flex items-center justify-between h-12 px-4 border-b border-border/30 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-semibold truncate">Thread</span>
