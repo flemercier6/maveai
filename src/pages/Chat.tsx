@@ -28,6 +28,11 @@ import { looksLikeWritingRequest } from "@/lib/writingDetection";
 import { SelectionExploreButton, type SelectionPayload } from "@/components/SelectionExploreButton";
 import { ExplorePanel, type BranchSeed } from "@/components/ExplorePanel";
 import type { MessageBranch } from "@/components/ChatMessage";
+import {
+  notifyComposerBlur,
+  notifyComposerFocus,
+  useActiveComposer,
+} from "@/hooks/useActiveComposer";
 
 type StoredBranch = {
   id: string;
@@ -86,6 +91,8 @@ export default function Chat() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
+  const activeComposer = useActiveComposer();
+  const mainComposerDimmed = activeComposer === "explore";
 
   // Auto-resize textarea height based on content
   useEffect(() => {
@@ -1240,7 +1247,7 @@ export default function Chat() {
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
-            <div className="relative bg-card border border-border rounded-2xl transition-shadow focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)]">
+            <div className={`relative bg-card border border-border rounded-2xl transition-all duration-200 focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)] ${mainComposerDimmed ? "opacity-50" : "opacity-100"}`}>
               {(attachments.length > 0 || attachLoading) && (
                 <div className="flex flex-wrap gap-2 px-3 pt-3">
                   {attachments.map((a, i) => (
@@ -1283,7 +1290,11 @@ export default function Chat() {
                   onKeyDown={onKey}
                   onKeyUp={updateSlashFromTextarea}
                   onClick={updateSlashFromTextarea}
-                  onBlur={() => setTimeout(() => setSlash(null), 100)}
+                  onFocus={() => notifyComposerFocus("main")}
+                  onBlur={() => {
+                    notifyComposerBlur("main");
+                    setTimeout(() => setSlash(null), 100);
+                  }}
                   placeholder="Send a message..."
                   rows={1}
                   className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"

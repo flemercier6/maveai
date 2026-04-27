@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { ChatMessage } from "@/components/ChatMessage";
 import { toast } from "sonner";
 import type { Provider } from "@/lib/models";
+import {
+  notifyComposerBlur,
+  notifyComposerFocus,
+  useActiveComposer,
+} from "@/hooks/useActiveComposer";
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -60,6 +65,8 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const activeComposer = useActiveComposer();
+  const dimmed = activeComposer === "main";
 
   // Close handler: if the branch is empty (no messages persisted), discard it
   // so empty explorations don't pollute the conversation indicators.
@@ -517,12 +524,18 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
 
       {/* Input — mirrors the main chat composer's sizing & bottom spacing */}
       <div className="p-4 pb-[5px] pt-[5px]" style={{ backgroundColor: "#F8F8F8" }}>
-        <div className="relative bg-card border border-border rounded-2xl transition-shadow focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)]">
+        <div
+          className={`relative bg-card border border-border rounded-2xl transition-all duration-200 focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)] ${
+            dimmed ? "opacity-50" : "opacity-100"
+          }`}
+        >
           <Textarea
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKey}
+            onFocus={() => notifyComposerFocus("explore")}
+            onBlur={() => notifyComposerBlur("explore")}
             placeholder="Continue exploring..."
             rows={1}
             className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
