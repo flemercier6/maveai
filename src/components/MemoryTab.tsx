@@ -219,6 +219,23 @@ export function MemoryTab() {
         </p>
       </div>
 
+      {isFree && (
+        <div className="rounded-[8px] border border-border bg-[hsl(var(--dropdown-hover))] p-3 flex items-start gap-3">
+          <Lock className="w-4 h-4 mt-0.5 text-foreground/60 shrink-0" />
+          <div className="flex-1 text-sm">
+            <div className="font-medium">Memory is a Plus feature</div>
+            <p className="text-muted-foreground text-xs mt-0.5">
+              Free users can view their existing memories, but new memories are not added or injected into conversations.
+            </p>
+          </div>
+          <Button size="sm" onClick={() => setShowUpgrade(true)}>
+            <Sparkles className="w-4 h-4 mr-1" /> Upgrade
+          </Button>
+        </div>
+      )}
+
+      <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} reason="memory" />
+
       <Card className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="text-sm font-medium">Add a memory</h3>
@@ -272,7 +289,11 @@ export function MemoryTab() {
           rows={2}
         />
         <div className="flex justify-end">
-          <Button onClick={add} disabled={!newContent.trim()} size="sm">
+          <Button
+            onClick={() => { if (isFree) { setShowUpgrade(true); return; } add(); }}
+            disabled={!newContent.trim()}
+            size="sm"
+          >
             <Plus className="w-4 h-4 mr-1" /> Add
           </Button>
         </div>
