@@ -83,6 +83,8 @@ const STORAGE_KEY = "chat-sidebar-width";
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
 export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEphemeral, onDeleted, onMoveToFolder, userEmail, userName, userAvatarUrl, onProfileUpdated, titleAnim, branchesByConv, activeBranchId, onOpenBranch, isFree, onLockedFeature }: Props) {
+  const { plan } = usePlan();
+  const planLabel = plan === "free" ? "Free" : plan === "plus" ? "Plus" : plan.charAt(0).toUpperCase() + plan.slice(1);
   const [hovered, setHovered] = useState<string | null>(null);
   const [expandedConvs, setExpandedConvs] = useState<Record<string, boolean>>({});
   const isConvExpanded = (id: string) => {
