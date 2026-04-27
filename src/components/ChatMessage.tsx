@@ -217,7 +217,12 @@ function SourceTag({ indices, sources }: { indices: number[]; sources: Source[] 
   );
 }
 
-const SOURCE_RE = /\s*\[source:\s*([\d,\s]+)\]/gi;
+// Match a citation marker with several common variants the LLM may emit:
+//   [source:1]            [source: 1, 2]        [sources:1,2]
+//   (source:1)            (sources: 1, 2)
+//   【source:1】           〔source:1〕
+// Always case-insensitive, allowing optional whitespace.
+const SOURCE_RE = /\s*[\[\(\u3010\u3014]\s*sources?\s*[:\uFF1A]\s*([\d,\s]+?)\s*[\]\)\u3011\u3015]/gi;
 
 // Strip inline [source:N] markers from text and collect all referenced indices.
 function collectAndStripSources(
@@ -275,7 +280,7 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
   };
 
   // Wrap a block-level element: strip inline markers and append one grouped tag at the end.
-  const renderBlock = (Tag: "p" | "li" | "blockquote", children: ReactNode, props: any) => {
+  const renderBlock = (Tag: keyof JSX.IntrinsicElements, children: ReactNode, props: any) => {
     if (!sources?.length) {
       return <Tag {...props}>{children}</Tag>;
     }
@@ -335,6 +340,14 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
     p: ({ node, children, ...props }: any) => renderBlock("p", children, props),
     li: ({ node, children, ...props }: any) => renderBlock("li", children, props),
     blockquote: ({ node, children, ...props }: any) => renderBlock("blockquote", children, props),
+    td: ({ node, children, ...props }: any) => renderBlock("td" as any, children, props),
+    th: ({ node, children, ...props }: any) => renderBlock("th" as any, children, props),
+    h1: ({ node, children, ...props }: any) => renderBlock("h1" as any, children, props),
+    h2: ({ node, children, ...props }: any) => renderBlock("h2" as any, children, props),
+    h3: ({ node, children, ...props }: any) => renderBlock("h3" as any, children, props),
+    h4: ({ node, children, ...props }: any) => renderBlock("h4" as any, children, props),
+    h5: ({ node, children, ...props }: any) => renderBlock("h5" as any, children, props),
+    h6: ({ node, children, ...props }: any) => renderBlock("h6" as any, children, props),
     code: ({ node, inline, className, children, ...props }: any) => {
       const lang = /language-(\w+)/.exec(className || "")?.[1];
       const raw = String(children ?? "").replace(/\n$/, "");
