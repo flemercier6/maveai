@@ -5,12 +5,13 @@ import { Settings, Sparkles, Globe, Brain } from "lucide-react";
 import { UsageTab } from "@/components/UsageTab";
 import { MemoryTab } from "@/components/MemoryTab";
 import { BillingTab } from "@/components/BillingTab";
+import { PreferencesTab } from "@/components/PreferencesTab";
 import { usePlan } from "@/hooks/usePlan";
 
 type Section = "preferences" | "integrations" | "memory" | "usage" | "billing";
 
 const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?: string }>; soon?: boolean }[] = [
-  { id: "preferences", label: "Preferences", icon: Settings, soon: true },
+  { id: "preferences", label: "Preferences", icon: Settings },
   { id: "integrations", label: "Integrations", icon: Globe, soon: true },
   { id: "memory", label: "Memory", icon: Brain },
   { id: "usage", label: "Usage", icon: Sparkles },
