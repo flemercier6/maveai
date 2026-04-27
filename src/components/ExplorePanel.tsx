@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ModelPicker } from "@/components/ModelPicker";
 import { toast } from "sonner";
-import { AUTO_MODEL_ID, providerForModel, type Provider } from "@/lib/models";
+import { AUTO_MODEL_ID, providerForModel, routeAuto, type Provider } from "@/lib/models";
 import { looksLikeWritingRequest } from "@/lib/writingDetection";
 import {
   SlashCommandMenu,
@@ -285,6 +285,11 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       return;
     }
 
+    // Resolve Auto → concrete provider/model for this turn (preserve Auto preference in state)
+    const userPickedAuto = model === AUTO_MODEL_ID;
+    const resolved = userPickedAuto ? routeAuto(text) : { provider, model };
+    const sendProvider = resolved.provider;
+    const sendModel = resolved.model;
 
     (async () => {
       const { data, error } = await supabase
