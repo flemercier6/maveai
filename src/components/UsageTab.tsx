@@ -48,18 +48,18 @@ const RANGES: { id: Range; label: string }[] = [
   { id: "year", label: "Year" },
 ];
 
-const fmtUSD = (v: number) =>
-  v.toLocaleString("en-US", {
+const fmtEUR = (v: number) =>
+  (v * USD_TO_EUR).toLocaleString("fr-FR", {
     style: "currency",
-    currency: "USD",
+    currency: "EUR",
     minimumFractionDigits: 2,
     maximumFractionDigits: 3,
   });
 
-const fmtUSDShort = (v: number) =>
-  v.toLocaleString("en-US", {
+const fmtEURShort = (v: number) =>
+  (v * USD_TO_EUR).toLocaleString("fr-FR", {
     style: "currency",
-    currency: "USD",
+    currency: "EUR",
     minimumFractionDigits: 2,
     maximumFractionDigits: 3,
   });
