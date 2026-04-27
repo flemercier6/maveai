@@ -213,13 +213,30 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           toast.error(error.message);
           return;
         }
+        let canvasCounter = 0;
         setMessages(
-          (data ?? []).map((m: any) => ({
-            id: m.id,
-            role: m.role as "user" | "assistant",
-            content: m.content,
-            model: m.model ?? null,
-          })),
+          (data ?? []).map((m: any) => {
+            if (m.role === "assistant") {
+              const parsed = parseStored(m.content ?? "");
+              const hasCanvas = typeof parsed.canvas === "string";
+              if (hasCanvas) canvasCounter += 1;
+              return {
+                id: m.id,
+                role: "assistant" as const,
+                content: parsed.body,
+                model: m.model ?? null,
+                ...(hasCanvas
+                  ? { canvas: parsed.canvas, canvasTitle: parsed.canvasTitle, canvasVersion: canvasCounter }
+                  : {}),
+              };
+            }
+            return {
+              id: m.id,
+              role: m.role as "user" | "assistant",
+              content: m.content,
+              model: m.model ?? null,
+            };
+          }),
         );
       })();
       return;
