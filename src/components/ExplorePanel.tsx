@@ -268,12 +268,82 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     el.style.height = `${el.scrollHeight}px`;
   }, [input]);
 
-  // Auto scroll to bottom on new messages.
+  // Scroll behavior (mirrors the main chat):
+  // - When streaming starts: scroll once so the last user message sits at the
+  //   top of the panel viewport, then stop auto-scrolling so the user can read
+  //   from the start of the answer.
+  // - When streaming ends: do NOT auto-scroll — keep the user where they are.
+  const didInitialStreamScrollRef = useRef(false);
+  const lastStreamUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
+    if (!streaming) {
+      didInitialStreamScrollRef.current = false;
+      lastStreamUserIdRef.current = null;
+    }
+  }, [streaming]);
+
+  useEffect(() => {
+    if (!streaming) return;
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+    const lastUser = [...messages].reverse().find((m) => m.role === "user" && m.id);
+    if (!lastUser?.id) return;
+
+    if (didInitialStreamScrollRef.current && lastStreamUserIdRef.current === lastUser.id) return;
+    lastStreamUserIdRef.current = lastUser.id;
+
+    let cancelled = false;
+    const tryScroll = (attempt: number) => {
+      if (cancelled) return;
+      const anchor = document.getElementById(`chat-anchor-${lastUser.id}`);
+      if (!anchor) {
+        if (attempt < 10) requestAnimationFrame(() => tryScroll(attempt + 1));
+        return;
+      }
+      const containerRect = el.getBoundingClientRect();
+      const anchorRect = anchor.getBoundingClientRect();
+      const offset = 16;
+      const distanceToTop = anchorRect.top - (containerRect.top + offset);
+
+      if (Math.abs(distanceToTop) <= 8) {
+        didInitialStreamScrollRef.current = true;
+        return;
+      }
+
+      const targetTop = el.scrollTop + distanceToTop;
+      const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
+      const nextTop = Math.max(0, Math.min(targetTop, maxTop));
+      const canMoveMore = nextTop > el.scrollTop + 1;
+
+      if (!canMoveMore) {
+        // Wait for more streamed content to push the user bubble up.
+        return;
+      }
+
+      el.scrollTo({
+        top: nextTop,
+        behavior: attempt === 0 ? "smooth" : "auto",
+      });
+
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        const updatedAnchor = document.getElementById(`chat-anchor-${lastUser.id}`);
+        if (!updatedAnchor) return;
+        const updatedDistance =
+          updatedAnchor.getBoundingClientRect().top -
+          (el.getBoundingClientRect().top + offset);
+        if (Math.abs(updatedDistance) <= 8) {
+          didInitialStreamScrollRef.current = true;
+        }
+      });
+    };
+
+    requestAnimationFrame(() => tryScroll(0));
+    return () => {
+      cancelled = true;
+    };
+  }, [streaming, messages]);
 
   const stop = () => abortRef.current?.abort();
 
