@@ -369,16 +369,21 @@ function formatRelativeTime(iso?: string | null): string {
 }
 
 function ThreadEntry({ branch, onClick }: { branch: MessageBranch; onClick: () => void }) {
-  const preview =
+  const promptText = (branch.firstPrompt ?? "")
+    .replace(/^\/(note|explore)(\s+|$)/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const fallback =
     branch.kind === "selection"
-      ? `"${branch.quotedText.replace(/\s+/g, " ").trim().slice(0, 80)}${branch.quotedText.length > 80 ? "…" : ""}"`
-      : "Exploration of this answer";
+      ? branch.quotedText.replace(/\s+/g, " ").trim()
+      : "Exploration de cette réponse";
+  const raw = promptText || fallback;
+  const preview = raw.length > 80 ? `${raw.slice(0, 80)}…` : raw;
   const count = branch.replyCount ?? 0;
   const replyLabel =
     count === 0
       ? "Ouvrir l'exploration"
       : `${count} ${count === 1 ? "exploration" : "explorations"}`;
-  const time = formatRelativeTime(branch.lastActivity);
   return (
     <button
       type="button"
