@@ -25,7 +25,9 @@ import {
   ChevronsUpDown,
   FolderPlus,
   Folder as FolderIcon,
+  Ghost,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -47,6 +49,8 @@ type Props = {
   activeId: string | null;
   onSelect: (id: string) => void;
   onNew: () => void;
+  /** Start a one-shot chat that is never saved or shown in the sidebar. */
+  onNewEphemeral?: () => void;
   onDeleted: (id: string) => void;
   /** Called when a conversation is moved to a folder (or null = unfile). */
   onMoveToFolder?: (conversationId: string, folderId: string | null) => void;
@@ -69,7 +73,7 @@ const STORAGE_KEY = "chat-sidebar-width";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
-export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, onMoveToFolder, userEmail, userName, titleAnim, branchesByConv, activeBranchId, onOpenBranch }: Props) {
+export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEphemeral, onDeleted, onMoveToFolder, userEmail, userName, titleAnim, branchesByConv, activeBranchId, onOpenBranch }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [expandedConvs, setExpandedConvs] = useState<Record<string, boolean>>({});
   const isConvExpanded = (id: string) => {
