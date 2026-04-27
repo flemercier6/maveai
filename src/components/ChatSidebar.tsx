@@ -240,10 +240,27 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
   };
 
   return (
+    <>
+      {/* Mobile backdrop */}
+      <div
+        onClick={() => onMobileOpenChange?.(false)}
+        className={cn(
+          "md:hidden fixed inset-0 z-40 bg-black/40 transition-opacity",
+          mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none",
+        )}
+        aria-hidden="true"
+      />
     <aside
       ref={asideRef}
       style={{ width }}
-      className="relative shrink-0 h-screen flex flex-col bg-sidebar border-r border-sidebar-border"
+      className={cn(
+        "shrink-0 h-screen flex flex-col bg-sidebar border-r border-sidebar-border",
+        // Desktop: in-flow, relative
+        "md:relative md:translate-x-0",
+        // Mobile: fixed drawer overlay
+        "fixed top-0 left-0 z-50 max-w-[85vw] transition-transform duration-200 ease-out",
+        mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+      )}
     >
       <div className="p-3 border-b border-sidebar-border">
         <div className="mt-2 space-y-0.5">
