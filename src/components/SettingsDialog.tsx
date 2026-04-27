@@ -25,8 +25,8 @@ type Props = {
   onProfileUpdated?: () => void;
 };
 
-export function SettingsDialog({ open, onOpenChange, initialSection }: Props) {
-  const [active, setActive] = useState<Section>(initialSection ?? "memory");
+export function SettingsDialog({ open, onOpenChange, initialSection, onProfileUpdated }: Props) {
+  const [active, setActive] = useState<Section>(initialSection ?? "preferences");
   const { isFree } = usePlan();
   const visibleNav = NAV.filter((item) => !(isFree && item.id === "usage"));
 
