@@ -296,7 +296,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             branch_id: branchId,
             role: "assistant",
             content: acc,
-            model: seed.model,
+            model,
           })
           .select()
           .single();
@@ -306,6 +306,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             id: asstMsg?.id,
             role: "assistant",
             content: acc,
+            model,
           };
           return arr;
         });
