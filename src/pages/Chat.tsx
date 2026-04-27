@@ -1215,8 +1215,9 @@ export default function Chat() {
       <ChatSidebar
         conversations={conversations}
         activeId={activeId}
-        onSelect={setActiveId}
+        onSelect={(id) => { setEphemeral(false); setActiveId(id); }}
         onNew={newConversation}
+        onNewEphemeral={newEphemeralConversation}
         onDeleted={(id) => {
           setConversations((prev) => prev.filter((c) => c.id !== id));
           if (activeId === id) { setActiveId(null); setMessages([]); }
