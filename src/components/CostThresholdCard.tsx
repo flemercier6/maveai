@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, BellOff, Pencil, Check, X, AlertTriangle } from "lucide-react";
+import { Bell, BellOff, Pencil, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
