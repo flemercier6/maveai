@@ -385,7 +385,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                               return (
                                 <span
                                   className={cn(
-                                    "block truncate text-sm bg-clip-text",
+                                    "block truncate text-[15px] md:text-sm bg-clip-text",
                                     !done &&
                                       "text-transparent bg-gradient-to-r from-foreground via-muted-foreground to-foreground bg-[length:200%_100%] animate-title-shimmer",
                                   )}
