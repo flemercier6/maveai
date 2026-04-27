@@ -49,7 +49,7 @@ export function UpgradeDialog({ open, onOpenChange, reason }: Props) {
   const copy = COPY[reason];
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" overlayClassName="bg-white/40 backdrop-blur-sm">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-foreground text-background">
