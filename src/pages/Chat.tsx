@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2, Sparkles, Upload } from "lucide-react";
+import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2, Sparkles, Upload, Menu } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 import { loadAttachment, type Attachment } from "@/lib/attachments";
@@ -95,6 +95,7 @@ export default function Chat() {
   const [exploreOpen, setExploreOpen] = useState(false);
   const [exploreSeed, setExploreSeed] = useState<BranchSeed | null>(null);
   const [branches, setBranches] = useState<StoredBranch[]>([]);
+  const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
 
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1252,9 +1253,9 @@ export default function Chat() {
       <ChatSidebar
         conversations={conversations}
         activeId={activeId}
-        onSelect={(id) => { setEphemeral(false); setActiveId(id); }}
-        onNew={newConversation}
-        onNewEphemeral={newEphemeralConversation}
+        onSelect={(id) => { setEphemeral(false); setActiveId(id); setSidebarMobileOpen(false); }}
+        onNew={() => { newConversation(); setSidebarMobileOpen(false); }}
+        onNewEphemeral={() => { newEphemeralConversation(); setSidebarMobileOpen(false); }}
         onDeleted={(id) => {
           setConversations((prev) => prev.filter((c) => c.id !== id));
           if (activeId === id) { setActiveId(null); setMessages([]); }
@@ -1271,9 +1272,11 @@ export default function Chat() {
         titleAnim={titleAnim}
         branchesByConv={sidebarBranchesByConv}
         activeBranchId={exploreOpen ? exploreSeed?.existingBranchId ?? null : null}
-        onOpenBranch={handleSidebarOpenBranch}
+        onOpenBranch={(convId, branchId) => { handleSidebarOpenBranch(convId, branchId); setSidebarMobileOpen(false); }}
         isFree={isFree}
         onLockedFeature={(reason) => setUpgradeReason(reason)}
+        mobileOpen={sidebarMobileOpen}
+        onMobileOpenChange={setSidebarMobileOpen}
       />
 
       <UpgradeDialog
@@ -1323,7 +1326,15 @@ export default function Chat() {
             </div>
           </div>
         )}
-        <header className="flex items-center gap-2 h-12 px-4 border-b border-border/50 shrink-0">
+        <header className="flex items-center gap-2 h-12 px-3 sm:px-4 border-b border-border/50 shrink-0">
+          <button
+            type="button"
+            onClick={() => setSidebarMobileOpen(true)}
+            className="md:hidden inline-flex items-center justify-center w-8 h-8 -ml-1 rounded-[6px] hover:bg-dropdown-hover text-foreground"
+            aria-label="Open menu"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
           <span className="text-sm font-semibold truncate">
             {ephemeral
               ? "Ephemeral chat"
@@ -1332,7 +1343,8 @@ export default function Chat() {
           {ephemeral && (
             <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               <Sparkles className="w-3 h-3" />
-              Not saved · disappears on exit
+              <span className="hidden sm:inline">Not saved · disappears on exit</span>
+              <span className="sm:hidden">Not saved</span>
             </span>
           )}
         </header>

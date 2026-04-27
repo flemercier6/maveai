@@ -73,6 +73,10 @@ type Props = {
   isFree?: boolean;
   /** Called when a free user tries to use a Plus-only feature. */
   onLockedFeature?: (reason: "save-chat" | "folder") => void;
+  /** Mobile drawer open state (controlled). On desktop the sidebar is always visible. */
+  mobileOpen?: boolean;
+  /** Called when the mobile drawer should open/close (e.g. backdrop tap, item select). */
+  onMobileOpenChange?: (open: boolean) => void;
 };
 
 const MIN_WIDTH = 200;
@@ -82,7 +86,7 @@ const STORAGE_KEY = "chat-sidebar-width";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
-export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEphemeral, onDeleted, onMoveToFolder, userEmail, userName, userAvatarUrl, onProfileUpdated, titleAnim, branchesByConv, activeBranchId, onOpenBranch, isFree, onLockedFeature }: Props) {
+export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEphemeral, onDeleted, onMoveToFolder, userEmail, userName, userAvatarUrl, onProfileUpdated, titleAnim, branchesByConv, activeBranchId, onOpenBranch, isFree, onLockedFeature, mobileOpen = false, onMobileOpenChange }: Props) {
   const { plan } = usePlan();
   const planLabel = plan === "free" ? "Free" : plan === "plus" ? "Plus" : plan.charAt(0).toUpperCase() + plan.slice(1);
   const [hovered, setHovered] = useState<string | null>(null);
@@ -236,10 +240,27 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
   };
 
   return (
+    <>
+      {/* Mobile backdrop */}
+      <div
+        onClick={() => onMobileOpenChange?.(false)}
+        className={cn(
+          "md:hidden fixed inset-0 z-40 bg-black/40 transition-opacity",
+          mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none",
+        )}
+        aria-hidden="true"
+      />
     <aside
       ref={asideRef}
       style={{ width }}
-      className="relative shrink-0 h-screen flex flex-col bg-sidebar border-r border-sidebar-border"
+      className={cn(
+        "shrink-0 h-screen flex flex-col bg-sidebar border-r border-sidebar-border",
+        // Desktop: in-flow, relative
+        "md:relative md:translate-x-0",
+        // Mobile: fixed drawer overlay
+        "fixed top-0 left-0 z-50 max-w-[85vw] transition-transform duration-200 ease-out",
+        mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+      )}
     >
       <div className="p-3 border-b border-sidebar-border">
         <div className="mt-2 space-y-0.5">
@@ -693,7 +714,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         onMouseDown={(e) => { e.preventDefault(); setResizing(true); }}
         onDoubleClick={() => { setWidth(DEFAULT_WIDTH); localStorage.setItem(STORAGE_KEY, String(DEFAULT_WIDTH)); }}
         className={cn(
-          "absolute top-0 right-0 h-full w-1 cursor-col-resize group z-10",
+          "hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize group z-10",
           "hover:bg-primary/40 transition-colors",
           resizing && "bg-primary/60"
         )}
@@ -728,5 +749,6 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         onDeleted={(id) => setFolders((prev) => prev.filter((p) => p.id !== id))}
       />
     </aside>
+    </>
   );
 }
