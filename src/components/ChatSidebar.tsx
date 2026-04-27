@@ -398,7 +398,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                               );
                             }
                             return (
-                              <span className="block truncate text-sm">{c.title}</span>
+                              <span className="block truncate text-[15px] md:text-sm">{c.title}</span>
                             );
                           })()}
                         </button>
