@@ -22,6 +22,10 @@ export type MessageBranch = {
   quotedText: string;
   /** "selection" = branched from a sub-selection of this message; "full" = branched with the Explore button below the message. */
   kind: "selection" | "full";
+  /** Number of assistant replies inside this exploration thread. */
+  replyCount?: number;
+  /** ISO timestamp of the last activity in the exploration thread. */
+  lastActivity?: string | null;
 };
 
 type Props = {
