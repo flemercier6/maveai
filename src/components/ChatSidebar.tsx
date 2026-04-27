@@ -268,9 +268,9 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                 if (isFree) { onLockedFeature?.("save-chat"); return; }
                 onNew();
               }}
-              className="flex-1 flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-sm"
+              className="flex-1 flex items-center gap-3 md:gap-2 px-3 md:px-[10px] py-[10px] md:py-[6px] rounded-[6px] md:rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-[15px] md:text-sm"
             >
-              <Plus className="w-4 h-4 opacity-70" />
+              <Plus className="w-5 h-5 md:w-4 md:h-4 opacity-70" />
               <span>New chat</span>
               {isFree && (
                 <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider rounded-full bg-foreground/10 text-foreground/60 px-1.5 py-0.5">
@@ -285,9 +285,9 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     type="button"
                     onClick={onNewEphemeral}
                     aria-label="New ephemeral chat"
-                    className="ml-1 h-7 w-7 flex items-center justify-center rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent"
+                    className="ml-1 h-10 w-10 md:h-7 md:w-7 flex items-center justify-center rounded-[6px] md:rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent"
                   >
-                    <Ghost className="w-4 h-4 opacity-70" />
+                    <Ghost className="w-5 h-5 md:w-4 md:h-4 opacity-70" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>Ephemeral chat (not saved)</TooltipContent>
@@ -297,9 +297,9 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-sm"
+            className="w-full flex items-center gap-3 md:gap-2 px-3 md:px-[10px] py-[10px] md:py-[6px] rounded-[6px] md:rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-[15px] md:text-sm"
           >
-            <Search className="w-4 h-4 opacity-70" /> Search chats
+            <Search className="w-5 h-5 md:w-4 md:h-4 opacity-70" /> Search chats
           </button>
         </div>
       </div>
@@ -368,7 +368,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                         )}
                         <button
                           onClick={() => onSelect(c.id)}
-                          className="min-w-0 overflow-hidden text-left text-xs pr-[4px] py-[5px]"
+                          className="min-w-0 overflow-hidden text-left text-xs pr-[4px] py-[10px] md:py-[5px]"
                         >
                           {(() => {
                             const anim = titleAnim?.[c.id];
@@ -385,7 +385,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                               return (
                                 <span
                                   className={cn(
-                                    "block truncate text-sm bg-clip-text",
+                                    "block truncate text-[15px] md:text-sm bg-clip-text",
                                     !done &&
                                       "text-transparent bg-gradient-to-r from-foreground via-muted-foreground to-foreground bg-[length:200%_100%] animate-title-shimmer",
                                   )}
@@ -398,7 +398,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                               );
                             }
                             return (
-                              <span className="block truncate text-sm">{c.title}</span>
+                              <span className="block truncate text-[15px] md:text-sm">{c.title}</span>
                             );
                           })()}
                         </button>
@@ -570,7 +570,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                         >
                           <div
                             className={cn(
-                              "group flex items-center gap-1 px-[6px] py-[4px] rounded-[4px] hover:bg-sidebar-accent text-sidebar-foreground cursor-pointer",
+                              "group flex items-center gap-1.5 md:gap-1 px-[8px] md:px-[6px] py-[8px] md:py-[4px] rounded-[6px] md:rounded-[4px] hover:bg-sidebar-accent text-sidebar-foreground cursor-pointer",
                             )}
                             onClick={() => toggleFolder(f.id)}
                           >
@@ -592,7 +592,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                                 <FIcon className={cn("w-3 h-3", col.fg)} />
                               )}
                             </span>
-                            <span className="flex-1 min-w-0 truncate text-xs font-medium">{f.name}</span>
+                            <span className="flex-1 min-w-0 truncate text-[14px] md:text-xs font-medium">{f.name}</span>
                             <span className="text-[10px] tabular-nums text-muted-foreground/70">
                               {items.length || ""}
                             </span>
@@ -676,9 +676,9 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[4px] hover:bg-sidebar-accent text-sidebar-foreground"
+              className="w-full flex items-center gap-3 md:gap-2 px-2 py-2.5 md:py-1.5 rounded-[6px] md:rounded-[4px] hover:bg-sidebar-accent text-sidebar-foreground"
             >
-              <div className="w-7 h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-xs font-medium uppercase overflow-hidden">
+              <div className="w-9 h-9 md:w-7 md:h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-sm md:text-xs font-medium uppercase overflow-hidden">
                 {userAvatarUrl ? (
                   <img src={userAvatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -686,14 +686,14 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                 )}
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <div className="text-xs font-semibold truncate">
+                <div className="text-[14px] md:text-xs font-semibold truncate">
                   {userName ?? userEmail?.split("@")[0] ?? "User"}
                 </div>
-                <div className="text-[10px] text-muted-foreground truncate leading-tight">
+                <div className="text-[11px] md:text-[10px] text-muted-foreground truncate leading-tight">
                   {planLabel}
                 </div>
               </div>
-              <ChevronsUpDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
+              <ChevronsUpDown className="w-4 h-4 md:w-3.5 md:h-3.5 opacity-60 shrink-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top" className="w-[--radix-dropdown-menu-trigger-width]">
