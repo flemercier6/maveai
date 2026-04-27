@@ -14,9 +14,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Upload, Sparkles, Check, X, Pencil, Loader2 } from "lucide-react";
+import { Plus, Trash2, Upload, Sparkles, Check, X, Pencil, Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { extractKeywords } from "@/lib/keywords";
+import { usePlan } from "@/hooks/usePlan";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 type Memory = {
   id: string;
@@ -39,6 +41,8 @@ export function MemoryTab() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
   const [editingTitle, setEditingTitle] = useState("");
+  const { isFree } = usePlan();
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const load = async () => {
     const { data } = await supabase
