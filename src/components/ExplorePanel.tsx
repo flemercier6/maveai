@@ -556,7 +556,16 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             rows={1}
             className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
           />
-          <div className="flex items-center justify-end px-2 pb-2">
+          <div className="flex items-center justify-end gap-[15px] px-2 pb-2">
+            <ModelPicker
+              provider={provider}
+              model={model}
+              onChange={(p, m) => {
+                setProvider(p);
+                setModel(m);
+              }}
+              disabled={streaming}
+            />
             {sending ? (
               <Button
                 size="icon"
