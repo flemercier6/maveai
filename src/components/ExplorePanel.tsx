@@ -27,7 +27,13 @@ import { Button } from "@/components/ui/button";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ModelPicker } from "@/components/ModelPicker";
 import { toast } from "sonner";
-import { providerForModel, type Provider } from "@/lib/models";
+import { AUTO_MODEL_ID, providerForModel, type Provider } from "@/lib/models";
+import {
+  SlashCommandMenu,
+  filterSlashItems,
+  type SlashItem,
+} from "@/components/SlashCommandMenu";
+import { getTextareaCaretCoords } from "@/lib/caret";
 import {
   notifyComposerBlur,
   notifyComposerFocus,
