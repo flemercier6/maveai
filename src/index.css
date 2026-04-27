@@ -115,6 +115,13 @@
   .bg-bubble-user .chat-prose a,
   .bg-bubble-user.chat-prose a { color: hsl(var(--link)); }
   .chat-prose strong { @apply font-semibold; }
+  .chat-prose .table-wrapper {
+    @apply my-5 w-full max-w-full overflow-x-auto rounded-lg border border-border;
+  }
+  .chat-prose .table-wrapper > table {
+    @apply w-full my-0 border-collapse text-[14px] border-0 rounded-none;
+    display: table;
+  }
   .chat-prose table {
     @apply w-full my-5 border-collapse text-[14px] border border-border rounded-lg overflow-hidden;
     display: table;
