@@ -82,6 +82,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
           )}
           {active === "memory" && <MemoryTab />}
           {active === "usage" && <UsageTab />}
+          {active === "billing" && <BillingTab />}
         </div>
       </DialogContent>
     </Dialog>
