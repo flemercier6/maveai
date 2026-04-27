@@ -1441,7 +1441,7 @@ Deno.serve(async (req) => {
 
           // ---------- Persist usage event with computed cost ----------
           console.log("[usage] provider=", provider, "model=", model, "usage=", JSON.stringify(usage));
-          if (!ephemeral && usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) {
+          if (usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) {
             const price = priceFor(model);
             const inputCost = (usage.input_tokens / 1_000_000) * price.input;
             const outputCost = (usage.output_tokens / 1_000_000) * price.output;
