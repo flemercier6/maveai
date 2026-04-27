@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
 import { FlowDiagram } from "./FlowDiagram";
-import { RequestVisualizer } from "./RequestVisualizer";
+
 import { CanvasBlock } from "./CanvasBlock";
 import { MapBlock } from "./MapBlock";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -585,7 +585,7 @@ function ChatMessageImpl({
             ))}
           </div>
         )}
-        {!streaming && meta && <RequestVisualizer meta={meta} />}
+        
       </div>
     </div>
   );
