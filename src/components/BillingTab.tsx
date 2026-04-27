@@ -393,11 +393,11 @@ export function BillingTab() {
                             const url = (data as { url?: string } | null)?.url;
                             if (error || !url) {
                               toast({
-                                title: "Justificatif indisponible",
+                                title: "Receipt unavailable",
                                 description:
                                   error?.message ??
                                   (data as { error?: string } | null)?.error ??
-                                  "Reçu non encore disponible.",
+                                  "Receipt not available yet.",
                                 variant: "destructive",
                               });
                               return;
@@ -406,7 +406,7 @@ export function BillingTab() {
                           }}
                         >
                           <FileText className="w-3 h-3" />
-                          Justificatif
+                          Receipt
                         </Button>
                       )}
                     </div>
