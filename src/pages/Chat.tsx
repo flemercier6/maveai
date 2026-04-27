@@ -1247,7 +1247,7 @@ export default function Chat() {
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
-            <div className="relative bg-card border border-border rounded-2xl transition-shadow focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)]">
+            <div className={`relative bg-card border border-border rounded-2xl transition-all duration-200 focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)] ${mainComposerDimmed ? "opacity-50" : "opacity-100"}`}>
               {(attachments.length > 0 || attachLoading) && (
                 <div className="flex flex-wrap gap-2 px-3 pt-3">
                   {attachments.map((a, i) => (
