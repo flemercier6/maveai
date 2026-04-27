@@ -41,6 +41,7 @@ type StoredBranch = {
   reply_count: number;
   last_activity: string | null;
   first_prompt: string | null;
+};
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search" | "map"; label: string; status?: ToolStatus };
