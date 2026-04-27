@@ -165,9 +165,13 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
               {conversations.length === 0 && (
                 <p className="text-xs text-muted-foreground px-3 py-2">No conversations yet.</p>
               )}
-              {conversations.map((c) => (
+              {conversations.map((c) => {
+                const convBranches = branchesByConv?.[c.id] ?? [];
+                const hasBranches = convBranches.length > 0;
+                const expanded = hasBranches && isConvExpanded(c.id);
+                return (
+                <div key={c.id}>
                 <div
-                  key={c.id}
                   onMouseEnter={() => setHovered(c.id)}
                   onMouseLeave={() => setHovered(null)}
                   className={cn(
@@ -190,10 +194,27 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
                       className="h-7 text-xs px-1.5 py-0 rounded-[4px]"
                     />
                   ) : (
-                    <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1 pr-1">
+                    <div className="grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-0.5 pr-1">
+                      {hasBranches ? (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); toggleConv(c.id); }}
+                          aria-label={expanded ? "Collapse explorations" : "Expand explorations"}
+                          className="flex h-6 w-5 items-center justify-center rounded-[3px] text-muted-foreground hover:text-sidebar-foreground"
+                        >
+                          <ChevronDown
+                            className={cn(
+                              "w-3 h-3 transition-transform",
+                              !expanded && "-rotate-90",
+                            )}
+                          />
+                        </button>
+                      ) : (
+                        <span className="w-5" />
+                      )}
                       <button
                         onClick={() => onSelect(c.id)}
-                        className="min-w-0 overflow-hidden text-left text-xs pl-[10px] pr-[4px] py-[5px]"
+                        className="min-w-0 overflow-hidden text-left text-xs pr-[4px] py-[5px]"
                       >
                         {(() => {
                           const anim = titleAnim?.[c.id];
@@ -263,7 +284,33 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
                     </div>
                   )}
                 </div>
-              ))}
+                {hasBranches && expanded && (
+                  <div className="ml-[18px] mt-0.5 mb-0.5 pl-2 border-l border-sidebar-border space-y-0.5">
+                    {convBranches.map((b) => {
+                      const isActive = activeBranchId === b.id;
+                      return (
+                        <button
+                          key={b.id}
+                          type="button"
+                          onClick={() => onOpenBranch?.(c.id, b.id)}
+                          className={cn(
+                            "group/branch flex w-full items-center gap-1.5 rounded-[4px] px-[8px] py-[4px] text-left text-xs transition-colors",
+                            isActive
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                              : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                          )}
+                          title={b.title}
+                        >
+                          <Sparkles className="w-3 h-3 shrink-0 opacity-70" />
+                          <span className="truncate">{b.title}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                </div>
+                );
+              })}
             </CollapsibleContent>
           </Collapsible>
         </div>
