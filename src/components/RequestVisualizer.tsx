@@ -100,26 +100,22 @@ export function RequestVisualizer({ meta }: Props) {
           {/* Cost row */}
           {meta.cost && (() => {
             const c = meta.cost;
-            const baseTotal = c.inputCostUsd + c.outputCostUsd;
             const billedInput = c.inputCostUsd * c.multiplier;
             const billedOutput = c.outputCostUsd * c.multiplier;
-            const billedTotal = baseTotal * c.multiplier;
+            const billedTotal = billedInput + billedOutput;
             return (
               <div className="px-3 py-2 grid grid-cols-3 gap-2 text-[11px] bg-[hsl(var(--dropdown-hover))]/50 border-b border-border/60">
                 <Stat
                   label={`Input · ${c.inputTokens.toLocaleString("en-US")} tok`}
                   value={fmtUsd(billedInput)}
-                  sub={`base ${fmtUsd(c.inputCostUsd)}`}
                 />
                 <Stat
                   label={`Output · ${c.outputTokens.toLocaleString("en-US")} tok`}
                   value={fmtUsd(billedOutput)}
-                  sub={`base ${fmtUsd(c.outputCostUsd)}`}
                 />
                 <Stat
                   label={`Total · ×${c.multiplier}`}
                   value={fmtUsd(billedTotal)}
-                  sub={`base ${fmtUsd(baseTotal)}`}
                 />
               </div>
             );
