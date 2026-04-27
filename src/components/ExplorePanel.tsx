@@ -494,6 +494,10 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   };
 
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // When the slash menu is open, let it consume navigation/confirm keys.
+    if (slash && ["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.key)) {
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
