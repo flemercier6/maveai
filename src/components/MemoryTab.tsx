@@ -240,9 +240,9 @@ export function MemoryTab() {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="text-sm font-medium">Add a memory</h3>
           <div className="flex items-center gap-2">
-            <Dialog open={importOpen} onOpenChange={setImportOpen}>
+            <Dialog open={importOpen} onOpenChange={(o) => { if (o && isFree) { setShowUpgrade(true); return; } setImportOpen(o); }}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" disabled={isFree}>
                   <Upload className="w-4 h-4 mr-1" /> Import from another AI
                 </Button>
               </DialogTrigger>
