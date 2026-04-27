@@ -867,6 +867,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
                     variant="explore"
                     provider={m.model ? providerForModel(m.model) : undefined}
                     model={m.model ?? undefined}
+                    canvas={m.canvas}
+                    canvasTitle={m.canvasTitle}
+                    canvasVersion={m.canvasVersion}
                   />
                 </div>
               );
