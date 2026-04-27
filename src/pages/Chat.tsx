@@ -1407,6 +1407,7 @@ export default function Chat() {
         open={exploreOpen}
         seed={exploreSeed}
         userId={user.id}
+        conversationTitle={conversations.find((c) => c.id === activeId)?.title ?? null}
         onClose={() => setExploreOpen(false)}
         onMerge={handleMergeSummary}
         onBranchCreated={(b) =>
