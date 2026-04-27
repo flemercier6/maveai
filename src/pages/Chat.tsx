@@ -671,6 +671,23 @@ export default function Chat() {
 
       if (!resp.ok || !resp.body) {
         const t = await resp.text();
+        try {
+          const j = JSON.parse(t) as { error?: string };
+          if (resp.status === 429 && j.error === "daily_limit") {
+            setUpgradeReason("daily-limit");
+            void plan.refresh();
+            // Remove the assistant placeholder + user msg we just appended.
+            setMessages((prev) => prev.slice(0, -2));
+            setStreaming(false);
+            return;
+          }
+          if (resp.status === 403 && j.error === "premium_model") {
+            setUpgradeReason("premium-model");
+            setMessages((prev) => prev.slice(0, -2));
+            setStreaming(false);
+            return;
+          }
+        } catch { /* fall through */ }
         throw new Error(t || `HTTP ${resp.status}`);
       }
 
