@@ -58,6 +58,7 @@ export default function Chat() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [ephemeral, setEphemeral] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [provider, setProvider] = useState<Provider>("openai");
@@ -419,8 +420,17 @@ export default function Chat() {
   }, [streaming, messages]);
 
   const newConversation = () => {
+    setEphemeral(false);
     setActiveId(null);
     setMessages([]);
+  };
+
+  const newEphemeralConversation = () => {
+    setEphemeral(true);
+    setActiveId(null);
+    setMessages([]);
+    setClarify(null);
+    textareaRef.current?.focus();
   };
 
   // Global shortcut: Cmd/Ctrl + N → new chat
@@ -572,24 +582,29 @@ export default function Chat() {
         : { kind: "file" as const, name: a.name },
     );
 
-    const convId = await ensureConversation(text || atts[0]?.name || "Attachment");
-    if (!convId) { setSending(false); return; }
+    let convId: string | null = null;
+    let userMsg: { id?: string } | null = null;
+    if (!ephemeral) {
+      convId = await ensureConversation(text || atts[0]?.name || "Attachment");
+      if (!convId) { setSending(false); return; }
 
-    // Update conversation provider/model in case it changed
-    await supabase.from("conversations").update({ provider: convProvider, model: convModel }).eq("id", convId);
+      // Update conversation provider/model in case it changed
+      await supabase.from("conversations").update({ provider: convProvider, model: convModel }).eq("id", convId);
 
-    // Persist user message. We append a compact textual summary of attachments
-    // so reloads can still show that something was attached (binary data is not stored).
-    const persistedSummary = atts.length
-      ? "\n\n" + atts.map((a) =>
-          a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
-        ).join("\n")
-      : "";
-    const { data: userMsg } = await supabase.from("messages").insert({
-      conversation_id: convId, user_id: user!.id, role: "user", content: displayContent + persistedSummary,
-    }).select().single();
+      // Persist user message. We append a compact textual summary of attachments
+      // so reloads can still show that something was attached (binary data is not stored).
+      const persistedSummary = atts.length
+        ? "\n\n" + atts.map((a) =>
+            a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
+          ).join("\n")
+        : "";
+      const { data } = await supabase.from("messages").insert({
+        conversation_id: convId, user_id: user!.id, role: "user", content: displayContent + persistedSummary,
+      }).select().single();
+      userMsg = data;
+    }
 
-    const baseMsgs: Msg[] = [...messages, { id: userMsg?.id, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
+    const baseMsgs: Msg[] = [...messages, { id: userMsg?.id ?? `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
     setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel }]);
     setStreaming(true);
 
@@ -610,6 +625,7 @@ export default function Chat() {
           model: sendModel,
           skipClarify: opts?.skipClarify === true,
           writingMode,
+          ephemeral,
           // When the user explicitly invoked /write, force the model to produce
           // a canvas — don't let it decide otherwise.
           forceCanvas: writeRequested === true,
@@ -1199,8 +1215,9 @@ export default function Chat() {
       <ChatSidebar
         conversations={conversations}
         activeId={activeId}
-        onSelect={setActiveId}
+        onSelect={(id) => { setEphemeral(false); setActiveId(id); }}
         onNew={newConversation}
+        onNewEphemeral={newEphemeralConversation}
         onDeleted={(id) => {
           setConversations((prev) => prev.filter((c) => c.id !== id));
           if (activeId === id) { setActiveId(null); setMessages([]); }
@@ -1259,10 +1276,18 @@ export default function Chat() {
             </div>
           </div>
         )}
-        <header className="flex items-center h-12 px-4 border-b border-border/50 shrink-0">
+        <header className="flex items-center gap-2 h-12 px-4 border-b border-border/50 shrink-0">
           <span className="text-sm font-semibold truncate">
-            {conversations.find((c) => c.id === activeId)?.title?.trim() || "Chat"}
+            {ephemeral
+              ? "Ephemeral chat"
+              : conversations.find((c) => c.id === activeId)?.title?.trim() || "Chat"}
           </span>
+          {ephemeral && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <Sparkles className="w-3 h-3" />
+              Not saved · disappears on exit
+            </span>
+          )}
         </header>
         <ChatIndex
           scrollContainer={scrollEl}
