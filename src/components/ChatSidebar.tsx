@@ -667,7 +667,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                 )}
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <div className="text-xs truncate">
+                <div className="text-xs font-semibold truncate">
                   {userName ?? userEmail?.split("@")[0] ?? "User"}
                 </div>
                 <div className="text-[10px] text-muted-foreground truncate leading-tight">
