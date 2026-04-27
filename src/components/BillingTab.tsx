@@ -82,7 +82,7 @@ function CardForm({
       card.clear();
     } catch (err) {
       toast({
-        title: "Erreur",
+        title: "Error",
         description: (err as Error).message,
         variant: "destructive",
       });
@@ -133,7 +133,7 @@ export function BillingTab() {
       body: { action: "activate_plus", paymentMethodId, cycle },
     });
     if (error) throw new Error(error.message);
-    toast({ title: "Plan Plus activé" });
+    toast({ title: "Plus plan activated" });
     await reload();
   }
   async function addCard(paymentMethodId: string) {
@@ -141,14 +141,14 @@ export function BillingTab() {
       body: { action: "add_card", paymentMethodId },
     });
     if (error) throw new Error(error.message);
-    toast({ title: "Carte ajoutée" });
+    toast({ title: "Card added" });
     await reload();
   }
   async function setDefault(pmId: string) {
     const { error } = await supabase.functions.invoke("billing-manage", {
       body: { action: "set_default_card", paymentMethodId: pmId },
     });
-    if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     else await reload();
   }
   async function removeCard(pmId: string) {
@@ -157,7 +157,7 @@ export function BillingTab() {
     });
     if (error || (data as { error?: string })?.error) {
       toast({
-        title: "Impossible",
+        title: "Unable to remove card",
         description: error?.message ?? (data as { error?: string }).error,
         variant: "destructive",
       });
@@ -169,7 +169,7 @@ export function BillingTab() {
     const { error } = await supabase.functions.invoke("billing-manage", {
       body: { action: "set_cycle", cycle: newCycle },
     });
-    if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     else await reload();
   }
   async function downgrade() {
@@ -178,12 +178,12 @@ export function BillingTab() {
     });
     if (error || (data as { error?: string })?.error) {
       toast({
-        title: "Impossible",
+        title: "Unable to downgrade",
         description: error?.message ?? (data as { error?: string }).error,
         variant: "destructive",
       });
     } else {
-      toast({ title: "Repassé en plan Free" });
+      toast({ title: "Switched back to Free plan" });
       await reload();
     }
   }
@@ -193,8 +193,7 @@ export function BillingTab() {
       <section className="space-y-2 max-w-xl">
         <h2 className="text-lg font-semibold">Billing</h2>
         <p className="text-sm text-muted-foreground">
-          Le système de paiement n'est pas encore configuré. Réessayez dans
-          quelques instants.
+          The payment system is not configured yet. Please try again in a few moments.
         </p>
       </section>
     );
@@ -203,7 +202,7 @@ export function BillingTab() {
   if (loading || !status) {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="w-4 h-4 animate-spin" /> Chargement…
+        <Loader2 className="w-4 h-4 animate-spin" /> Loading…
       </div>
     );
   }
@@ -220,7 +219,7 @@ export function BillingTab() {
             <strong>{isPlus ? "Plus (pay-as-you-go)" : "Free"}</strong>
             {status.account.status !== "active" && isPlus && (
               <span className="ml-2 text-destructive">
-                · {status.account.status === "suspended" ? "suspendu" : "paiement en retard"}
+                · {status.account.status === "suspended" ? "suspended" : "past due"}
               </span>
             )}
           </p>
@@ -229,14 +228,14 @@ export function BillingTab() {
         {/* Current usage */}
         {isPlus && (
           <div className="border border-border rounded-md p-4 bg-card space-y-1">
-            <div className="text-xs text-muted-foreground">Consommation en cours</div>
+            <div className="text-xs text-muted-foreground">Current usage</div>
             <div className="text-2xl font-semibold">
               {status.outstandingEur.toFixed(2)} €
             </div>
             {status.account.next_billing_at && (
               <div className="text-xs text-muted-foreground">
-                Prochain prélèvement le{" "}
-                {new Date(status.account.next_billing_at).toLocaleDateString("fr-FR", {
+                Next charge on{" "}
+                {new Date(status.account.next_billing_at).toLocaleDateString("en-US", {
                   day: "2-digit",
                   month: "long",
                   year: "numeric",
@@ -244,19 +243,19 @@ export function BillingTab() {
               </div>
             )}
             <div className="text-[11px] text-muted-foreground pt-1">
-              En dessous de 1 €, le prélèvement est reporté à la période suivante.
+              Below €1, the charge is deferred to the next period.
             </div>
           </div>
         )}
 
         {/* Cycle */}
         <div className="space-y-2">
-          <Label className="text-sm">Fréquence de prélèvement</Label>
+          <Label className="text-sm">Billing frequency</Label>
           <RadioGroup value={cycle} onValueChange={(v) => changeCycle(v as Cycle)}>
             {([
-              ["daily", "Tous les jours"],
-              ["weekly", "Toutes les semaines"],
-              ["monthly", "Tous les mois"],
+              ["daily", "Daily"],
+              ["weekly", "Weekly"],
+              ["monthly", "Monthly"],
             ] as const).map(([v, label]) => (
               <div key={v} className="flex items-center gap-2">
                 <RadioGroupItem value={v} id={`cycle-${v}`} />
@@ -270,9 +269,9 @@ export function BillingTab() {
 
         {/* Cards */}
         <div className="space-y-2">
-          <Label className="text-sm">Cartes enregistrées</Label>
+          <Label className="text-sm">Saved cards</Label>
           {status.cards.length === 0 && (
-            <p className="text-xs text-muted-foreground">Aucune carte enregistrée.</p>
+            <p className="text-xs text-muted-foreground">No saved cards.</p>
           )}
           {status.cards.map((c) => (
             <div
@@ -287,7 +286,7 @@ export function BillingTab() {
                 </span>
                 {c.is_default && (
                   <span className="ml-1 text-[10px] uppercase tracking-wide text-primary font-medium">
-                    par défaut
+                    default
                   </span>
                 )}
               </div>
@@ -297,7 +296,7 @@ export function BillingTab() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setDefault(c.stripe_payment_method_id)}
-                    title="Définir par défaut"
+                    title="Set as default"
                   >
                     <Check className="w-3.5 h-3.5" />
                   </Button>
@@ -306,7 +305,7 @@ export function BillingTab() {
                   variant="ghost"
                   size="sm"
                   onClick={() => removeCard(c.stripe_payment_method_id)}
-                  title="Supprimer"
+                  title="Remove"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
@@ -318,11 +317,11 @@ export function BillingTab() {
         {/* Add card / Activate */}
         <div className="space-y-2">
           <Label className="text-sm">
-            {isPlus ? "Ajouter une nouvelle carte" : "Activer le plan Plus avec une carte"}
+            {isPlus ? "Add a new card" : "Activate the Plus plan with a card"}
           </Label>
           <CardForm
             onSuccess={isPlus ? addCard : activatePlus}
-            buttonLabel={isPlus ? "Ajouter la carte" : "Passer au plan Plus"}
+            buttonLabel={isPlus ? "Add card" : "Upgrade to Plus"}
           />
         </div>
 
@@ -330,10 +329,10 @@ export function BillingTab() {
         {isPlus && (
           <div className="pt-2 border-t border-border">
             <Button variant="outline" size="sm" onClick={downgrade}>
-              Revenir au plan Free
+              Switch back to Free
             </Button>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Possible uniquement si la consommation en cours est à 0 €.
+              Only possible when current usage is at €0.
             </p>
           </div>
         )}
@@ -341,15 +340,15 @@ export function BillingTab() {
         {/* Invoices */}
         {status.invoices.length > 0 && (
           <div className="space-y-2">
-            <Label className="text-sm">Historique des paiements</Label>
+            <Label className="text-sm">Payment history</Label>
             <div className="border border-border rounded-md divide-y divide-border overflow-hidden">
               {status.invoices.map((inv) => {
-                const dateLabel = new Date(inv.created_at).toLocaleDateString("fr-FR", {
+                const dateLabel = new Date(inv.created_at).toLocaleDateString("en-US", {
                   day: "2-digit",
                   month: "short",
                   year: "numeric",
                 });
-                const periodLabel = `${new Date(inv.period_start).toLocaleDateString("fr-FR")} → ${new Date(inv.period_end).toLocaleDateString("fr-FR")}`;
+                const periodLabel = `${new Date(inv.period_start).toLocaleDateString("en-US")} → ${new Date(inv.period_end).toLocaleDateString("en-US")}`;
                 return (
                   <div
                     key={inv.id}
@@ -363,7 +362,7 @@ export function BillingTab() {
                         <span className="text-muted-foreground">· {dateLabel}</span>
                       </div>
                       <span className="text-[11px] text-muted-foreground truncate">
-                        Période {periodLabel}
+                        Period {periodLabel}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -376,10 +375,10 @@ export function BillingTab() {
                               : "text-muted-foreground"
                         }
                       >
-                        {inv.status === "paid" && "Payé"}
-                        {inv.status === "failed" && "Échec"}
-                        {inv.status === "pending" && "En attente"}
-                        {inv.status === "skipped_below_threshold" && "Reporté (< 1 €)"}
+                        {inv.status === "paid" && "Paid"}
+                        {inv.status === "failed" && "Failed"}
+                        {inv.status === "pending" && "Pending"}
+                        {inv.status === "skipped_below_threshold" && "Deferred (< €1)"}
                       </span>
                       {inv.status === "paid" && (
                         <Button
