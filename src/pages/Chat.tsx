@@ -1065,6 +1065,8 @@ export default function Chat() {
       id: b.id,
       quotedText: b.quoted_text,
       kind: isFull ? "full" : "selection",
+      replyCount: b.reply_count,
+      lastActivity: b.last_activity,
     };
     (branchesByMessage[b.source_message_id] ??= []).push(entry);
   }
