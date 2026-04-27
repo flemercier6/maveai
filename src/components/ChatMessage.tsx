@@ -217,7 +217,12 @@ function SourceTag({ indices, sources }: { indices: number[]; sources: Source[] 
   );
 }
 
-const SOURCE_RE = /\s*\[source:\s*([\d,\s]+)\]/gi;
+// Match a citation marker with several common variants the LLM may emit:
+//   [source:1]            [source: 1, 2]        [sources:1,2]
+//   (source:1)            (sources: 1, 2)
+//   【source:1】           〔source:1〕
+// Always case-insensitive, allowing optional whitespace.
+const SOURCE_RE = /\s*[\[\(\u3010\u3014]\s*sources?\s*[:\uFF1A]\s*([\d,\s]+?)\s*[\]\)\u3011\u3015]/gi;
 
 // Strip inline [source:N] markers from text and collect all referenced indices.
 function collectAndStripSources(
