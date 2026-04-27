@@ -121,6 +121,10 @@ export function BillingTab() {
     setLoading(false);
   }
   useEffect(() => {
+    (async () => {
+      const { data } = await supabase.functions.invoke("billing-config", { body: {} });
+      setPk((data as { publishableKey?: string } | null)?.publishableKey ?? null);
+    })();
     reload();
   }, []);
 
@@ -184,37 +188,14 @@ export function BillingTab() {
     }
   }
 
-  function savePk() {
-    if (!pkInput.startsWith("pk_")) {
-      toast({
-        title: "Clé invalide",
-        description: "La clé publique Stripe commence par pk_test_ ou pk_live_",
-        variant: "destructive",
-      });
-      return;
-    }
-    localStorage.setItem(PK_STORAGE, pkInput);
-    setPk(pkInput);
-  }
-
   if (!pk) {
     return (
-      <section className="space-y-4 max-w-xl">
-        <div>
-          <h2 className="text-lg font-semibold">Billing</h2>
-          <p className="text-sm text-muted-foreground">
-            Pour configurer le plan Plus, collez votre <strong>clé publique Stripe</strong>{" "}
-            (pk_test_… ou pk_live_…). Trouvable dans Stripe → Developers → API keys.
-          </p>
-        </div>
-        <input
-          type="text"
-          value={pkInput}
-          onChange={(e) => setPkInput(e.target.value)}
-          placeholder="pk_test_..."
-          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-        />
-        <Button onClick={savePk} size="sm">Enregistrer</Button>
+      <section className="space-y-2 max-w-xl">
+        <h2 className="text-lg font-semibold">Billing</h2>
+        <p className="text-sm text-muted-foreground">
+          Le système de paiement n'est pas encore configuré. Réessayez dans
+          quelques instants.
+        </p>
       </section>
     );
   }
