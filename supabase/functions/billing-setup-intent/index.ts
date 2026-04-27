@@ -41,6 +41,26 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     let customerId = account?.stripe_customer_id ?? null;
+
+    // Verify the existing customer is still valid (e.g. not from a different
+    // Stripe mode after switching test ↔ live). Recreate if missing.
+    if (customerId) {
+      try {
+        const existing = await stripe.customers.retrieve(customerId);
+        if ((existing as { deleted?: boolean }).deleted) customerId = null;
+      } catch (err) {
+        if (
+          (err as { code?: string }).code === "resource_missing"
+        ) {
+          customerId = null;
+          // Also wipe stale payment methods that belonged to the old customer
+          await admin.from("payment_methods").delete().eq("user_id", user.id);
+        } else {
+          throw err;
+        }
+      }
+    }
+
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email ?? undefined,
