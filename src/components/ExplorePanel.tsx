@@ -694,7 +694,25 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
               excludeProviders={["explore"]}
             />
           )}
-          <div className="flex items-center justify-end gap-[15px] px-2 pb-2">
+          <div className="flex items-center justify-between gap-[15px] px-2 pb-2">
+            <div className="flex items-center gap-2">
+              {writeRequested && (
+                <button
+                  type="button"
+                  onClick={() => setWriteRequested(false)}
+                  aria-label="Remove Note"
+                  className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-[#E6F1FF] transition-colors"
+                  style={{ color: "#0062FF" }}
+                >
+                  <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                    <FileText className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
+                    <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
+                  </span>
+                  Note
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-[15px]">
             <ModelPicker
               provider={provider}
               model={model}
