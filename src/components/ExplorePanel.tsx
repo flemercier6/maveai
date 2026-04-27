@@ -64,6 +64,11 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   const [streaming, setStreaming] = useState(false);
   const [sending, setSending] = useState(false);
   const [merging, setMerging] = useState(false);
+  // The model used for the next assistant reply. Initialized from the seed
+  // (so we inherit the main chat's pick), but the user can override it via
+  // the ModelPicker below the textarea.
+  const [provider, setProvider] = useState<Provider>(seed?.provider ?? "google");
+  const [model, setModel] = useState<string>(seed?.model ?? "");
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
