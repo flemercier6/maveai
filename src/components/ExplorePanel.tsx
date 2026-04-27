@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { ChatMessage } from "@/components/ChatMessage";
 import { toast } from "sonner";
 import type { Provider } from "@/lib/models";
+import {
+  notifyComposerBlur,
+  notifyComposerFocus,
+  useActiveComposer,
+} from "@/hooks/useActiveComposer";
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
