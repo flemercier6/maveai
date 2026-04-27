@@ -544,18 +544,29 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   // unmounting. We animate width and translate together so the slot itself
   // shrinks/grows in lockstep with the content — no naked gap appears
   // behind the sliding content.
-  const ANIM_MS = 300;
+  const ANIM_MS = 420;
+  // Smooth, "iOS-like" easing — symmetric in/out so opening and closing
+  // feel identical and decelerate gently at the end.
+  const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
   const [mounted, setMounted] = useState(false);
   const [entered, setEntered] = useState(false);
 
   useEffect(() => {
     if (open) {
-      // Mount in the collapsed state first.
+      // Mount in the collapsed state first, then trigger the transition on
+      // the next paint using a double rAF so the browser has committed the
+      // initial frame (width: 0, translateX: 100%) before the target values
+      // are applied. This avoids the first frame being skipped.
       setMounted(true);
       setEntered(false);
-      // Wait for the browser to paint the collapsed frame, then transition.
-      const id = window.setTimeout(() => setEntered(true), 20);
-      return () => window.clearTimeout(id);
+      let raf2 = 0;
+      const raf1 = window.requestAnimationFrame(() => {
+        raf2 = window.requestAnimationFrame(() => setEntered(true));
+      });
+      return () => {
+        window.cancelAnimationFrame(raf1);
+        if (raf2) window.cancelAnimationFrame(raf2);
+      };
     }
     if (!mounted) return;
     // Trigger the close transition, then unmount once it has finished.
@@ -572,7 +583,8 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       style={{
         backgroundColor: "#F8F8F8",
         width: entered ? width : 0,
-        transition: `width ${ANIM_MS}ms ease-out`,
+        transition: `width ${ANIM_MS}ms ${EASE}`,
+        willChange: "width",
       }}
     >
       <div
@@ -580,8 +592,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         style={{
           width,
           transform: entered ? "translateX(0)" : "translateX(100%)",
-          transition: `transform ${ANIM_MS}ms ease-out`,
-        }}
+          transition: `transform ${ANIM_MS}ms ${EASE}`,
+          willChange: "transform",
+}}
       >
       {/* Resize handle */}
       <div
