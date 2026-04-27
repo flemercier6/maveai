@@ -1200,6 +1200,9 @@ export default function Chat() {
         userEmail={user.email}
         userName={displayName ?? (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0]}
         titleAnim={titleAnim}
+        branchesByConv={sidebarBranchesByConv}
+        activeBranchId={exploreOpen ? exploreSeed?.existingBranchId ?? null : null}
+        onOpenBranch={handleSidebarOpenBranch}
       />
 
       <div className="flex-1 flex min-w-0 relative" style={{ backgroundColor: "#F8F8F8" }}>
