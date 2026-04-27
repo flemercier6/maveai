@@ -97,6 +97,22 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
   });
   const [resizing, setResizing] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsInitialSection, setSettingsInitialSection] = useState<
+    "preferences" | "integrations" | "memory" | "usage" | "billing" | undefined
+  >(undefined);
+
+  // Listen for a global request to open the settings dialog on a specific
+  // section (e.g. the "Upgrade to Plus" CTA in UpgradeDialog routes to the
+  // billing tab).
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ section?: typeof settingsInitialSection }>).detail;
+      setSettingsInitialSection(detail?.section);
+      setSettingsOpen(true);
+    };
+    window.addEventListener("open-settings", handler as EventListener);
+    return () => window.removeEventListener("open-settings", handler as EventListener);
+  }, []);
 
   // Folders state ------------------------------------------------------------
   const [folders, setFolders] = useState<FolderRow[]>([]);
@@ -674,7 +690,11 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         title="Drag to resize — double-click to reset"
       />
 
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={(o) => { setSettingsOpen(o); if (!o) setSettingsInitialSection(undefined); }}
+        initialSection={settingsInitialSection}
+      />
       <FolderDialog
         open={folderDialogOpen}
         onOpenChange={(o) => { setFolderDialogOpen(o); if (!o) setEditingFolder(null); }}
