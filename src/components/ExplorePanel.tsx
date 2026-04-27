@@ -503,7 +503,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             onClick={handleClose}
             aria-label="Close exploration"
           >
-            <X className="w-4 h-4" />
+            <SidebarRightIcon className="w-4 h-4" />
           </Button>
         </div>
       </header>
