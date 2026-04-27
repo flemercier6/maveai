@@ -373,7 +373,9 @@ function ThreadEntry({ branch, onClick }: { branch: MessageBranch; onClick: () =
       : "Exploration of this answer";
   const count = branch.replyCount ?? 0;
   const replyLabel =
-    count === 0 ? "Open thread" : `${count} ${count === 1 ? "reply" : "replies"}`;
+    count === 0
+      ? "Ouvrir l'exploration"
+      : `${count} ${count === 1 ? "exploration" : "explorations"}`;
   const time = formatRelativeTime(branch.lastActivity);
   return (
     <button
@@ -390,7 +392,7 @@ function ThreadEntry({ branch, onClick }: { branch: MessageBranch; onClick: () =
         </span>
         {time && (
           <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-            Last reply {time}
+            Dernière exploration {time}
           </span>
         )}
         <span className="text-[12px] text-muted-foreground truncate italic">
