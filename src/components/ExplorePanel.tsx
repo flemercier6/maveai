@@ -245,8 +245,8 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           // No conversationId → the edge function won't persist, which is exactly
           // what we want (we persist to branch_messages ourselves).
           conversationId: null,
-          provider: seed.provider,
-          model: seed.model,
+          provider,
+          model,
           skipClarify: true,
           writingMode: false,
           forceCanvas: false,
