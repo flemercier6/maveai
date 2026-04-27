@@ -1273,6 +1273,14 @@ export default function Chat() {
         branchesByConv={sidebarBranchesByConv}
         activeBranchId={exploreOpen ? exploreSeed?.existingBranchId ?? null : null}
         onOpenBranch={handleSidebarOpenBranch}
+        isFree={isFree}
+        onLockedFeature={(reason) => setUpgradeReason(reason)}
+      />
+
+      <UpgradeDialog
+        open={upgradeReason !== null}
+        onOpenChange={(o) => { if (!o) setUpgradeReason(null); }}
+        reason={upgradeReason ?? "daily-limit"}
       />
 
       <div className="flex-1 flex min-w-0 relative" style={{ backgroundColor: "#F8F8F8" }}>
