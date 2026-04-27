@@ -349,6 +349,7 @@ export function UsageTab() {
     return (
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Usage</h2>
+        <CostThresholdCard spendByPeriod={{ day: 0, week: 0, month: 0 }} />
         <div className="rounded-xl border border-border bg-[hsl(var(--dropdown-hover))] p-8 text-center">
           <p className="text-sm text-muted-foreground">
             No usage recorded yet. Send a message to start tracking.
@@ -361,6 +362,9 @@ export function UsageTab() {
   return (
     <section className="space-y-6">
       <h2 className="text-lg font-semibold">Usage</h2>
+
+      <CostThresholdCard spendByPeriod={spendByPeriod} />
+
 
       {/* Big total cost cards: base + ×3 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
