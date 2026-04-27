@@ -85,12 +85,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, onProfileUp
         {/* Content */}
         <div className="flex-1 min-w-0 overflow-y-auto p-6">
           {active === "preferences" && (
-            <section className="space-y-2">
-              <h2 className="text-lg font-semibold">Preferences</h2>
-              <p className="text-sm text-muted-foreground">
-                Customize how the app looks and behaves.
-              </p>
-            </section>
+            <PreferencesTab onProfileUpdated={onProfileUpdated} />
           )}
           {active === "integrations" && (
             <section className="space-y-2">
