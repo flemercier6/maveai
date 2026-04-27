@@ -28,6 +28,11 @@ import { looksLikeWritingRequest } from "@/lib/writingDetection";
 import { SelectionExploreButton, type SelectionPayload } from "@/components/SelectionExploreButton";
 import { ExplorePanel, type BranchSeed } from "@/components/ExplorePanel";
 import type { MessageBranch } from "@/components/ChatMessage";
+import {
+  notifyComposerBlur,
+  notifyComposerFocus,
+  useActiveComposer,
+} from "@/hooks/useActiveComposer";
 
 type StoredBranch = {
   id: string;
