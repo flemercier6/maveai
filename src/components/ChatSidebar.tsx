@@ -749,5 +749,6 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         onDeleted={(id) => setFolders((prev) => prev.filter((p) => p.id !== id))}
       />
     </aside>
+    </>
   );
 }
