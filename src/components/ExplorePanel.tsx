@@ -545,23 +545,24 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   // shrinks/grows in lockstep with the content — no naked gap appears
   // behind the sliding content.
   const ANIM_MS = 300;
-  const [mounted, setMounted] = useState(open);
+  const [mounted, setMounted] = useState(false);
   const [entered, setEntered] = useState(false);
+
   useEffect(() => {
     if (open) {
+      // Mount in the collapsed state first.
       setMounted(true);
-      // Start collapsed (width 0, translated off-screen), then on next
-      // frame flip `entered` so CSS transitions to the open state.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setEntered(true));
-      });
-      return;
+      setEntered(false);
+      // Wait for the browser to paint the collapsed frame, then transition.
+      const id = window.setTimeout(() => setEntered(true), 20);
+      return () => window.clearTimeout(id);
     }
     if (!mounted) return;
+    // Trigger the close transition, then unmount once it has finished.
     setEntered(false);
-    const t = setTimeout(() => setMounted(false), ANIM_MS);
-    return () => clearTimeout(t);
-  }, [open, mounted]);
+    const t = window.setTimeout(() => setMounted(false), ANIM_MS);
+    return () => window.clearTimeout(t);
+  }, [open]); // intentional: only react to `open` changes
 
   if (!mounted) return null;
 
