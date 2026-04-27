@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 // Lazy-load the Google Maps JS API once per page.
 let loaderPromise: Promise<typeof google> | null = null;
 let cachedKey: string | null = null;
