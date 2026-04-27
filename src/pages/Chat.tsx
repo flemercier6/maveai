@@ -58,6 +58,7 @@ export default function Chat() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [ephemeral, setEphemeral] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [provider, setProvider] = useState<Provider>("openai");
@@ -419,8 +420,17 @@ export default function Chat() {
   }, [streaming, messages]);
 
   const newConversation = () => {
+    setEphemeral(false);
     setActiveId(null);
     setMessages([]);
+  };
+
+  const newEphemeralConversation = () => {
+    setEphemeral(true);
+    setActiveId(null);
+    setMessages([]);
+    setClarify(null);
+    textareaRef.current?.focus();
   };
 
   // Global shortcut: Cmd/Ctrl + N → new chat
