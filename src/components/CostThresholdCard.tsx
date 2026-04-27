@@ -164,14 +164,14 @@ export function CostThresholdCard({ spendByPeriod }: Props) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           {reached && threshold?.enabled ? (
-            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <Bell className="w-4 h-4 text-amber-600" />
           ) : threshold?.enabled ? (
             <Bell className="w-4 h-4 text-foreground" />
           ) : (
             <BellOff className="w-4 h-4 text-muted-foreground" />
           )}
           <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Seuil de dépense
+            Spending threshold
           </div>
         </div>
         {threshold && !editing && (
