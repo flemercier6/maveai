@@ -159,7 +159,7 @@ function MapBlockImpl({ code }: Props) {
   })();
 
   return (
-    <div className="my-4 rounded-xl border border-border bg-primary-foreground overflow-hidden max-w-md">
+    <div className="my-4 rounded-xl border border-border bg-primary-foreground overflow-hidden max-w-xl mx-auto">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <div className="flex items-center gap-2 min-w-0">
           <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -178,7 +178,7 @@ function MapBlockImpl({ code }: Props) {
           </a>
         )}
       </div>
-      <div className="relative w-full h-[260px] bg-muted">
+      <div className="relative w-full h-[320px] bg-muted">
         {status === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center">
             <SkeletonShimmer className="w-full h-full" />
