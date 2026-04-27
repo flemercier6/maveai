@@ -82,9 +82,12 @@ type Props = {
   }) => void;
   /** Called when a branch is discarded (empty on close) so the parent can remove it. */
   onBranchDeleted?: (branchId: string) => void;
+  /** Triggered when the user picks `/note` inside the panel — the parent
+   *  should focus the main chat composer in writing-canvas mode. */
+  onRequestWrite?: () => void;
 };
 
-export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted }: Props) {
+export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted, onRequestWrite }: Props) {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [messages, setMessages] = useState<BranchMsg[]>([]);
   const [input, setInput] = useState("");
