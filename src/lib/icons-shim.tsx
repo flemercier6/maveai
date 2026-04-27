@@ -24,6 +24,7 @@ import {
   DragDropVerticalIcon,
   File02Icon,
   Globe02Icon,
+  MapsIcon,
   Loading03Icon,
   Logout01Icon,
   MoreHorizontalIcon,
@@ -87,6 +88,7 @@ export const Paperclip = make(AttachmentIcon, "Paperclip");
 // Misc
 export const Brain = make(BrainIcon, "Brain");
 export const Globe = make(Globe02Icon, "Globe");
+export const Map = make(MapsIcon, "Map");
 export const Sparkles = make(SparklesIcon, "Sparkles");
 export const ExternalLink = make(ArrowUpRight01Icon, "ExternalLink");
 export const FileText = make(File02Icon, "FileText");
