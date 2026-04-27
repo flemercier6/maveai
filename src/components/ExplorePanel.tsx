@@ -283,6 +283,10 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     if (override === undefined) setInput("");
     else setInput("");
     setSending(true);
+    // Snapshot the writing-canvas flag, then clear the tag immediately
+    // (matches the main chat: the badge disappears once the message is sent).
+    const useWriting = writeRequested;
+    if (writeRequested) setWriteRequested(false);
 
     // Persist user message in branch.
     const { data: userMsg } = await supabase
