@@ -1422,6 +1422,11 @@ export default function Chat() {
         onBranchDeleted={(id) =>
           setBranches((prev) => prev.filter((x) => x.id !== id))
         }
+        onRequestWrite={() => {
+          setWriteRequested(true);
+          setExploreOpen(false);
+          setTimeout(() => textareaRef.current?.focus(), 0);
+        }}
       />
       </div>
     </div>
