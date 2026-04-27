@@ -83,6 +83,8 @@ const make = (icon: IconSvgElement, displayName: string) => {
 export const ArrowLeft = make(ArrowLeft01Icon, "ArrowLeft");
 export const ArrowRight = make(ArrowRight01Icon, "ArrowRight");
 export const ArrowUpRight = make(ArrowUpRight01Icon, "ArrowUpRight");
+export const ArrowUp = make(ArrowUp01Icon, "ArrowUp");
+export const ArrowDown = make(ArrowDown01Icon, "ArrowDown");
 export const ChevronLeft = make(ArrowLeft01Icon, "ChevronLeft");
 export const ChevronRight = make(ArrowRight01Icon, "ChevronRight");
 export const ChevronUp = make(ArrowUp01Icon, "ChevronUp");
