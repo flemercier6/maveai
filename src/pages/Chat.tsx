@@ -1582,6 +1582,8 @@ export default function Chat() {
                     model={model}
                     onChange={(p, m) => { setProvider(p); setModel(m); }}
                     disabled={streaming}
+                    isFree={isFree}
+                    onPremiumLocked={() => setUpgradeReason("premium-model")}
                   />
                   {sending ? (
                     <Button
