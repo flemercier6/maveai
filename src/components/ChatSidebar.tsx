@@ -368,7 +368,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                         )}
                         <button
                           onClick={() => onSelect(c.id)}
-                          className="min-w-0 overflow-hidden text-left text-xs pr-[4px] py-[5px]"
+                          className="min-w-0 overflow-hidden text-left text-xs pr-[4px] py-[10px] md:py-[5px]"
                         >
                           {(() => {
                             const anim = titleAnim?.[c.id];
