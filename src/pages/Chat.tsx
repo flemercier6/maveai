@@ -33,6 +33,8 @@ import {
   notifyComposerFocus,
   useActiveComposer,
 } from "@/hooks/useActiveComposer";
+import { usePlan, isPremiumModel, FREE_DAILY_LIMIT } from "@/hooks/usePlan";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 type StoredBranch = {
   id: string;
