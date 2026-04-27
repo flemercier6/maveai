@@ -247,18 +247,10 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
             >
               <Plus className="w-4 h-4 opacity-70" />
               <span>New chat</span>
-              {isFree ? (
+              {isFree && (
                 <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider rounded-full bg-foreground/10 text-foreground/60 px-1.5 py-0.5">
                   Plus
                 </span>
-              ) : (
-                <kbd
-                  aria-label="Keyboard shortcut"
-                  className="ml-auto inline-flex items-center gap-0.5 rounded-[3px] border border-sidebar-border bg-background/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground opacity-60 group-hover:opacity-100 transition-opacity"
-                >
-                  {isMac ? "⌘" : "Ctrl"}
-                  <span>N</span>
-                </kbd>
               )}
             </button>
             {onNewEphemeral && (
