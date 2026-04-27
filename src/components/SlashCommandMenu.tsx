@@ -68,10 +68,17 @@ type Props = {
   position: { left: number; top: number } | null;
   onSelect: (item: SlashItem) => void;
   onClose: () => void;
+  /** Optional — hide items whose `provider` matches one of these. */
+  excludeProviders?: SlashItem["provider"][];
 };
 
-export function SlashCommandMenu({ query, position, onSelect, onClose }: Props) {
-  const items = useMemo(() => filterSlashItems(query), [query]);
+export function SlashCommandMenu({ query, position, onSelect, onClose, excludeProviders }: Props) {
+  const items = useMemo(() => {
+    const all = filterSlashItems(query);
+    return excludeProviders?.length
+      ? all.filter((it) => !excludeProviders.includes(it.provider))
+      : all;
+  }, [query, excludeProviders]);
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
