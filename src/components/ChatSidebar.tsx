@@ -48,7 +48,7 @@ const STORAGE_KEY = "chat-sidebar-width";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
-export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail, userName, titleAnim }: Props) {
+export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail, userName, titleAnim, branchesByConv, activeBranchId, onOpenBranch }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
