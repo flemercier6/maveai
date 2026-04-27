@@ -643,14 +643,31 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           <Textarea
             ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              requestAnimationFrame(updateSlashFromTextarea);
+            }}
             onKeyDown={onKey}
+            onKeyUp={updateSlashFromTextarea}
+            onClick={updateSlashFromTextarea}
             onFocus={() => notifyComposerFocus("explore")}
-            onBlur={() => notifyComposerBlur("explore")}
+            onBlur={() => {
+              notifyComposerBlur("explore");
+              setTimeout(() => setSlash(null), 100);
+            }}
             placeholder="Continue exploring..."
             rows={1}
             className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
           />
+          {slash && (
+            <SlashCommandMenu
+              query={slash.query}
+              position={slash.pos}
+              onSelect={applySlashSelection}
+              onClose={() => setSlash(null)}
+              excludeProviders={["explore"]}
+            />
+          )}
           <div className="flex items-center justify-end gap-[15px] px-2 pb-2">
             <ModelPicker
               provider={provider}
