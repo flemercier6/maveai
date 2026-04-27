@@ -1008,9 +1008,30 @@ Deno.serve(async (req) => {
     const lastUserMsg = [...(messages as Msg[])].reverse().find((m) => m.role === "user");
     const queryKeywords = new Set(extractKeywords(lastUserMsg?.content ?? "", 20));
 
+    // If this conversation belongs to a folder, fetch the folder so we can
+    // (1) inject its instructions as priority context and
+    // (2) boost memories scoped to that folder over global ones.
+    let folderRow: { id: string; name: string; instructions: string | null } | null = null;
+    if (conversationId) {
+      const { data: convRow } = await supabase
+        .from("conversations")
+        .select("folder_id")
+        .eq("id", conversationId)
+        .maybeSingle();
+      const folderId = (convRow as { folder_id?: string | null } | null)?.folder_id;
+      if (folderId) {
+        const { data: f } = await supabase
+          .from("folders")
+          .select("id,name,instructions")
+          .eq("id", folderId)
+          .maybeSingle();
+        if (f) folderRow = f as typeof folderRow;
+      }
+    }
+
     const { data: memRows } = await supabase
       .from("user_memories")
-      .select("id,content,kind,keywords")
+      .select("id,content,kind,keywords,folder_id")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(100);

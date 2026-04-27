@@ -39,6 +39,27 @@ import {
   SquareIcon,
   Tick02Icon,
   Delete02Icon,
+  // Folder icon set
+  Folder01Icon,
+  FolderAddIcon,
+  Image01Icon,
+  Bookmark01Icon,
+  Briefcase01Icon,
+  FavouriteIcon,
+  StarIcon,
+  CodeIcon,
+  CoffeeIcon,
+  Camera01Icon,
+  MusicNote01Icon,
+  RocketIcon,
+  BulbIcon,
+  LibraryIcon,
+  Target01Icon,
+  Home01Icon,
+  GameController01Icon,
+  School01Icon,
+  PaintBoardIcon,
+  Tag01Icon,
 } from "@hugeicons/core-free-icons";
 
 export type LucideProps = SVGProps<SVGSVGElement> & {
@@ -95,3 +116,25 @@ export const FileText = make(File02Icon, "FileText");
 export const Loader2 = make(Loading03Icon, "Loader2");
 export const Square = make(SquareIcon, "Square");
 export const PanelLeft = make(SidebarLeft01Icon, "PanelLeft");
+
+// Folder icon set (used by the folders feature in the sidebar)
+export const Folder = make(Folder01Icon, "Folder");
+export const FolderPlus = make(FolderAddIcon, "FolderPlus");
+export const Image = make(Image01Icon, "Image");
+export const Bookmark = make(Bookmark01Icon, "Bookmark");
+export const Briefcase = make(Briefcase01Icon, "Briefcase");
+export const Heart = make(FavouriteIcon, "Heart");
+export const Star = make(StarIcon, "Star");
+export const Code = make(CodeIcon, "Code");
+export const Coffee = make(CoffeeIcon, "Coffee");
+export const Camera = make(Camera01Icon, "Camera");
+export const Music = make(MusicNote01Icon, "Music");
+export const Rocket = make(RocketIcon, "Rocket");
+export const Lightbulb = make(BulbIcon, "Lightbulb");
+export const Library = make(LibraryIcon, "Library");
+export const Target = make(Target01Icon, "Target");
+export const Home = make(Home01Icon, "Home");
+export const Gamepad2 = make(GameController01Icon, "Gamepad2");
+export const GraduationCap = make(School01Icon, "GraduationCap");
+export const Palette = make(PaintBoardIcon, "Palette");
+export const Tag = make(Tag01Icon, "Tag");

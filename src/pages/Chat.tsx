@@ -1205,6 +1205,11 @@ export default function Chat() {
           setConversations((prev) => prev.filter((c) => c.id !== id));
           if (activeId === id) { setActiveId(null); setMessages([]); }
         }}
+        onMoveToFolder={(convId, folderId) => {
+          setConversations((prev) =>
+            prev.map((c) => (c.id === convId ? { ...c, folder_id: folderId } : c)),
+          );
+        }}
         userEmail={user.email}
         userName={displayName ?? (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0]}
         titleAnim={titleAnim}

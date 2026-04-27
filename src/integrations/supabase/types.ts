@@ -173,6 +173,7 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string
+          folder_id: string | null
           id: string
           model: string
           provider: string
@@ -182,6 +183,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          folder_id?: string | null
           id?: string
           model?: string
           provider?: string
@@ -191,6 +193,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          folder_id?: string | null
           id?: string
           model?: string
           provider?: string
@@ -198,7 +201,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversations_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cost_thresholds: {
         Row: {
@@ -231,6 +242,45 @@ export type Database = {
           last_notified_at?: string | null
           last_notified_period_start?: string | null
           period?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      folders: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          image_url: string | null
+          instructions: string | null
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          image_url?: string | null
+          instructions?: string | null
+          name: string
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          image_url?: string | null
+          instructions?: string | null
+          name?: string
+          position?: number
           updated_at?: string
           user_id?: string
         }
@@ -417,6 +467,7 @@ export type Database = {
           consolidated_at: string | null
           content: string
           created_at: string
+          folder_id: string | null
           id: string
           keywords: string[]
           kind: string
@@ -429,6 +480,7 @@ export type Database = {
           consolidated_at?: string | null
           content: string
           created_at?: string
+          folder_id?: string | null
           id?: string
           keywords?: string[]
           kind?: string
@@ -441,6 +493,7 @@ export type Database = {
           consolidated_at?: string | null
           content?: string
           created_at?: string
+          folder_id?: string | null
           id?: string
           keywords?: string[]
           kind?: string
@@ -449,7 +502,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_memories_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
