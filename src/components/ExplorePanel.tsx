@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowRight, Square, ChevronDown, Loader2, FileText, X } from "lucide-react";
 
 /** Custom "sidebar-right" icon (inherits color via currentColor). */
@@ -551,29 +551,32 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   const [mounted, setMounted] = useState(false);
   const [entered, setEntered] = useState(false);
 
+  // Step 1: react to `open` to mount/unmount.
   useEffect(() => {
     if (open) {
-      // Mount in the collapsed state first, then trigger the transition on
-      // the next paint using a double rAF so the browser has committed the
-      // initial frame (width: 0, translateX: 100%) before the target values
-      // are applied. This avoids the first frame being skipped.
       setMounted(true);
-      setEntered(false);
-      let raf2 = 0;
-      const raf1 = window.requestAnimationFrame(() => {
-        raf2 = window.requestAnimationFrame(() => setEntered(true));
-      });
-      return () => {
-        window.cancelAnimationFrame(raf1);
-        if (raf2) window.cancelAnimationFrame(raf2);
-      };
+      return;
     }
     if (!mounted) return;
-    // Trigger the close transition, then unmount once it has finished.
+    // Trigger close transition first.
     setEntered(false);
     const t = window.setTimeout(() => setMounted(false), ANIM_MS);
     return () => window.clearTimeout(t);
-  }, [open]); // intentional: only react to `open` changes
+  }, [open]);
+
+  // Step 2: once the collapsed frame has been committed to the DOM,
+  // flip `entered` to true on the next animation frame so the browser
+  // animates from width:0 / translateX(100%) to the open state.
+  useLayoutEffect(() => {
+    if (!mounted || !open) return;
+    // Ensure we start collapsed for the first paint.
+    setEntered(false);
+    const raf = window.requestAnimationFrame(() => {
+      // Second rAF guarantees the collapsed frame has been painted.
+      window.requestAnimationFrame(() => setEntered(true));
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [mounted, open]);
 
   if (!mounted) return null;
 
