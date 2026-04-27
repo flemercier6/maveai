@@ -676,9 +676,9 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-[4px] hover:bg-sidebar-accent text-sidebar-foreground"
+              className="w-full flex items-center gap-3 md:gap-2 px-2 py-2.5 md:py-1.5 rounded-[6px] md:rounded-[4px] hover:bg-sidebar-accent text-sidebar-foreground"
             >
-              <div className="w-7 h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-xs font-medium uppercase overflow-hidden">
+              <div className="w-9 h-9 md:w-7 md:h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-sm md:text-xs font-medium uppercase overflow-hidden">
                 {userAvatarUrl ? (
                   <img src={userAvatarUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -686,14 +686,14 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                 )}
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <div className="text-xs font-semibold truncate">
+                <div className="text-[14px] md:text-xs font-semibold truncate">
                   {userName ?? userEmail?.split("@")[0] ?? "User"}
                 </div>
-                <div className="text-[10px] text-muted-foreground truncate leading-tight">
+                <div className="text-[11px] md:text-[10px] text-muted-foreground truncate leading-tight">
                   {planLabel}
                 </div>
               </div>
-              <ChevronsUpDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
+              <ChevronsUpDown className="w-4 h-4 md:w-3.5 md:h-3.5 opacity-60 shrink-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top" className="w-[--radix-dropdown-menu-trigger-width]">
