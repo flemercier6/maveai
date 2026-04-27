@@ -96,6 +96,35 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     setMessages([]);
     setInput("");
     setBranchId(null);
+    // Reset model selection to the seed's defaults whenever the panel opens
+    // for a new seed (new branch or reopened branch).
+    setProvider(seed.provider);
+    setModel(seed.model);
+
+    if (seed.existingBranchId) {
+      // Reopen existing branch: load its persisted messages.
+      setBranchId(seed.existingBranchId);
+      (async () => {
+        const { data, error } = await supabase
+          .from("branch_messages")
+          .select("id, role, content, model")
+          .eq("branch_id", seed.existingBranchId!)
+          .order("created_at", { ascending: true });
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+        setMessages(
+          (data ?? []).map((m: any) => ({
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            model: m.model ?? null,
+          })),
+        );
+      })();
+      return;
+    }
 
     if (seed.existingBranchId) {
       // Reopen existing branch: load its persisted messages.
