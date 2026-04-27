@@ -127,11 +127,21 @@ export default function Chat() {
       .then(({ data }) => {
         setConversations((data ?? []) as Conversation[]);
       });
-    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle()
+    supabase.from("profiles").select("display_name, avatar_url").eq("id", user.id).maybeSingle()
       .then(({ data }) => {
         setDisplayName((data?.display_name as string | null) ?? null);
+        setAvatarUrl((data?.avatar_url as string | null) ?? null);
       });
   }, [user]);
+
+  const reloadProfile = () => {
+    if (!user) return;
+    supabase.from("profiles").select("display_name, avatar_url").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        setDisplayName((data?.display_name as string | null) ?? null);
+        setAvatarUrl((data?.avatar_url as string | null) ?? null);
+      });
+  };
 
   // Load messages when active changes
   useEffect(() => {
