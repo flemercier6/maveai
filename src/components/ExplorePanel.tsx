@@ -55,12 +55,9 @@ type Props = {
   }) => void;
   /** Called when a branch is discarded (empty on close) so the parent can remove it. */
   onBranchDeleted?: (branchId: string) => void;
-  /** Title of the parent conversation — shown in the panel header so it
-   *  matches what the user sees in the sidebar. */
-  conversationTitle?: string | null;
 };
 
-export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted, conversationTitle }: Props) {
+export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted }: Props) {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [messages, setMessages] = useState<BranchMsg[]>([]);
   const [input, setInput] = useState("");
