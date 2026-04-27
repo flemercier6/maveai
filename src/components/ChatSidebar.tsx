@@ -268,9 +268,9 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                 if (isFree) { onLockedFeature?.("save-chat"); return; }
                 onNew();
               }}
-              className="flex-1 flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-sm"
+              className="flex-1 flex items-center gap-3 md:gap-2 px-3 md:px-[10px] py-[10px] md:py-[6px] rounded-[6px] md:rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-[15px] md:text-sm"
             >
-              <Plus className="w-4 h-4 opacity-70" />
+              <Plus className="w-5 h-5 md:w-4 md:h-4 opacity-70" />
               <span>New chat</span>
               {isFree && (
                 <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider rounded-full bg-foreground/10 text-foreground/60 px-1.5 py-0.5">
@@ -285,9 +285,9 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     type="button"
                     onClick={onNewEphemeral}
                     aria-label="New ephemeral chat"
-                    className="ml-1 h-7 w-7 flex items-center justify-center rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent"
+                    className="ml-1 h-10 w-10 md:h-7 md:w-7 flex items-center justify-center rounded-[6px] md:rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent"
                   >
-                    <Ghost className="w-4 h-4 opacity-70" />
+                    <Ghost className="w-5 h-5 md:w-4 md:h-4 opacity-70" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>Ephemeral chat (not saved)</TooltipContent>
@@ -297,9 +297,9 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-sm"
+            className="w-full flex items-center gap-3 md:gap-2 px-3 md:px-[10px] py-[10px] md:py-[6px] rounded-[6px] md:rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-[15px] md:text-sm"
           >
-            <Search className="w-4 h-4 opacity-70" /> Search chats
+            <Search className="w-5 h-5 md:w-4 md:h-4 opacity-70" /> Search chats
           </button>
         </div>
       </div>
