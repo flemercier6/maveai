@@ -60,6 +60,7 @@ import {
   School01Icon,
   PaintBoardIcon,
   Tag01Icon,
+  IncognitoIcon,
 } from "@hugeicons/core-free-icons";
 
 export type LucideProps = SVGProps<SVGSVGElement> & {
@@ -116,6 +117,7 @@ export const FileText = make(File02Icon, "FileText");
 export const Loader2 = make(Loading03Icon, "Loader2");
 export const Square = make(SquareIcon, "Square");
 export const PanelLeft = make(SidebarLeft01Icon, "PanelLeft");
+export const Ghost = make(IncognitoIcon, "Ghost");
 
 // Folder icon set (used by the folders feature in the sidebar)
 export const Folder = make(Folder01Icon, "Folder");
