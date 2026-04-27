@@ -32,6 +32,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { SearchChatsDialog } from "@/components/SearchChatsDialog";
 import { FolderDialog } from "@/components/FolderDialog";
 import { getColor, getIcon, type FolderRow } from "@/lib/folders";
 
