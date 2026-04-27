@@ -254,6 +254,78 @@ export default function Chat() {
     void reloadBranches(activeId);
   }, [exploreOpen, activeId]);
 
+  // ---- Sidebar branches: all explorations across all conversations ----
+  type SidebarBranch = {
+    id: string;
+    conversation_id: string;
+    source_message_id: string | null;
+    title: string;
+  };
+  const [sidebarBranches, setSidebarBranches] = useState<SidebarBranch[]>([]);
+
+  const reloadSidebarBranches = async () => {
+    const { data: rows } = await supabase
+      .from("chat_branches")
+      .select("id, conversation_id, source_message_id, quoted_text")
+      .order("created_at", { ascending: true });
+    const all = (rows ?? []) as any[];
+    if (all.length === 0) { setSidebarBranches([]); return; }
+    const ids = all.map((b) => b.id);
+    const { data: bmsgs } = await supabase
+      .from("branch_messages")
+      .select("branch_id, role, content, created_at")
+      .in("branch_id", ids)
+      .order("created_at", { ascending: true });
+    const firstUserByBranch = new Map<string, string>();
+    const hasMsg = new Set<string>();
+    for (const m of (bmsgs ?? []) as any[]) {
+      hasMsg.add(m.branch_id);
+      if (m.role === "user" && !firstUserByBranch.has(m.branch_id)) {
+        firstUserByBranch.set(m.branch_id, (m.content ?? "").toString());
+      }
+    }
+    const cleanTitle = (s: string) =>
+      s.replace(/^\/(note|explore)(\s+|$)/i, "").replace(/\s+/g, " ").trim().slice(0, 80) ||
+      "Exploration";
+    setSidebarBranches(
+      all
+        .filter((b) => hasMsg.has(b.id) && b.conversation_id)
+        .map((b) => ({
+          id: b.id,
+          conversation_id: b.conversation_id,
+          source_message_id: b.source_message_id,
+          title: cleanTitle(firstUserByBranch.get(b.id) ?? b.quoted_text ?? ""),
+        })),
+    );
+  };
+
+  useEffect(() => {
+    if (!user) { setSidebarBranches([]); return; }
+    void reloadSidebarBranches();
+  }, [user?.id]);
+
+  // Refresh sidebar branches whenever the explore panel closes.
+  useEffect(() => {
+    if (exploreOpen) return;
+    if (!user) return;
+    void reloadSidebarBranches();
+  }, [exploreOpen, user?.id]);
+
+  // Group sidebar branches by conversation for the sidebar render.
+  const sidebarBranchesByConv: Record<string, { id: string; title: string }[]> = {};
+  for (const b of sidebarBranches) {
+    (sidebarBranchesByConv[b.conversation_id] ??= []).push({ id: b.id, title: b.title });
+  }
+  // Pending branch to open once its conversation finishes loading.
+  const [pendingBranchId, setPendingBranchId] = useState<string | null>(null);
+
+  const handleSidebarOpenBranch = (convId: string, branchId: string) => {
+    setPendingBranchId(branchId);
+    if (activeId !== convId) {
+      setActiveId(convId);
+    }
+  };
+
   // Scroll behavior:
   // - On conversation load: pin to the bottom once.
   // - When streaming starts: scroll once so the last user message sits at the top of the
@@ -1036,15 +1108,19 @@ export default function Chat() {
     if (!activeId) return;
     const branch = branches.find((b) => b.id === branchId);
     if (!branch) return;
-    const sourceIdx = messages.findIndex((m) => m.id === branch.source_message_id);
-    if (sourceIdx < 0) return;
-    const parentHistory = messages
-      .slice(0, sourceIdx + 1)
-      .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
-      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+    const sourceIdx = branch.source_message_id
+      ? messages.findIndex((m) => m.id === branch.source_message_id)
+      : -1;
+    const parentHistory =
+      sourceIdx >= 0
+        ? messages
+            .slice(0, sourceIdx + 1)
+            .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
+            .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }))
+        : [];
     setExploreSeed({
       conversationId: activeId,
-      sourceMessageId: branch.source_message_id,
+      sourceMessageId: branch.source_message_id ?? "",
       quotedText: branch.quoted_text,
       parentHistory,
       provider,
@@ -1053,6 +1129,20 @@ export default function Chat() {
     });
     setExploreOpen(true);
   };
+
+  // Open a pending branch (requested from the sidebar) once the target
+  // conversation's branches + messages have finished loading.
+  useEffect(() => {
+    if (!pendingBranchId || !activeId) return;
+    const branch = branches.find((b) => b.id === pendingBranchId);
+    if (!branch) return; // wait for branches to load
+    if (branch.source_message_id) {
+      const ready = messages.some((m) => m.id === branch.source_message_id);
+      if (!ready) return; // wait for messages to load
+    }
+    openExistingBranch(pendingBranchId);
+    setPendingBranchId(null);
+  }, [pendingBranchId, activeId, branches, messages]);
 
   // Compute per-message branch chips. "selection" when quoted text differs
   // from the full message content; "full" otherwise.
@@ -1110,6 +1200,9 @@ export default function Chat() {
         userEmail={user.email}
         userName={displayName ?? (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0]}
         titleAnim={titleAnim}
+        branchesByConv={sidebarBranchesByConv}
+        activeBranchId={exploreOpen ? exploreSeed?.existingBranchId ?? null : null}
+        onOpenBranch={handleSidebarOpenBranch}
       />
 
       <div className="flex-1 flex min-w-0 relative" style={{ backgroundColor: "#F8F8F8" }}>
