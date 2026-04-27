@@ -498,19 +498,10 @@ function ChatMessageImpl({
     );
   }
 
-  const selectionBranches = (branches ?? []).filter((b) => b.kind === "selection");
-  const fullBranches = (branches ?? []).filter((b) => b.kind === "full");
+  const allBranches = branches ?? [];
 
   return (
     <div className="relative w-full my-[50px]" data-assistant-message="true" data-message-id={id ?? ""}>
-      {/* Selection-branch indicators: top-right of the message */}
-      {selectionBranches.length > 0 && (
-        <div className="pointer-events-none absolute top-0 right-4 flex flex-col items-end gap-1.5 z-10">
-          {selectionBranches.map((b) => (
-            <BranchChip key={b.id} branch={b} onClick={() => onBranchOpen?.(b.id)} />
-          ))}
-        </div>
-      )}
       <div className="max-w-3xl mx-auto px-4">
         {(provider || (tool && tool.status !== "failed")) && (
           <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "10px" }}>
@@ -563,14 +554,18 @@ function ChatMessageImpl({
                 Explore
               </button>
             )}
-            {/* Full-message-branch indicators: aligned with this action row, pinned to the right edge of the main column */}
-            {fullBranches.length > 0 && (
-              <div className="pointer-events-none absolute top-0 right-4 flex items-center gap-1.5">
-                {fullBranches.map((b) => (
-                  <BranchChip key={b.id} branch={b} onClick={() => onBranchOpen?.(b.id)} />
-                ))}
-              </div>
-            )}
+          </div>
+        )}
+        {/* Slack-thread style explorations list, shown under the assistant response */}
+        {!streaming && allBranches.length > 0 && (
+          <div className="mt-3 border-l-2 border-border pl-3 flex flex-col gap-0.5">
+            {allBranches.map((b) => (
+              <ThreadEntry
+                key={b.id}
+                branch={b}
+                onClick={() => onBranchOpen?.(b.id)}
+              />
+            ))}
           </div>
         )}
         {!streaming && meta && <RequestVisualizer meta={meta} />}
