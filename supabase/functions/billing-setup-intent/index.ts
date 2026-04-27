@@ -67,7 +67,11 @@ Deno.serve(async (req) => {
       usage: "off_session",
     });
 
-    return json({ clientSecret: setupIntent.client_secret, customerId });
+    return json({
+      clientSecret: setupIntent.client_secret,
+      customerId,
+      publishableKey: Deno.env.get("STRIPE_PUBLISHABLE_KEY") ?? null,
+    });
   } catch (e) {
     console.error("billing-setup-intent error", e);
     return json({ error: (e as Error).message }, 500);
