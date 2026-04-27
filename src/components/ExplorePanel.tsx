@@ -693,12 +693,25 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     }
   };
 
-  // Resizable width (px). Persisted to localStorage.
+  // Track mobile to render the panel as a full-screen overlay.
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 767px)").matches : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Resizable width (px). Persisted to localStorage. On mobile we ignore
+  // the saved width and use the full viewport instead.
   const [width, setWidth] = useState<number>(() => {
     if (typeof window === "undefined") return 480;
     const saved = Number(localStorage.getItem("explore-panel-width"));
     return Number.isFinite(saved) && saved >= 320 ? saved : 480;
   });
+  const effectiveWidth = isMobile && typeof window !== "undefined" ? window.innerWidth : width;
   const resizingRef = useRef(false);
 
   useEffect(() => {
@@ -773,10 +786,14 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
 
   return (
     <aside
-      className="relative h-full shrink-0 flex flex-col overflow-hidden"
+      className={
+        isMobile
+          ? "fixed inset-0 z-50 h-full flex flex-col overflow-hidden"
+          : "relative h-full shrink-0 flex flex-col overflow-hidden"
+      }
       style={{
         backgroundColor: "#F8F8F8",
-        width: entered ? width : 0,
+        width: entered ? effectiveWidth : 0,
         transition: `width ${activeMs}ms ${activeEase}`,
         willChange: "width",
       }}
@@ -784,23 +801,25 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       <div
         className="flex flex-col h-full"
         style={{
-          width,
+          width: effectiveWidth,
           transform: entered ? "translateX(0)" : "translateX(100%)",
           transition: `transform ${activeMs}ms ${activeEase}`,
           willChange: "transform",
         }}
       >
-      {/* Resize handle */}
-      <div
-        onMouseDown={(e) => {
-          e.preventDefault();
-          resizingRef.current = true;
-          document.body.style.cursor = "col-resize";
-          document.body.style.userSelect = "none";
-        }}
-        className="absolute top-0 left-0 h-full w-1 -translate-x-1/2 cursor-col-resize hover:bg-border z-10"
-        aria-label="Resize exploration panel"
-      />
+      {/* Resize handle — desktop only */}
+      {!isMobile && (
+        <div
+          onMouseDown={(e) => {
+            e.preventDefault();
+            resizingRef.current = true;
+            document.body.style.cursor = "col-resize";
+            document.body.style.userSelect = "none";
+          }}
+          className="absolute top-0 left-0 h-full w-1 -translate-x-1/2 cursor-col-resize hover:bg-border z-10"
+          aria-label="Resize exploration panel"
+        />
+      )}
       <header className="flex items-center justify-between h-12 px-4 border-b border-border/30 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-semibold truncate">Thread</span>
