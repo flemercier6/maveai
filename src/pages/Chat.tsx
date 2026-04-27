@@ -40,6 +40,7 @@ type StoredBranch = {
   quoted_text: string;
   reply_count: number;
   last_activity: string | null;
+  first_prompt: string | null;
 };
 
 type ToolStatus = "running" | "done" | "failed";
@@ -218,15 +219,20 @@ export default function Chat() {
     const ids = all.map((b) => b.id);
     const { data: msgs } = await supabase
       .from("branch_messages")
-      .select("branch_id, role, created_at")
-      .in("branch_id", ids);
+      .select("branch_id, role, content, created_at")
+      .in("branch_id", ids)
+      .order("created_at", { ascending: true });
     const stats = new Map<string, { count: number; last: string | null }>();
+    const firstUser = new Map<string, string>();
     for (const m of (msgs ?? []) as any[]) {
       const cur = stats.get(m.branch_id) ?? { count: 0, last: null };
       // Count assistant replies as "replies"; user prompts also bump activity.
       if (m.role === "assistant") cur.count += 1;
       if (!cur.last || cur.last < m.created_at) cur.last = m.created_at;
       stats.set(m.branch_id, cur);
+      if (m.role === "user" && !firstUser.has(m.branch_id)) {
+        firstUser.set(m.branch_id, (m.content ?? "").toString());
+      }
     }
     setBranches(
       all
@@ -237,6 +243,7 @@ export default function Chat() {
           quoted_text: b.quoted_text ?? "",
           reply_count: stats.get(b.id)?.count ?? 0,
           last_activity: stats.get(b.id)?.last ?? null,
+          first_prompt: firstUser.get(b.id) ?? null,
         })),
     );
   };
@@ -1157,6 +1164,7 @@ export default function Chat() {
       kind: isFull ? "full" : "selection",
       replyCount: b.reply_count,
       lastActivity: b.last_activity,
+      firstPrompt: b.first_prompt,
     };
     (branchesByMessage[b.source_message_id] ??= []).push(entry);
   }
@@ -1544,7 +1552,7 @@ export default function Chat() {
           setBranches((prev) =>
             prev.some((x) => x.id === b.id)
               ? prev
-              : [...prev, { id: b.id, source_message_id: b.source_message_id as any, quoted_text: b.quoted_text, reply_count: 1, last_activity: new Date().toISOString() }],
+              : [...prev, { id: b.id, source_message_id: b.source_message_id as any, quoted_text: b.quoted_text, reply_count: 1, last_activity: new Date().toISOString(), first_prompt: null }],
           )
         }
         onBranchDeleted={(id) =>
