@@ -63,6 +63,8 @@ import {
   IncognitoIcon,
   LockIcon,
   BubbleChatIcon,
+  Analytics01Icon,
+  CreditCardIcon,
 } from "@hugeicons/core-free-icons";
 
 export type LucideProps = SVGProps<SVGSVGElement> & {
@@ -123,6 +125,8 @@ export const MessageSquare = make(BubbleChatIcon, "MessageSquare");
 export const Square = make(SquareIcon, "Square");
 export const PanelLeft = make(SidebarLeft01Icon, "PanelLeft");
 export const Ghost = make(IncognitoIcon, "Ghost");
+export const BarChart3 = make(Analytics01Icon, "BarChart3");
+export const CreditCard = make(CreditCardIcon, "CreditCard");
 
 // Folder icon set (used by the folders feature in the sidebar)
 export const Folder = make(Folder01Icon, "Folder");
