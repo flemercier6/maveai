@@ -45,18 +45,18 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface px-4">
+    <div className="min-h-screen flex items-center justify-center bg-surface px-4 py-8 sm:py-12">
       <div className="w-full max-w-md">
-        <div className="flex items-center gap-2 justify-center mb-8">
-          <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
-            <Sparkles className="w-5 h-5" />
+        <div className="flex items-center gap-2 justify-center mb-6 sm:mb-8">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <h1 className="text-xl font-semibold">Polychat</h1>
+          <h1 className="text-lg sm:text-xl font-semibold">Polychat</h1>
         </div>
 
-        <div className="bg-card border border-border rounded-2xl p-8 shadow-soft">
-          <h2 className="text-2xl font-semibold mb-1">Create an account</h2>
-          <p className="text-muted-foreground text-sm mb-6">
+        <div className="bg-card border border-border rounded-2xl p-5 sm:p-8 shadow-soft">
+          <h2 className="text-xl sm:text-2xl font-semibold mb-1">Create an account</h2>
+          <p className="text-muted-foreground text-sm mb-5 sm:mb-6">
             Access OpenAI, Anthropic and Gemini in one place.
           </p>
 
