@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, BellOff, Pencil, Check, X } from "lucide-react";
+import { Pencil, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -163,13 +163,17 @@ export function CostThresholdCard({ spendByPeriod }: Props) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          {reached && threshold?.enabled ? (
-            <Bell className="w-4 h-4 text-amber-600" />
-          ) : threshold?.enabled ? (
-            <Bell className="w-4 h-4 text-foreground" />
-          ) : (
-            <BellOff className="w-4 h-4 text-muted-foreground" />
-          )}
+          <span
+            className={cn(
+              "inline-block w-2 h-2 rounded-full",
+              !threshold?.enabled
+                ? "bg-muted-foreground/40"
+                : reached
+                  ? "bg-amber-500"
+                  : "bg-foreground",
+            )}
+            aria-hidden
+          />
           <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Spending threshold
           </div>
