@@ -1,5 +1,5 @@
-// Returns the Google Maps JS API key to authenticated clients.
-// Restrict the key by HTTP referrer in Google Cloud Console for safety.
+// Returns the Mapbox public token to authenticated clients.
+// Restrict the token by URL in Mapbox account settings for safety.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -8,14 +8,14 @@ const corsHeaders = {
 
 Deno.serve((req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  const key = Deno.env.get("GOOGLE_MAPS_API_KEY");
-  if (!key) {
-    return new Response(JSON.stringify({ error: "GOOGLE_MAPS_API_KEY not configured" }), {
+  const token = Deno.env.get("MAPBOX_PUBLIC_TOKEN");
+  if (!token) {
+    return new Response(JSON.stringify({ error: "MAPBOX_PUBLIC_TOKEN not configured" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  return new Response(JSON.stringify({ key }), {
+  return new Response(JSON.stringify({ token }), {
     status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "private, max-age=300" },
   });
