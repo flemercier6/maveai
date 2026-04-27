@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_accounts: {
+        Row: {
+          billing_cycle: string
+          created_at: string
+          failed_attempts: number
+          id: string
+          last_failure_at: string | null
+          next_billing_at: string | null
+          plan: string
+          status: string
+          stripe_customer_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_cycle?: string
+          created_at?: string
+          failed_attempts?: number
+          id?: string
+          last_failure_at?: string | null
+          next_billing_at?: string | null
+          plan?: string
+          status?: string
+          stripe_customer_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_cycle?: string
+          created_at?: string
+          failed_attempts?: number
+          id?: string
+          last_failure_at?: string | null
+          next_billing_at?: string | null
+          plan?: string
+          status?: string
+          stripe_customer_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      billing_invoices: {
+        Row: {
+          amount_eur: number
+          attempts: number
+          created_at: string
+          failure_reason: string | null
+          id: string
+          last_attempt_at: string | null
+          period_end: string
+          period_start: string
+          status: string
+          stripe_payment_intent_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_eur?: number
+          attempts?: number
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_eur?: number
+          attempts?: number
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       branch_messages: {
         Row: {
           branch_id: string
@@ -184,6 +271,42 @@ export type Database = {
           },
         ]
       }
+      payment_methods: {
+        Row: {
+          brand: string | null
+          created_at: string
+          exp_month: number | null
+          exp_year: number | null
+          id: string
+          is_default: boolean
+          last4: string | null
+          stripe_payment_method_id: string
+          user_id: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          stripe_payment_method_id: string
+          user_id: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          stripe_payment_method_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -207,6 +330,7 @@ export type Database = {
       }
       usage_events: {
         Row: {
+          billed_at: string | null
           conversation_id: string | null
           created_at: string
           id: string
@@ -221,6 +345,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          billed_at?: string | null
           conversation_id?: string | null
           created_at?: string
           id?: string
@@ -235,6 +360,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          billed_at?: string | null
           conversation_id?: string | null
           created_at?: string
           id?: string
