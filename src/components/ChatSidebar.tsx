@@ -32,6 +32,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { SearchChatsDialog } from "@/components/SearchChatsDialog";
 import { FolderDialog } from "@/components/FolderDialog";
 import { getColor, getIcon, type FolderRow } from "@/lib/folders";
 
@@ -97,6 +98,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
   });
   const [resizing, setResizing] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [settingsInitialSection, setSettingsInitialSection] = useState<
     "preferences" | "integrations" | "memory" | "usage" | "billing" | undefined
   >(undefined);
@@ -277,6 +279,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           </div>
           <button
             type="button"
+            onClick={() => setSearchOpen(true)}
             className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-sm"
           >
             <Search className="w-4 h-4 opacity-70" /> Search chats
@@ -694,6 +697,12 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         open={settingsOpen}
         onOpenChange={(o) => { setSettingsOpen(o); if (!o) setSettingsInitialSection(undefined); }}
         initialSection={settingsInitialSection}
+      />
+      <SearchChatsDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        conversations={conversations}
+        onSelect={onSelect}
       />
       <FolderDialog
         open={folderDialogOpen}
