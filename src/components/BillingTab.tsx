@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Check, Loader2 } from "lucide-react";
+import { Trash2, Check, Loader2, FileText } from "lucide-react";
 
 type Cycle = "daily" | "weekly" | "monthly";
 type Card = {
