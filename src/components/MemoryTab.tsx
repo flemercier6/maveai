@@ -219,20 +219,6 @@ export function MemoryTab() {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="text-sm font-medium">Add a memory</h3>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={consolidate}
-              disabled={consolidating || memories.length < 4}
-              title={memories.length < 4 ? "Need at least 4 memories to consolidate" : "Group similar memories into summaries"}
-            >
-              {consolidating ? (
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              ) : (
-                <Sparkles className="w-4 h-4 mr-1" />
-              )}
-              Consolidate now
-            </Button>
             <Dialog open={importOpen} onOpenChange={setImportOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
