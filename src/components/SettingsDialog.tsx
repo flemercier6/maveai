@@ -8,9 +8,9 @@ import { BillingTab } from "@/components/BillingTab";
 
 type Section = "preferences" | "integrations" | "memory" | "usage" | "billing";
 
-const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: "preferences", label: "Preferences", icon: Settings },
-  { id: "integrations", label: "Integrations", icon: Globe },
+const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?: string }>; soon?: boolean }[] = [
+  { id: "preferences", label: "Preferences", icon: Settings, soon: true },
+  { id: "integrations", label: "Integrations", icon: Globe, soon: true },
   { id: "memory", label: "Memory", icon: Brain },
   { id: "usage", label: "Usage", icon: Sparkles },
   { id: "billing", label: "Billing", icon: Sparkles },
@@ -22,7 +22,7 @@ type Props = {
 };
 
 export function SettingsDialog({ open, onOpenChange }: Props) {
-  const [active, setActive] = useState<Section>("preferences");
+  const [active, setActive] = useState<Section>("memory");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -43,20 +43,29 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
           {NAV.map((item) => {
             const Icon = item.icon;
             const isActive = item.id === active;
+            const disabled = !!item.soon;
             return (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setActive(item.id)}
+                disabled={disabled}
+                onClick={() => !disabled && setActive(item.id)}
                 className={cn(
                   "flex items-center gap-2 px-2 py-1.5 rounded-[4px] text-sm text-left transition-colors",
-                  isActive
-                    ? "bg-background text-foreground font-medium"
-                    : "text-foreground/70 hover:bg-background/60 hover:text-foreground",
+                  disabled
+                    ? "text-foreground/40 cursor-not-allowed"
+                    : isActive
+                      ? "bg-background text-foreground font-medium"
+                      : "text-foreground/70 hover:bg-background/60 hover:text-foreground",
                 )}
               >
                 <Icon className="w-4 h-4 opacity-70" />
-                <span>{item.label}</span>
+                <span className="flex-1">{item.label}</span>
+                {item.soon && (
+                  <span className="text-[9px] font-semibold uppercase tracking-wider rounded-full bg-foreground/10 text-foreground/60 px-1.5 py-0.5">
+                    Soon
+                  </span>
+                )}
               </button>
             );
           })}
