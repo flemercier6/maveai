@@ -61,6 +61,7 @@ import {
   PaintBoardIcon,
   Tag01Icon,
   IncognitoIcon,
+  LockIcon,
 } from "@hugeicons/core-free-icons";
 
 export type LucideProps = SVGProps<SVGSVGElement> & {
@@ -140,3 +141,4 @@ export const Gamepad2 = make(GameController01Icon, "Gamepad2");
 export const GraduationCap = make(School01Icon, "GraduationCap");
 export const Palette = make(PaintBoardIcon, "Palette");
 export const Tag = make(Tag01Icon, "Tag");
+export const Lock = make(LockIcon, "Lock");
