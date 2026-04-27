@@ -536,11 +536,34 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     };
   }, [width]);
 
-  if (!open) return null;
+  // Keep the panel mounted briefly after `open` flips to false so the
+  // horizontal slide-out animation can play before unmounting.
+  const [mounted, setMounted] = useState(open);
+  const [closing, setClosing] = useState(false);
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      setClosing(false);
+      return;
+    }
+    if (!mounted) return;
+    setClosing(true);
+    const t = setTimeout(() => {
+      setMounted(false);
+      setClosing(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [open, mounted]);
+
+  if (!mounted) return null;
 
   return (
     <aside
-      className="relative h-full shrink-0 flex flex-col animate-in slide-in-from-right duration-300"
+      className={`relative h-full shrink-0 flex flex-col duration-300 ${
+        closing
+          ? "animate-out slide-out-to-right fill-mode-forwards"
+          : "animate-in slide-in-from-right"
+      }`}
       style={{ backgroundColor: "#F8F8F8", width }}
     >
       {/* Resize handle */}
