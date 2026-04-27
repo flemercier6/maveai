@@ -1108,15 +1108,19 @@ export default function Chat() {
     if (!activeId) return;
     const branch = branches.find((b) => b.id === branchId);
     if (!branch) return;
-    const sourceIdx = messages.findIndex((m) => m.id === branch.source_message_id);
-    if (sourceIdx < 0) return;
-    const parentHistory = messages
-      .slice(0, sourceIdx + 1)
-      .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
-      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+    const sourceIdx = branch.source_message_id
+      ? messages.findIndex((m) => m.id === branch.source_message_id)
+      : -1;
+    const parentHistory =
+      sourceIdx >= 0
+        ? messages
+            .slice(0, sourceIdx + 1)
+            .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
+            .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }))
+        : [];
     setExploreSeed({
       conversationId: activeId,
-      sourceMessageId: branch.source_message_id,
+      sourceMessageId: branch.source_message_id ?? "",
       quotedText: branch.quoted_text,
       parentHistory,
       provider,
@@ -1125,6 +1129,20 @@ export default function Chat() {
     });
     setExploreOpen(true);
   };
+
+  // Open a pending branch (requested from the sidebar) once the target
+  // conversation's branches + messages have finished loading.
+  useEffect(() => {
+    if (!pendingBranchId || !activeId) return;
+    const branch = branches.find((b) => b.id === pendingBranchId);
+    if (!branch) return; // wait for branches to load
+    if (branch.source_message_id) {
+      const ready = messages.some((m) => m.id === branch.source_message_id);
+      if (!ready) return; // wait for messages to load
+    }
+    openExistingBranch(pendingBranchId);
+    setPendingBranchId(null);
+  }, [pendingBranchId, activeId, branches, messages]);
 
   // Compute per-message branch chips. "selection" when quoted text differs
   // from the full message content; "full" otherwise.
