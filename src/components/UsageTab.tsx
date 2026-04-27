@@ -6,6 +6,7 @@ import { billingMultiplier, billedCost, USD_TO_EUR } from "@/lib/pricing";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CostThresholdCard } from "@/components/CostThresholdCard";
+import { ProviderLogo } from "@/components/ProviderLogo";
 import {
   Bar,
   BarChart,
@@ -499,10 +500,6 @@ export function UsageTab() {
             <thead className="bg-muted text-xs text-muted-foreground">
               <tr>
                 <th className="text-left font-medium px-3 py-2">Model</th>
-                <th className="text-right font-medium px-3 py-2">Requests</th>
-                <th className="text-right font-medium px-3 py-2">Input</th>
-                <th className="text-right font-medium px-3 py-2">Output</th>
-                <th className="text-right font-medium px-3 py-2">Markup</th>
                 <th className="text-right font-medium px-3 py-2">Cost</th>
               </tr>
             </thead>
@@ -513,22 +510,15 @@ export function UsageTab() {
                 return (
                   <tr key={row.model} className="border-t border-border">
                     <td className="px-3 py-2.5">
-                      <div className="font-medium text-foreground">{modelLabel(row.model)}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {PROVIDER_LABEL[provider] ?? row.provider}
+                      <div className="flex items-center gap-2.5">
+                        <ProviderLogo provider={provider} className="w-5 h-5 shrink-0" />
+                        <div>
+                          <div className="font-medium text-foreground">{modelLabel(row.model)}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {PROVIDER_LABEL[provider] ?? row.provider}
+                          </div>
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums">
-                      {fmtTokens(row.requests)}
-                    </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">
-                      {fmtTokens(row.input_tokens)}
-                    </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">
-                      {fmtTokens(row.output_tokens)}
-                    </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">
-                      ×{mult}
                     </td>
                     <td className="px-3 py-2.5 text-right tabular-nums font-semibold">
                       {fmtEUR(row.cost * mult)}
