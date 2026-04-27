@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { ExternalLink, MapPin, AlertCircle } from "lucide-react";
+import { ExternalLink, Globe } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/googleMaps";
 import { SkeletonShimmer } from "./SkeletonShimmer";
 
@@ -145,7 +145,7 @@ function MapBlockImpl({ code }: Props) {
   if (!spec) {
     return (
       <div className="my-4 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-        <AlertCircle className="inline w-4 h-4 mr-1.5 -mt-0.5" />
+        <Globe className="inline w-4 h-4 mr-1.5 -mt-0.5" />
         Invalid map data
       </div>
     );
@@ -162,7 +162,7 @@ function MapBlockImpl({ code }: Props) {
     <div className="my-4 rounded-xl border border-border bg-card overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <div className="flex items-center gap-2 min-w-0">
-          <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+          <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
           <span className="text-sm font-medium text-foreground truncate">
             {spec.title || (spec.markers && spec.markers.length > 1 ? `${spec.markers.length} locations` : "Map")}
           </span>
@@ -187,7 +187,7 @@ function MapBlockImpl({ code }: Props) {
         {status === "error" && (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground p-4 text-center">
             <div>
-              <AlertCircle className="w-5 h-5 mx-auto mb-2" />
+              <Globe className="w-5 h-5 mx-auto mb-2" />
               {error || "Could not load map"}
             </div>
           </div>
