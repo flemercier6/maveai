@@ -594,7 +594,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           transform: entered ? "translateX(0)" : "translateX(100%)",
           transition: `transform ${ANIM_MS}ms ${EASE}`,
           willChange: "transform",
-施}}
+}}
       >
       {/* Resize handle */}
       <div
