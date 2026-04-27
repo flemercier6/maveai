@@ -517,7 +517,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      count_today_requests: { Args: { _user_id: string }; Returns: number }
+      get_user_plan: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
