@@ -1290,7 +1290,11 @@ export default function Chat() {
                   onKeyDown={onKey}
                   onKeyUp={updateSlashFromTextarea}
                   onClick={updateSlashFromTextarea}
-                  onBlur={() => setTimeout(() => setSlash(null), 100)}
+                  onFocus={() => notifyComposerFocus("main")}
+                  onBlur={() => {
+                    notifyComposerBlur("main");
+                    setTimeout(() => setSlash(null), 100);
+                  }}
                   placeholder="Send a message..."
                   rows={1}
                   className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
