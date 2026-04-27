@@ -210,6 +210,103 @@ export function BillingTab() {
 
   const isPlus = status.account.plan === "plus";
 
+  // Free users see a Free vs Plus comparison first. The existing payment
+  // settings (cycle, cards, activation form) only appear after they click
+  // "Upgrade to Plus".
+  if (!isPlus && !showUpgradeForm) {
+    return (
+      <Elements stripe={getStripe(pk)}>
+        <section className="space-y-6 max-w-2xl">
+          <div>
+            <h2 className="text-lg font-semibold">Billing</h2>
+            <p className="text-sm text-muted-foreground">
+              You're on the <strong>Free</strong> plan. Upgrade to Plus for full access, pay-as-you-go.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Free */}
+            <div className="border border-border rounded-md p-4 bg-card flex flex-col gap-3">
+              <div>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Free</div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className="text-2xl font-semibold">€0</span>
+                  <span className="text-xs text-muted-foreground">/ month</span>
+                </div>
+              </div>
+              <ul className="space-y-1.5 text-sm">
+                <li className="flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 mt-0.5 shrink-0 text-foreground/60" />
+                  5 requests / day
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 mt-0.5 shrink-0 text-foreground/60" />
+                  Standard models only
+                </li>
+                <li className="flex items-start gap-2 text-muted-foreground">
+                  <span className="w-3.5 h-3.5 mt-0.5 shrink-0 text-center leading-none">—</span>
+                  No memory
+                </li>
+                <li className="flex items-start gap-2 text-muted-foreground">
+                  <span className="w-3.5 h-3.5 mt-0.5 shrink-0 text-center leading-none">—</span>
+                  No saved chats or projects
+                </li>
+              </ul>
+              <div className="mt-auto pt-2">
+                <Button variant="outline" size="sm" disabled className="w-full">
+                  Current plan
+                </Button>
+              </div>
+            </div>
+
+            {/* Plus */}
+            <div className="border border-primary/40 rounded-md p-4 bg-card flex flex-col gap-3 relative">
+              <div className="absolute top-2 right-2 inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-primary font-medium">
+                <Sparkles className="w-3 h-3" /> Recommended
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wide text-primary">Plus</div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className="text-2xl font-semibold">Pay-as-you-go</span>
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Billed on actual usage. No fixed fee.
+                </div>
+              </div>
+              <ul className="space-y-1.5 text-sm">
+                <li className="flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary" />
+                  Unlimited requests
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary" />
+                  All models (GPT-5.5, Claude Opus 4.7, Gemini Pro, Mistral Large…)
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary" />
+                  Memory enabled
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary" />
+                  Saved chats, folders & projects
+                </li>
+              </ul>
+              <div className="mt-auto pt-2">
+                <Button size="sm" className="w-full" onClick={() => setShowUpgradeForm(true)}>
+                  Upgrade to Plus
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground">
+            You'll be charged based on actual usage. Below €1, the charge is deferred to the next period.
+          </p>
+        </section>
+      </Elements>
+    );
+  }
+
   return (
     <Elements stripe={getStripe(pk)}>
       <section className="space-y-6 max-w-2xl">
@@ -224,6 +321,15 @@ export function BillingTab() {
               </span>
             )}
           </p>
+          {!isPlus && (
+            <button
+              type="button"
+              onClick={() => setShowUpgradeForm(false)}
+              className="text-xs text-muted-foreground underline mt-1"
+            >
+              ← Back to plan comparison
+            </button>
+          )}
         </div>
 
         {/* Current usage */}
