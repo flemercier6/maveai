@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { X, ArrowRight, Square, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowRight, Square, ChevronDown, Loader2 } from "lucide-react";
+import SidebarRightIcon from "@/assets/sidebar-right.svg?react";
 import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
