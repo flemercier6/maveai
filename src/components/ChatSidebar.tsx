@@ -57,6 +57,9 @@ type Props = {
   onMoveToFolder?: (conversationId: string, folderId: string | null) => void;
   userEmail?: string;
   userName?: string;
+  userAvatarUrl?: string | null;
+  /** Called when the user updates their profile from the settings dialog. */
+  onProfileUpdated?: () => void;
   /** Per-conversation streaming title state. target=null while waiting for the AI title. */
   titleAnim?: Record<string, { target: string | null; shown: string }>;
   /** Explorations grouped by conversation id, displayed as collapsible sub-items. */
