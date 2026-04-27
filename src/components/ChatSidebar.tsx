@@ -50,6 +50,14 @@ const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(na
 
 export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDeleted, userEmail, userName, titleAnim, branchesByConv, activeBranchId, onOpenBranch }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
+  const [expandedConvs, setExpandedConvs] = useState<Record<string, boolean>>({});
+  const isConvExpanded = (id: string) => {
+    if (id in expandedConvs) return expandedConvs[id];
+    // Default: expand the active conversation that has branches.
+    return activeId === id;
+  };
+  const toggleConv = (id: string) =>
+    setExpandedConvs((prev) => ({ ...prev, [id]: !isConvExpanded(id) }));
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
