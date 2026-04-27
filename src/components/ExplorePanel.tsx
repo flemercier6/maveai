@@ -28,6 +28,7 @@ import { ChatMessage } from "@/components/ChatMessage";
 import { ModelPicker } from "@/components/ModelPicker";
 import { toast } from "sonner";
 import { AUTO_MODEL_ID, providerForModel, type Provider } from "@/lib/models";
+import { looksLikeWritingRequest } from "@/lib/writingDetection";
 import {
   SlashCommandMenu,
   filterSlashItems,
