@@ -459,9 +459,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       />
       <header className="flex items-center justify-between h-12 px-4 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-semibold truncate">
-            {conversationTitle?.trim() || "Exploration"}
-          </span>
+          <span className="text-sm font-semibold truncate">Thread</span>
         </div>
         <div className="flex items-center gap-1">
           <Button
