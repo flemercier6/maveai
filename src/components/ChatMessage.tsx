@@ -280,7 +280,7 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
   };
 
   // Wrap a block-level element: strip inline markers and append one grouped tag at the end.
-  const renderBlock = (Tag: "p" | "li" | "blockquote", children: ReactNode, props: any) => {
+  const renderBlock = (Tag: keyof JSX.IntrinsicElements, children: ReactNode, props: any) => {
     if (!sources?.length) {
       return <Tag {...props}>{children}</Tag>;
     }
