@@ -519,6 +519,18 @@ export default function Chat() {
     const atts = overrideAttachments ?? attachments;
     if ((!text && atts.length === 0) || sending) return;
 
+    // ---- Free-tier checks ----
+    if (isFree) {
+      if (plan.remaining <= 0) {
+        setUpgradeReason("daily-limit");
+        return;
+      }
+      if (model !== AUTO_MODEL_ID && isPremiumModel(model)) {
+        setUpgradeReason("premium-model");
+        return;
+      }
+    }
+
     // /explore flow: route this request to a side exploration instead of the main chat.
     if (exploreRequested) {
       if (!text) {
