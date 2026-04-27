@@ -849,11 +849,17 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
                 <div key={m.id ?? i}>
                   {showQuote && (
                     <div className="px-4 pt-3">
-                      <div className="ml-auto max-w-[85%] rounded-lg border border-border bg-background/60 px-3 py-2 text-xs text-muted-foreground">
-                        <div className="text-[10px] uppercase tracking-wide mb-1 opacity-70">
-                          Quoted
-                        </div>
-                        <blockquote className="whitespace-pre-wrap line-clamp-4 leading-snug text-foreground/80">
+                      <div className="ml-auto max-w-[85%] px-3 py-2 text-xs">
+                        <blockquote
+                          className="whitespace-pre-wrap line-clamp-4 leading-snug italic text-right"
+                          style={{
+                            backgroundImage: "linear-gradient(to right, #888888, #E0E0E0)",
+                            WebkitBackgroundClip: "text",
+                            backgroundClip: "text",
+                            color: "transparent",
+                            WebkitTextFillColor: "transparent",
+                          }}
+                        >
                           {seed!.quotedText}
                         </blockquote>
                       </div>
