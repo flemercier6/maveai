@@ -714,7 +714,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         onMouseDown={(e) => { e.preventDefault(); setResizing(true); }}
         onDoubleClick={() => { setWidth(DEFAULT_WIDTH); localStorage.setItem(STORAGE_KEY, String(DEFAULT_WIDTH)); }}
         className={cn(
-          "absolute top-0 right-0 h-full w-1 cursor-col-resize group z-10",
+          "hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize group z-10",
           "hover:bg-primary/40 transition-colors",
           resizing && "bg-primary/60"
         )}
