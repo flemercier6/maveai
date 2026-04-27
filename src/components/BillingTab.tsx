@@ -321,7 +321,7 @@ export function BillingTab() {
                     onClick={() => setDefault(c.stripe_payment_method_id)}
                     title="Définir par défaut"
                   >
-                    <Star className="w-3.5 h-3.5" />
+                    <Check className="w-3.5 h-3.5" />
                   </Button>
                 )}
                 <Button
