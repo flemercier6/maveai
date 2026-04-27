@@ -200,6 +200,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cost_thresholds: {
+        Row: {
+          amount_eur: number
+          created_at: string
+          enabled: boolean
+          id: string
+          last_notified_at: string | null
+          last_notified_period_start: string | null
+          period: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_eur?: number
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_notified_at?: string | null
+          last_notified_period_start?: string | null
+          period?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_eur?: number
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_notified_at?: string | null
+          last_notified_period_start?: string | null
+          period?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       memory_consolidation_runs: {
         Row: {
           after_count: number

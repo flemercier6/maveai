@@ -5,6 +5,7 @@ import { modelLabel, providerForModel, PROVIDER_LABEL } from "@/lib/models";
 import { billingMultiplier, billedCost, USD_TO_EUR } from "@/lib/pricing";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CostThresholdCard } from "@/components/CostThresholdCard";
 import {
   Bar,
   BarChart,
@@ -310,6 +311,26 @@ export function UsageTab() {
     [rows],
   );
 
+  // Billed spend (EUR) for the current day / week / month — used by the threshold card.
+  const spendByPeriod = useMemo(() => {
+    const now = new Date();
+    const startDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startWeek = new Date(startDay);
+    startWeek.setDate(startWeek.getDate() - ((startWeek.getDay() + 6) % 7));
+    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    let day = 0,
+      week = 0,
+      month = 0;
+    for (const r of rows) {
+      const t = new Date(r.created_at).getTime();
+      const billedEur = billedCost(Number(r.total_cost_usd ?? 0), r.model) * USD_TO_EUR;
+      if (t >= startMonth.getTime()) month += billedEur;
+      if (t >= startWeek.getTime()) week += billedEur;
+      if (t >= startDay.getTime()) day += billedEur;
+    }
+    return { day, week, month };
+  }, [rows]);
+
   const canPrev = canNavigate(range, offset, -1, signupDate);
   const canNext = canNavigate(range, offset, 1, signupDate);
 
@@ -328,6 +349,7 @@ export function UsageTab() {
     return (
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Usage</h2>
+        <CostThresholdCard spendByPeriod={{ day: 0, week: 0, month: 0 }} />
         <div className="rounded-xl border border-border bg-[hsl(var(--dropdown-hover))] p-8 text-center">
           <p className="text-sm text-muted-foreground">
             No usage recorded yet. Send a message to start tracking.
@@ -340,6 +362,9 @@ export function UsageTab() {
   return (
     <section className="space-y-6">
       <h2 className="text-lg font-semibold">Usage</h2>
+
+      <CostThresholdCard spendByPeriod={spendByPeriod} />
+
 
       {/* Big total cost cards: base + ×3 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
