@@ -142,7 +142,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" overlayClassName="bg-white/40 backdrop-blur-sm">
         <DialogHeader>
           <DialogTitle>{folder ? "Edit folder" : "New folder"}</DialogTitle>
           <DialogDescription>
