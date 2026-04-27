@@ -342,6 +342,11 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
     blockquote: ({ node, children, ...props }: any) => renderBlock("blockquote", children, props),
     td: ({ node, children, ...props }: any) => renderBlock("td" as any, children, props),
     th: ({ node, children, ...props }: any) => renderBlock("th" as any, children, props),
+    table: ({ node, children, ...props }: any) => (
+      <div className="table-wrapper">
+        <table {...props}>{children}</table>
+      </div>
+    ),
     h1: ({ node, children, ...props }: any) => renderBlock("h1" as any, children, props),
     h2: ({ node, children, ...props }: any) => renderBlock("h2" as any, children, props),
     h3: ({ node, children, ...props }: any) => renderBlock("h3" as any, children, props),
