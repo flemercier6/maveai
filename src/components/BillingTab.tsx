@@ -39,11 +39,9 @@ type Status = {
   invoices: Invoice[];
 };
 
-// Lovable Cloud doesn't expose a Stripe publishable key by default. We let the
-// user paste their own publishable key (pk_test_…) once; it's stored in
-// localStorage. Publishable keys are safe to live client-side.
-const PK_STORAGE = "stripe_pk";
-
+// The Stripe publishable key is fetched from the backend (billing-config edge
+// function) so the user never has to provide it. Publishable keys are safe to
+// live client-side.
 let stripePromise: Promise<Stripe | null> | null = null;
 function getStripe(pk: string) {
   if (!stripePromise) stripePromise = loadStripe(pk);
@@ -108,8 +106,7 @@ function CardForm({
 
 export function BillingTab() {
   const { toast } = useToast();
-  const [pk, setPk] = useState<string>(() => localStorage.getItem(PK_STORAGE) ?? "");
-  const [pkInput, setPkInput] = useState("");
+  const [pk, setPk] = useState<string | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
   const [cycle, setCycle] = useState<Cycle>("monthly");
