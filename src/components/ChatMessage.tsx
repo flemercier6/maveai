@@ -340,6 +340,14 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
     p: ({ node, children, ...props }: any) => renderBlock("p", children, props),
     li: ({ node, children, ...props }: any) => renderBlock("li", children, props),
     blockquote: ({ node, children, ...props }: any) => renderBlock("blockquote", children, props),
+    td: ({ node, children, ...props }: any) => renderBlock("td" as any, children, props),
+    th: ({ node, children, ...props }: any) => renderBlock("th" as any, children, props),
+    h1: ({ node, children, ...props }: any) => renderBlock("h1" as any, children, props),
+    h2: ({ node, children, ...props }: any) => renderBlock("h2" as any, children, props),
+    h3: ({ node, children, ...props }: any) => renderBlock("h3" as any, children, props),
+    h4: ({ node, children, ...props }: any) => renderBlock("h4" as any, children, props),
+    h5: ({ node, children, ...props }: any) => renderBlock("h5" as any, children, props),
+    h6: ({ node, children, ...props }: any) => renderBlock("h6" as any, children, props),
     code: ({ node, inline, className, children, ...props }: any) => {
       const lang = /language-(\w+)/.exec(className || "")?.[1];
       const raw = String(children ?? "").replace(/\n$/, "");
