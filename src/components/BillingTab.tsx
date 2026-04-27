@@ -341,32 +341,79 @@ export function BillingTab() {
         {/* Invoices */}
         {status.invoices.length > 0 && (
           <div className="space-y-2">
-            <Label className="text-sm">Historique des prélèvements</Label>
-            <div className="space-y-1">
-              {status.invoices.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="flex items-center justify-between text-xs px-3 py-2 border border-border rounded-md"
-                >
-                  <span>
-                    {new Date(inv.created_at).toLocaleDateString("fr-FR")} · {inv.amount_eur.toFixed(2)} €
-                  </span>
-                  <span
-                    className={
-                      inv.status === "paid"
-                        ? "text-foreground"
-                        : inv.status === "failed"
-                          ? "text-destructive"
-                          : "text-muted-foreground"
-                    }
+            <Label className="text-sm">Historique des paiements</Label>
+            <div className="border border-border rounded-md divide-y divide-border overflow-hidden">
+              {status.invoices.map((inv) => {
+                const dateLabel = new Date(inv.created_at).toLocaleDateString("fr-FR", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                });
+                const periodLabel = `${new Date(inv.period_start).toLocaleDateString("fr-FR")} → ${new Date(inv.period_end).toLocaleDateString("fr-FR")}`;
+                return (
+                  <div
+                    key={inv.id}
+                    className="flex items-center justify-between gap-3 px-3 py-2.5 text-xs"
                   >
-                    {inv.status === "paid" && "Payé"}
-                    {inv.status === "failed" && "Échec"}
-                    {inv.status === "pending" && "En attente"}
-                    {inv.status === "skipped_below_threshold" && "Reporté (< 1 €)"}
-                  </span>
-                </div>
-              ))}
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">
+                          {inv.amount_eur.toFixed(2)} €
+                        </span>
+                        <span className="text-muted-foreground">· {dateLabel}</span>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground truncate">
+                        Période {periodLabel}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className={
+                          inv.status === "paid"
+                            ? "text-foreground"
+                            : inv.status === "failed"
+                              ? "text-destructive"
+                              : "text-muted-foreground"
+                        }
+                      >
+                        {inv.status === "paid" && "Payé"}
+                        {inv.status === "failed" && "Échec"}
+                        {inv.status === "pending" && "En attente"}
+                        {inv.status === "skipped_below_threshold" && "Reporté (< 1 €)"}
+                      </span>
+                      {inv.status === "paid" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-[11px] gap-1"
+                          onClick={async () => {
+                            const { data, error } = await supabase.functions.invoke(
+                              "billing-receipt",
+                              { body: { invoice_id: inv.id } },
+                            );
+                            const url = (data as { url?: string } | null)?.url;
+                            if (error || !url) {
+                              toast({
+                                title: "Justificatif indisponible",
+                                description:
+                                  error?.message ??
+                                  (data as { error?: string } | null)?.error ??
+                                  "Reçu non encore disponible.",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            window.open(url, "_blank", "noopener,noreferrer");
+                          }}
+                        >
+                          <FileText className="w-3 h-3" />
+                          Justificatif
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
