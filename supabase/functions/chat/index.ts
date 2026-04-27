@@ -1077,7 +1077,11 @@ Deno.serve(async (req) => {
         "Diagrams: use SPARINGLY. Only emit a ```flow block when the question genuinely involves a multi-step process, system architecture, decision tree, state machine, or an abstract/hard-to-explain concept where a visual schema materially aids understanding beyond what prose, lists or tables can convey. " +
         "DO NOT use diagrams for: simple factual questions, definitions, short how-tos, comparisons (use a table), lists of items, code explanations, opinions, or anything a short paragraph already answers clearly. When in doubt, do NOT emit a diagram. " +
         "Format when used: fenced ```flow block containing JSON: { title?, direction?: 'TB'|'LR'|'RL'|'BT', nodes: [{id,label,kind?: 'default'|'input'|'output'|'decision'|'success'|'warning'|'danger'|'muted'}], edges: [{source,target,label?,animated?,dashed?}] }. " +
-        "Short slug ids, ≤6-word labels, no positions, 4–12 nodes. Not Mermaid.",
+        "Short slug ids, ≤6-word labels, no positions, 4–12 nodes. Not Mermaid.\n" +
+        "Maps: use ONLY when the user asks about a specific real-world place, address, neighborhood, route, or list of locations where seeing them on a map materially helps (e.g. 'where is the Eiffel Tower', 'best ramen in Tokyo', 'route from Lyon to Marseille', 'cafés near Union Square'). " +
+        "DO NOT emit a map for: general geography questions, country-level facts, history, or any question that doesn't reference a specific place the user wants to visualize. When in doubt, do NOT emit a map. " +
+        "Format when used: a fenced ```map block containing JSON: { title?: string, center?: {lat:number,lng:number}, zoom?: number (1-20), markers: [{ lat:number, lng:number, label?: string, description?: string }] }. " +
+        "Provide accurate lat/lng coordinates yourself (you know them). Include 1 to 8 markers. Place the ```map block AFTER your textual answer, on its own. Do not mention the map block in prose.",
     };
 
     // Writing-canvas mode. Output format (STRICT):

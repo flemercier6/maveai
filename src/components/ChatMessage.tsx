@@ -6,6 +6,7 @@ import { ProviderBadge } from "./ProviderBadge";
 import { FlowDiagram } from "./FlowDiagram";
 import { RequestVisualizer } from "./RequestVisualizer";
 import { CanvasBlock } from "./CanvasBlock";
+import { MapBlock } from "./MapBlock";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Provider } from "@/lib/models";
 import type { RequestMeta } from "@/lib/requestMeta";
@@ -331,6 +332,9 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
       const raw = String(children ?? "").replace(/\n$/, "");
       if (!inline && (lang === "flow" || lang === "reactflow" || lang === "diagram")) {
         return <FlowDiagram code={raw} />;
+      }
+      if (!inline && lang === "map") {
+        return <MapBlock code={raw} />;
       }
       return (
         <code className={className} {...props}>
