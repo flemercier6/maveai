@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Square, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowRight, Square, ChevronDown, Loader2, FileText, X } from "lucide-react";
 
 /** Custom "sidebar-right" icon (inherits color via currentColor). */
 const SidebarRightIcon = ({ className }: { className?: string }) => (
@@ -82,12 +82,9 @@ type Props = {
   }) => void;
   /** Called when a branch is discarded (empty on close) so the parent can remove it. */
   onBranchDeleted?: (branchId: string) => void;
-  /** Triggered when the user picks `/note` inside the panel — the parent
-   *  should focus the main chat composer in writing-canvas mode. */
-  onRequestWrite?: () => void;
 };
 
-export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted, onRequestWrite }: Props) {
+export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted }: Props) {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [messages, setMessages] = useState<BranchMsg[]>([]);
   const [input, setInput] = useState("");
@@ -99,6 +96,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
   // the ModelPicker below the textarea.
   const [provider, setProvider] = useState<Provider>(seed?.provider ?? "google");
   const [model, setModel] = useState<string>(seed?.model ?? "");
+  // When `/note` is selected the next assistant reply opens a writing canvas,
+  // identical to the main chat behavior — but scoped to the panel.
+  const [writeRequested, setWriteRequested] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -150,10 +150,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     if (item.provider === "auto") {
       setModel(AUTO_MODEL_ID);
     } else if (item.provider === "write") {
-      // /note opens the writing canvas in the MAIN chat (the side panel
-      // is reserved for explorations).
-      onRequestWrite?.();
-      toast.success("Writing canvas enabled in the main chat");
+      // /note flags the next reply in this panel as writing-canvas mode.
+      setWriteRequested(true);
+      toast.success("Writing canvas enabled for next message");
     } else if (item.provider === "explore") {
       // We're already inside an exploration — surfaced as disabled below,
       // but guard here too.
@@ -284,6 +283,10 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     if (override === undefined) setInput("");
     else setInput("");
     setSending(true);
+    // Snapshot the writing-canvas flag, then clear the tag immediately
+    // (matches the main chat: the badge disappears once the message is sent).
+    const useWriting = writeRequested;
+    if (writeRequested) setWriteRequested(false);
 
     // Persist user message in branch.
     const { data: userMsg } = await supabase
@@ -344,8 +347,8 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           provider,
           model,
           skipClarify: true,
-          writingMode: false,
-          forceCanvas: false,
+          writingMode: useWriting,
+          forceCanvas: useWriting,
           messages: payloadMessages,
         }),
         signal: controller.signal,
@@ -691,7 +694,25 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
               excludeProviders={["explore"]}
             />
           )}
-          <div className="flex items-center justify-end gap-[15px] px-2 pb-2">
+          <div className="flex items-center justify-between gap-[15px] px-2 pb-2">
+            <div className="flex items-center gap-2">
+              {writeRequested && (
+                <button
+                  type="button"
+                  onClick={() => setWriteRequested(false)}
+                  aria-label="Remove Note"
+                  className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-[#E6F1FF] transition-colors"
+                  style={{ color: "#0062FF" }}
+                >
+                  <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                    <FileText className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
+                    <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
+                  </span>
+                  Note
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-[15px]">
             <ModelPicker
               provider={provider}
               model={model}
@@ -721,6 +742,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
                 <ArrowRight className="w-4 h-4" />
               </Button>
             )}
+            </div>
           </div>
         </div>
         {/* Spacer that matches the height of the main chat's disclaimer
