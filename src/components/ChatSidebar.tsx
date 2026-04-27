@@ -73,6 +73,10 @@ type Props = {
   isFree?: boolean;
   /** Called when a free user tries to use a Plus-only feature. */
   onLockedFeature?: (reason: "save-chat" | "folder") => void;
+  /** Mobile drawer open state (controlled). On desktop the sidebar is always visible. */
+  mobileOpen?: boolean;
+  /** Called when the mobile drawer should open/close (e.g. backdrop tap, item select). */
+  onMobileOpenChange?: (open: boolean) => void;
 };
 
 const MIN_WIDTH = 200;
