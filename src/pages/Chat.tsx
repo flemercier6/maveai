@@ -1118,8 +1118,10 @@ export default function Chat() {
             </div>
           </div>
         )}
-        <header className="flex items-center h-12 px-4 border-b border-border shrink-0">
-          <span className="text-sm font-semibold truncate">Chat</span>
+        <header className="flex items-center h-12 px-4 border-b border-border/50 shrink-0">
+          <span className="text-sm font-semibold truncate">
+            {conversations.find((c) => c.id === activeId)?.title?.trim() || "Chat"}
+          </span>
         </header>
         <ChatIndex
           scrollContainer={scrollEl}
@@ -1407,7 +1409,7 @@ export default function Chat() {
         open={exploreOpen}
         seed={exploreSeed}
         userId={user.id}
-        conversationTitle={conversations.find((c) => c.id === activeId)?.title ?? null}
+        
         onClose={() => setExploreOpen(false)}
         onMerge={handleMergeSummary}
         onBranchCreated={(b) =>

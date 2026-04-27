@@ -55,12 +55,9 @@ type Props = {
   }) => void;
   /** Called when a branch is discarded (empty on close) so the parent can remove it. */
   onBranchDeleted?: (branchId: string) => void;
-  /** Title of the parent conversation — shown in the panel header so it
-   *  matches what the user sees in the sidebar. */
-  conversationTitle?: string | null;
 };
 
-export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted, conversationTitle }: Props) {
+export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted }: Props) {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [messages, setMessages] = useState<BranchMsg[]>([]);
   const [input, setInput] = useState("");
@@ -459,9 +456,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       />
       <header className="flex items-center justify-between h-12 px-4 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-semibold truncate">
-            {conversationTitle?.trim() || "Exploration"}
-          </span>
+          <span className="text-sm font-semibold truncate">Thread</span>
         </div>
         <div className="flex items-center gap-1">
           <Button
