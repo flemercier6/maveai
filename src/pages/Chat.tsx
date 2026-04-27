@@ -1266,6 +1266,8 @@ export default function Chat() {
         }}
         userEmail={user.email}
         userName={displayName ?? (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0]}
+        userAvatarUrl={avatarUrl}
+        onProfileUpdated={reloadProfile}
         titleAnim={titleAnim}
         branchesByConv={sidebarBranchesByConv}
         activeBranchId={exploreOpen ? exploreSeed?.existingBranchId ?? null : null}
