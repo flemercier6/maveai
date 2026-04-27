@@ -1001,8 +1001,32 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ---------- Load & inject user memory ----------
-    // Two tiers:
+    // ---------- Free-tier enforcement ----------
+    // Free users: 5 requests/day, no premium models, no memory injection.
+    const FREE_DAILY_LIMIT = 5;
+    const PREMIUM_MODELS = new Set([
+      "gpt-5.5", "claude-opus-4-7", "gemini-2.5-pro", "mistral-large-latest",
+    ]);
+    const { data: planData } = await supabase.rpc("get_user_plan", { _user_id: user.id });
+    const userPlan = typeof planData === "string" ? planData : "free";
+    const isFreeUser = userPlan === "free";
+
+    if (isFreeUser) {
+      if (PREMIUM_MODELS.has(model)) {
+        return new Response(
+          JSON.stringify({ error: "premium_model", message: "This model requires the Plus plan." }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const { data: countData } = await supabase.rpc("count_today_requests", { _user_id: user.id });
+      const todayCount = typeof countData === "number" ? countData : 0;
+      if (todayCount >= FREE_DAILY_LIMIT) {
+        return new Response(
+          JSON.stringify({ error: "daily_limit", message: "Daily free limit reached (5 messages)." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
     //  1) PROFILE (identity + preference): ALWAYS injected. These are core facts
     //     about the user (name, job, response preferences, etc.) that must
     //     influence every reply — e.g. signing an email with the real name
