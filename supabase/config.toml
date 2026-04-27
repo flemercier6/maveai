@@ -2,3 +2,7 @@ project_id = "ewoymadqnaicbdeespaz"
 
 [functions.chat]
 verify_jwt = false
+
+[functions.billing-charge]
+verify_jwt = false
+
