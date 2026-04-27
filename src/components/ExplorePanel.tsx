@@ -284,13 +284,6 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       })();
       return;
     }
-
-    // Resolve Auto → concrete provider/model for this turn (preserve Auto preference in state)
-    const userPickedAuto = model === AUTO_MODEL_ID;
-    const resolved = userPickedAuto ? routeAuto(text) : { provider, model };
-    const sendProvider = resolved.provider;
-    const sendModel = resolved.model;
-
     (async () => {
       const { data, error } = await supabase
         .from("chat_branches")
