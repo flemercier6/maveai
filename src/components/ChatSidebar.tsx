@@ -97,6 +97,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
   });
   const [resizing, setResizing] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [settingsInitialSection, setSettingsInitialSection] = useState<
     "preferences" | "integrations" | "memory" | "usage" | "billing" | undefined
   >(undefined);
@@ -277,6 +278,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           </div>
           <button
             type="button"
+            onClick={() => setSearchOpen(true)}
             className="w-full flex items-center gap-2 px-[10px] py-[6px] rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-sm"
           >
             <Search className="w-4 h-4 opacity-70" /> Search chats
