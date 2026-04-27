@@ -1449,7 +1449,7 @@ export default function Chat() {
           setBranches((prev) =>
             prev.some((x) => x.id === b.id)
               ? prev
-              : [...prev, { id: b.id, source_message_id: b.source_message_id as any, quoted_text: b.quoted_text }],
+              : [...prev, { id: b.id, source_message_id: b.source_message_id as any, quoted_text: b.quoted_text, reply_count: 1, last_activity: new Date().toISOString() }],
           )
         }
         onBranchDeleted={(id) =>
