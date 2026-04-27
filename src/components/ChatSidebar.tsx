@@ -251,12 +251,12 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
       )}
       <aside
         ref={asideRef}
-        style={{ width }}
+        style={{ ['--sidebar-w' as any]: `${width}px` }}
         className={cn(
           "shrink-0 h-screen flex flex-col bg-sidebar border-r border-sidebar-border",
-          // Mobile: fixed drawer overlay; Desktop: in-flow
-          "fixed top-0 left-0 z-50 max-w-[85vw] transition-transform duration-200 ease-out",
-          "md:relative md:max-w-none md:translate-x-0 md:transition-none",
+          // Mobile: fixed drawer overlay full width; Desktop: in-flow with custom width
+          "fixed top-0 left-0 z-50 w-screen max-w-full transition-transform duration-200 ease-out text-[15px]",
+          "md:relative md:w-[var(--sidebar-w)] md:max-w-none md:translate-x-0 md:transition-none md:text-sm",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
