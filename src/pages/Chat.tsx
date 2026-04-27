@@ -95,6 +95,7 @@ export default function Chat() {
   const [exploreOpen, setExploreOpen] = useState(false);
   const [exploreSeed, setExploreSeed] = useState<BranchSeed | null>(null);
   const [branches, setBranches] = useState<StoredBranch[]>([]);
+  const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
 
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
