@@ -515,9 +515,9 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         )}
       </div>
 
-      {/* Input */}
-      <div className="p-3" style={{ backgroundColor: "#F8F8F8" }}>
-        <div className="relative bg-card border border-border rounded-2xl">
+      {/* Input — mirrors the main chat composer's sizing & bottom spacing */}
+      <div className="p-4 pb-[5px] pt-[5px]" style={{ backgroundColor: "#F8F8F8" }}>
+        <div className="relative bg-card border border-border rounded-2xl transition-shadow focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)]">
           <Textarea
             ref={textareaRef}
             value={input}
@@ -525,30 +525,36 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             onKeyDown={onKey}
             placeholder="Continue exploring..."
             rows={1}
-            className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-40 overflow-y-auto py-3 px-4 leading-relaxed text-sm"
+            className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
           />
           <div className="flex items-center justify-end px-2 pb-2">
             {sending ? (
               <Button
                 size="icon"
                 onClick={stop}
-                className="h-8 w-8 rounded-full"
+                className="h-9 w-9 rounded-full"
                 aria-label="Stop"
               >
-                <Square className="w-3.5 h-3.5 fill-current" />
+                <Square className="w-4 h-4 fill-current" />
               </Button>
             ) : (
               <Button
                 size="icon"
                 onClick={() => send()}
                 disabled={!input.trim() || !branchId}
-                className="h-8 w-8 rounded-full"
+                className="h-9 w-9 rounded-full"
                 aria-label="Send"
               >
                 <ArrowRight className="w-4 h-4" />
               </Button>
             )}
           </div>
+        </div>
+        {/* Spacer that matches the height of the main chat's disclaimer
+            (`<p className="text-[11px] ... mt-[5px]">`), so the composer
+            sits at the exact same bottom offset as in the main chat. */}
+        <div aria-hidden className="text-[11px] mt-[5px] leading-normal select-none">
+          &nbsp;
         </div>
       </div>
     </aside>
