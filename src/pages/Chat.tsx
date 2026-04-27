@@ -91,6 +91,8 @@ export default function Chat() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
+  const activeComposer = useActiveComposer();
+  const mainComposerDimmed = activeComposer === "explore";
 
   // Auto-resize textarea height based on content
   useEffect(() => {
