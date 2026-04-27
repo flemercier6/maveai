@@ -698,6 +698,12 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         onOpenChange={(o) => { setSettingsOpen(o); if (!o) setSettingsInitialSection(undefined); }}
         initialSection={settingsInitialSection}
       />
+      <SearchChatsDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        conversations={conversations}
+        onSelect={onSelect}
+      />
       <FolderDialog
         open={folderDialogOpen}
         onOpenChange={(o) => { setFolderDialogOpen(o); if (!o) setEditingFolder(null); }}
