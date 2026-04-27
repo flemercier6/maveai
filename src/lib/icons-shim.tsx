@@ -63,6 +63,8 @@ import {
   IncognitoIcon,
   LockIcon,
   BubbleChatIcon,
+  Analytics01Icon,
+  CreditCardIcon,
 } from "@hugeicons/core-free-icons";
 
 export type LucideProps = SVGProps<SVGSVGElement> & {
