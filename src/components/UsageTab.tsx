@@ -55,7 +55,7 @@ const fmtEUR = (v: number) =>
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 2,
-    maximumFractionDigits: 3,
+    maximumFractionDigits: 2,
   });
 
 const fmtEURShort = (v: number) =>
@@ -63,7 +63,7 @@ const fmtEURShort = (v: number) =>
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 2,
-    maximumFractionDigits: 3,
+    maximumFractionDigits: 2,
   });
 
 const fmtTokens = (v: number) => v.toLocaleString("en-US");
