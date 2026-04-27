@@ -491,8 +491,8 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         },
         body: JSON.stringify({
           conversationId: null,
-          provider,
-          model,
+          provider: sendProvider,
+          model: sendModel,
           skipClarify: true,
           writingMode: useWriting,
           forceCanvas,
@@ -533,7 +533,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
                     ...current,
                     role: "assistant",
                     content: parsed.body,
-                    model,
+                    model: sendModel,
                     ...(parsed.canvas !== null
                       ? {
                           canvas: parsed.canvas,
@@ -543,7 +543,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
                       : {}),
                   };
                 } else {
-                  arr[arr.length - 1] = { ...current, role: "assistant", content: acc, model };
+                  arr[arr.length - 1] = { ...current, role: "assistant", content: acc, model: sendModel };
                 }
                 return arr;
               });
@@ -561,7 +561,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             branch_id: branchId,
             role: "assistant",
             content: acc,
-            model,
+            model: sendModel,
           })
           .select()
           .single();
@@ -575,7 +575,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
               id: asstMsg?.id,
               role: "assistant",
               content: parsed.body,
-              model,
+              model: sendModel,
               ...(parsed.canvas !== null
                 ? {
                     canvas: parsed.canvas,
@@ -590,7 +590,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
               id: asstMsg?.id,
               role: "assistant",
               content: acc,
-              model,
+              model: sendModel,
             };
           }
           return arr;
