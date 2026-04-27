@@ -111,6 +111,7 @@ export function BillingTab() {
   const [loading, setLoading] = useState(true);
   const [cycle, setCycle] = useState<Cycle>("monthly");
   const [showUpgradeForm, setShowUpgradeForm] = useState(false);
+  const [showAddCardForm, setShowAddCardForm] = useState(false);
 
   async function reload() {
     setLoading(true);
@@ -422,15 +423,42 @@ export function BillingTab() {
         </div>
 
         {/* Add card / Activate */}
-        <div className="space-y-2">
-          <Label className="text-sm">
-            {isPlus ? "Add a new card" : "Activate the Plus plan with a card"}
-          </Label>
-          <CardForm
-            onSuccess={isPlus ? addCard : activatePlus}
-            buttonLabel={isPlus ? "Add card" : "Upgrade to Plus"}
-          />
-        </div>
+        {isPlus ? (
+          showAddCardForm ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Add a new card</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAddCardForm(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+              <CardForm
+                onSuccess={async (pmId) => {
+                  await addCard(pmId);
+                  setShowAddCardForm(false);
+                }}
+                buttonLabel="Add card"
+              />
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAddCardForm(true)}
+            >
+              Add a new card
+            </Button>
+          )
+        ) : (
+          <div className="space-y-2">
+            <Label className="text-sm">Activate the Plus plan with a card</Label>
+            <CardForm onSuccess={activatePlus} buttonLabel="Upgrade to Plus" />
+          </div>
+        )}
 
         {/* Downgrade */}
         {isPlus && (
