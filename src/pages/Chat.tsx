@@ -1266,7 +1266,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-background">
+    <div ref={rootRef} className="flex h-screen w-full bg-background">
       <ChatSidebar
         conversations={conversations}
         activeId={activeId}
