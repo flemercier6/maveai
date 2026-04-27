@@ -88,6 +88,49 @@ type Props = {
   onBranchDeleted?: (branchId: string) => void;
 };
 
+// Parse a streamed assistant string into body / canvas / title.
+// Mirrors the main chat's splitCanvas so the writing-canvas (/note) feature
+// works identically inside the exploration side panel.
+function splitCanvas(raw: string): {
+  body: string;
+  canvas: string | null;
+  title: string | null;
+  editMode: "yes" | "no" | null;
+} {
+  let rest = raw;
+  let editMode: "yes" | "no" | null = null;
+  let title: string | null = null;
+
+  const editMatch = rest.match(/^\s*CANVAS_EDIT:\s*(yes|no)\s*\n?/i);
+  if (editMatch) {
+    editMode = editMatch[1].toLowerCase() as "yes" | "no";
+    rest = rest.slice(editMatch[0].length);
+  }
+  const titleMatch = rest.match(/^\s*CANVAS_TITLE:\s*([^\n]+?)[ \t]*\n/i);
+  if (titleMatch) {
+    title = titleMatch[1].trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 60);
+    rest = rest.slice(titleMatch[0].length);
+  }
+  if (editMode === "no") return { body: rest, canvas: null, title: null, editMode };
+
+  const open = rest.indexOf("```canvas");
+  if (open < 0) return { body: rest, canvas: editMode === "yes" ? "" : null, title, editMode };
+  const afterOpen = rest.indexOf("\n", open);
+  if (afterOpen < 0) return { body: rest.slice(0, open), canvas: "", title, editMode };
+  const close = rest.indexOf("```", afterOpen + 1);
+  if (close < 0) return { body: rest.slice(0, open), canvas: rest.slice(afterOpen + 1), title, editMode };
+  const canvas = rest.slice(afterOpen + 1, close).replace(/\n+$/, "");
+  const body = rest.slice(0, open) + rest.slice(close + 3);
+  return { body, canvas, title, editMode };
+}
+
+// Parse a persisted assistant message back into body + optional canvas/title.
+function parseStored(raw: string): { body: string; canvas?: string; canvasTitle?: string } {
+  const r = splitCanvas(raw ?? "");
+  if (r.canvas === null) return { body: r.body };
+  return { body: r.body, canvas: r.canvas, canvasTitle: r.title ?? undefined };
+}
+
 export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCreated, onBranchDeleted }: Props) {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [messages, setMessages] = useState<BranchMsg[]>([]);
