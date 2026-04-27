@@ -65,10 +65,9 @@ export default function Chat() {
   const isFree = plan.isFree;
   const [upgradeReason, setUpgradeReason] = useState<null | "daily-limit" | "premium-model" | "memory" | "folder" | "save-chat">(null);
 
-  // Free users: every chat is forced into ephemeral mode (no persistence).
-  useEffect(() => {
-    if (isFree && !ephemeral) setEphemeral(true);
-  }, [isFree, ephemeral]);
+  // Default to normal (persisted) chat at app open. Ephemeral is opt-in
+  // via the dedicated button. Free users are prompted to upgrade when
+  // they try to actually save a chat (handled at the New chat / send paths).
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [provider, setProvider] = useState<Provider>("openai");
