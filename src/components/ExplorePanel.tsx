@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ModelPicker } from "@/components/ModelPicker";
 import { toast } from "sonner";
-import { AUTO_MODEL_ID, providerForModel, type Provider } from "@/lib/models";
+import { AUTO_MODEL_ID, providerForModel, routeAuto, type Provider } from "@/lib/models";
 import { looksLikeWritingRequest } from "@/lib/writingDetection";
 import {
   SlashCommandMenu,
@@ -284,8 +284,6 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       })();
       return;
     }
-
-
     (async () => {
       const { data, error } = await supabase
         .from("chat_branches")
@@ -427,6 +425,13 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
     const forceCanvas = writeRequested === true;
     if (writeRequested) setWriteRequested(false);
 
+    // Resolve Auto → concrete provider/model for this turn. Preserve the user's
+    // Auto choice in panel state so the chip stays on Auto after sending.
+    const userPickedAuto = model === AUTO_MODEL_ID;
+    const resolved = userPickedAuto ? routeAuto(text) : { provider, model };
+    const sendProvider = resolved.provider;
+    const sendModel = resolved.model;
+
     // Persist user message in branch.
     const { data: userMsg } = await supabase
       .from("branch_messages")
@@ -486,8 +491,8 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         },
         body: JSON.stringify({
           conversationId: null,
-          provider,
-          model,
+          provider: sendProvider,
+          model: sendModel,
           skipClarify: true,
           writingMode: useWriting,
           forceCanvas,
@@ -528,7 +533,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
                     ...current,
                     role: "assistant",
                     content: parsed.body,
-                    model,
+                    model: sendModel,
                     ...(parsed.canvas !== null
                       ? {
                           canvas: parsed.canvas,
@@ -538,7 +543,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
                       : {}),
                   };
                 } else {
-                  arr[arr.length - 1] = { ...current, role: "assistant", content: acc, model };
+                  arr[arr.length - 1] = { ...current, role: "assistant", content: acc, model: sendModel };
                 }
                 return arr;
               });
@@ -556,7 +561,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
             branch_id: branchId,
             role: "assistant",
             content: acc,
-            model,
+            model: sendModel,
           })
           .select()
           .single();
@@ -570,7 +575,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
               id: asstMsg?.id,
               role: "assistant",
               content: parsed.body,
-              model,
+              model: sendModel,
               ...(parsed.canvas !== null
                 ? {
                     canvas: parsed.canvas,
@@ -585,7 +590,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
               id: asstMsg?.id,
               role: "assistant",
               content: acc,
-              model,
+              model: sendModel,
             };
           }
           return arr;
