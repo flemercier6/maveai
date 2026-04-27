@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import {
@@ -8,12 +7,31 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Trash2, LogOut, Sparkles, MoreHorizontal, Pencil, ChevronDown, Search, Settings, ChevronsUpDown } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  LogOut,
+  Sparkles,
+  MoreHorizontal,
+  Pencil,
+  ChevronDown,
+  Search,
+  Settings,
+  ChevronsUpDown,
+  FolderPlus,
+  Folder as FolderIcon,
+} from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { FolderDialog } from "@/components/FolderDialog";
+import { getColor, getIcon, type FolderRow } from "@/lib/folders";
 
 export type Conversation = {
   id: string;
@@ -21,6 +39,7 @@ export type Conversation = {
   provider: string;
   model: string;
   updated_at: string;
+  folder_id?: string | null;
 };
 
 type Props = {
@@ -29,6 +48,8 @@ type Props = {
   onSelect: (id: string) => void;
   onNew: () => void;
   onDeleted: (id: string) => void;
+  /** Called when a conversation is moved to a folder (or null = unfile). */
+  onMoveToFolder?: (conversationId: string, folderId: string | null) => void;
   userEmail?: string;
   userName?: string;
   /** Per-conversation streaming title state. target=null while waiting for the AI title. */
