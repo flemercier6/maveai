@@ -1,5 +1,5 @@
 import { cloneElement, isValidElement, memo, useState, type ReactNode } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles } from "lucide-react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles, Map as MapIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
@@ -90,14 +90,14 @@ function ActionButton({
 }
 
 function ToolBadge({ tool, label }: ToolUse) {
-  const Icon = tool === "scrape" ? Globe : Search;
-  const text = tool === "scrape" ? "Read page" : "Web search";
+  const Icon = tool === "scrape" ? Globe : tool === "map" ? MapIcon : Search;
+  const text = tool === "scrape" ? "Read page" : tool === "map" ? "Map" : "Web search";
   // Truncate long URLs/queries
   const shortLabel = label.length > 60 ? label.slice(0, 57) + "…" : label;
   return (
     <div className="inline-flex items-center h-6 gap-1.5 rounded-full border border-border bg-card px-2.5 text-[11px] font-medium text-muted-foreground max-w-full">
       <Icon className="w-3.5 h-3.5 shrink-0" />
-      <span className="truncate">{text}: {shortLabel}</span>
+      <span className="truncate">{label ? `${text}: ${shortLabel}` : text}</span>
     </div>
   );
 }
@@ -106,15 +106,17 @@ function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined): 
   if (tool) {
     const short = tool.label.length > 50 ? tool.label.slice(0, 47) + "…" : tool.label;
     if (tool.status === "done") {
-      return tool.tool === "scrape" ? "Summarizing page…" : "Summarizing results…";
+      if (tool.tool === "scrape") return "Summarizing page…";
+      if (tool.tool === "map") return "Drawing map…";
+      return "Summarizing results…";
     }
     if (tool.status === "failed") {
       return "Tool unavailable, continuing without it…";
     }
     // running
-    return tool.tool === "scrape"
-      ? `Reading ${short}…`
-      : `Searching: "${short}"…`;
+    if (tool.tool === "scrape") return `Reading ${short}…`;
+    if (tool.tool === "map") return short ? `Mapping: ${short}…` : "Preparing map…";
+    return `Searching: "${short}"…`;
   }
   if (phase === "analyzing") return "Analyzing your request…";
   if (phase === "generating") return "Thinking…";
