@@ -1100,21 +1100,17 @@ export default function Chat() {
           if (files && files.length) void handleFiles(files);
         }}
       >
-        <div
-          className={`absolute inset-0 z-50 flex items-center justify-center pointer-events-none cursor-copy bg-background/60 backdrop-blur-md transition-opacity duration-200 ease-out ${
-            isDragging ? "opacity-100" : "opacity-0"
-          }`}
-        >
+        {isDragging && (
           <div
-            className={`flex flex-col items-center gap-3 px-8 py-6 transition-all duration-200 ease-out ${
-              isDragging ? "opacity-100 scale-100" : "opacity-0 scale-95"
-            }`}
+            className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none cursor-copy bg-background/60 backdrop-blur-md transition-opacity duration-200 ease-out opacity-100"
           >
-            <Upload className="w-8 h-8 text-foreground" />
-            <div className="text-base font-semibold text-foreground">Drop to add to context</div>
-            <div className="text-xs text-muted-foreground">Image, PDF or text — up to 15 MB</div>
+            <div className="flex flex-col items-center gap-3 px-8 py-6 transition-all duration-200 ease-out opacity-100 scale-100">
+              <Upload className="w-8 h-8 text-foreground" />
+              <div className="text-base font-semibold text-foreground">Drop to add to context</div>
+              <div className="text-xs text-muted-foreground">Image, PDF or text — up to 15 MB</div>
+            </div>
           </div>
-        </div>
+        )}
         <header className="flex items-center h-12 px-4 border-b border-border shrink-0">
           <span className="text-sm font-semibold truncate">Chat</span>
         </header>
