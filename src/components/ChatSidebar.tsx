@@ -696,6 +696,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         open={settingsOpen}
         onOpenChange={(o) => { setSettingsOpen(o); if (!o) setSettingsInitialSection(undefined); }}
         initialSection={settingsInitialSection}
+        onProfileUpdated={onProfileUpdated}
       />
       <SearchChatsDialog
         open={searchOpen}
