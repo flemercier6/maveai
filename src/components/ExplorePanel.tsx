@@ -742,6 +742,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
                 <ArrowRight className="w-4 h-4" />
               </Button>
             )}
+            </div>
           </div>
         </div>
         {/* Spacer that matches the height of the main chat's disclaimer
