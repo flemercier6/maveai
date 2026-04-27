@@ -637,6 +637,21 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onDelete
       />
 
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <FolderDialog
+        open={folderDialogOpen}
+        onOpenChange={(o) => { setFolderDialogOpen(o); if (!o) setEditingFolder(null); }}
+        folder={editingFolder}
+        onSaved={(f) =>
+          setFolders((prev) => {
+            const idx = prev.findIndex((p) => p.id === f.id);
+            if (idx === -1) return [...prev, f];
+            const copy = prev.slice();
+            copy[idx] = f;
+            return copy;
+          })
+        }
+        onDeleted={(id) => setFolders((prev) => prev.filter((p) => p.id !== id))}
+      />
     </aside>
   );
 }
