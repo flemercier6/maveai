@@ -1253,9 +1253,9 @@ export default function Chat() {
       <ChatSidebar
         conversations={conversations}
         activeId={activeId}
-        onSelect={(id) => { setEphemeral(false); setActiveId(id); }}
-        onNew={newConversation}
-        onNewEphemeral={newEphemeralConversation}
+        onSelect={(id) => { setEphemeral(false); setActiveId(id); setSidebarMobileOpen(false); }}
+        onNew={() => { newConversation(); setSidebarMobileOpen(false); }}
+        onNewEphemeral={() => { newEphemeralConversation(); setSidebarMobileOpen(false); }}
         onDeleted={(id) => {
           setConversations((prev) => prev.filter((c) => c.id !== id));
           if (activeId === id) { setActiveId(null); setMessages([]); }
@@ -1272,9 +1272,11 @@ export default function Chat() {
         titleAnim={titleAnim}
         branchesByConv={sidebarBranchesByConv}
         activeBranchId={exploreOpen ? exploreSeed?.existingBranchId ?? null : null}
-        onOpenBranch={handleSidebarOpenBranch}
+        onOpenBranch={(convId, branchId) => { handleSidebarOpenBranch(convId, branchId); setSidebarMobileOpen(false); }}
         isFree={isFree}
         onLockedFeature={(reason) => setUpgradeReason(reason)}
+        mobileOpen={sidebarMobileOpen}
+        onMobileOpenChange={setSidebarMobileOpen}
       />
 
       <UpgradeDialog
