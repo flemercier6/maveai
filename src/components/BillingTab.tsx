@@ -424,37 +424,39 @@ export function BillingTab() {
 
         {/* Add card / Activate */}
         {isPlus ? (
-          showAddCardForm ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">Add a new card</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAddCardForm(false)}
-                >
-                  Cancel
-                </Button>
+          <div className="rounded-[8px] border border-border bg-background p-4">
+            {showAddCardForm ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Add a new card</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAddCardForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                <CardForm
+                  onSuccess={async (pmId) => {
+                    await addCard(pmId);
+                    setShowAddCardForm(false);
+                  }}
+                  buttonLabel="Add card"
+                />
               </div>
-              <CardForm
-                onSuccess={async (pmId) => {
-                  await addCard(pmId);
-                  setShowAddCardForm(false);
-                }}
-                buttonLabel="Add card"
-              />
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAddCardForm(true)}
-            >
-              Add a new card
-            </Button>
-          )
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddCardForm(true)}
+              >
+                Add a new card
+              </Button>
+            )}
+          </div>
         ) : (
-          <div className="space-y-2">
+          <div className="rounded-[8px] border border-border bg-background p-4 space-y-2">
             <Label className="text-sm">Activate the Plus plan with a card</Label>
             <CardForm onSuccess={activatePlus} buttonLabel="Upgrade to Plus" />
           </div>
