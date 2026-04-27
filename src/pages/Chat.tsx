@@ -1276,10 +1276,18 @@ export default function Chat() {
             </div>
           </div>
         )}
-        <header className="flex items-center h-12 px-4 border-b border-border/50 shrink-0">
+        <header className="flex items-center gap-2 h-12 px-4 border-b border-border/50 shrink-0">
           <span className="text-sm font-semibold truncate">
-            {conversations.find((c) => c.id === activeId)?.title?.trim() || "Chat"}
+            {ephemeral
+              ? "Ephemeral chat"
+              : conversations.find((c) => c.id === activeId)?.title?.trim() || "Chat"}
           </span>
+          {ephemeral && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <Sparkles className="w-3 h-3" />
+              Not saved · disappears on exit
+            </span>
+          )}
         </header>
         <ChatIndex
           scrollContainer={scrollEl}
