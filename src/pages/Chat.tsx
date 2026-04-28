@@ -848,6 +848,11 @@ export default function Chat() {
           // a canvas — don't let it decide otherwise.
           forceCanvas: writeRequested === true,
           previousCanvas,
+          aiPrefs: {
+            disabledModes: aiPrefs.disabledModes,
+            blacklistedModels: aiPrefs.blacklistedModels,
+            favoriteModels: aiPrefs.favoriteModels,
+          },
           messages: baseMsgs.map((m, i) => {
             // Only the LAST user message carries the live attachments
             const isLast = i === baseMsgs.length - 1;
