@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name required").max(80),
@@ -59,6 +60,14 @@ export default function SignUp() {
           <p className="text-muted-foreground text-sm mb-5 sm:mb-6">
             Access OpenAI, Anthropic and Gemini in one place.
           </p>
+
+          <GoogleSignInButton label="Sign up with Google" />
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
