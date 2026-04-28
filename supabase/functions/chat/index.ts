@@ -215,7 +215,7 @@ async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]):
     },
     body: JSON.stringify({
       model,
-      max_tokens: 4096,
+      max_tokens: 1500,
       stream: true,
       system: system || undefined,
       messages: conv.map((m) => {
@@ -1399,6 +1399,7 @@ Deno.serve(async (req) => {
       role: "system",
       content:
         "Style: airy markdown — short paragraphs, headings, bullets, dividers. Use tables for comparisons. Emojis sparingly. Reply in the user's language.\n" +
+        "LENGTH: be CONCISE. Aim for the SHORTEST useful answer. Default ≤ 250 words. Only go longer when the user explicitly asks for depth, a tutorial, or a long-form draft. No filler, no recap of the question, no closing pleasantries.\n" +
         "Diagrams: use SPARINGLY. Only emit a ```flow block when the question genuinely involves a multi-step process, system architecture, decision tree, state machine, or an abstract/hard-to-explain concept where a visual schema materially aids understanding beyond what prose, lists or tables can convey. " +
         "DO NOT use diagrams for: simple factual questions, definitions, short how-tos, comparisons (use a table), lists of items, code explanations, opinions, or anything a short paragraph already answers clearly. When in doubt, do NOT emit a diagram. " +
         "Format when used: fenced ```flow block containing JSON: { title?, direction?: 'TB'|'LR'|'RL'|'BT', nodes: [{id,label,kind?: 'default'|'input'|'output'|'decision'|'success'|'warning'|'danger'|'muted'}], edges: [{source,target,label?,animated?,dashed?}] }. " +
@@ -1841,7 +1842,7 @@ Deno.serve(async (req) => {
                 `- Do NOT repeat the narration or describe your process again ("I searched...", "I found...", "Now let me...").\n` +
                 `- Start your reply directly with the substantive answer. Do NOT add a "## Answer" heading — the narration cards above already mark the visual separation.\n` +
                 `- Use the web context above as your primary source and cite with [source:N] markers.\n` +
-                `- Be thorough and well-structured — the user has waited through several research steps and expects a high-quality synthesis.\n\n` +
+                `- Be CONCISE. The narration above already covered context — the final answer should be a tight synthesis (target ≤ 300 words, hard cap ~500). Skip restating what was searched, skip filler intros and closings. Lead with the answer.\n\n` +
                 `User's original goal: ${lastUserText.slice(0, 300)}`,
             };
             messagesForLLM = [agentSystem, ...messagesForLLM];
