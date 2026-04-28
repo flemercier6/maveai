@@ -64,7 +64,17 @@ export default function Chat() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveIdRaw] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem("chat-active-id");
+  });
+  const setActiveId = (id: string | null) => {
+    setActiveIdRaw(id);
+    if (typeof window !== "undefined") {
+      if (id) window.localStorage.setItem("chat-active-id", id);
+      else window.localStorage.removeItem("chat-active-id");
+    }
+  };
   const [ephemeral, setEphemeral] = useState(false);
   const plan = usePlan();
   const isFree = plan.isFree;
