@@ -77,15 +77,52 @@ type Props = {
   onClose: () => void;
   /** Optional — hide items whose `provider` matches one of these. */
   excludeProviders?: SlashItem["provider"][];
+  /** Optional — disabled mode ids (note/page/explore). Hidden from the menu. */
+  disabledModes?: ReadonlyArray<"note" | "page" | "explore">;
+  /** Optional — model ids to hide entirely (blacklist). */
+  blacklistedModels?: ReadonlyArray<string>;
+  /** Optional — favorite model ids, surfaced first. */
+  favoriteModels?: ReadonlyArray<string>;
 };
 
-export function SlashCommandMenu({ query, position, onSelect, onClose, excludeProviders }: Props) {
+export function SlashCommandMenu({
+  query,
+  position,
+  onSelect,
+  onClose,
+  excludeProviders,
+  disabledModes,
+  blacklistedModels,
+  favoriteModels,
+}: Props) {
   const items = useMemo(() => {
-    const all = filterSlashItems(query);
-    return excludeProviders?.length
-      ? all.filter((it) => !excludeProviders.includes(it.provider))
-      : all;
-  }, [query, excludeProviders]);
+    let all = filterSlashItems(query);
+    if (excludeProviders?.length) {
+      all = all.filter((it) => !excludeProviders.includes(it.provider));
+    }
+    if (disabledModes?.length) {
+      const disabled = new Set(disabledModes);
+      all = all.filter((it) => {
+        if (it.provider === "write" && disabled.has("note")) return false;
+        if (it.provider === "page" && disabled.has("page")) return false;
+        if (it.provider === "explore" && disabled.has("explore")) return false;
+        return true;
+      });
+    }
+    if (blacklistedModels?.length) {
+      const blk = new Set(blacklistedModels);
+      all = all.filter((it) => !it.model || !blk.has(it.model));
+    }
+    if (favoriteModels?.length) {
+      const favRank = new Map(favoriteModels.map((m, i) => [m, i] as const));
+      all = [...all].sort((a, b) => {
+        const ai = favRank.has(a.model) ? favRank.get(a.model)! : Infinity;
+        const bi = favRank.has(b.model) ? favRank.get(b.model)! : Infinity;
+        return ai - bi;
+      });
+    }
+    return all;
+  }, [query, excludeProviders, disabledModes, blacklistedModels, favoriteModels]);
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
