@@ -1382,8 +1382,7 @@ Deno.serve(async (req) => {
             }));
           const metaTotalTokens = [...metaSystems, ...metaHistory]
             .reduce((s, x) => s + (x.approxTokens ?? 0), 0);
-          controller.enqueue(enc({
-            type: "meta",
+          const metaPayload = {
             provider,
             model,
             systems: metaSystems,
@@ -1398,7 +1397,8 @@ Deno.serve(async (req) => {
               ? { kind: webContext.kind, label: webContext.label, approxTokens: approxTokens(webContext.content) }
               : null,
             approxTotalInputTokens: metaTotalTokens,
-          }));
+          };
+          controller.enqueue(enc({ type: "meta", ...metaPayload }));
 
           let iter: AsyncGenerator<string, Usage | undefined>;
           if (provider === "openai") iter = streamOpenAI(apiKey, model, messagesForLLM);
@@ -1429,6 +1429,7 @@ Deno.serve(async (req) => {
                 role: "assistant",
                 content: assistantText,
                 model,
+                meta: metaPayload,
               })
               .select("id")
               .single();
@@ -1467,6 +1468,23 @@ Deno.serve(async (req) => {
               output_cost_usd: outputCost,
               cost_usd: inputCost + outputCost,
             }));
+            // Persist cost into messages.meta.cost so the developer breakdown
+            // can be shown after a reload.
+            if (insertedMsg?.id) {
+              const metaWithCost = {
+                ...metaPayload,
+                cost: {
+                  inputTokens: usage.input_tokens,
+                  outputTokens: usage.output_tokens,
+                  inputCostUsd: inputCost,
+                  outputCostUsd: outputCost,
+                },
+              };
+              await supabase
+                .from("messages")
+                .update({ meta: metaWithCost })
+                .eq("id", insertedMsg.id);
+            }
           } else if (!ephemeral) {
             console.warn("[usage] skipped — no usage data returned by provider");
           }
