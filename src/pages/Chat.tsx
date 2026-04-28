@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ChatSidebar, type Conversation } from "@/components/ChatSidebar";
@@ -63,10 +63,12 @@ const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 export default function Chat() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { id: routeConvId } = useParams<{ id: string }>();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [activeId, setActiveIdRaw] = useState<string | null>(() => {
+    if (routeConvId) return routeConvId;
     if (typeof window === "undefined") return null;
     return window.localStorage.getItem("chat-active-id");
   });
@@ -76,7 +78,30 @@ export default function Chat() {
       if (id) window.localStorage.setItem("chat-active-id", id);
       else window.localStorage.removeItem("chat-active-id");
     }
+    // Keep URL in sync with the active conversation
+    if (typeof window !== "undefined") {
+      const target = id ? `/c/${id}` : "/";
+      if (window.location.pathname !== target) {
+        navigate(target, { replace: false });
+      }
+    }
   };
+  // React to URL changes (back/forward, direct link, sharing)
+  useEffect(() => {
+    if (routeConvId && routeConvId !== activeId) {
+      setActiveIdRaw(routeConvId);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("chat-active-id", routeConvId);
+      }
+    } else if (!routeConvId && activeId && window.location.pathname === "/") {
+      // User navigated to root → clear active
+      setActiveIdRaw(null);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("chat-active-id");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeConvId]);
   const [ephemeral, setEphemeral] = useState(false);
   const plan = usePlan();
   const { prefs: aiPrefs } = useAiPreferences();
