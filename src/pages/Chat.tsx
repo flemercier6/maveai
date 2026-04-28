@@ -1240,17 +1240,24 @@ export default function Chat() {
       // Keep the previously chosen provider as the persistence target; switch model to AUTO
       setModel(AUTO_MODEL_ID);
     } else if (item.provider === "write") {
+      if (isModeDisabled(aiPrefs, "note")) { toast.error("Note mode is disabled in your AI preferences"); return; }
       // Don't change model — just flag the next send as writing-canvas mode.
       setWriteRequested(true);
       toast.success("Writing canvas enabled for next message");
     } else if (item.provider === "explore") {
+      if (isModeDisabled(aiPrefs, "explore")) { toast.error("Explore mode is disabled in your AI preferences"); return; }
       // Flag the next send to open a side exploration instead of posting to the main chat.
       setExploreRequested(true);
     } else if (item.provider === "page") {
+      if (isModeDisabled(aiPrefs, "page")) { toast.error("Page mode is disabled in your AI preferences"); return; }
       // Flag the next send to generate a structured one-pager.
       setPageRequested(true);
       toast.success("Page mode enabled for next message");
     } else {
+      if (isModelBlacklisted(aiPrefs, item.model)) {
+        toast.error("This model is blacklisted in your AI preferences");
+        return;
+      }
       setProvider(item.provider as Provider);
       setModel(item.model);
     }
