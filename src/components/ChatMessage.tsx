@@ -378,6 +378,61 @@ function formatRelativeTime(iso?: string | null): string {
   return new Date(iso).toLocaleDateString();
 }
 
+// Match markdown images: ![alt](url). We extract them out so they render in a dedicated strip.
+const MD_IMG_RE = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
+
+function extractImages(content: string): { images: { src: string; alt: string }[]; text: string } {
+  const images: { src: string; alt: string }[] = [];
+  const seen = new Set<string>();
+  // Unwrap linked images [![alt](src)](href) → ![alt](src)
+  let text = content.replace(/\[(!\[[^\]]*\]\([^)]+\))\]\([^)]+\)/g, "$1");
+  text = text.replace(MD_IMG_RE, (_m, alt: string, src: string) => {
+    if (!seen.has(src)) {
+      seen.add(src);
+      images.push({ src, alt: alt || "" });
+    }
+    return "";
+  });
+  // Tidy leftover whitespace from removed images
+  text = text.replace(/^[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n").trim();
+  return { images, text };
+}
+
+function ImageStrip({ images }: { images: { src: string; alt: string }[] }) {
+  if (!images.length) return null;
+  return (
+    <div className="mb-4 -mx-1 overflow-x-auto overflow-y-hidden">
+      <div className="flex flex-nowrap gap-2 px-1 pb-1 items-center">
+        {images.map((img, i) => (
+          <button
+            key={`${img.src}-${i}`}
+            type="button"
+            onClick={() => openLightbox(img.src, img.alt)}
+            aria-label={img.alt ? `Open image: ${img.alt}` : "Open image"}
+            className="group relative shrink-0 rounded-xl overflow-hidden border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <img
+              src={img.src}
+              alt={img.alt}
+              loading="lazy"
+              className="block h-48 w-auto max-w-none object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+              onError={(e) => {
+                const btn = e.currentTarget.parentElement as HTMLButtonElement | null;
+                if (btn) btn.style.display = "none";
+              }}
+            />
+            {img.alt ? (
+              <span className="pointer-events-none absolute inset-x-0 bottom-0 px-2.5 py-1.5 text-[11px] text-white bg-gradient-to-t from-black/70 to-transparent text-left line-clamp-2">
+                {img.alt}
+              </span>
+            ) : null}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ThreadEntry({ branch, onClick }: { branch: MessageBranch; onClick: () => void }) {
   const promptText = (branch.firstPrompt ?? "")
     .replace(/^\/(note|explore)(\s+|$)/i, "")
