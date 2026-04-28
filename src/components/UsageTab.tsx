@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
+import { useDeveloperMode } from "@/hooks/useDeveloperMode";
 import { useAuth } from "@/hooks/useAuth";
 import { modelLabel, providerForModel, PROVIDER_LABEL } from "@/lib/models";
 import { billingMultiplier, billedCost, USD_TO_EUR } from "@/lib/pricing";
