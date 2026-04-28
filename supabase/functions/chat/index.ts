@@ -610,6 +610,183 @@ async function linkupSearch(
   }
 }
 
+// ---------- Agentic multi-step plan ----------
+// For complex queries, we ask a small/cheap model to draft an ordered plan of
+// 3–6 steps, where each step is either an "analyze" (think out loud), a
+// "search" (linkup web search) or a "scrape" (firecrawl URL). Between every
+// action we stream a short narrative "ok I just did X, now I'm moving to Y"
+// directly into the assistant message via `delta` events, so the user sees
+// the agent thinking in real time, inline.
+type AgenticStep =
+  | { kind: "analyze"; intent: string }
+  | { kind: "search"; query: string; intent: string }
+  | { kind: "scrape"; url: string; intent: string };
+
+type AgenticPlan = {
+  complex: boolean;
+  // Short label of what the user is really asking, in their own language.
+  goal: string;
+  steps: AgenticStep[];
+};
+
+async function decideAgenticPlan(args: {
+  googleKey?: string;
+  userText: string;
+  hasWebSearch: boolean;
+  hasScrape: boolean;
+}): Promise<AgenticPlan> {
+  const empty: AgenticPlan = { complex: false, goal: "", steps: [] };
+  const { userText, googleKey } = args;
+  if (!googleKey || !userText.trim()) return empty;
+  if (!args.hasWebSearch && !args.hasScrape) return empty;
+
+  const allowed = [
+    args.hasScrape ? `{"kind":"scrape","url":"https://...","intent":"why we read this page (≤10 words)"}` : null,
+    args.hasWebSearch ? `{"kind":"search","query":"<short web query>","intent":"what we want to learn (≤10 words)"}` : null,
+    `{"kind":"analyze","intent":"what we are reasoning about (≤10 words)"}`,
+  ].filter(Boolean).join("\n");
+
+  const prompt = `You are a planner for an agentic AI assistant.
+
+Decide whether the user's message is COMPLEX enough to warrant a multi-step research process (analyze → web searches → narration → final answer).
+
+Mark it COMPLEX only if at least one of these is true:
+- The answer requires combining facts about TWO OR MORE distinct concepts/entities/aspects.
+- The answer depends on RECENT or VERIFIABLE web facts AND requires comparison or synthesis.
+- The user explicitly asks for research, investigation, deep analysis, comparison, or "find out".
+- The question covers a broad topic that benefits from breaking down into sub-questions.
+
+Mark it SIMPLE for: chitchat, single-fact lookup, code, math, rewriting, translation, opinion, simple how-to, quick definitions.
+
+If COMPLEX, draft an ordered plan of 3 to 6 steps. Each step is one of:
+${allowed}
+
+Rules for steps:
+- Use 1 to 3 web searches MAX, each focused on a DIFFERENT sub-question or concept.
+- Optionally start with one "analyze" step to break the question down.
+- Optionally end with one "analyze" step right before the final answer to consolidate.
+- Search queries must be short (≤ 12 words) and in the user's language.
+- Every "intent" must be CONCRETE and tied to the user's question, not generic.
+
+Reply ONLY with strict JSON:
+{"complex": true|false, "goal": "<one short sentence describing what the user wants>", "steps": [...]}
+
+If SIMPLE, reply: {"complex": false, "goal": "", "steps": []}
+
+User message:
+"""${userText.slice(0, 2000)}"""`;
+
+  try {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.3 },
+        }),
+      },
+    );
+    const j = await r.json();
+    const raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    if (!parsed?.complex) return empty;
+    const rawSteps: any[] = Array.isArray(parsed.steps) ? parsed.steps : [];
+    const steps: AgenticStep[] = [];
+    for (const s of rawSteps) {
+      if (steps.length >= 6) break;
+      const intent = (s?.intent ?? "").toString().slice(0, 120).trim();
+      if (s?.kind === "analyze" && intent) {
+        steps.push({ kind: "analyze", intent });
+      } else if (s?.kind === "search" && args.hasWebSearch && typeof s.query === "string" && s.query.trim()) {
+        steps.push({ kind: "search", query: s.query.trim().slice(0, 120), intent });
+      } else if (s?.kind === "scrape" && args.hasScrape && typeof s.url === "string" && /^https?:\/\//.test(s.url)) {
+        steps.push({ kind: "scrape", url: s.url, intent });
+      }
+    }
+    if (steps.length < 2) return empty;
+    return {
+      complex: true,
+      goal: (parsed.goal ?? "").toString().slice(0, 200),
+      steps,
+    };
+  } catch (e) {
+    console.error("decideAgenticPlan failed", e);
+    return empty;
+  }
+}
+
+// Stream a short narrative transition for an agentic step, using Gemini Flash.
+// The output is fed straight into the assistant message via `delta` events so
+// the user sees the agent talking through its process inline.
+async function* streamAgenticNarration(
+  googleKey: string,
+  args: {
+    userLang: string; // hint at the user's language
+    userText: string;
+    goal: string;
+    phase: "intro" | "between" | "outro";
+    justDid?: { kind: "search" | "scrape"; label: string; foundCount: number; intent: string };
+    nextStep?: AgenticStep;
+    isFinal?: boolean;
+  },
+): AsyncGenerator<string> {
+  const sys =
+    `You are an AI assistant THINKING OUT LOUD in front of the user, in the user's language. ` +
+    `Write 1 to 2 SHORT sentences (max ~35 words total) that narrate what you just did and ` +
+    `what you are about to do. First person, present tense, casual but precise. No headings, ` +
+    `no markdown, no bullet lists, no quotes around your output. Do not start with "Sure" or ` +
+    `"Okay" repeatedly — vary your phrasing. Match the user's language exactly.`;
+  let task = "";
+  if (args.phase === "intro") {
+    task = `The user just asked something that requires research. Write a short opener acknowledging the goal and saying you'll start by ${describeStep(args.nextStep!)}.`;
+  } else if (args.phase === "between") {
+    const did = args.justDid!;
+    const verb = did.kind === "search" ? `searched the web for "${did.label}"` : `read the page ${did.label}`;
+    const found = did.foundCount > 0 ? `found ${did.foundCount} relevant source${did.foundCount > 1 ? "s" : ""}` : `didn't find much useful`;
+    if (args.isFinal) {
+      task = `You just ${verb} (${found}, intent was: ${did.intent}). Now wrap up the research phase: say in 1 sentence what you understood from this last step, and that you now have enough to answer.`;
+    } else {
+      task = `You just ${verb} (${found}, intent was: ${did.intent}). Now say briefly what you learned and announce the next step: ${describeStep(args.nextStep!)}.`;
+    }
+  } else {
+    task = `Wrap up: say you have gathered enough and are now writing the final answer.`;
+  }
+  const prompt = `User goal: ${args.goal || args.userText.slice(0, 120)}\nUser's original message (for language detection):\n"""${args.userText.slice(0, 400)}"""\n\nTask: ${task}`;
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${googleKey}`;
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      systemInstruction: { parts: [{ text: sys }] },
+      generationConfig: { temperature: 0.7, maxOutputTokens: 120 },
+    }),
+  });
+  if (!r.ok || !r.body) {
+    const t = await r.text().catch(() => "");
+    throw new Error(`Narrator ${r.status}: ${t}`);
+  }
+  for await (const line of parseSSELines(r.body.getReader())) {
+    if (!line.startsWith("data: ")) continue;
+    const data = line.slice(6).trim();
+    try {
+      const j = JSON.parse(data);
+      const txt = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("");
+      if (txt) yield txt as string;
+    } catch { /* partial */ }
+  }
+}
+
+function describeStep(s: AgenticStep): string {
+  if (s.kind === "search") return `searching the web for "${s.query}" (${s.intent})`;
+  if (s.kind === "scrape") return `reading the page ${s.url} (${s.intent})`;
+  return `analyzing: ${s.intent}`;
+}
+
 // ---------- Clarifying questions ----------
 type ClarifyQuestion = {
   question: string;
@@ -1324,6 +1501,12 @@ Deno.serve(async (req) => {
     let webContext:
       | { kind: "scrape" | "search"; label: string; content: string; sources?: WebSource[]; images?: WebImage[] }
       | null = null;
+    // Aggregated sources from the agentic loop (multiple searches/scrapes).
+    let agenticUsed = false;
+    let agenticNarration = "";
+    const agenticSources: WebSource[] = [];
+    const agenticImages: WebImage[] = [];
+    const agenticContextBlocks: string[] = [];
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -1373,48 +1556,204 @@ Deno.serve(async (req) => {
           }
 
           // Run web tool detection + fetch (notify client of progress)
+          const googleKeyForAgent = Deno.env.get("GOOGLE_API_KEY");
           if (!webDisabled && (firecrawlKey || linkupKey) && lastUserText) {
             controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
-            const decision = await decideWebTool({
-              googleKey: Deno.env.get("GOOGLE_API_KEY"),
-              openaiKey: Deno.env.get("OPENAI_API_KEY"),
-              anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
-              userText: lastUserText,
-            });
-            if (decision.action === "scrape" && firecrawlKey) {
-              controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "running" }));
-              const md = await firecrawlScrape(firecrawlKey, decision.url);
-              if (md) {
-                webContext = {
-                  kind: "scrape",
-                  label: decision.url,
-                  content: md,
-                  sources: [{ title: decision.url, url: decision.url }],
-                };
-                controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "done" }));
-                controller.enqueue(enc({ type: "sources", sources: webContext.sources }));
-              } else {
-                controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "failed" }));
+
+            // First, try the agentic multi-step plan for COMPLEX queries.
+            const plan = !writingMode
+              ? await decideAgenticPlan({
+                googleKey: googleKeyForAgent,
+                userText: lastUserText,
+                hasWebSearch: !!linkupKey,
+                hasScrape: !!firecrawlKey,
+              })
+              : { complex: false, goal: "", steps: [] as AgenticStep[] };
+
+            if (plan.complex && plan.steps.length >= 2 && googleKeyForAgent) {
+              // ---------- AGENTIC LOOP ----------
+              // For each step we: stream a short narrative transition into the
+              // assistant message (delta), then run the actual tool, then move on.
+              // The accumulated web context is later injected as a system message
+              // before the FINAL answer is generated by the chosen main model.
+              agenticUsed = true;
+              controller.enqueue(enc({ type: "phase", phase: "generating" }));
+
+              const streamNarrationToDelta = async (
+                phase: "intro" | "between",
+                opts: {
+                  justDid?: { kind: "search" | "scrape"; label: string; foundCount: number; intent: string };
+                  nextStep?: AgenticStep;
+                  isFinal?: boolean;
+                },
+              ) => {
+                try {
+                  let acc = "";
+                  for await (const chunk of streamAgenticNarration(googleKeyForAgent!, {
+                    userLang: lastUserText,
+                    userText: lastUserText,
+                    goal: plan.goal,
+                    phase,
+                    justDid: opts.justDid,
+                    nextStep: opts.nextStep,
+                    isFinal: opts.isFinal,
+                  })) {
+                    acc += chunk;
+                    assistantText += chunk;
+                    agenticNarration += chunk;
+                    controller.enqueue(enc({ type: "delta", text: chunk }));
+                  }
+                  // Add a paragraph break so the next narration / final answer starts cleanly.
+                  const tail = acc.endsWith("\n\n") ? "" : (acc.endsWith("\n") ? "\n" : "\n\n");
+                  if (tail) {
+                    assistantText += tail;
+                    agenticNarration += tail;
+                    controller.enqueue(enc({ type: "delta", text: tail }));
+                  }
+                } catch (e) {
+                  console.error("agentic narration failed", e);
+                }
+              };
+
+              // Filter out the final "analyze" step (we'll just go straight to the answer instead).
+              const actionableSteps = plan.steps.filter((s, i, arr) => {
+                if (s.kind !== "analyze") return true;
+                // Drop a trailing analyze (it's redundant with the final answer).
+                return i !== arr.length - 1;
+              });
+
+              for (let i = 0; i < actionableSteps.length; i++) {
+                const step = actionableSteps[i];
+                const isFirst = i === 0;
+                const nextStep = actionableSteps[i + 1];
+                const isLastAction = i === actionableSteps.length - 1;
+
+                // Narrate the transition INTO this step.
+                // For the very first step → "intro" tone.
+                if (isFirst) {
+                  await streamNarrationToDelta("intro", { nextStep: step });
+                }
+
+                if (step.kind === "analyze") {
+                  // Pure thinking step: no tool to run, the narration above already covers it.
+                  // Move on to narrating the next step (if any).
+                  if (nextStep) {
+                    await streamNarrationToDelta("between", {
+                      justDid: { kind: "search", label: step.intent, foundCount: 0, intent: step.intent },
+                      nextStep,
+                    });
+                  }
+                  continue;
+                }
+
+                // Execute the actual tool.
+                let foundCount = 0;
+                if (step.kind === "search") {
+                  controller.enqueue(enc({ type: "tool", tool: "search", label: step.query, status: "running" }));
+                  const res = await linkupSearch(linkupKey!, step.query);
+                  if (res) {
+                    foundCount = res.sources.length;
+                    for (const s of res.sources) {
+                      if (!agenticSources.find((x) => x.url === s.url)) agenticSources.push(s);
+                    }
+                    for (const im of res.images) {
+                      if (!agenticImages.find((x) => x.url === im.url)) agenticImages.push(im);
+                    }
+                    agenticContextBlocks.push(
+                      `## Step ${i + 1} — Web search: "${step.query}"\nIntent: ${step.intent}\n\n${res.content}`,
+                    );
+                    controller.enqueue(enc({ type: "tool", tool: "search", label: step.query, status: "done" }));
+                    controller.enqueue(enc({ type: "sources", sources: agenticSources }));
+                  } else {
+                    controller.enqueue(enc({ type: "tool", tool: "search", label: step.query, status: "failed" }));
+                  }
+                } else if (step.kind === "scrape") {
+                  controller.enqueue(enc({ type: "tool", tool: "scrape", label: step.url, status: "running" }));
+                  const md = await firecrawlScrape(firecrawlKey!, step.url);
+                  if (md) {
+                    foundCount = 1;
+                    if (!agenticSources.find((x) => x.url === step.url)) {
+                      agenticSources.push({ title: step.url, url: step.url });
+                    }
+                    agenticContextBlocks.push(
+                      `## Step ${i + 1} — Page read: ${step.url}\nIntent: ${step.intent}\n\n${md}`,
+                    );
+                    controller.enqueue(enc({ type: "tool", tool: "scrape", label: step.url, status: "done" }));
+                    controller.enqueue(enc({ type: "sources", sources: agenticSources }));
+                  } else {
+                    controller.enqueue(enc({ type: "tool", tool: "scrape", label: step.url, status: "failed" }));
+                  }
+                }
+
+                // Narrate AFTER this step: what we learned, and what's next.
+                await streamNarrationToDelta("between", {
+                  justDid: {
+                    kind: step.kind === "search" ? "search" : "scrape",
+                    label: step.kind === "search" ? step.query : step.url,
+                    foundCount,
+                    intent: step.intent,
+                  },
+                  nextStep,
+                  isFinal: isLastAction,
+                });
               }
-            } else if (decision.action === "search" && linkupKey) {
-              controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "running" }));
-              const res = await linkupSearch(linkupKey, decision.query);
-              if (res) {
+
+              // Synthesize all collected web context into a single system message
+              // so the main model can write the final answer with everything.
+              if (agenticContextBlocks.length) {
+                const flat = agenticContextBlocks.join("\n\n---\n\n").slice(0, 12000);
                 webContext = {
                   kind: "search",
-                  label: decision.query,
-                  content: res.content,
-                  sources: res.sources,
-                  images: res.images,
+                  label: plan.goal || lastUserText.slice(0, 60),
+                  content: flat,
+                  sources: agenticSources,
+                  images: agenticImages,
                 };
-                controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "done" }));
-                controller.enqueue(enc({ type: "sources", sources: res.sources }));
-              } else {
-                controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "failed" }));
               }
+            } else {
+              // ---------- LEGACY single-shot web call (simple queries) ----------
+              const decision = await decideWebTool({
+                googleKey: googleKeyForAgent,
+                openaiKey: Deno.env.get("OPENAI_API_KEY"),
+                anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+                userText: lastUserText,
+              });
+              if (decision.action === "scrape" && firecrawlKey) {
+                controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "running" }));
+                const md = await firecrawlScrape(firecrawlKey, decision.url);
+                if (md) {
+                  webContext = {
+                    kind: "scrape",
+                    label: decision.url,
+                    content: md,
+                    sources: [{ title: decision.url, url: decision.url }],
+                  };
+                  controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "done" }));
+                  controller.enqueue(enc({ type: "sources", sources: webContext.sources }));
+                } else {
+                  controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "failed" }));
+                }
+              } else if (decision.action === "search" && linkupKey) {
+                controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "running" }));
+                const res = await linkupSearch(linkupKey, decision.query);
+                if (res) {
+                  webContext = {
+                    kind: "search",
+                    label: decision.query,
+                    content: res.content,
+                    sources: res.sources,
+                    images: res.images,
+                  };
+                  controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "done" }));
+                  controller.enqueue(enc({ type: "sources", sources: res.sources }));
+                } else {
+                  controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "failed" }));
+                }
+              }
+              controller.enqueue(enc({ type: "phase", phase: "generating" }));
             }
-            controller.enqueue(enc({ type: "phase", phase: "generating" }));
           }
+
 
           let messagesForLLM = finalMessages;
           if (webContext) {
@@ -1444,6 +1783,30 @@ Deno.serve(async (req) => {
               content: `${header}${citationRule}${imagesBlock}\n\n${webContext.content}`,
             };
             messagesForLLM = [webSystem, ...finalMessages];
+          }
+
+          // When the agentic loop ran, tell the main model that the narration is
+          // already streamed — it should write ONLY the final answer and start
+          // with a clear separator so the user sees the shift from "thinking" to
+          // "answering".
+          if (agenticUsed && agenticNarration.trim()) {
+            const agentSystem: Msg = {
+              role: "system",
+              content:
+                `IMPORTANT — AGENTIC CONTEXT:\n` +
+                `You are operating inside a multi-step agentic flow. Before this turn, a narration ` +
+                `has ALREADY been streamed to the user describing your research process step-by-step ` +
+                `(what you searched, what you read, what you learned). The web context provided to ` +
+                `you above is the result of that research.\n\n` +
+                `Your job NOW is to write ONLY the final answer to the user's original question.\n\n` +
+                `RULES:\n` +
+                `- Do NOT repeat the narration or describe your process again ("I searched...", "I found...", "Now let me...").\n` +
+                `- Start your reply directly with the substantive answer, prefixed with a short Markdown heading like "## Answer" (translated to the user's language) so the visual transition from thinking to answering is clear.\n` +
+                `- Use the web context above as your primary source and cite with [source:N] markers.\n` +
+                `- Be thorough and well-structured — the user has waited through several research steps and expects a high-quality synthesis.\n\n` +
+                `User's original goal: ${lastUserText.slice(0, 300)}`,
+            };
+            messagesForLLM = [agentSystem, ...messagesForLLM];
           }
 
           // ---------- Emit a META event so the client can show what was actually sent ----------
@@ -1497,7 +1860,7 @@ Deno.serve(async (req) => {
           // Streams 3-5 short reasoning steps (Claude-style) BEFORE the main model
           // starts answering. Uses Gemini Flash as a cheap, fast planner.
           const googleKeyForPlanner = Deno.env.get("GOOGLE_API_KEY");
-          const shouldThink = isAdvancedModel(model) && !!googleKeyForPlanner && !!lastUserText && !writingMode;
+          const shouldThink = isAdvancedModel(model) && !!googleKeyForPlanner && !!lastUserText && !writingMode && !agenticUsed;
           if (shouldThink) {
             const thinkingStartedAt = Date.now();
             try {
