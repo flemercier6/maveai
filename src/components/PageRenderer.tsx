@@ -81,6 +81,39 @@ function Eyebrow({ children, className }: { children: React.ReactNode; className
   );
 }
 
+function Checklist({ items }: { items: { label: string; checked?: boolean }[] }) {
+  const [state, setState] = useState<boolean[]>(() => items.map((it) => !!it.checked));
+  const toggle = (i: number) =>
+    setState((prev) => prev.map((v, idx) => (idx === i ? !v : v)));
+  return (
+    <ul className="space-y-3 border-l-2 border-[#E85A2F]/30 pl-5">
+      {items.map((it, i) => {
+        const checked = state[i];
+        return (
+          <li key={i} className="flex items-start gap-3 text-[15px]">
+            <Checkbox
+              id={`pc-${i}-${it.label.slice(0, 16)}`}
+              checked={checked}
+              onCheckedChange={() => toggle(i)}
+              className="mt-[4px] border-[#1B1A17]/40 data-[state=checked]:bg-[#E85A2F] data-[state=checked]:border-[#E85A2F]"
+              aria-label={it.label}
+            />
+            <label
+              htmlFor={`pc-${i}-${it.label.slice(0, 16)}`}
+              className={cn(
+                "font-display text-[17px] leading-relaxed cursor-pointer select-none transition-colors",
+                checked ? "text-[#6B655A] line-through italic" : "text-[#1B1A17]",
+              )}
+            >
+              {it.label}
+            </label>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function Block({ block, index }: { block: PageBlock; index: number }) {
   switch (block.type) {
     case "heading": {
