@@ -676,15 +676,25 @@ export default function Chat() {
           try { const j = JSON.parse(t); if (j?.error) errMsg = j.error; } catch {}
           throw new Error(errMsg);
         }
-        const json = await resp.json() as { page: PageSpec; summary: string };
+        const json = await resp.json() as { page: PageSpec; summary: string; meta?: RequestMeta };
         const page = json.page;
         const summary = json.summary || "Page generated.";
+        // Apply local billing multiplier on top of provider cost.
+        const meta: RequestMeta | undefined = json.meta
+          ? {
+              ...json.meta,
+              cost: json.meta.cost
+                ? { ...json.meta.cost, multiplier: billingMultiplier(json.meta.model ?? model) }
+                : undefined,
+            }
+          : undefined;
         // Persist as: summary\n\n```page\n{json}\n```
         const persisted = `${summary}\n\n\`\`\`page\n${JSON.stringify(page)}\n\`\`\``;
         let assistantId: string | undefined;
         if (!ephemeral && convId) {
           const { data: aData } = await supabase.from("messages").insert({
             conversation_id: convId, user_id: user!.id, role: "assistant", content: persisted, model,
+            ...(json.meta ? { meta: json.meta } : {}),
           }).select().single();
           assistantId = aData?.id;
         }
@@ -692,7 +702,7 @@ export default function Chat() {
           const arr = prev.slice();
           const last = arr[arr.length - 1];
           if (last && last.role === "assistant") {
-            arr[arr.length - 1] = { ...last, id: assistantId ?? last.id, content: summary, page };
+            arr[arr.length - 1] = { ...last, id: assistantId ?? last.id, content: summary, page, ...(meta ? { meta } : {}) };
           }
           return arr;
         });
