@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { Settings, Sparkles, Globe, Brain, BarChart3, CreditCard } from "lucide-react";
+import { Settings, Sparkles, Globe, Brain, BarChart3, CreditCard, Wand2 } from "lucide-react";
 import { UsageTab } from "@/components/UsageTab";
 import { MemoryTab } from "@/components/MemoryTab";
 import { BillingTab } from "@/components/BillingTab";
 import { PreferencesTab } from "@/components/PreferencesTab";
+import { AiPersonalizationTab } from "@/components/AiPersonalizationTab";
 import { usePlan } from "@/hooks/usePlan";
 
-type Section = "preferences" | "integrations" | "memory" | "usage" | "billing";
+type Section = "preferences" | "ai" | "integrations" | "memory" | "usage" | "billing";
 
 const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?: string }>; soon?: boolean }[] = [
   { id: "preferences", label: "Preferences", icon: Settings },
+  { id: "ai", label: "AI personalization", icon: Wand2 },
   { id: "integrations", label: "Integrations", icon: Globe, soon: true },
   { id: "memory", label: "Memory", icon: Brain },
   { id: "usage", label: "Usage", icon: BarChart3 },
