@@ -96,12 +96,15 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
             </span>
           </SelectItem>
           <SelectSeparator />
-          {PROVIDERS.map((p) =>
-            MODELS[p.id].map((m) => {
-              const locked = isFree && isPremiumModel(m.id);
-              return (
+          {orderedModels.map(({ p, m }, idx) => {
+            const locked = isFree && isPremiumModel(m.id);
+            const isFav = favRank.has(m.id);
+            // Insert a separator between favorites and the rest of the list.
+            const showFavSep = favoritesCount > 0 && idx === favoritesCount;
+            return (
+              <span key={m.id}>
+                {showFavSep && <SelectSeparator />}
                 <SelectItem
-                  key={m.id}
                   value={m.id}
                   onMouseEnter={(e) => showTip(e, locked ? "Plus only" : m.description)}
                   onMouseLeave={hideTip}
@@ -110,8 +113,11 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
                   className={locked ? "opacity-60" : undefined}
                 >
                   <span className="flex items-center gap-2 leading-none">
-                    <ProviderLogo provider={p.id} className="w-5 h-5 shrink-0" />
+                    <ProviderLogo provider={p} className="w-5 h-5 shrink-0" />
                     <span className="leading-none">{m.label}</span>
+                    {isFav && (
+                      <Star className="w-3 h-3 text-amber-500 fill-current shrink-0" />
+                    )}
                     {m.id === "gpt-5.5" && !locked && (
                       <span className="ml-1 rounded-sm bg-blue-500 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white leading-none">
                         New
@@ -124,9 +130,9 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
                     )}
                   </span>
                 </SelectItem>
-              );
-            }),
-          )}
+              </span>
+            );
+          })}
         </SelectContent>
       </Select>
 
