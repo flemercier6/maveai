@@ -142,7 +142,7 @@ export function AiPersonalizationTab() {
                             isBlack && "cursor-not-allowed opacity-50",
                           )}
                         >
-                          {isFav ? <Star className="w-4 h-4 fill-current" /> : <StarOff className="w-4 h-4" />}
+                          {isFav ? <Star className="w-4 h-4 fill-current" /> : <Star className="w-4 h-4" />}
                         </button>
                       </TooltipTrigger>
                       <TooltipContent className="bg-tooltip text-tooltip-foreground text-xs px-2 py-1 rounded-[4px] border-0">
