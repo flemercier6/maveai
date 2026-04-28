@@ -245,8 +245,8 @@ serve(async (req) => {
 
     // ---------- Build developer breakdown meta ----------
     const approxTokens = (s: string) => Math.ceil((s?.length ?? 0) / 4);
-    const PROVIDER = "openai";
-    const MODEL = "openai/gpt-5-mini";
+    const PROVIDER = PROVIDER_FOR_PAGE;
+    const MODEL = pageModelGateway;
     const metaSystems = [
       { label: "/page system prompt", content: SYSTEM_PROMPT, approxTokens: approxTokens(SYSTEM_PROMPT) },
     ];
