@@ -41,6 +41,7 @@ import { useAiPreferences } from "@/hooks/useAiPreferences";
 import { isModeDisabled, isModelBlacklisted, pickAllowedModel, type ModeId } from "@/lib/aiPreferences";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useSwipe } from "@/hooks/useSwipe";
+import { ShareMenu } from "@/components/ShareMenu";
 
 type StoredBranch = {
   id: string;
