@@ -1785,6 +1785,26 @@ export default function Chat() {
       )}
 
       {/* Right-hand exploration side panel */}
+      {/* Floating button to reopen the last generated page */}
+      {activePage && !pageOpen && (
+        <button
+          type="button"
+          onClick={() => setPageOpen(true)}
+          aria-label="Reopen page"
+          className="fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 rounded-full bg-foreground text-background pl-3 pr-4 py-2.5 text-xs font-medium shadow-lg hover:opacity-90 transition-opacity"
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          <span className="max-w-[180px] truncate">{activePage.title}</span>
+        </button>
+      )}
+
+      {/* Right-hand generated-page side panel */}
+      <PagePanel
+        open={pageOpen}
+        page={activePage}
+        onClose={() => setPageOpen(false)}
+      />
+
       <ExplorePanel
         open={exploreOpen}
         seed={exploreSeed}
