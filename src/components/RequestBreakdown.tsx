@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Code2 } from "lucide-react";
+import { ChevronDown, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RequestMeta } from "@/lib/requestMeta";
 import { USD_TO_EUR } from "@/lib/pricing";
