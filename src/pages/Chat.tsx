@@ -210,6 +210,22 @@ export default function Chat() {
             ? (msgModel && msgModel !== "auto" ? providerForModel(msgModel) : convProvider)
             : undefined;
           if (m.role === "assistant") {
+            // Try /page format first: summary text followed by ```page\n{json}\n```
+            const pageMatch = (m.content ?? "").match(/^([\s\S]*?)\n*```page\n([\s\S]*?)\n```\s*$/);
+            if (pageMatch) {
+              try {
+                const summary = pageMatch[1].trim();
+                const page = JSON.parse(pageMatch[2]) as PageSpec;
+                return {
+                  id: m.id,
+                  role: m.role,
+                  content: summary,
+                  provider: msgProvider,
+                  model: msgModel,
+                  page,
+                };
+              } catch { /* fall through to canvas parsing */ }
+            }
             const parsed = parseStored(m.content);
             const hasCanvas = typeof parsed.canvas === "string";
             if (hasCanvas) canvasCounter += 1;
