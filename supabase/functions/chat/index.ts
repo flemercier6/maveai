@@ -1785,6 +1785,30 @@ Deno.serve(async (req) => {
             messagesForLLM = [webSystem, ...finalMessages];
           }
 
+          // When the agentic loop ran, tell the main model that the narration is
+          // already streamed — it should write ONLY the final answer and start
+          // with a clear separator so the user sees the shift from "thinking" to
+          // "answering".
+          if (agenticUsed && agenticNarration.trim()) {
+            const agentSystem: Msg = {
+              role: "system",
+              content:
+                `IMPORTANT — AGENTIC CONTEXT:\n` +
+                `You are operating inside a multi-step agentic flow. Before this turn, a narration ` +
+                `has ALREADY been streamed to the user describing your research process step-by-step ` +
+                `(what you searched, what you read, what you learned). The web context provided to ` +
+                `you above is the result of that research.\n\n` +
+                `Your job NOW is to write ONLY the final answer to the user's original question.\n\n` +
+                `RULES:\n` +
+                `- Do NOT repeat the narration or describe your process again ("I searched...", "I found...", "Now let me...").\n` +
+                `- Start your reply directly with the substantive answer, prefixed with a short Markdown heading like "## Answer" (translated to the user's language) so the visual transition from thinking to answering is clear.\n` +
+                `- Use the web context above as your primary source and cite with [source:N] markers.\n` +
+                `- Be thorough and well-structured — the user has waited through several research steps and expects a high-quality synthesis.\n\n` +
+                `User's original goal: ${lastUserText.slice(0, 300)}`,
+            };
+            messagesForLLM = [agentSystem, ...messagesForLLM];
+          }
+
           // ---------- Emit a META event so the client can show what was actually sent ----------
           // Estimate tokens with a cheap heuristic (~4 chars per token).
           const approxTokens = (s: string) => Math.ceil((s?.length ?? 0) / 4);
