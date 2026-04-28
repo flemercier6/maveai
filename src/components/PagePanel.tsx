@@ -25,7 +25,7 @@ export function PagePanel({ open, page, onClose }: Props) {
       {/* Panel */}
       <aside
         className={cn(
-          "fixed top-0 right-0 z-50 h-full bg-background border-l border-border shadow-2xl",
+          "fixed top-0 right-0 z-50 h-full bg-[#FAFAF7] border-l border-border shadow-2xl",
           "w-full sm:w-[60vw] sm:min-w-[560px] sm:max-w-[1100px]",
           "transition-transform duration-300",
           open ? "translate-x-0" : "translate-x-full",
@@ -33,8 +33,8 @@ export function PagePanel({ open, page, onClose }: Props) {
         role="dialog"
         aria-label="Generated page"
       >
-        <div className="flex items-center justify-between px-5 h-12 border-b border-border">
-          <div className="text-sm font-medium text-muted-foreground truncate">
+        <div className="flex items-center justify-between px-5 h-12 border-b border-border bg-background/60 backdrop-blur-sm">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#6B6B6B] truncate">
             {page?.title ?? "Page"}
           </div>
           <Button
@@ -47,7 +47,7 @@ export function PagePanel({ open, page, onClose }: Props) {
             <X className="w-4 h-4" />
           </Button>
         </div>
-        <div className="h-[calc(100%-3rem)] overflow-y-auto px-6 py-6">
+        <div className="h-[calc(100%-3rem)] overflow-y-auto px-8 py-10">
           {page ? (
             <PageRenderer page={page} />
           ) : (
