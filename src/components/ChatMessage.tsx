@@ -1,5 +1,5 @@
 import { Children, cloneElement, isValidElement, memo, useState, type ReactNode } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles, Map as MapIcon } from "lucide-react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles, Map as MapIcon, ChevronDown, ChevronRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
@@ -21,6 +21,7 @@ type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search" | "map"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
+export type ThinkingStep = { index: number; text: string };
 export type MessageAttachmentPreview = { kind: "image" | "file"; name: string; dataUrl?: string };
 export type MessageBranch = {
   id: string;
@@ -47,6 +48,9 @@ type Props = {
   phase?: Phase;
   sources?: Source[];
   meta?: RequestMeta;
+  thinking?: ThinkingStep[];
+  thinkingMs?: number;
+  thinkingDone?: boolean;
   canvas?: string;
   canvasTitle?: string;
   canvasVersion?: number;
@@ -111,6 +115,65 @@ function ToolBadge({ tool, label }: ToolUse) {
     <div className="inline-flex items-center h-6 gap-1.5 rounded-full border border-border bg-card px-2.5 text-[11px] font-medium text-muted-foreground max-w-full">
       <Icon className="w-3.5 h-3.5 shrink-0" />
       <span className="truncate">{label ? `${text}: ${shortLabel}` : text}</span>
+    </div>
+  );
+}
+
+/**
+ * Renders the AI's "thinking" preamble (Claude-style).
+ * - While streaming: each step appears in italic muted text, fading in one by one.
+ * - Once the main answer has started AND thinking is done: collapses into
+ *   "✦ Thought for Xs" pill that the user can click to re-expand.
+ */
+function ThinkingTrace({
+  steps,
+  durationMs,
+  done,
+  hasAnswer,
+}: {
+  steps: ThinkingStep[];
+  durationMs?: number;
+  done?: boolean;
+  hasAnswer: boolean;
+}) {
+  const shouldCollapse = !!done && hasAnswer;
+  const [open, setOpen] = useState(!shouldCollapse);
+  const [autoCollapsed, setAutoCollapsed] = useState(false);
+  if (shouldCollapse && !autoCollapsed) {
+    setAutoCollapsed(true);
+    queueMicrotask(() => setOpen(false));
+  }
+  if (!steps || steps.length === 0) return null;
+
+  const seconds = durationMs && durationMs > 0 ? Math.max(1, Math.round(durationMs / 1000)) : null;
+  const headerLabel = done
+    ? seconds != null ? `Thought for ${seconds}s` : "Thought"
+    : "Thinking";
+
+  return (
+    <div className="mb-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+        aria-expanded={open}
+      >
+        {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        <Sparkles className="w-3.5 h-3.5" />
+        <span className={done ? "" : "text-shimmer"}>{headerLabel}</span>
+      </button>
+      {open && (
+        <ul className="mt-2 ml-1 border-l-2 border-border pl-3 flex flex-col gap-1.5">
+          {steps.map((s) => (
+            <li
+              key={s.index}
+              className="text-[13px] italic text-muted-foreground leading-snug animate-in fade-in slide-in-from-left-1 duration-300"
+            >
+              {s.text}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -485,6 +548,9 @@ function ChatMessageImpl({
   phase,
   sources,
   meta,
+  thinking,
+  thinkingMs,
+  thinkingDone,
   canvas,
   canvasTitle,
   canvasVersion,
@@ -581,8 +647,17 @@ function ChatMessageImpl({
             {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
           </div>
         )}
+        {thinking && thinking.length > 0 && (
+          <ThinkingTrace
+            steps={thinking}
+            durationMs={thinkingMs}
+            done={thinkingDone}
+            hasAnswer={!!display}
+          />
+        )}
         {(() => {
           const { images, text } = display ? extractImages(display) : { images: [], text: "" };
+          const hasThinking = !!(thinking && thinking.length > 0);
           return (
             <>
               {images.length > 0 && <ImageStrip images={images} />}
@@ -591,7 +666,7 @@ function ChatMessageImpl({
                   text ? (
                     <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{text}</ReactMarkdown>
                   ) : null
-                ) : streaming ? (
+                ) : streaming && !hasThinking ? (
                   <span className="text-shimmer text-sm font-medium">
                     {getStatusMessage(phase, tool, provider)}
                   </span>
@@ -688,5 +763,8 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.variant === next.variant &&
   prev.attachments === next.attachments &&
   prev.page === next.page &&
-  prev.onOpenPage === next.onOpenPage,
+  prev.onOpenPage === next.onOpenPage &&
+  prev.thinking === next.thinking &&
+  prev.thinkingMs === next.thinkingMs &&
+  prev.thinkingDone === next.thinkingDone,
 );

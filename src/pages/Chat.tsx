@@ -58,7 +58,8 @@ type ToolUse = { tool: "scrape" | "search" | "map"; label: string; status?: Tool
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
 export type MsgAttachmentPreview = { kind: "image" | "file"; name: string; dataUrl?: string };
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec };
+export type ThinkingStep = { index: number; text: string };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -1146,6 +1147,30 @@ export default function Chat() {
                 next[next.length - 1] = { ...next[next.length - 1], meta };
                 return next;
               });
+            } else if (j.type === "thinking") {
+              if (j.action === "step") {
+                const step: ThinkingStep = {
+                  index: Number(j.index) || 0,
+                  text: String(j.text ?? "").trim(),
+                };
+                if (step.text) {
+                  setMessages((prev) => {
+                    const next = prev.slice();
+                    const cur = next[next.length - 1];
+                    const existing = cur.thinking ?? [];
+                    next[next.length - 1] = { ...cur, thinking: [...existing, step] };
+                    return next;
+                  });
+                }
+              } else if (j.action === "done") {
+                const ms = Number(j.durationMs) || 0;
+                setMessages((prev) => {
+                  const next = prev.slice();
+                  const cur = next[next.length - 1];
+                  next[next.length - 1] = { ...cur, thinkingMs: ms, thinkingDone: true };
+                  return next;
+                });
+              }
             } else if (j.type === "usage") {
               const inputTokens = Number(j.input_tokens) || 0;
               const outputTokens = Number(j.output_tokens) || 0;
@@ -1673,6 +1698,9 @@ export default function Chat() {
                   phase={m.phase}
                   sources={m.sources}
                   meta={m.meta}
+                  thinking={m.thinking}
+                  thinkingMs={m.thinkingMs}
+                  thinkingDone={m.thinkingDone}
                   canvas={m.canvas}
                   canvasTitle={m.canvasTitle}
                   attachments={m.attachments}

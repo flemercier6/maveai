@@ -324,6 +324,71 @@ async function* streamGemini(apiKey: string, model: string, messages: Msg[]): As
   return usage;
 }
 
+// ---------- Planner: stream short reasoning steps with Gemini Flash ----------
+// Used as a "thinking" preamble for advanced models so the user sees the AI
+// reason out loud (Claude-style) before the main answer is generated.
+//
+// Streams plain text where each step starts with "- " on a new line. The
+// caller parses completed lines and forwards them as `thinking` SSE events.
+async function* streamPlannerSteps(
+  googleKey: string,
+  userText: string,
+  contextHints: string,
+): AsyncGenerator<string> {
+  const sys =
+    `You are the inner monologue of an advanced AI assistant. The user just sent a message. ` +
+    `Before the main model answers, you write 3 to 5 SHORT reasoning steps that show how you ` +
+    `are approaching the problem — like Claude's "thinking" panel.\n\n` +
+    `STRICT FORMAT: output ONLY a plain bulleted list. One step per line, each line starts with ` +
+    `"- " (dash + space). 6 to 14 words per step. No headings, no numbering, no JSON, no preamble, ` +
+    `no closing remark, no markdown bold.\n\n` +
+    `Tone: first person, present tense, concise, decisive. Sound like you are working through it ` +
+    `live. Examples of good steps:\n` +
+    `- Breaking the question into its main components\n` +
+    `- Recalling what I know about French tax law on freelancers\n` +
+    `- Checking the attached PDF for the actual job requirements\n` +
+    `- Drafting a structured answer with concrete next steps\n\n` +
+    `Steps must be SPECIFIC to the user's request, not generic filler.`;
+  const prompt = contextHints
+    ? `User message:\n"""${userText}"""\n\nContext:\n${contextHints}\n\nWrite the steps now.`
+    : `User message:\n"""${userText}"""\n\nWrite the steps now.`;
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${googleKey}`;
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      systemInstruction: { parts: [{ text: sys }] },
+      generationConfig: { temperature: 0.6, maxOutputTokens: 220 },
+    }),
+  });
+  if (!r.ok || !r.body) {
+    const t = await r.text().catch(() => "");
+    throw new Error(`Planner ${r.status}: ${t}`);
+  }
+  for await (const line of parseSSELines(r.body.getReader())) {
+    if (!line.startsWith("data: ")) continue;
+    const data = line.slice(6).trim();
+    try {
+      const j = JSON.parse(data);
+      const txt = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("");
+      if (txt) yield txt as string;
+    } catch { /* partial */ }
+  }
+}
+
+// Models that should trigger the visible "thinking" preamble.
+function isAdvancedModel(model: string): boolean {
+  if (!model) return false;
+  const m = model.toLowerCase();
+  if (m.startsWith("gpt-5")) return true;
+  if (m.startsWith("claude-opus") || m.startsWith("claude-sonnet")) return true;
+  if (m === "gemini-2.5-pro") return true;
+  if (m === "mistral-large-latest") return true;
+  return false;
+}
+
 // ---------- Mistral (OpenAI-compatible SSE) ----------
 async function* streamMistral(apiKey: string, model: string, messages: Msg[]): AsyncGenerator<string, Usage | undefined> {
   // Mistral's chat-completions API mirrors OpenAI's. Images aren't supported on
@@ -1427,6 +1492,65 @@ Deno.serve(async (req) => {
             sources: webContext?.sources ?? [],
           };
           controller.enqueue(enc({ type: "meta", ...metaPayload }));
+
+          // ---------- Visible "thinking" preamble for advanced models ----------
+          // Streams 3-5 short reasoning steps (Claude-style) BEFORE the main model
+          // starts answering. Uses Gemini Flash as a cheap, fast planner.
+          const googleKeyForPlanner = Deno.env.get("GOOGLE_API_KEY");
+          const shouldThink = isAdvancedModel(model) && !!googleKeyForPlanner && !!lastUserText && !writingMode;
+          if (shouldThink) {
+            const thinkingStartedAt = Date.now();
+            try {
+              const ctxHints: string[] = [];
+              if (webContext) {
+                ctxHints.push(
+                  webContext.kind === "scrape"
+                    ? `A web page was fetched: ${webContext.label}. The model will read its content.`
+                    : `A web search was run: "${webContext.label}". The model will read the results.`,
+                );
+              }
+              const attCount = lastUserMsg?.attachments?.length ?? 0;
+              if (attCount > 0) ctxHints.push(`${attCount} attachment(s) were sent with the message.`);
+
+              let buf = "";
+              let stepIndex = 0;
+              const flushCompleteLines = (force = false) => {
+                // Split on newlines; keep the trailing partial in buf unless force.
+                const parts = buf.split(/\r?\n/);
+                const tail = force ? "" : (parts.pop() ?? "");
+                for (const raw of parts) {
+                  const line = raw.trim();
+                  if (!line) continue;
+                  // Accept "- step", "* step", "1. step", "1) step" — strip the marker.
+                  const m = line.match(/^(?:[-*•]|\d+[.)])\s+(.+)$/);
+                  const text = (m ? m[1] : line).trim();
+                  if (!text) continue;
+                  stepIndex += 1;
+                  controller.enqueue(enc({ type: "thinking", action: "step", index: stepIndex, text }));
+                }
+                buf = tail;
+              };
+
+              for await (const chunk of streamPlannerSteps(googleKeyForPlanner!, lastUserText, ctxHints.join(" "))) {
+                buf += chunk;
+                flushCompleteLines(false);
+              }
+              flushCompleteLines(true);
+              controller.enqueue(enc({
+                type: "thinking",
+                action: "done",
+                durationMs: Date.now() - thinkingStartedAt,
+              }));
+            } catch (e) {
+              console.error("planner thinking failed", e);
+              // Non-fatal — just continue to the main model without the preamble.
+              controller.enqueue(enc({
+                type: "thinking",
+                action: "done",
+                durationMs: Date.now() - thinkingStartedAt,
+              }));
+            }
+          }
 
           let iter: AsyncGenerator<string, Usage | undefined>;
           if (provider === "openai") iter = streamOpenAI(apiKey, model, messagesForLLM);
