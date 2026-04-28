@@ -359,6 +359,7 @@ export function UsageTab() {
             No usage recorded yet. Send a message to start tracking.
           </p>
         </div>
+        <DeveloperModeCard enabled={devMode} onChange={setDevMode} />
       </section>
     );
   }
