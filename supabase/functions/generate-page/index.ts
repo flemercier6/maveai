@@ -53,7 +53,7 @@ const TOOL = {
                     items: {
                       type: "object",
                       properties: {
-                        type: {
+                        kind: {
                           type: "string",
                           enum: [
                             "heading",
@@ -65,6 +65,7 @@ const TOOL = {
                             "table",
                             "chart",
                           ],
+                          description: "Block type discriminator.",
                         },
                         // heading
                         text: { type: "string" },
@@ -115,7 +116,7 @@ const TOOL = {
                           },
                         },
                       },
-                      required: ["type"],
+                      required: ["kind"],
                     },
                   },
                 },
@@ -159,7 +160,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-pro",
+          model: "openai/gpt-5-mini",
           messages,
           tools: [TOOL],
           tool_choice: {
@@ -207,6 +208,20 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Normalize: rename `kind` -> `type` for the frontend renderer.
+    try {
+      const p = parsed as { page?: { tabs?: Array<{ blocks?: Array<Record<string, unknown>> }> } };
+      const tabs = p?.page?.tabs ?? [];
+      for (const tab of tabs) {
+        for (const b of tab.blocks ?? []) {
+          if (b && typeof b === "object" && "kind" in b && !("type" in b)) {
+            (b as Record<string, unknown>).type = (b as Record<string, unknown>).kind;
+            delete (b as Record<string, unknown>).kind;
+          }
+        }
+      }
+    } catch (_) { /* ignore */ }
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
