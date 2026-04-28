@@ -1698,6 +1698,9 @@ export default function Chat() {
                   phase={m.phase}
                   sources={m.sources}
                   meta={m.meta}
+                  thinking={m.thinking}
+                  thinkingMs={m.thinkingMs}
+                  thinkingDone={m.thinkingDone}
                   canvas={m.canvas}
                   canvasTitle={m.canvasTitle}
                   attachments={m.attachments}
