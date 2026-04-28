@@ -27,6 +27,8 @@ import { billingMultiplier } from "@/lib/pricing";
 import { looksLikeWritingRequest } from "@/lib/writingDetection";
 import { SelectionExploreButton, type SelectionPayload } from "@/components/SelectionExploreButton";
 import { ExplorePanel, type BranchSeed } from "@/components/ExplorePanel";
+import { PagePanel } from "@/components/PagePanel";
+import type { PageSpec } from "@/components/PageRenderer";
 import type { MessageBranch } from "@/components/ChatMessage";
 import {
   notifyComposerBlur,
@@ -51,7 +53,7 @@ type ToolUse = { tool: "scrape" | "search" | "map"; label: string; status?: Tool
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
 export type MsgAttachmentPreview = { kind: "image" | "file"; name: string; dataUrl?: string };
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[] };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -83,6 +85,11 @@ export default function Chat() {
   const [writeRequested, setWriteRequested] = useState(false);
   // User explicitly invoked /explore — next send opens a side exploration instead of posting.
   const [exploreRequested, setExploreRequested] = useState(false);
+  // User explicitly invoked /page — next send generates a structured one-pager.
+  const [pageRequested, setPageRequested] = useState(false);
+  // Side panel showing a generated PageSpec.
+  const [pageOpen, setPageOpen] = useState(false);
+  const [activePage, setActivePage] = useState<PageSpec | null>(null);
   // Title generation animation: convId -> { target, shown }. "pending" = not yet received.
   const [titleAnim, setTitleAnim] = useState<Record<string, { target: string | null; shown: string }>>({});
   const titleTimerRef = useRef<Record<string, number>>({});
