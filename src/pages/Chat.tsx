@@ -778,8 +778,12 @@ export default function Chat() {
     const resolved = userPickedAuto
       ? (hasImage ? { provider: "google" as Provider, model: "gemini-2.5-pro" } : routeAuto(text))
       : { provider, model };
-    const sendProvider = resolved.provider;
-    const sendModel = resolved.model;
+    // Apply blacklist fallback: pick the user's first non-blacklisted favorite,
+    // or any other allowed model if the resolved one is forbidden.
+    const fallbackOrder = ["gemini-2.5-flash", "gpt-5.5", "gpt-4o-mini", "gemini-2.5-pro", "claude-sonnet-4-6", "claude-opus-4-7", "mistral-large-latest", "mistral-small-latest"];
+    const safeModel = pickAllowedModel(aiPrefs, resolved.model, fallbackOrder);
+    const sendProvider = (safeModel === resolved.model ? resolved.provider : providerForModel(safeModel)) as Provider;
+    const sendModel = safeModel;
     // What we persist on the conversation: keep Auto if the user picked Auto
     const convProvider = userPickedAuto ? provider : sendProvider;
     const convModel = userPickedAuto ? AUTO_MODEL_ID : sendModel;
