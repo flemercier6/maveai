@@ -1,5 +1,5 @@
 import { Children, cloneElement, isValidElement, memo, useState, type ReactNode } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles, Map as MapIcon } from "lucide-react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles, Map as MapIcon, ChevronDown, ChevronRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
@@ -21,6 +21,7 @@ type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search" | "map"; label: string; status?: ToolStatus };
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
+export type ThinkingStep = { index: number; text: string };
 export type MessageAttachmentPreview = { kind: "image" | "file"; name: string; dataUrl?: string };
 export type MessageBranch = {
   id: string;
@@ -47,6 +48,9 @@ type Props = {
   phase?: Phase;
   sources?: Source[];
   meta?: RequestMeta;
+  thinking?: ThinkingStep[];
+  thinkingMs?: number;
+  thinkingDone?: boolean;
   canvas?: string;
   canvasTitle?: string;
   canvasVersion?: number;
