@@ -22,6 +22,16 @@ type ToolUse = { tool: "scrape" | "search" | "map"; label: string; status?: Tool
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
 export type ThinkingStep = { index: number; text: string };
+export type AgentStep = {
+  index: number;
+  kind: "search" | "scrape" | "analyze";
+  label: string;
+  intent: string;
+  status: ToolStatus;
+  foundCount?: number;
+  narration: string;
+  narrationDone?: boolean;
+};
 export type MessageAttachmentPreview = { kind: "image" | "file"; name: string; dataUrl?: string };
 export type MessageBranch = {
   id: string;
