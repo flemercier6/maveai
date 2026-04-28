@@ -677,6 +677,15 @@ export default function Chat() {
       return;
     }
 
+    setSending(true);
+    setClarify(null);
+    lastSentRef.current = text;
+    lastAttachmentsRef.current = atts;
+    if (overrideText === undefined) {
+      setInput("");
+      setAttachments([]);
+    }
+
     // ---- Writing canvas mode ----
     // Enabled when the user typed "/write" or the message looks like a drafting task,
     // OR when the most recent assistant reply already contains a canvas (follow-up edits).
