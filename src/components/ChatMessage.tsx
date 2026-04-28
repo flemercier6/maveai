@@ -320,32 +320,60 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
     img: ({ node, src, alt, ...props }: any) => {
       if (!src || typeof src !== "string" || !/^https?:\/\//.test(src)) return null;
       return (
-        <a
-          href={src}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block my-4 rounded-xl overflow-hidden border border-border bg-muted no-underline max-w-md"
+        <button
+          type="button"
+          onClick={() => openLightbox(src, alt)}
+          aria-label={alt ? `Open image: ${alt}` : "Open image"}
+          className="group relative inline-block rounded-xl overflow-hidden border border-border bg-muted no-underline align-top focus:outline-none focus:ring-2 focus:ring-ring"
+          {...props}
         >
           <img
             src={src}
             alt={alt || ""}
             loading="lazy"
-            className="w-full h-auto block max-h-80 object-cover"
+            className="block h-48 w-auto max-w-none object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             onError={(e) => {
-              const a = (e.currentTarget.parentElement as HTMLAnchorElement | null);
-              if (a) a.style.display = "none";
+              const btn = (e.currentTarget.parentElement as HTMLButtonElement | null);
+              if (btn) btn.style.display = "none";
             }}
-            {...props}
           />
           {alt ? (
-            <span className="block text-xs text-muted-foreground px-3 py-2 border-t border-border">
+            <span className="pointer-events-none absolute inset-x-0 bottom-0 px-2.5 py-1.5 text-[11px] text-white bg-gradient-to-t from-black/70 to-transparent text-left line-clamp-2">
               {alt}
             </span>
           ) : null}
-        </a>
+        </button>
       );
     },
-    p: ({ node, children, ...props }: any) => renderBlock("p", children, props),
+    p: ({ node, children, ...props }: any) => {
+      // If the paragraph is essentially an image gallery (1+ images, no
+      // meaningful text), render a horizontally scrollable strip instead
+      // of a wrapping <p> (which would also be invalid HTML around <button>).
+      const arr = Children.toArray(children);
+      const nonEmpty = arr.filter((c) => !(typeof c === "string" && c.trim() === ""));
+      const imgs = nonEmpty.filter((c) => isValidElement(c) && (c.type as any)?.displayName !== "p" && ((c as any).props?.src || (c as any).type === "img" || (c as any).type?.name === "img"));
+      // Heuristic: every non-empty child is an <img> rendered via our component above (a <button>) or a literal <img>.
+      const onlyImages =
+        nonEmpty.length > 0 &&
+        nonEmpty.every((c) => {
+          if (!isValidElement(c)) return false;
+          const t: any = c.type;
+          // Our custom img renderer returns a <button>; markdown ![..](..) fed into it.
+          // node.children on the AST tells us reliably it was an image node.
+          return (c.props as any)?.src !== undefined || t === "img" || (c.props as any)?.["aria-label"]?.toString?.().startsWith?.("Open image");
+        });
+      if (onlyImages && nonEmpty.length >= 1) {
+        void imgs;
+        return (
+          <div className="my-4 -mx-1 overflow-x-auto overflow-y-hidden scrollbar-thin">
+            <div className="flex flex-nowrap gap-2 px-1 pb-1">
+              {nonEmpty}
+            </div>
+          </div>
+        );
+      }
+      return renderBlock("p", children, props);
+    },
     li: ({ node, children, ...props }: any) => renderBlock("li", children, props),
     blockquote: ({ node, children, ...props }: any) => renderBlock("blockquote", children, props),
     td: ({ node, children, ...props }: any) => renderBlock("td" as any, children, props),
