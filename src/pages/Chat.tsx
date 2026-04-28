@@ -41,6 +41,7 @@ import { useAiPreferences } from "@/hooks/useAiPreferences";
 import { isModeDisabled, isModelBlacklisted, pickAllowedModel, type ModeId } from "@/lib/aiPreferences";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useSwipe } from "@/hooks/useSwipe";
+import { ShareMenu } from "@/components/ShareMenu";
 
 type StoredBranch = {
   id: string;
@@ -1611,6 +1612,9 @@ export default function Chat() {
               <span className="sm:hidden">Not saved</span>
             </span>
           )}
+          <div className="ml-auto flex items-center gap-1">
+            {!ephemeral && activeId && <ShareMenu conversationId={activeId} />}
+          </div>
         </header>
         <ChatIndex
           scrollContainer={scrollEl}
