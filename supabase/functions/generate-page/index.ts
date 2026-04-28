@@ -209,6 +209,20 @@ serve(async (req) => {
       });
     }
 
+    // Normalize: rename `kind` -> `type` for the frontend renderer.
+    try {
+      const p = parsed as { page?: { tabs?: Array<{ blocks?: Array<Record<string, unknown>> }> } };
+      const tabs = p?.page?.tabs ?? [];
+      for (const tab of tabs) {
+        for (const b of tab.blocks ?? []) {
+          if (b && typeof b === "object" && "kind" in b && !("type" in b)) {
+            (b as Record<string, unknown>).type = (b as Record<string, unknown>).kind;
+            delete (b as Record<string, unknown>).kind;
+          }
+        }
+      }
+    } catch (_) { /* ignore */ }
+
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
