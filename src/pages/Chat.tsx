@@ -1147,6 +1147,30 @@ export default function Chat() {
                 next[next.length - 1] = { ...next[next.length - 1], meta };
                 return next;
               });
+            } else if (j.type === "thinking") {
+              if (j.action === "step") {
+                const step: ThinkingStep = {
+                  index: Number(j.index) || 0,
+                  text: String(j.text ?? "").trim(),
+                };
+                if (step.text) {
+                  setMessages((prev) => {
+                    const next = prev.slice();
+                    const cur = next[next.length - 1];
+                    const existing = cur.thinking ?? [];
+                    next[next.length - 1] = { ...cur, thinking: [...existing, step] };
+                    return next;
+                  });
+                }
+              } else if (j.action === "done") {
+                const ms = Number(j.durationMs) || 0;
+                setMessages((prev) => {
+                  const next = prev.slice();
+                  const cur = next[next.length - 1];
+                  next[next.length - 1] = { ...cur, thinkingMs: ms, thinkingDone: true };
+                  return next;
+                });
+              }
             } else if (j.type === "usage") {
               const inputTokens = Number(j.input_tokens) || 0;
               const outputTokens = Number(j.output_tokens) || 0;
