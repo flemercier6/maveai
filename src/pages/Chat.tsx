@@ -582,14 +582,6 @@ export default function Chat() {
       }
       return;
     }
-    setSending(true);
-    setClarify(null);
-    lastSentRef.current = text;
-    lastAttachmentsRef.current = atts;
-    if (overrideText === undefined) {
-      setInput("");
-      setAttachments([]);
-    }
 
     // /page flow: ask the AI to return a structured one-pager (JSON), render it
     // in the right-side overlay panel, and show a compact card in the chat.
@@ -600,6 +592,7 @@ export default function Chat() {
       }
       setPageRequested(false);
       setSending(true);
+      setClarify(null);
       lastSentRef.current = text;
       lastAttachmentsRef.current = atts;
       if (overrideText === undefined) {
