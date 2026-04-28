@@ -1546,6 +1546,8 @@ export default function Chat() {
                   canvas={m.canvas}
                   canvasTitle={m.canvasTitle}
                   attachments={m.attachments}
+                  page={m.page}
+                  onOpenPage={m.page ? () => { setActivePage(m.page!); setPageOpen(true); } : undefined}
                   canvasVersion={m.canvasVersion}
                   canvasCollapsed={typeof m.canvas === "string" && latestCanvasIdx >= 0 && i !== latestCanvasIdx}
                   onCanvasChange={m.role === "assistant" && typeof m.canvas === "string" && i === latestCanvasIdx ? (next) => {
