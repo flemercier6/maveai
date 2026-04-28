@@ -546,7 +546,7 @@ function ChatMessageImpl({
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{display}</ReactMarkdown>
           ) : streaming ? (
             <span className="text-shimmer text-sm font-medium">
-              {getStatusMessage(phase, tool)}
+              {getStatusMessage(phase, tool, provider)}
             </span>
           ) : " "}
         </div>
