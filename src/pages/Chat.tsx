@@ -1730,6 +1730,13 @@ export default function Chat() {
                   position={slash.pos}
                   onSelect={applySlashSelection}
                   onClose={() => setSlash(null)}
+                  disabledModes={
+                    aiPrefs.disabledModes.filter((m) =>
+                      m === "note" || m === "page" || m === "explore",
+                    ) as ("note" | "page" | "explore")[]
+                  }
+                  blacklistedModels={aiPrefs.blacklistedModels}
+                  favoriteModels={aiPrefs.favoriteModels}
                 />
               )}
               <div className="flex items-center justify-between gap-[15px] px-2 pb-2">
