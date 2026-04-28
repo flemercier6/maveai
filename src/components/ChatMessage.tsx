@@ -715,6 +715,7 @@ function ChatMessageImpl({
             hasAnswer={!!display}
           />
         )}
+        {agentSteps && agentSteps.length > 0 && <AgentStepsTrace steps={agentSteps} />}
         {(() => {
           const { images, text } = display ? extractImages(display) : { images: [], text: "" };
           const hasThinking = !!(thinking && thinking.length > 0);
