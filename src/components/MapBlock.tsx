@@ -324,7 +324,7 @@ function MapBlockImpl({ code }: Props) {
           )}
         </div>
       </div>
-      <div className="relative w-full h-[320px] bg-muted">
+      <div className="relative w-full h-[320px] bg-background">
         {status === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center">
             <SkeletonShimmer className="w-full h-full" />
