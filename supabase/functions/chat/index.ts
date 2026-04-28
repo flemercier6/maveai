@@ -1860,7 +1860,7 @@ Deno.serve(async (req) => {
           // Streams 3-5 short reasoning steps (Claude-style) BEFORE the main model
           // starts answering. Uses Gemini Flash as a cheap, fast planner.
           const googleKeyForPlanner = Deno.env.get("GOOGLE_API_KEY");
-          const shouldThink = isAdvancedModel(model) && !!googleKeyForPlanner && !!lastUserText && !writingMode;
+          const shouldThink = isAdvancedModel(model) && !!googleKeyForPlanner && !!lastUserText && !writingMode && !agenticUsed;
           if (shouldThink) {
             const thinkingStartedAt = Date.now();
             try {
