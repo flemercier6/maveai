@@ -4,6 +4,7 @@
 // • Display: Instrument Serif (italic-friendly)
 // • UI mono: Space Grotesk for eyebrows / labels
 // • Magazine-style layout with column rules and oversized numerals
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
