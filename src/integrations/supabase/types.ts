@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_preferences: {
+        Row: {
+          blacklisted_models: string[]
+          created_at: string
+          disabled_modes: string[]
+          favorite_models: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          blacklisted_models?: string[]
+          created_at?: string
+          disabled_modes?: string[]
+          favorite_models?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          blacklisted_models?: string[]
+          created_at?: string
+          disabled_modes?: string[]
+          favorite_models?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       billing_accounts: {
         Row: {
           billing_cycle: string
