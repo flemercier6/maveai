@@ -1145,6 +1145,14 @@ Deno.serve(async (req) => {
       : null;
 
     // Compact style/system prompt — same intent, ~70% fewer tokens.
+    const mapInstruction = mapDisabled
+      ? "Maps: DISABLED by user preferences — do NOT emit any ```map block under any circumstance."
+      : "Maps: use ONLY when the user asks about a specific real-world place, address, neighborhood, route, or list of locations where seeing them on a map materially helps (e.g. 'where is the Eiffel Tower', 'best ramen in Tokyo', 'route from Lyon to Marseille', 'cafés near Union Square'). " +
+        "DO NOT emit a map for: general geography questions, country-level facts, history, or any question that doesn't reference a specific place the user wants to visualize. When in doubt, do NOT emit a map. " +
+        "Format when used: a fenced ```map block containing JSON: { title?: string, center?: {lat:number,lng:number}, zoom?: number (1-20), markers: [{ lat:number, lng:number, label?: string, description?: string }], route?: { profile?: 'driving'|'walking'|'cycling'|'driving-traffic', waypoints: [{ lat:number, lng:number }, ...] } }. " +
+        "Use `route` when the user asks for an itinerary / directions between 2 or more places (the polyline + distance + duration are computed automatically via Mapbox Directions). Always include matching `markers` for the start, intermediate stops and end so they're visible. " +
+        "Provide accurate lat/lng coordinates yourself (you know them). Include 1 to 8 markers. Place the ```map block AFTER your textual answer, on its own. Do not mention the map block in prose.";
+
     const styleSystem: Msg = {
       role: "system",
       content:
@@ -1153,11 +1161,7 @@ Deno.serve(async (req) => {
         "DO NOT use diagrams for: simple factual questions, definitions, short how-tos, comparisons (use a table), lists of items, code explanations, opinions, or anything a short paragraph already answers clearly. When in doubt, do NOT emit a diagram. " +
         "Format when used: fenced ```flow block containing JSON: { title?, direction?: 'TB'|'LR'|'RL'|'BT', nodes: [{id,label,kind?: 'default'|'input'|'output'|'decision'|'success'|'warning'|'danger'|'muted'}], edges: [{source,target,label?,animated?,dashed?}] }. " +
         "Short slug ids, ≤6-word labels, no positions, 4–12 nodes. Not Mermaid.\n" +
-        "Maps: use ONLY when the user asks about a specific real-world place, address, neighborhood, route, or list of locations where seeing them on a map materially helps (e.g. 'where is the Eiffel Tower', 'best ramen in Tokyo', 'route from Lyon to Marseille', 'cafés near Union Square'). " +
-        "DO NOT emit a map for: general geography questions, country-level facts, history, or any question that doesn't reference a specific place the user wants to visualize. When in doubt, do NOT emit a map. " +
-        "Format when used: a fenced ```map block containing JSON: { title?: string, center?: {lat:number,lng:number}, zoom?: number (1-20), markers: [{ lat:number, lng:number, label?: string, description?: string }], route?: { profile?: 'driving'|'walking'|'cycling'|'driving-traffic', waypoints: [{ lat:number, lng:number }, ...] } }. " +
-        "Use `route` when the user asks for an itinerary / directions between 2 or more places (the polyline + distance + duration are computed automatically via Mapbox Directions). Always include matching `markers` for the start, intermediate stops and end so they're visible. " +
-        "Provide accurate lat/lng coordinates yourself (you know them). Include 1 to 8 markers. Place the ```map block AFTER your textual answer, on its own. Do not mention the map block in prose.",
+        mapInstruction,
     };
 
     // Writing-canvas mode. Output format (STRICT):
