@@ -49,6 +49,14 @@ export default function SignIn() {
           <h2 className="text-xl sm:text-2xl font-semibold mb-1">Sign in</h2>
           <p className="text-muted-foreground text-sm mb-5 sm:mb-6">Welcome back.</p>
 
+          <GoogleSignInButton label="Sign in with Google" />
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
