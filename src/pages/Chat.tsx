@@ -59,7 +59,17 @@ type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
 export type MsgAttachmentPreview = { kind: "image" | "file"; name: string; dataUrl?: string };
 export type ThinkingStep = { index: number; text: string };
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean };
+export type AgentStep = {
+  index: number;
+  kind: "search" | "scrape" | "analyze";
+  label: string;
+  intent: string;
+  status: ToolStatus;
+  foundCount?: number;
+  narration: string;
+  narrationDone?: boolean;
+};
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean; agentSteps?: AgentStep[] };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
