@@ -1468,6 +1468,23 @@ Deno.serve(async (req) => {
               output_cost_usd: outputCost,
               cost_usd: inputCost + outputCost,
             }));
+            // Persist cost into messages.meta.cost so the developer breakdown
+            // can be shown after a reload.
+            if (insertedMsg?.id) {
+              const metaWithCost = {
+                ...metaPayload,
+                cost: {
+                  inputTokens: usage.input_tokens,
+                  outputTokens: usage.output_tokens,
+                  inputCostUsd: inputCost,
+                  outputCostUsd: outputCost,
+                },
+              };
+              await supabase
+                .from("messages")
+                .update({ meta: metaWithCost })
+                .eq("id", insertedMsg.id);
+            }
           } else if (!ephemeral) {
             console.warn("[usage] skipped — no usage data returned by provider");
           }
