@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name required").max(80),
