@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,8 +10,13 @@ import { Sparkles } from "lucide-react";
 
 export default function SignIn() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) navigate("/", { replace: true });
+  }, [authLoading, navigate, user]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +29,10 @@ export default function SignIn() {
     }
     navigate("/", { replace: true });
   };
+
+  if (authLoading || user) {
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface px-4 py-8 sm:py-12">
