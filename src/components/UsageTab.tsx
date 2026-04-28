@@ -538,21 +538,32 @@ export function UsageTab() {
         </p>
       </div>
 
-      {/* Developer Mode toggle */}
-      <div className="rounded-xl border border-border p-4 flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="text-sm font-semibold">Developer Mode</div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Affiche sous chaque réponse de l'IA un dropdown de breakdown détaillé
-            (tokens et coût en €) pour comprendre ce qui pèse le plus dans la requête.
-          </p>
-        </div>
-        <Switch
-          checked={devMode}
-          onCheckedChange={setDevMode}
-          aria-label="Toggle developer mode"
-        />
-      </div>
+      <DeveloperModeCard enabled={devMode} onChange={setDevMode} />
     </section>
+  );
+}
+
+function DeveloperModeCard({
+  enabled,
+  onChange,
+}: {
+  enabled: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-border p-4 flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <div className="text-sm font-semibold">Developer Mode</div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Affiche sous chaque réponse de l'IA un dropdown de breakdown détaillé
+          (tokens et coût en €) pour comprendre ce qui pèse le plus dans la requête.
+        </p>
+      </div>
+      <Switch
+        checked={enabled}
+        onCheckedChange={onChange}
+        aria-label="Toggle developer mode"
+      />
+    </div>
   );
 }
