@@ -37,6 +37,8 @@ import {
   useActiveComposer,
 } from "@/hooks/useActiveComposer";
 import { usePlan, isPremiumModel, FREE_DAILY_LIMIT } from "@/hooks/usePlan";
+import { useAiPreferences } from "@/hooks/useAiPreferences";
+import { isModeDisabled, isModelBlacklisted, pickAllowedModel, type ModeId } from "@/lib/aiPreferences";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useSwipe } from "@/hooks/useSwipe";
 
