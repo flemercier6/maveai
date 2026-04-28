@@ -53,7 +53,7 @@ const TOOL = {
                     items: {
                       type: "object",
                       properties: {
-                        type: {
+                        kind: {
                           type: "string",
                           enum: [
                             "heading",
@@ -65,6 +65,7 @@ const TOOL = {
                             "table",
                             "chart",
                           ],
+                          description: "Block type discriminator.",
                         },
                         // heading
                         text: { type: "string" },
