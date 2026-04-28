@@ -547,6 +547,54 @@ function ThreadEntry({ branch, onClick }: { branch: MessageBranch; onClick: () =
   );
 }
 
+function AgentStepCard({ step }: { step: AgentStep }) {
+  const Icon = step.kind === "search" ? Search : step.kind === "scrape" ? Globe : Sparkles;
+  const tag = step.kind === "search" ? "Web search" : step.kind === "scrape" ? "Read page" : "Analyze";
+  const isRunning = step.status === "running";
+  const isFailed = step.status === "failed";
+  return (
+    <div className="mb-3 rounded-lg border border-border bg-card overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30">
+        <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-background border border-border px-2 py-0.5 text-[11px] font-medium text-foreground">
+          <Icon className={`w-3 h-3 ${isRunning ? "animate-pulse" : ""}`} />
+          {tag}
+        </span>
+        <span className="text-xs text-foreground truncate flex-1" title={step.label}>{step.label}</span>
+        {isRunning && <span className="text-[11px] text-muted-foreground">…</span>}
+        {step.status === "done" && step.foundCount !== undefined && step.foundCount > 0 && (
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+            {step.foundCount} source{step.foundCount > 1 ? "s" : ""}
+          </span>
+        )}
+        {isFailed && <span className="text-[11px] text-destructive">failed</span>}
+      </div>
+      {(step.intent || step.narration) && (
+        <div className="px-3 py-2 text-sm text-muted-foreground italic">
+          {step.intent && !step.narration && (
+            <span className="opacity-70 not-italic">Goal: {step.intent}</span>
+          )}
+          {step.narration && (
+            <span>
+              {step.narration}
+              {!step.narrationDone && <span className="inline-block w-1 h-3 ml-0.5 bg-muted-foreground/60 animate-pulse align-middle" />}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AgentStepsTrace({ steps }: { steps: AgentStep[] }) {
+  if (!steps.length) return null;
+  const sorted = [...steps].sort((a, b) => a.index - b.index);
+  return (
+    <div className="mb-3">
+      {sorted.map((s) => <AgentStepCard key={s.index} step={s} />)}
+    </div>
+  );
+}
+
 function ChatMessageImpl({
   id,
   role,
