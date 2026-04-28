@@ -562,6 +562,7 @@ function ChatMessageImpl({
   thinking,
   thinkingMs,
   thinkingDone,
+  agentSteps,
   canvas,
   canvasTitle,
   canvasVersion,
