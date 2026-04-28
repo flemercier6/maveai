@@ -346,28 +346,21 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
       );
     },
     p: ({ node, children, ...props }: any) => {
-      // If the paragraph is essentially an image gallery (1+ images, no
-      // meaningful text), render a horizontally scrollable strip instead
-      // of a wrapping <p> (which would also be invalid HTML around <button>).
-      const arr = Children.toArray(children);
-      const nonEmpty = arr.filter((c) => !(typeof c === "string" && c.trim() === ""));
-      const imgs = nonEmpty.filter((c) => isValidElement(c) && (c.type as any)?.displayName !== "p" && ((c as any).props?.src || (c as any).type === "img" || (c as any).type?.name === "img"));
-      // Heuristic: every non-empty child is an <img> rendered via our component above (a <button>) or a literal <img>.
-      const onlyImages =
-        nonEmpty.length > 0 &&
-        nonEmpty.every((c) => {
-          if (!isValidElement(c)) return false;
-          const t: any = c.type;
-          // Our custom img renderer returns a <button>; markdown ![..](..) fed into it.
-          // node.children on the AST tells us reliably it was an image node.
-          return (c.props as any)?.src !== undefined || t === "img" || (c.props as any)?.["aria-label"]?.toString?.().startsWith?.("Open image");
-        });
-      if (onlyImages && nonEmpty.length >= 1) {
-        void imgs;
+      // If the paragraph (per AST) contains only image nodes (and whitespace),
+      // render a horizontally scrollable strip instead of a wrapping <p>.
+      const astChildren: any[] = Array.isArray(node?.children) ? node.children : [];
+      const meaningful = astChildren.filter(
+        (c) => !(c.type === "text" && (!c.value || /^\s*$/.test(c.value))),
+      );
+      const allImages = meaningful.length >= 1 && meaningful.every((c) => c.type === "image");
+      if (allImages) {
+        const arr = Children.toArray(children).filter(
+          (c) => !(typeof c === "string" && c.trim() === ""),
+        );
         return (
-          <div className="my-4 -mx-1 overflow-x-auto overflow-y-hidden scrollbar-thin">
-            <div className="flex flex-nowrap gap-2 px-1 pb-1">
-              {nonEmpty}
+          <div className="my-4 -mx-1 overflow-x-auto overflow-y-hidden">
+            <div className="flex flex-nowrap gap-2 px-1 pb-1 items-stretch">
+              {arr}
             </div>
           </div>
         );
