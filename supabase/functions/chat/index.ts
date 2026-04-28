@@ -1304,7 +1304,7 @@ Deno.serve(async (req) => {
           }
 
           // Run web tool detection + fetch (notify client of progress)
-          if ((firecrawlKey || linkupKey) && lastUserText) {
+          if (!webDisabled && (firecrawlKey || linkupKey) && lastUserText) {
             controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
             const decision = await decideWebTool({
               googleKey: Deno.env.get("GOOGLE_API_KEY"),
