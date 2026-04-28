@@ -61,6 +61,14 @@ export default function SignUp() {
             Access OpenAI, Anthropic and Gemini in one place.
           </p>
 
+          <GoogleSignInButton label="Sign up with Google" />
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
