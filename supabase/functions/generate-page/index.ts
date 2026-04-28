@@ -223,7 +223,64 @@ serve(async (req) => {
       }
     } catch (_) { /* ignore */ }
 
-    return new Response(JSON.stringify(parsed), {
+    // ---------- Build developer breakdown meta ----------
+    const approxTokens = (s: string) => Math.ceil((s?.length ?? 0) / 4);
+    const PROVIDER = "openai";
+    const MODEL = "openai/gpt-5-mini";
+    const metaSystems = [
+      { label: "/page system prompt", content: SYSTEM_PROMPT, approxTokens: approxTokens(SYSTEM_PROMPT) },
+    ];
+    const metaHistory = [
+      ...(Array.isArray(history) ? history : []).map((m: { role: string; content: string }) => ({
+        role: m.role,
+        content: m.content ?? "",
+        approxTokens: approxTokens(m.content ?? ""),
+        attachments: [],
+      })),
+      {
+        role: "user",
+        content: String(prompt ?? ""),
+        approxTokens: approxTokens(String(prompt ?? "")),
+        attachments: [],
+      },
+    ];
+    const approxTotalInputTokens = [...metaSystems, ...metaHistory]
+      .reduce((s, x) => s + (x.approxTokens ?? 0), 0);
+
+    // Pull real usage if the gateway returned it; pricing for gpt-5-mini.
+    const usage = (data?.usage ?? {}) as {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      input_tokens?: number;
+      output_tokens?: number;
+    };
+    const inputTokens = Number(usage.input_tokens ?? usage.prompt_tokens ?? 0);
+    const outputTokens = Number(usage.output_tokens ?? usage.completion_tokens ?? 0);
+    // gpt-5-mini list pricing (USD / 1M tokens).
+    const PRICE_IN = 0.25;
+    const PRICE_OUT = 2.0;
+    const inputCostUsd = (inputTokens / 1_000_000) * PRICE_IN;
+    const outputCostUsd = (outputTokens / 1_000_000) * PRICE_OUT;
+
+    const meta = {
+      provider: PROVIDER,
+      model: MODEL,
+      systems: metaSystems,
+      history: metaHistory,
+      memoryKeywords: [],
+      memoryMatches: [],
+      webContext: null,
+      approxTotalInputTokens,
+      cost: {
+        inputTokens,
+        outputTokens,
+        inputCostUsd,
+        outputCostUsd,
+      },
+    };
+
+    const out = (parsed && typeof parsed === "object") ? { ...(parsed as Record<string, unknown>), meta } : { meta };
+    return new Response(JSON.stringify(out), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
