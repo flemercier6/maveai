@@ -114,7 +114,8 @@ function ToolBadge({ tool, label }: ToolUse) {
   );
 }
 
-function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined): string {
+function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined, provider?: string): string {
+  if (provider === "page") return "Crafting your page…";
   if (tool) {
     const short = tool.label.length > 50 ? tool.label.slice(0, 47) + "…" : tool.label;
     if (tool.status === "done") {
