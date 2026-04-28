@@ -1612,6 +1612,9 @@ export default function Chat() {
               <span className="sm:hidden">Not saved</span>
             </span>
           )}
+          <div className="ml-auto flex items-center gap-1">
+            {!ephemeral && activeId && <ShareMenu conversationId={activeId} />}
+          </div>
         </header>
         <ChatIndex
           scrollContainer={scrollEl}
