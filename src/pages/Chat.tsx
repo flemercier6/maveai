@@ -59,7 +59,17 @@ type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
 export type MsgAttachmentPreview = { kind: "image" | "file"; name: string; dataUrl?: string };
 export type ThinkingStep = { index: number; text: string };
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean };
+export type AgentStep = {
+  index: number;
+  kind: "search" | "scrape" | "analyze";
+  label: string;
+  intent: string;
+  status: ToolStatus;
+  foundCount?: number;
+  narration: string;
+  narrationDone?: boolean;
+};
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean; agentSteps?: AgentStep[] };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -1111,6 +1121,57 @@ export default function Chat() {
                   return next;
                 });
               }
+            } else if (j.type === "agent_step") {
+              const step: AgentStep = {
+                index: Number(j.index) || 0,
+                kind: j.kind,
+                label: String(j.label ?? ""),
+                intent: String(j.intent ?? ""),
+                status: (j.status as ToolStatus) ?? "running",
+                foundCount: typeof j.foundCount === "number" ? j.foundCount : undefined,
+                narration: "",
+              };
+              setMessages((prev) => {
+                const next = prev.slice();
+                const cur = next[next.length - 1];
+                const existing = cur.agentSteps ?? [];
+                const idx = existing.findIndex((s) => s.index === step.index);
+                let updated: AgentStep[];
+                if (idx === -1) {
+                  updated = [...existing, step];
+                } else {
+                  updated = existing.slice();
+                  updated[idx] = {
+                    ...updated[idx],
+                    status: step.status,
+                    foundCount: step.foundCount ?? updated[idx].foundCount,
+                    label: step.label,
+                    intent: step.intent,
+                    kind: step.kind,
+                  };
+                }
+                next[next.length - 1] = { ...cur, agentSteps: updated };
+                return next;
+              });
+            } else if (j.type === "agent_narration") {
+              const idx = Number(j.index) || 0;
+              const text = typeof j.text === "string" ? j.text : "";
+              const done = j.done === true;
+              setMessages((prev) => {
+                const next = prev.slice();
+                const cur = next[next.length - 1];
+                const existing = cur.agentSteps ?? [];
+                const stepIdx = existing.findIndex((s) => s.index === idx);
+                if (stepIdx === -1) return prev;
+                const updated = existing.slice();
+                updated[stepIdx] = {
+                  ...updated[stepIdx],
+                  narration: updated[stepIdx].narration + text,
+                  narrationDone: done ? true : updated[stepIdx].narrationDone,
+                };
+                next[next.length - 1] = { ...cur, agentSteps: updated };
+                return next;
+              });
             } else if (j.type === "title" && j.title) {
               const newTitle = String(j.title);
               setConversations((prev) =>
@@ -1701,6 +1762,7 @@ export default function Chat() {
                   thinking={m.thinking}
                   thinkingMs={m.thinkingMs}
                   thinkingDone={m.thinkingDone}
+                  agentSteps={m.agentSteps}
                   canvas={m.canvas}
                   canvasTitle={m.canvasTitle}
                   attachments={m.attachments}
