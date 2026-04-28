@@ -1,4 +1,4 @@
-import { cloneElement, isValidElement, memo, useState, type ReactNode } from "react";
+import { Children, cloneElement, isValidElement, memo, useState, type ReactNode } from "react";
 import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles, Map as MapIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -15,6 +15,7 @@ import type { RequestMeta } from "@/lib/requestMeta";
 import { useSmoothText } from "@/hooks/useSmoothText";
 import { useDeveloperMode } from "@/hooks/useDeveloperMode";
 import { RequestBreakdown } from "./RequestBreakdown";
+import { openLightbox } from "./ChatLightbox";
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search" | "map"; label: string; status?: ToolStatus };
@@ -319,32 +320,53 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
     img: ({ node, src, alt, ...props }: any) => {
       if (!src || typeof src !== "string" || !/^https?:\/\//.test(src)) return null;
       return (
-        <a
-          href={src}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block my-4 rounded-xl overflow-hidden border border-border bg-muted no-underline max-w-md"
+        <button
+          type="button"
+          onClick={() => openLightbox(src, alt)}
+          aria-label={alt ? `Open image: ${alt}` : "Open image"}
+          className="group relative inline-block rounded-xl overflow-hidden border border-border bg-muted no-underline align-top focus:outline-none focus:ring-2 focus:ring-ring"
+          {...props}
         >
           <img
             src={src}
             alt={alt || ""}
             loading="lazy"
-            className="w-full h-auto block max-h-80 object-cover"
+            className="block h-48 w-auto max-w-none object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             onError={(e) => {
-              const a = (e.currentTarget.parentElement as HTMLAnchorElement | null);
-              if (a) a.style.display = "none";
+              const btn = (e.currentTarget.parentElement as HTMLButtonElement | null);
+              if (btn) btn.style.display = "none";
             }}
-            {...props}
           />
           {alt ? (
-            <span className="block text-xs text-muted-foreground px-3 py-2 border-t border-border">
+            <span className="pointer-events-none absolute inset-x-0 bottom-0 px-2.5 py-1.5 text-[11px] text-white bg-gradient-to-t from-black/70 to-transparent text-left line-clamp-2">
               {alt}
             </span>
           ) : null}
-        </a>
+        </button>
       );
     },
-    p: ({ node, children, ...props }: any) => renderBlock("p", children, props),
+    p: ({ node, children, ...props }: any) => {
+      // If the paragraph (per AST) contains only image nodes (and whitespace),
+      // render a horizontally scrollable strip instead of a wrapping <p>.
+      const astChildren: any[] = Array.isArray(node?.children) ? node.children : [];
+      const meaningful = astChildren.filter(
+        (c) => !(c.type === "text" && (!c.value || /^\s*$/.test(c.value))),
+      );
+      const allImages = meaningful.length >= 1 && meaningful.every((c) => c.type === "image");
+      if (allImages) {
+        const arr = Children.toArray(children).filter(
+          (c) => !(typeof c === "string" && c.trim() === ""),
+        );
+        return (
+          <div className="my-4 -mx-1 overflow-x-auto overflow-y-hidden">
+            <div className="flex flex-nowrap gap-2 px-1 pb-1 items-stretch">
+              {arr}
+            </div>
+          </div>
+        );
+      }
+      return renderBlock("p", children, props);
+    },
     li: ({ node, children, ...props }: any) => renderBlock("li", children, props),
     blockquote: ({ node, children, ...props }: any) => renderBlock("blockquote", children, props),
     td: ({ node, children, ...props }: any) => renderBlock("td" as any, children, props),

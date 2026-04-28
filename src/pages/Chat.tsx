@@ -28,6 +28,7 @@ import { looksLikeWritingRequest } from "@/lib/writingDetection";
 import { SelectionExploreButton, type SelectionPayload } from "@/components/SelectionExploreButton";
 import { ExplorePanel, type BranchSeed } from "@/components/ExplorePanel";
 import { PagePanel } from "@/components/PagePanel";
+import { ChatLightbox } from "@/components/ChatLightbox";
 import type { PageSpec } from "@/components/PageRenderer";
 import type { MessageBranch } from "@/components/ChatMessage";
 import {
@@ -1830,6 +1831,9 @@ export default function Chat() {
         page={activePage}
         onClose={() => setPageOpen(false)}
       />
+
+      {/* Global lightbox for chat images */}
+      <ChatLightbox />
 
       <ExplorePanel
         open={exploreOpen}
