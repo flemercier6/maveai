@@ -67,6 +67,7 @@ import {
   BubbleChatIcon,
   Analytics01Icon,
   CreditCardIcon,
+  Share08Icon,
 } from "@hugeicons/core-free-icons";
 
 export type LucideProps = SVGProps<SVGSVGElement> & {
