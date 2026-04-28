@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 
 export default function SignIn() {
   const navigate = useNavigate();
