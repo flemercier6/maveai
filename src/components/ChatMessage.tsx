@@ -552,34 +552,39 @@ function AgentStepCard({ step }: { step: AgentStep }) {
   const tag = step.kind === "search" ? "Web search" : step.kind === "scrape" ? "Read page" : "Analyze";
   const isRunning = step.status === "running";
   const isFailed = step.status === "failed";
+  // Tag = subject of the step (search query, URL, or analyze intent)
+  const subject = step.label || step.intent;
+  const shortSubject = subject.length > 80 ? subject.slice(0, 77) + "…" : subject;
   return (
-    <div className="mb-3 rounded-lg border border-border bg-card overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30">
-        <span className="inline-flex items-center gap-1.5 rounded-[4px] bg-background border border-border px-2 py-0.5 text-[11px] font-medium text-foreground">
-          <Icon className={`w-3 h-3 ${isRunning ? "animate-pulse" : ""}`} />
-          {tag}
-        </span>
-        <span className="text-xs text-foreground truncate flex-1" title={step.label}>{step.label}</span>
-        {isRunning && <span className="text-[11px] text-muted-foreground">…</span>}
-        {step.status === "done" && step.foundCount !== undefined && step.foundCount > 0 && (
-          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-            {step.foundCount} source{step.foundCount > 1 ? "s" : ""}
-          </span>
+    <div className="mb-4">
+      {/* Tag aligned left: icon + type + subject inline */}
+      <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-foreground max-w-full">
+        <Icon className={`w-3.5 h-3.5 shrink-0 ${isRunning ? "animate-pulse" : ""}`} />
+        <span className="text-muted-foreground shrink-0">{tag}</span>
+        {subject && (
+          <>
+            <span className="text-muted-foreground/50">·</span>
+            <span className="truncate" title={subject}>{shortSubject}</span>
+          </>
         )}
-        {isFailed && <span className="text-[11px] text-destructive">failed</span>}
-      </div>
-      {(step.intent || step.narration) && (
-        <div className="px-3 py-2 text-sm text-muted-foreground italic">
-          {step.intent && !step.narration && (
-            <span className="opacity-70 not-italic">Goal: {step.intent}</span>
-          )}
-          {step.narration && (
-            <span>
-              {step.narration}
-              {!step.narrationDone && <span className="inline-block w-1 h-3 ml-0.5 bg-muted-foreground/60 animate-pulse align-middle" />}
+        {step.status === "done" && step.foundCount !== undefined && step.foundCount > 0 && (
+          <>
+            <span className="text-muted-foreground/50">·</span>
+            <span className="text-muted-foreground whitespace-nowrap shrink-0">
+              {step.foundCount} source{step.foundCount > 1 ? "s" : ""}
             </span>
+          </>
+        )}
+        {isFailed && <span className="text-destructive ml-1">failed</span>}
+      </div>
+      {/* Narration as plain text below, no box */}
+      {step.narration && (
+        <p className="mt-2 text-sm text-muted-foreground italic leading-relaxed whitespace-pre-wrap">
+          {step.narration}
+          {!step.narrationDone && (
+            <span className="inline-block w-1 h-3 ml-0.5 bg-muted-foreground/60 animate-pulse align-middle" />
           )}
-        </div>
+        </p>
       )}
     </div>
   );

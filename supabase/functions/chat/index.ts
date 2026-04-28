@@ -763,7 +763,7 @@ async function* streamAgenticNarration(
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       systemInstruction: { parts: [{ text: sys }] },
-      generationConfig: { temperature: 0.7, maxOutputTokens: 120 },
+      generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
     }),
   });
   if (!r.ok || !r.body) {
