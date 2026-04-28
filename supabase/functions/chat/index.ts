@@ -980,7 +980,7 @@ Deno.serve(async (req) => {
     }
     const user = { id: userData.user.id };
 
-    const { conversationId, provider, model, messages, skipClarify, writingMode, previousCanvas, forceCanvas } = await req.json() as {
+    const { conversationId, provider, model: requestedModel, messages, skipClarify, writingMode, previousCanvas, forceCanvas, aiPrefs } = await req.json() as {
       conversationId: string | null;
       provider: "openai" | "anthropic" | "google" | "mistral";
       model: string;
@@ -989,7 +989,30 @@ Deno.serve(async (req) => {
       writingMode?: boolean;
       previousCanvas?: string | null;
       forceCanvas?: boolean;
+      aiPrefs?: {
+        disabledModes?: string[];
+        blacklistedModels?: string[];
+        favoriteModels?: string[];
+      };
     };
+
+    // ---- Apply user AI preferences: blacklist fallback ----
+    const blacklisted = new Set(aiPrefs?.blacklistedModels ?? []);
+    const favorites = aiPrefs?.favoriteModels ?? [];
+    const disabledModes = new Set(aiPrefs?.disabledModes ?? []);
+    let model = requestedModel;
+    if (blacklisted.has(model)) {
+      const fallbackOrder = [
+        ...favorites,
+        "gemini-2.5-flash", "gpt-5.5", "gpt-4o-mini", "gemini-2.5-pro",
+        "claude-sonnet-4-6", "claude-opus-4-7",
+        "mistral-large-latest", "mistral-small-latest",
+      ];
+      const replacement = fallbackOrder.find((m) => !blacklisted.has(m));
+      if (replacement) model = replacement;
+    }
+    const webDisabled = disabledModes.has("web");
+    const mapDisabled = disabledModes.has("map");
     // When conversationId is null, we are in "branch/ephemeral" mode: stream
     // a reply but skip all persistence (messages, usage, memory, title).
     const ephemeral = !conversationId;
