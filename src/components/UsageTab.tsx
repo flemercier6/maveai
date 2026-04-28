@@ -536,6 +536,22 @@ export function UsageTab() {
           Costs are based on each provider's public per-token list price.
         </p>
       </div>
+
+      {/* Developer Mode toggle */}
+      <div className="rounded-xl border border-border p-4 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold">Developer Mode</div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Affiche sous chaque réponse de l'IA un dropdown de breakdown détaillé
+            (tokens et coût en €) pour comprendre ce qui pèse le plus dans la requête.
+          </p>
+        </div>
+        <Switch
+          checked={devMode}
+          onCheckedChange={setDevMode}
+          aria-label="Toggle developer mode"
+        />
+      </div>
     </section>
   );
 }
