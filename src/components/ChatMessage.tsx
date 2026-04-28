@@ -119,6 +119,65 @@ function ToolBadge({ tool, label }: ToolUse) {
   );
 }
 
+/**
+ * Renders the AI's "thinking" preamble (Claude-style).
+ * - While streaming: each step appears in italic muted text, fading in one by one.
+ * - Once the main answer has started AND thinking is done: collapses into
+ *   "✦ Thought for Xs" pill that the user can click to re-expand.
+ */
+function ThinkingTrace({
+  steps,
+  durationMs,
+  done,
+  hasAnswer,
+}: {
+  steps: ThinkingStep[];
+  durationMs?: number;
+  done?: boolean;
+  hasAnswer: boolean;
+}) {
+  const shouldCollapse = !!done && hasAnswer;
+  const [open, setOpen] = useState(!shouldCollapse);
+  const [autoCollapsed, setAutoCollapsed] = useState(false);
+  if (shouldCollapse && !autoCollapsed) {
+    setAutoCollapsed(true);
+    queueMicrotask(() => setOpen(false));
+  }
+  if (!steps || steps.length === 0) return null;
+
+  const seconds = durationMs && durationMs > 0 ? Math.max(1, Math.round(durationMs / 1000)) : null;
+  const headerLabel = done
+    ? seconds != null ? `Thought for ${seconds}s` : "Thought"
+    : "Thinking";
+
+  return (
+    <div className="mb-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+        aria-expanded={open}
+      >
+        {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        <Sparkles className="w-3.5 h-3.5" />
+        <span className={done ? "" : "text-shimmer"}>{headerLabel}</span>
+      </button>
+      {open && (
+        <ul className="mt-2 ml-1 border-l-2 border-border pl-3 flex flex-col gap-1.5">
+          {steps.map((s) => (
+            <li
+              key={s.index}
+              className="text-[13px] italic text-muted-foreground leading-snug animate-in fade-in slide-in-from-left-1 duration-300"
+            >
+              {s.text}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined, provider?: string): string {
   if (provider === "page") return "Crafting your page…";
   if (tool) {
