@@ -620,6 +620,11 @@ export default function Chat() {
 
     // /explore flow: route this request to a side exploration instead of the main chat.
     if (exploreRequested) {
+      if (isModeDisabled(aiPrefs, "explore")) {
+        toast.error("Explore mode is disabled in your AI preferences");
+        setExploreRequested(false);
+        return;
+      }
       if (!text) {
         toast.info("Type something to explore.");
         return;
