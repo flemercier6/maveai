@@ -89,6 +89,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, onProfileUp
           {active === "preferences" && (
             <PreferencesTab onProfileUpdated={onProfileUpdated} />
           )}
+          {active === "ai" && <AiPersonalizationTab />}
           {active === "integrations" && (
             <section className="space-y-2">
               <h2 className="text-lg font-semibold">Integrations</h2>
