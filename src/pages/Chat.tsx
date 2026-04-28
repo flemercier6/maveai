@@ -209,6 +209,20 @@ export default function Chat() {
           const msgProvider = m.role === "assistant"
             ? (msgModel && msgModel !== "auto" ? providerForModel(msgModel) : convProvider)
             : undefined;
+          // Rehydrate persisted meta (developer breakdown). Re-apply the local
+          // billing multiplier on top of stored provider costs.
+          const rehydrateMeta = (raw: unknown): RequestMeta | undefined => {
+            if (!raw || typeof raw !== "object") return undefined;
+            const meta = raw as RequestMeta;
+            if (meta.cost) {
+              meta.cost = {
+                ...meta.cost,
+                multiplier: billingMultiplier(msgModel ?? meta.model ?? ""),
+              };
+            }
+            return meta;
+          };
+          const meta = m.role === "assistant" ? rehydrateMeta(m.meta) : undefined;
           if (m.role === "assistant") {
             // Try /page format first: summary text followed by ```page\n{json}\n```
             const pageMatch = (m.content ?? "").match(/^([\s\S]*?)\n*```page\n([\s\S]*?)\n```\s*$/);
@@ -223,6 +237,7 @@ export default function Chat() {
                   provider: msgProvider,
                   model: msgModel,
                   page,
+                  ...(meta ? { meta } : {}),
                 };
               } catch { /* fall through to canvas parsing */ }
             }
@@ -236,6 +251,7 @@ export default function Chat() {
               provider: msgProvider,
               model: msgModel,
               ...(hasCanvas ? { canvas: parsed.canvas, canvasTitle: parsed.canvasTitle, canvasVersion: canvasCounter } : {}),
+              ...(meta ? { meta } : {}),
             };
           }
           // Parse legacy "📎 Image: name" / "📎 File: name" trailing lines into attachment chips.
