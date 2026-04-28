@@ -629,7 +629,13 @@ export default function Chat() {
         toast.info("Type something to explore.");
         return;
       }
-      const resolved = model === AUTO_MODEL_ID ? routeAuto(text) : { provider, model };
+      const exploreBlacklist = new Set(aiPrefs?.blacklistedModels ?? []);
+      const exploreFavorite = (aiPrefs?.favoriteModels ?? []).find((m) => !exploreBlacklist.has(m));
+      const resolved = model === AUTO_MODEL_ID
+        ? (exploreFavorite
+            ? { provider: providerForModel(exploreFavorite), model: exploreFavorite }
+            : routeAuto(text))
+        : { provider, model };
       const parentHistory = activeId
         ? messages
             .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
