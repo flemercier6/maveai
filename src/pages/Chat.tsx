@@ -58,7 +58,8 @@ type ToolUse = { tool: "scrape" | "search" | "map"; label: string; status?: Tool
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
 export type MsgAttachmentPreview = { kind: "image" | "file"; name: string; dataUrl?: string };
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec };
+export type ThinkingStep = { index: number; text: string };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
