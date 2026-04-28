@@ -1076,6 +1076,10 @@ export default function Chat() {
     } else if (item.provider === "explore") {
       // Flag the next send to open a side exploration instead of posting to the main chat.
       setExploreRequested(true);
+    } else if (item.provider === "page") {
+      // Flag the next send to generate a structured one-pager.
+      setPageRequested(true);
+      toast.success("Page mode enabled for next message");
     } else {
       setProvider(item.provider as Provider);
       setModel(item.model);
