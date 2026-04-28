@@ -1501,6 +1501,12 @@ Deno.serve(async (req) => {
     let webContext:
       | { kind: "scrape" | "search"; label: string; content: string; sources?: WebSource[]; images?: WebImage[] }
       | null = null;
+    // Aggregated sources from the agentic loop (multiple searches/scrapes).
+    let agenticUsed = false;
+    let agenticNarration = "";
+    const agenticSources: WebSource[] = [];
+    const agenticImages: WebImage[] = [];
+    const agenticContextBlocks: string[] = [];
 
     const stream = new ReadableStream({
       async start(controller) {
