@@ -1429,6 +1429,7 @@ Deno.serve(async (req) => {
                 role: "assistant",
                 content: assistantText,
                 model,
+                meta: metaPayload,
               })
               .select("id")
               .single();
