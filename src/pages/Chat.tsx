@@ -79,6 +79,7 @@ export default function Chat() {
   };
   const [ephemeral, setEphemeral] = useState(false);
   const plan = usePlan();
+  const { prefs: aiPrefs } = useAiPreferences();
   const isFree = plan.isFree;
   const [upgradeReason, setUpgradeReason] = useState<null | "daily-limit" | "premium-model" | "memory" | "folder" | "save-chat">(null);
 
