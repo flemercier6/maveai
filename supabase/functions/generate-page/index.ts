@@ -116,7 +116,7 @@ const TOOL = {
                           },
                         },
                       },
-                      required: ["type"],
+                      required: ["kind"],
                     },
                   },
                 },
