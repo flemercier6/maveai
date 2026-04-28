@@ -77,6 +77,7 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        serif: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
       },
       boxShadow: {
         soft: 'var(--shadow-sm)',
