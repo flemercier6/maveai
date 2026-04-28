@@ -784,9 +784,18 @@ export default function Chat() {
     // Resolve Auto → concrete provider/model for this turn (Auto preference is preserved)
     const userPickedAuto = model === AUTO_MODEL_ID;
     const hasImage = atts.some((a) => a.kind === "image");
-    // Force a vision-capable model when images are attached and the user is on Auto
+    // Pick the first non-blacklisted favorite (user's "default model" in AI Personalization).
+    const blacklistSet = new Set(aiPrefs?.blacklistedModels ?? []);
+    const favoriteModel = (aiPrefs?.favoriteModels ?? []).find((m) => !blacklistSet.has(m));
+    // Force a vision-capable model when images are attached and the user is on Auto.
+    // Otherwise, when the user is on Auto, prefer their favorite model over the auto router
+    // so that the AI personalization "favorites" act as the real default.
     const resolved = userPickedAuto
-      ? (hasImage ? { provider: "google" as Provider, model: "gemini-2.5-pro" } : routeAuto(text))
+      ? (hasImage
+          ? { provider: "google" as Provider, model: "gemini-2.5-pro" }
+          : favoriteModel
+            ? { provider: providerForModel(favoriteModel), model: favoriteModel }
+            : routeAuto(text))
       : { provider, model };
     // Apply blacklist fallback: pick the user's first non-blacklisted favorite,
     // or any other allowed model if the resolved one is forbidden.
