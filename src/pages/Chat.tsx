@@ -651,6 +651,11 @@ export default function Chat() {
     // /page flow: ask the AI to return a structured one-pager (JSON), render it
     // in the right-side overlay panel, and show a compact card in the chat.
     if (pageRequested) {
+      if (isModeDisabled(aiPrefs, "page")) {
+        toast.error("Page mode is disabled in your AI preferences");
+        setPageRequested(false);
+        return;
+      }
       if (!text) {
         toast.info("Type something to generate a page.");
         return;
