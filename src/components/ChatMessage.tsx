@@ -647,8 +647,17 @@ function ChatMessageImpl({
             {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
           </div>
         )}
+        {thinking && thinking.length > 0 && (
+          <ThinkingTrace
+            steps={thinking}
+            durationMs={thinkingMs}
+            done={thinkingDone}
+            hasAnswer={!!display}
+          />
+        )}
         {(() => {
           const { images, text } = display ? extractImages(display) : { images: [], text: "" };
+          const hasThinking = !!(thinking && thinking.length > 0);
           return (
             <>
               {images.length > 0 && <ImageStrip images={images} />}
@@ -657,7 +666,7 @@ function ChatMessageImpl({
                   text ? (
                     <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{text}</ReactMarkdown>
                   ) : null
-                ) : streaming ? (
+                ) : streaming && !hasThinking ? (
                   <span className="text-shimmer text-sm font-medium">
                     {getStatusMessage(phase, tool, provider)}
                   </span>
