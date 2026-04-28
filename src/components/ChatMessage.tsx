@@ -15,6 +15,7 @@ import type { RequestMeta } from "@/lib/requestMeta";
 import { useSmoothText } from "@/hooks/useSmoothText";
 import { useDeveloperMode } from "@/hooks/useDeveloperMode";
 import { RequestBreakdown } from "./RequestBreakdown";
+import { openLightbox } from "./ChatLightbox";
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search" | "map"; label: string; status?: ToolStatus };
