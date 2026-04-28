@@ -1,4 +1,4 @@
-import { Star, StarOff, Ban, Check } from "lucide-react";
+import { Star, Ban, Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAiPreferences } from "@/hooks/useAiPreferences";
 import {
