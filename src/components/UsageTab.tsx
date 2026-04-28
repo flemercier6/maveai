@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
+import { useDeveloperMode } from "@/hooks/useDeveloperMode";
 import { useAuth } from "@/hooks/useAuth";
 import { modelLabel, providerForModel, PROVIDER_LABEL } from "@/lib/models";
 import { billingMultiplier, billedCost, USD_TO_EUR } from "@/lib/pricing";
@@ -184,6 +186,7 @@ function canNavigate(
 export function UsageTab() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [devMode, setDevMode] = useDeveloperMode();
   const [rows, setRows] = useState<Row[]>([]);
   const [data, setData] = useState<Aggregate | null>(null);
   const [range, setRange] = useState<Range>("week");
@@ -532,6 +535,22 @@ export function UsageTab() {
         <p className="text-xs text-muted-foreground">
           Costs are based on each provider's public per-token list price.
         </p>
+      </div>
+
+      {/* Developer Mode toggle */}
+      <div className="rounded-xl border border-border p-4 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold">Developer Mode</div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Affiche sous chaque réponse de l'IA un dropdown de breakdown détaillé
+            (tokens et coût en €) pour comprendre ce qui pèse le plus dans la requête.
+          </p>
+        </div>
+        <Switch
+          checked={devMode}
+          onCheckedChange={setDevMode}
+          aria-label="Toggle developer mode"
+        />
       </div>
     </section>
   );
