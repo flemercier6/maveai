@@ -297,7 +297,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="w-full flex items-center gap-3 md:gap-2 px-3 md:px-[10px] py-[10px] md:py-[6px] rounded-[6px] md:rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-[15px] md:text-sm"
+            className="w-full flex items-center gap-3 md:gap-2 px-3 md:px-[10px] py-[10px] md:py-[6px] rounded-[6px] text-sidebar-foreground hover:bg-sidebar-accent text-[15px] md:text-sm md:rounded-md"
           >
             <Search className="w-5 h-5 md:w-4 md:h-4 opacity-70" /> Search chats
           </button>
