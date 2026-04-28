@@ -161,7 +161,20 @@ export default function Chat() {
     if (!user) return;
     supabase.from("conversations").select("*").order("updated_at", { ascending: false })
       .then(({ data }) => {
-        setConversations((data ?? []) as Conversation[]);
+        const list = (data ?? []) as Conversation[];
+        setConversations(list);
+        // Restore last active conversation on refresh. If the persisted id is
+        // missing/invalid, fall back to the most recent conversation so users
+        // never land on a blank chat.
+        setActiveIdRaw((current) => {
+          if (current && list.some((c) => c.id === current)) return current;
+          const fallback = list[0]?.id ?? null;
+          if (typeof window !== "undefined") {
+            if (fallback) window.localStorage.setItem("chat-active-id", fallback);
+            else window.localStorage.removeItem("chat-active-id");
+          }
+          return fallback;
+        });
       });
     supabase.from("profiles").select("display_name, avatar_url").eq("id", user.id).maybeSingle()
       .then(({ data }) => {
