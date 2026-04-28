@@ -581,15 +581,25 @@ function ChatMessageImpl({
             {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
           </div>
         )}
-        <div className="chat-prose break-words">
-          {display ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{display}</ReactMarkdown>
-          ) : streaming ? (
-            <span className="text-shimmer text-sm font-medium">
-              {getStatusMessage(phase, tool, provider)}
-            </span>
-          ) : " "}
-        </div>
+        {(() => {
+          const { images, text } = display ? extractImages(display) : { images: [], text: "" };
+          return (
+            <>
+              {images.length > 0 && <ImageStrip images={images} />}
+              <div className="chat-prose break-words">
+                {display ? (
+                  text ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{text}</ReactMarkdown>
+                  ) : null
+                ) : streaming ? (
+                  <span className="text-shimmer text-sm font-medium">
+                    {getStatusMessage(phase, tool, provider)}
+                  </span>
+                ) : " "}
+              </div>
+            </>
+          );
+        })()}
         {typeof canvas === "string" && (
           <CanvasBlock
             content={canvas}
