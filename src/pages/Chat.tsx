@@ -1829,6 +1829,9 @@ export default function Chat() {
                         <Paperclip className="w-4 h-4 mr-2" />
                         Attach files or images
                       </DropdownMenuItem>
+                      {(!aiPrefs.disabledModes.includes("note") ||
+                        !aiPrefs.disabledModes.includes("explore") ||
+                        !aiPrefs.disabledModes.includes("page")) && <DropdownMenuSeparator />}
                       {!aiPrefs.disabledModes.includes("note") && (
                         <DropdownMenuItem onClick={() => setWriteRequested(true)}>
                           <FileText className="w-4 h-4 mr-2" />
@@ -1838,7 +1841,7 @@ export default function Chat() {
                       {!aiPrefs.disabledModes.includes("explore") && (
                         <DropdownMenuItem onClick={() => setExploreRequested(true)}>
                           <Sparkles className="w-4 h-4 mr-2" />
-                          Explore something relevant
+                          Explore an idea
                         </DropdownMenuItem>
                       )}
                       {!aiPrefs.disabledModes.includes("page") && (
