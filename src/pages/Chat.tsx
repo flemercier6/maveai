@@ -705,7 +705,7 @@ export default function Chat() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${session?.access_token}`,
             },
-            body: JSON.stringify({ prompt: text, history }),
+            body: JSON.stringify({ prompt: text, history, aiPrefs }),
           },
         );
         if (!resp.ok) {
