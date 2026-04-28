@@ -591,6 +591,99 @@ export default function Chat() {
       setAttachments([]);
     }
 
+    // /page flow: ask the AI to return a structured one-pager (JSON), render it
+    // in the right-side overlay panel, and show a compact card in the chat.
+    if (pageRequested) {
+      if (!text) {
+        toast.info("Type something to generate a page.");
+        return;
+      }
+      setPageRequested(false);
+      setSending(true);
+      lastSentRef.current = text;
+      lastAttachmentsRef.current = atts;
+      if (overrideText === undefined) {
+        setInput("");
+        setAttachments([]);
+      }
+
+      const displayContent = text;
+      const attachmentPreviews: MsgAttachmentPreview[] = atts.map((a) =>
+        a.kind === "image"
+          ? { kind: "image" as const, name: a.name, dataUrl: a.dataUrl }
+          : { kind: "file" as const, name: a.name },
+      );
+
+      let convId: string | null = null;
+      let userMsg: { id?: string } | null = null;
+      if (!ephemeral) {
+        convId = await ensureConversation(text);
+        if (!convId) { setSending(false); return; }
+        const { data } = await supabase.from("messages").insert({
+          conversation_id: convId, user_id: user!.id, role: "user", content: displayContent,
+        }).select().single();
+        userMsg = data;
+      }
+
+      const baseMsgs: Msg[] = [...messages, { id: userMsg?.id ?? `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
+      setMessages([...baseMsgs, { role: "assistant", content: "", provider, model }]);
+      setStreaming(true);
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const history = messages
+          .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
+          .map((m) => ({ role: m.role, content: m.content }));
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-page`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({ prompt: text, history }),
+          },
+        );
+        if (!resp.ok) {
+          const t = await resp.text();
+          let errMsg = `HTTP ${resp.status}`;
+          try { const j = JSON.parse(t); if (j?.error) errMsg = j.error; } catch {}
+          throw new Error(errMsg);
+        }
+        const json = await resp.json() as { page: PageSpec; summary: string };
+        const page = json.page;
+        const summary = json.summary || "Page generated.";
+        // Persist as: summary\n\n```page\n{json}\n```
+        const persisted = `${summary}\n\n\`\`\`page\n${JSON.stringify(page)}\n\`\`\``;
+        let assistantId: string | undefined;
+        if (!ephemeral && convId) {
+          const { data: aData } = await supabase.from("messages").insert({
+            conversation_id: convId, user_id: user!.id, role: "assistant", content: persisted, model,
+          }).select().single();
+          assistantId = aData?.id;
+        }
+        setMessages((prev) => {
+          const arr = prev.slice();
+          const last = arr[arr.length - 1];
+          if (last && last.role === "assistant") {
+            arr[arr.length - 1] = { ...last, id: assistantId ?? last.id, content: summary, page };
+          }
+          return arr;
+        });
+        setActivePage(page);
+        setPageOpen(true);
+      } catch (e) {
+        console.error(e);
+        toast.error(e instanceof Error ? e.message : "Failed to generate page");
+        setMessages((prev) => prev.slice(0, -1));
+      } finally {
+        setStreaming(false);
+        setSending(false);
+      }
+      return;
+    }
+
     // ---- Writing canvas mode ----
     // Enabled when the user typed "/write" or the message looks like a drafting task,
     // OR when the most recent assistant reply already contains a canvas (follow-up edits).
