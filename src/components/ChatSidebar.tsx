@@ -348,7 +348,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                         className="h-7 text-xs px-1.5 py-0 rounded-[4px]"
                       />
                     ) : (
-                      <div className="grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-0.5 pr-1 rounded-md">
+                      <div className="grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-0.5 pr-2 rounded-md">
                         {hasBranches ? (
                           <button
                             type="button"
