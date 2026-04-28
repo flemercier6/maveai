@@ -7,6 +7,8 @@ import { FlowDiagram } from "./FlowDiagram";
 
 import { CanvasBlock } from "./CanvasBlock";
 import { MapBlock } from "./MapBlock";
+import { PageCard } from "./PageCard";
+import type { PageSpec } from "./PageRenderer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Provider } from "@/lib/models";
 import type { RequestMeta } from "@/lib/requestMeta";
@@ -57,6 +59,8 @@ type Props = {
   onBranchOpen?: (branchId: string) => void;
   variant?: "default" | "explore";
   attachments?: MessageAttachmentPreview[];
+  page?: PageSpec;
+  onOpenPage?: () => void;
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
@@ -453,6 +457,8 @@ function ChatMessageImpl({
   onBranchOpen,
   variant,
   attachments,
+  page,
+  onOpenPage,
 }: Props) {
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
@@ -553,6 +559,7 @@ function ChatMessageImpl({
             onChange={onCanvasChange}
           />
         )}
+        {page && onOpenPage && <PageCard page={page} onOpen={onOpenPage} />}
         {!streaming && content && (
           <div className="relative mt-2 flex items-center gap-1 -ml-1.5">
             <ActionButton onClick={handleCopy} ariaLabel={copied ? "Copied" : "Copy"}>
@@ -628,5 +635,7 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.branches === next.branches &&
   prev.onBranchOpen === next.onBranchOpen &&
   prev.variant === next.variant &&
-  prev.attachments === next.attachments,
+  prev.attachments === next.attachments &&
+  prev.page === next.page &&
+  prev.onOpenPage === next.onOpenPage,
 );
