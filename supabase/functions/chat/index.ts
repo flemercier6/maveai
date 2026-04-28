@@ -1493,6 +1493,65 @@ Deno.serve(async (req) => {
           };
           controller.enqueue(enc({ type: "meta", ...metaPayload }));
 
+          // ---------- Visible "thinking" preamble for advanced models ----------
+          // Streams 3-5 short reasoning steps (Claude-style) BEFORE the main model
+          // starts answering. Uses Gemini Flash as a cheap, fast planner.
+          const googleKeyForPlanner = Deno.env.get("GOOGLE_API_KEY");
+          const shouldThink = isAdvancedModel(model) && !!googleKeyForPlanner && !!lastUserText && !writingMode;
+          if (shouldThink) {
+            const thinkingStartedAt = Date.now();
+            try {
+              const ctxHints: string[] = [];
+              if (webContext) {
+                ctxHints.push(
+                  webContext.kind === "scrape"
+                    ? `A web page was fetched: ${webContext.label}. The model will read its content.`
+                    : `A web search was run: "${webContext.label}". The model will read the results.`,
+                );
+              }
+              const attCount = lastUserMsg?.attachments?.length ?? 0;
+              if (attCount > 0) ctxHints.push(`${attCount} attachment(s) were sent with the message.`);
+
+              let buf = "";
+              let stepIndex = 0;
+              const flushCompleteLines = (force = false) => {
+                // Split on newlines; keep the trailing partial in buf unless force.
+                const parts = buf.split(/\r?\n/);
+                const tail = force ? "" : (parts.pop() ?? "");
+                for (const raw of parts) {
+                  const line = raw.trim();
+                  if (!line) continue;
+                  // Accept "- step", "* step", "1. step", "1) step" — strip the marker.
+                  const m = line.match(/^(?:[-*•]|\d+[.)])\s+(.+)$/);
+                  const text = (m ? m[1] : line).trim();
+                  if (!text) continue;
+                  stepIndex += 1;
+                  controller.enqueue(enc({ type: "thinking", action: "step", index: stepIndex, text }));
+                }
+                buf = tail;
+              };
+
+              for await (const chunk of streamPlannerSteps(googleKeyForPlanner!, lastUserText, ctxHints.join(" "))) {
+                buf += chunk;
+                flushCompleteLines(false);
+              }
+              flushCompleteLines(true);
+              controller.enqueue(enc({
+                type: "thinking",
+                action: "done",
+                durationMs: Date.now() - thinkingStartedAt,
+              }));
+            } catch (e) {
+              console.error("planner thinking failed", e);
+              // Non-fatal — just continue to the main model without the preamble.
+              controller.enqueue(enc({
+                type: "thinking",
+                action: "done",
+                durationMs: Date.now() - thinkingStartedAt,
+              }));
+            }
+          }
+
           let iter: AsyncGenerator<string, Usage | undefined>;
           if (provider === "openai") iter = streamOpenAI(apiKey, model, messagesForLLM);
           else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, messagesForLLM);
