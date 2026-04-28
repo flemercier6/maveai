@@ -64,7 +64,17 @@ export default function Chat() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveIdRaw] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem("chat-active-id");
+  });
+  const setActiveId = (id: string | null) => {
+    setActiveIdRaw(id);
+    if (typeof window !== "undefined") {
+      if (id) window.localStorage.setItem("chat-active-id", id);
+      else window.localStorage.removeItem("chat-active-id");
+    }
+  };
   const [ephemeral, setEphemeral] = useState(false);
   const plan = usePlan();
   const isFree = plan.isFree;
@@ -151,7 +161,20 @@ export default function Chat() {
     if (!user) return;
     supabase.from("conversations").select("*").order("updated_at", { ascending: false })
       .then(({ data }) => {
-        setConversations((data ?? []) as Conversation[]);
+        const list = (data ?? []) as Conversation[];
+        setConversations(list);
+        // Restore last active conversation on refresh. If the persisted id is
+        // missing/invalid, fall back to the most recent conversation so users
+        // never land on a blank chat.
+        setActiveIdRaw((current) => {
+          if (current && list.some((c) => c.id === current)) return current;
+          const fallback = list[0]?.id ?? null;
+          if (typeof window !== "undefined") {
+            if (fallback) window.localStorage.setItem("chat-active-id", fallback);
+            else window.localStorage.removeItem("chat-active-id");
+          }
+          return fallback;
+        });
       });
     supabase.from("profiles").select("display_name, avatar_url").eq("id", user.id).maybeSingle()
       .then(({ data }) => {
