@@ -36,6 +36,13 @@ export function buildSlashItems(): SlashItem[] {
       description: "Open a side exploration for this request",
       slug: "explore",
     },
+    {
+      provider: "page",
+      model: "",
+      label: "Page",
+      description: "Generate a structured one-pager dashboard",
+      slug: "page",
+    },
   ];
   for (const p of PROVIDERS) {
     for (const m of MODELS[p.id]) {
