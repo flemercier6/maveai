@@ -137,13 +137,33 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, history } = await req.json();
+    const { prompt, history, aiPrefs } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY)
       return new Response(JSON.stringify({ error: "LOVABLE_API_KEY missing" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+
+    // Apply blacklist fallback: if gpt-5-mini is blacklisted, swap to a similar
+    // small model the user still allows.
+    const blacklisted = new Set<string>(aiPrefs?.blacklistedModels ?? []);
+    const favorites: string[] = aiPrefs?.favoriteModels ?? [];
+    const PAGE_FALLBACKS = [
+      ...favorites,
+      "gpt-5-mini", "gemini-2.5-flash", "gpt-4o-mini", "gemini-2.5-pro", "gpt-5.5",
+    ];
+    let pageModelBare = "gpt-5-mini";
+    if (blacklisted.has(pageModelBare)) {
+      const replacement = PAGE_FALLBACKS.find((m) => !blacklisted.has(m));
+      if (replacement) pageModelBare = replacement;
+    }
+    // Map bare id → AI gateway prefixed id.
+    const PROVIDER_FOR_PAGE = pageModelBare.startsWith("gemini") ? "google"
+      : pageModelBare.startsWith("claude") ? "anthropic"
+      : pageModelBare.startsWith("mistral") ? "mistralai"
+      : "openai";
+    const pageModelGateway = `${PROVIDER_FOR_PAGE}/${pageModelBare}`;
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
