@@ -651,11 +651,27 @@ function ChatMessageImpl({
   };
 
   if (isUser) {
-    const writeMatch = content.match(/^\/note(\s+|$)/);
-    const rest = writeMatch ? content.slice(writeMatch[0].length) : content;
+    const modeMatch = content.match(/^\/(note|page|explore)(\s+|$)/);
+    const modeId = modeMatch ? (modeMatch[1] as "note" | "page" | "explore") : null;
+    const rest = modeMatch ? content.slice(modeMatch[0].length) : content;
+    const ModeTag = modeId ? (() => {
+      const cfg = {
+        note: { label: "Note", Icon: Pencil },
+        page: { label: "Page", Icon: FileText },
+        explore: { label: "Explore", Icon: Sparkles },
+      }[modeId];
+      const Icon = cfg.Icon;
+      return (
+        <div className="inline-flex items-center h-6 gap-1.5 rounded-full border border-border bg-card px-2.5 text-[11px] font-medium text-muted-foreground">
+          <Icon className="w-3.5 h-3.5 shrink-0" />
+          <span>{cfg.label}</span>
+        </div>
+      );
+    })() : null;
     return (
       <div className="w-full py-3" id={id ? `chat-anchor-${id}` : undefined}>
         <div className="max-w-3xl mx-auto px-4 flex flex-col items-end gap-1.5">
+          {ModeTag}
           {attachments && attachments.length > 0 && (
             <div className="max-w-[80%] flex flex-wrap gap-2 justify-end">
               {attachments.map((a, i) =>
