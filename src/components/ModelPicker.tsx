@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from "@/components/ui/select";
 import { MODELS, PROVIDERS, type Provider, providerForModel, AUTO_MODEL_ID } from "@/lib/models";
 import { isPremiumModel } from "@/hooks/usePlan";
+import { useAiPreferences } from "@/hooks/useAiPreferences";
 import { ProviderLogo } from "./ProviderLogo";
-import { Sparkles, Lock } from "lucide-react";
+import { Sparkles, Lock, Star } from "lucide-react";
 
 type Props = {
   provider: Provider;
@@ -19,6 +20,32 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
   const isAuto = model === AUTO_MODEL_ID;
   const currentModel = MODELS[provider].find((m) => m.id === model);
   const [tip, setTip] = useState<{ text: string; top: number; left: number } | null>(null);
+  const { prefs } = useAiPreferences();
+  const blacklist = useMemo(() => new Set(prefs.blacklistedModels), [prefs.blacklistedModels]);
+  const favRank = useMemo(
+    () => new Map(prefs.favoriteModels.map((m, i) => [m, i] as const)),
+    [prefs.favoriteModels],
+  );
+
+  // Build the flat ordered list of (provider, model) pairs.
+  // Favorites first (in user-defined order), then the rest grouped by provider.
+  const orderedModels = useMemo(() => {
+    const flat: { p: Provider; m: typeof MODELS[Provider][number] }[] = [];
+    for (const p of PROVIDERS) {
+      for (const m of MODELS[p.id]) {
+        if (blacklist.has(m.id)) continue;
+        flat.push({ p: p.id, m });
+      }
+    }
+    flat.sort((a, b) => {
+      const ai = favRank.has(a.m.id) ? favRank.get(a.m.id)! : Infinity;
+      const bi = favRank.has(b.m.id) ? favRank.get(b.m.id)! : Infinity;
+      return ai - bi;
+    });
+    return flat;
+  }, [blacklist, favRank]);
+
+  const favoritesCount = orderedModels.filter((x) => favRank.has(x.m.id)).length;
 
   const showTip = (e: React.SyntheticEvent<HTMLElement>, text: string) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -69,12 +96,15 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
             </span>
           </SelectItem>
           <SelectSeparator />
-          {PROVIDERS.map((p) =>
-            MODELS[p.id].map((m) => {
-              const locked = isFree && isPremiumModel(m.id);
-              return (
+          {orderedModels.map(({ p, m }, idx) => {
+            const locked = isFree && isPremiumModel(m.id);
+            const isFav = favRank.has(m.id);
+            // Insert a separator between favorites and the rest of the list.
+            const showFavSep = favoritesCount > 0 && idx === favoritesCount;
+            return (
+              <span key={m.id}>
+                {showFavSep && <SelectSeparator />}
                 <SelectItem
-                  key={m.id}
                   value={m.id}
                   onMouseEnter={(e) => showTip(e, locked ? "Plus only" : m.description)}
                   onMouseLeave={hideTip}
@@ -83,8 +113,11 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
                   className={locked ? "opacity-60" : undefined}
                 >
                   <span className="flex items-center gap-2 leading-none">
-                    <ProviderLogo provider={p.id} className="w-5 h-5 shrink-0" />
+                    <ProviderLogo provider={p} className="w-5 h-5 shrink-0" />
                     <span className="leading-none">{m.label}</span>
+                    {isFav && (
+                      <Star className="w-3 h-3 text-amber-500 fill-current shrink-0" />
+                    )}
                     {m.id === "gpt-5.5" && !locked && (
                       <span className="ml-1 rounded-sm bg-blue-500 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white leading-none">
                         New
@@ -97,9 +130,9 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
                     )}
                   </span>
                 </SelectItem>
-              );
-            }),
-          )}
+              </span>
+            );
+          })}
         </SelectContent>
       </Select>
 

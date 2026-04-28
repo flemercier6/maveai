@@ -37,6 +37,8 @@ import {
   useActiveComposer,
 } from "@/hooks/useActiveComposer";
 import { usePlan, isPremiumModel, FREE_DAILY_LIMIT } from "@/hooks/usePlan";
+import { useAiPreferences } from "@/hooks/useAiPreferences";
+import { isModeDisabled, isModelBlacklisted, pickAllowedModel, type ModeId } from "@/lib/aiPreferences";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useSwipe } from "@/hooks/useSwipe";
 
@@ -77,6 +79,7 @@ export default function Chat() {
   };
   const [ephemeral, setEphemeral] = useState(false);
   const plan = usePlan();
+  const { prefs: aiPrefs } = useAiPreferences();
   const isFree = plan.isFree;
   const [upgradeReason, setUpgradeReason] = useState<null | "daily-limit" | "premium-model" | "memory" | "folder" | "save-chat">(null);
 
@@ -617,6 +620,11 @@ export default function Chat() {
 
     // /explore flow: route this request to a side exploration instead of the main chat.
     if (exploreRequested) {
+      if (isModeDisabled(aiPrefs, "explore")) {
+        toast.error("Explore mode is disabled in your AI preferences");
+        setExploreRequested(false);
+        return;
+      }
       if (!text) {
         toast.info("Type something to explore.");
         return;
@@ -648,6 +656,11 @@ export default function Chat() {
     // /page flow: ask the AI to return a structured one-pager (JSON), render it
     // in the right-side overlay panel, and show a compact card in the chat.
     if (pageRequested) {
+      if (isModeDisabled(aiPrefs, "page")) {
+        toast.error("Page mode is disabled in your AI preferences");
+        setPageRequested(false);
+        return;
+      }
       if (!text) {
         toast.info("Type something to generate a page.");
         return;
@@ -697,7 +710,7 @@ export default function Chat() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${session?.access_token}`,
             },
-            body: JSON.stringify({ prompt: text, history }),
+            body: JSON.stringify({ prompt: text, history, aiPrefs }),
           },
         );
         if (!resp.ok) {
@@ -775,8 +788,12 @@ export default function Chat() {
     const resolved = userPickedAuto
       ? (hasImage ? { provider: "google" as Provider, model: "gemini-2.5-pro" } : routeAuto(text))
       : { provider, model };
-    const sendProvider = resolved.provider;
-    const sendModel = resolved.model;
+    // Apply blacklist fallback: pick the user's first non-blacklisted favorite,
+    // or any other allowed model if the resolved one is forbidden.
+    const fallbackOrder = ["gemini-2.5-flash", "gpt-5.5", "gpt-4o-mini", "gemini-2.5-pro", "claude-sonnet-4-6", "claude-opus-4-7", "mistral-large-latest", "mistral-small-latest"];
+    const safeModel = pickAllowedModel(aiPrefs, resolved.model, fallbackOrder);
+    const sendProvider = (safeModel === resolved.model ? resolved.provider : providerForModel(safeModel)) as Provider;
+    const sendModel = safeModel;
     // What we persist on the conversation: keep Auto if the user picked Auto
     const convProvider = userPickedAuto ? provider : sendProvider;
     const convModel = userPickedAuto ? AUTO_MODEL_ID : sendModel;
@@ -841,6 +858,11 @@ export default function Chat() {
           // a canvas — don't let it decide otherwise.
           forceCanvas: writeRequested === true,
           previousCanvas,
+          aiPrefs: {
+            disabledModes: aiPrefs.disabledModes,
+            blacklistedModels: aiPrefs.blacklistedModels,
+            favoriteModels: aiPrefs.favoriteModels,
+          },
           messages: baseMsgs.map((m, i) => {
             // Only the LAST user message carries the live attachments
             const isLast = i === baseMsgs.length - 1;
@@ -1237,17 +1259,24 @@ export default function Chat() {
       // Keep the previously chosen provider as the persistence target; switch model to AUTO
       setModel(AUTO_MODEL_ID);
     } else if (item.provider === "write") {
+      if (isModeDisabled(aiPrefs, "note")) { toast.error("Note mode is disabled in your AI preferences"); return; }
       // Don't change model — just flag the next send as writing-canvas mode.
       setWriteRequested(true);
       toast.success("Writing canvas enabled for next message");
     } else if (item.provider === "explore") {
+      if (isModeDisabled(aiPrefs, "explore")) { toast.error("Explore mode is disabled in your AI preferences"); return; }
       // Flag the next send to open a side exploration instead of posting to the main chat.
       setExploreRequested(true);
     } else if (item.provider === "page") {
+      if (isModeDisabled(aiPrefs, "page")) { toast.error("Page mode is disabled in your AI preferences"); return; }
       // Flag the next send to generate a structured one-pager.
       setPageRequested(true);
       toast.success("Page mode enabled for next message");
     } else {
+      if (isModelBlacklisted(aiPrefs, item.model)) {
+        toast.error("This model is blacklisted in your AI preferences");
+        return;
+      }
       setProvider(item.provider as Provider);
       setModel(item.model);
     }
@@ -1727,6 +1756,13 @@ export default function Chat() {
                   position={slash.pos}
                   onSelect={applySlashSelection}
                   onClose={() => setSlash(null)}
+                  disabledModes={
+                    aiPrefs.disabledModes.filter((m) =>
+                      m === "note" || m === "page" || m === "explore",
+                    ) as ("note" | "page" | "explore")[]
+                  }
+                  blacklistedModels={aiPrefs.blacklistedModels}
+                  favoriteModels={aiPrefs.favoriteModels}
                 />
               )}
               <div className="flex items-center justify-between gap-[15px] px-2 pb-2">
