@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from "@/components/ui/select";
 import { MODELS, PROVIDERS, type Provider, providerForModel, AUTO_MODEL_ID } from "@/lib/models";
 import { isPremiumModel } from "@/hooks/usePlan";
+import { useAiPreferences } from "@/hooks/useAiPreferences";
 import { ProviderLogo } from "./ProviderLogo";
-import { Sparkles, Lock } from "lucide-react";
+import { Sparkles, Lock, Star } from "lucide-react";
 
 type Props = {
   provider: Provider;
