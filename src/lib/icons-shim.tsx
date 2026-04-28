@@ -153,3 +153,4 @@ export const GraduationCap = make(School01Icon, "GraduationCap");
 export const Palette = make(PaintBoardIcon, "Palette");
 export const Tag = make(Tag01Icon, "Tag");
 export const Lock = make(LockIcon, "Lock");
+export const LayoutDashboard = make(Analytics01Icon, "LayoutDashboard");

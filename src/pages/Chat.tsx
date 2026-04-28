@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2, Sparkles, Upload, Menu } from "lucide-react";
+import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2, Sparkles, Upload, Menu, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 import { loadAttachment, type Attachment } from "@/lib/attachments";
@@ -27,6 +27,8 @@ import { billingMultiplier } from "@/lib/pricing";
 import { looksLikeWritingRequest } from "@/lib/writingDetection";
 import { SelectionExploreButton, type SelectionPayload } from "@/components/SelectionExploreButton";
 import { ExplorePanel, type BranchSeed } from "@/components/ExplorePanel";
+import { PagePanel } from "@/components/PagePanel";
+import type { PageSpec } from "@/components/PageRenderer";
 import type { MessageBranch } from "@/components/ChatMessage";
 import {
   notifyComposerBlur,
@@ -51,7 +53,7 @@ type ToolUse = { tool: "scrape" | "search" | "map"; label: string; status?: Tool
 type Phase = "analyzing" | "generating";
 type Source = { title: string; url: string };
 export type MsgAttachmentPreview = { kind: "image" | "file"; name: string; dataUrl?: string };
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[] };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -83,6 +85,11 @@ export default function Chat() {
   const [writeRequested, setWriteRequested] = useState(false);
   // User explicitly invoked /explore — next send opens a side exploration instead of posting.
   const [exploreRequested, setExploreRequested] = useState(false);
+  // User explicitly invoked /page — next send generates a structured one-pager.
+  const [pageRequested, setPageRequested] = useState(false);
+  // Side panel showing a generated PageSpec.
+  const [pageOpen, setPageOpen] = useState(false);
+  const [activePage, setActivePage] = useState<PageSpec | null>(null);
   // Title generation animation: convId -> { target, shown }. "pending" = not yet received.
   const [titleAnim, setTitleAnim] = useState<Record<string, { target: string | null; shown: string }>>({});
   const titleTimerRef = useRef<Record<string, number>>({});
@@ -203,6 +210,22 @@ export default function Chat() {
             ? (msgModel && msgModel !== "auto" ? providerForModel(msgModel) : convProvider)
             : undefined;
           if (m.role === "assistant") {
+            // Try /page format first: summary text followed by ```page\n{json}\n```
+            const pageMatch = (m.content ?? "").match(/^([\s\S]*?)\n*```page\n([\s\S]*?)\n```\s*$/);
+            if (pageMatch) {
+              try {
+                const summary = pageMatch[1].trim();
+                const page = JSON.parse(pageMatch[2]) as PageSpec;
+                return {
+                  id: m.id,
+                  role: m.role,
+                  content: summary,
+                  provider: msgProvider,
+                  model: msgModel,
+                  page,
+                };
+              } catch { /* fall through to canvas parsing */ }
+            }
             const parsed = parseStored(m.content);
             const hasCanvas = typeof parsed.canvas === "string";
             if (hasCanvas) canvasCounter += 1;
@@ -575,6 +598,101 @@ export default function Chat() {
       }
       return;
     }
+
+    // /page flow: ask the AI to return a structured one-pager (JSON), render it
+    // in the right-side overlay panel, and show a compact card in the chat.
+    if (pageRequested) {
+      if (!text) {
+        toast.info("Type something to generate a page.");
+        return;
+      }
+      setPageRequested(false);
+      setSending(true);
+      setClarify(null);
+      lastSentRef.current = text;
+      lastAttachmentsRef.current = atts;
+      if (overrideText === undefined) {
+        setInput("");
+        setAttachments([]);
+      }
+
+      const displayContent = text;
+      const attachmentPreviews: MsgAttachmentPreview[] = atts.map((a) =>
+        a.kind === "image"
+          ? { kind: "image" as const, name: a.name, dataUrl: a.dataUrl }
+          : { kind: "file" as const, name: a.name },
+      );
+
+      let convId: string | null = null;
+      let userMsg: { id?: string } | null = null;
+      if (!ephemeral) {
+        convId = await ensureConversation(text);
+        if (!convId) { setSending(false); return; }
+        const { data } = await supabase.from("messages").insert({
+          conversation_id: convId, user_id: user!.id, role: "user", content: displayContent,
+        }).select().single();
+        userMsg = data;
+      }
+
+      const baseMsgs: Msg[] = [...messages, { id: userMsg?.id ?? `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
+      setMessages([...baseMsgs, { role: "assistant", content: "", provider, model }]);
+      setStreaming(true);
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const history = messages
+          .filter((m) => m.content && (m.role === "user" || m.role === "assistant"))
+          .map((m) => ({ role: m.role, content: m.content }));
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-page`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({ prompt: text, history }),
+          },
+        );
+        if (!resp.ok) {
+          const t = await resp.text();
+          let errMsg = `HTTP ${resp.status}`;
+          try { const j = JSON.parse(t); if (j?.error) errMsg = j.error; } catch {}
+          throw new Error(errMsg);
+        }
+        const json = await resp.json() as { page: PageSpec; summary: string };
+        const page = json.page;
+        const summary = json.summary || "Page generated.";
+        // Persist as: summary\n\n```page\n{json}\n```
+        const persisted = `${summary}\n\n\`\`\`page\n${JSON.stringify(page)}\n\`\`\``;
+        let assistantId: string | undefined;
+        if (!ephemeral && convId) {
+          const { data: aData } = await supabase.from("messages").insert({
+            conversation_id: convId, user_id: user!.id, role: "assistant", content: persisted, model,
+          }).select().single();
+          assistantId = aData?.id;
+        }
+        setMessages((prev) => {
+          const arr = prev.slice();
+          const last = arr[arr.length - 1];
+          if (last && last.role === "assistant") {
+            arr[arr.length - 1] = { ...last, id: assistantId ?? last.id, content: summary, page };
+          }
+          return arr;
+        });
+        setActivePage(page);
+        setPageOpen(true);
+      } catch (e) {
+        console.error(e);
+        toast.error(e instanceof Error ? e.message : "Failed to generate page");
+        setMessages((prev) => prev.slice(0, -1));
+      } finally {
+        setStreaming(false);
+        setSending(false);
+      }
+      return;
+    }
+
     setSending(true);
     setClarify(null);
     lastSentRef.current = text;
@@ -1069,6 +1187,10 @@ export default function Chat() {
     } else if (item.provider === "explore") {
       // Flag the next send to open a side exploration instead of posting to the main chat.
       setExploreRequested(true);
+    } else if (item.provider === "page") {
+      // Flag the next send to generate a structured one-pager.
+      setPageRequested(true);
+      toast.success("Page mode enabled for next message");
     } else {
       setProvider(item.provider as Provider);
       setModel(item.model);
@@ -1424,6 +1546,8 @@ export default function Chat() {
                   canvas={m.canvas}
                   canvasTitle={m.canvasTitle}
                   attachments={m.attachments}
+                  page={m.page}
+                  onOpenPage={m.page ? () => { setActivePage(m.page!); setPageOpen(true); } : undefined}
                   canvasVersion={m.canvasVersion}
                   canvasCollapsed={typeof m.canvas === "string" && latestCanvasIdx >= 0 && i !== latestCanvasIdx}
                   onCanvasChange={m.role === "assistant" && typeof m.canvas === "string" && i === latestCanvasIdx ? (next) => {
@@ -1600,6 +1724,21 @@ export default function Chat() {
                       Explore
                     </button>
                   )}
+                  {pageRequested && (
+                    <button
+                      type="button"
+                      onClick={() => setPageRequested(false)}
+                      aria-label="Remove Page"
+                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-[#E6F1FF] transition-colors"
+                      style={{ color: "#0062FF" }}
+                    >
+                      <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                        <LayoutDashboard className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
+                        <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
+                      </span>
+                      Page
+                    </button>
+                  )}
                 </div>
                 <div className="flex items-center gap-[15px]">
                   <ModelPicker
@@ -1646,6 +1785,26 @@ export default function Chat() {
       )}
 
       {/* Right-hand exploration side panel */}
+      {/* Floating button to reopen the last generated page */}
+      {activePage && !pageOpen && (
+        <button
+          type="button"
+          onClick={() => setPageOpen(true)}
+          aria-label="Reopen page"
+          className="fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 rounded-full bg-foreground text-background pl-3 pr-4 py-2.5 text-xs font-medium shadow-lg hover:opacity-90 transition-opacity"
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          <span className="max-w-[180px] truncate">{activePage.title}</span>
+        </button>
+      )}
+
+      {/* Right-hand generated-page side panel */}
+      <PagePanel
+        open={pageOpen}
+        page={activePage}
+        onClose={() => setPageOpen(false)}
+      />
+
       <ExplorePanel
         open={exploreOpen}
         seed={exploreSeed}

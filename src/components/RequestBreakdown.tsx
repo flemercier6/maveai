@@ -79,7 +79,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
         className="w-full flex items-center justify-between gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-dropdown-hover transition-colors"
       >
         <span className="flex items-center gap-2">
-          <Code2 className="w-3.5 h-3.5" />
+          <Sparkles className="w-3.5 h-3.5" />
           <span className="font-medium text-foreground">Developer breakdown</span>
           {cost && (
             <span className="tabular-nums">

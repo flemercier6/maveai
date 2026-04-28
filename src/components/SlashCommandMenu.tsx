@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Pencil } from "lucide-react";
+import { Sparkles, Pencil, LayoutDashboard } from "lucide-react";
 import { MODELS, PROVIDERS, AUTO_MODEL_ID, type Provider } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
 
 export type SlashItem = {
-  provider: Provider | "auto" | "write" | "explore";
+  provider: Provider | "auto" | "write" | "explore" | "page";
   model: string;
   label: string;
   description: string;
@@ -35,6 +35,13 @@ export function buildSlashItems(): SlashItem[] {
       label: "Explore",
       description: "Open a side exploration for this request",
       slug: "explore",
+    },
+    {
+      provider: "page",
+      model: "",
+      label: "Page",
+      description: "Generate a structured one-pager dashboard",
+      slug: "page",
     },
   ];
   for (const p of PROVIDERS) {
@@ -147,6 +154,8 @@ export function SlashCommandMenu({ query, position, onSelect, onClose, excludePr
                 <Pencil className="w-4 h-4 text-muted-foreground" />
               ) : it.provider === "explore" ? (
                 <Sparkles className="w-4 h-4 text-muted-foreground" />
+              ) : it.provider === "page" ? (
+                <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
               ) : (
                 <ProviderLogo provider={it.provider as Provider} className="w-4 h-4" />
               )}
