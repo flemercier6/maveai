@@ -11,6 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import type { Provider } from "@/lib/models";
 import type { RequestMeta } from "@/lib/requestMeta";
 import { useSmoothText } from "@/hooks/useSmoothText";
+import { useDeveloperMode } from "@/hooks/useDeveloperMode";
+import { RequestBreakdown } from "./RequestBreakdown";
 
 type ToolStatus = "running" | "done" | "failed";
 type ToolUse = { tool: "scrape" | "search" | "map"; label: string; status?: ToolStatus };
@@ -454,6 +456,7 @@ function ChatMessageImpl({
 }: Props) {
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
+  const [devMode] = useDeveloperMode();
   // Smooth typewriter for assistant messages while streaming.
   const smoothed = useSmoothText(content, !isUser && !!streaming);
   const display = isUser ? content : (streaming ? smoothed : content);
@@ -578,6 +581,7 @@ function ChatMessageImpl({
             )}
           </div>
         )}
+        {!streaming && devMode && meta && <RequestBreakdown meta={meta} />}
         {/* Slack-thread style explorations list, shown under the assistant response */}
         {!streaming && allBranches.length > 0 && (
           <div className="mt-3 border-l-2 border-border pl-3 flex flex-col gap-0.5">
