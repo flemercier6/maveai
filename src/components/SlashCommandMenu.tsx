@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, Pencil } from "lucide-react";
+import { Sparkles, Pencil, LayoutDashboard } from "lucide-react";
 import { MODELS, PROVIDERS, AUTO_MODEL_ID, type Provider } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
 
 export type SlashItem = {
-  provider: Provider | "auto" | "write" | "explore";
+  provider: Provider | "auto" | "write" | "explore" | "page";
   model: string;
   label: string;
   description: string;
