@@ -1839,7 +1839,7 @@ Deno.serve(async (req) => {
                 `Your job NOW is to write ONLY the final answer to the user's original question.\n\n` +
                 `RULES:\n` +
                 `- Do NOT repeat the narration or describe your process again ("I searched...", "I found...", "Now let me...").\n` +
-                `- Start your reply directly with the substantive answer, prefixed with a short Markdown heading like "## Answer" (translated to the user's language) so the visual transition from thinking to answering is clear.\n` +
+                `- Start your reply directly with the substantive answer. Do NOT add a "## Answer" heading — the narration cards above already mark the visual separation.\n` +
                 `- Use the web context above as your primary source and cite with [source:N] markers.\n` +
                 `- Be thorough and well-structured — the user has waited through several research steps and expects a high-quality synthesis.\n\n` +
                 `User's original goal: ${lastUserText.slice(0, 300)}`,
