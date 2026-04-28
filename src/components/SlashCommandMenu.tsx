@@ -154,6 +154,8 @@ export function SlashCommandMenu({ query, position, onSelect, onClose, excludePr
                 <Pencil className="w-4 h-4 text-muted-foreground" />
               ) : it.provider === "explore" ? (
                 <Sparkles className="w-4 h-4 text-muted-foreground" />
+              ) : it.provider === "page" ? (
+                <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
               ) : (
                 <ProviderLogo provider={it.provider as Provider} className="w-4 h-4" />
               )}
