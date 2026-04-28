@@ -1382,8 +1382,7 @@ Deno.serve(async (req) => {
             }));
           const metaTotalTokens = [...metaSystems, ...metaHistory]
             .reduce((s, x) => s + (x.approxTokens ?? 0), 0);
-          controller.enqueue(enc({
-            type: "meta",
+          const metaPayload = {
             provider,
             model,
             systems: metaSystems,
@@ -1398,7 +1397,8 @@ Deno.serve(async (req) => {
               ? { kind: webContext.kind, label: webContext.label, approxTokens: approxTokens(webContext.content) }
               : null,
             approxTotalInputTokens: metaTotalTokens,
-          }));
+          };
+          controller.enqueue(enc({ type: "meta", ...metaPayload }));
 
           let iter: AsyncGenerator<string, Usage | undefined>;
           if (provider === "openai") iter = streamOpenAI(apiKey, model, messagesForLLM);
