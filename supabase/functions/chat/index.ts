@@ -1397,6 +1397,7 @@ Deno.serve(async (req) => {
               ? { kind: webContext.kind, label: webContext.label, approxTokens: approxTokens(webContext.content) }
               : null,
             approxTotalInputTokens: metaTotalTokens,
+            sources: webContext?.sources ?? [],
           };
           controller.enqueue(enc({ type: "meta", ...metaPayload }));
 

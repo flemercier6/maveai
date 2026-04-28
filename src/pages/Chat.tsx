@@ -245,6 +245,11 @@ export default function Chat() {
             const parsed = parseStored(m.content);
             const hasCanvas = typeof parsed.canvas === "string";
             if (hasCanvas) canvasCounter += 1;
+            const persistedSources = Array.isArray((m.meta as any)?.sources)
+              ? ((m.meta as any).sources as any[])
+                  .filter((s) => s && typeof s.url === "string")
+                  .map((s) => ({ title: String(s.title ?? s.url), url: String(s.url) }))
+              : [];
             return {
               id: m.id,
               role: m.role,
@@ -253,6 +258,7 @@ export default function Chat() {
               model: msgModel,
               ...(hasCanvas ? { canvas: parsed.canvas, canvasTitle: parsed.canvasTitle, canvasVersion: canvasCounter } : {}),
               ...(meta ? { meta } : {}),
+              ...(persistedSources.length ? { sources: persistedSources } : {}),
             };
           }
           // Parse legacy "📎 Image: name" / "📎 File: name" trailing lines into attachment chips.
