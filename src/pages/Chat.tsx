@@ -1832,6 +1832,9 @@ export default function Chat() {
         onClose={() => setPageOpen(false)}
       />
 
+      {/* Global lightbox for chat images */}
+      <ChatLightbox />
+
       <ExplorePanel
         open={exploreOpen}
         seed={exploreSeed}
