@@ -186,6 +186,7 @@ function canNavigate(
 export function UsageTab() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [devMode, setDevMode] = useDeveloperMode();
   const [rows, setRows] = useState<Row[]>([]);
   const [data, setData] = useState<Aggregate | null>(null);
   const [range, setRange] = useState<Range>("week");
