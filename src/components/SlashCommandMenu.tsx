@@ -113,14 +113,24 @@ export function SlashCommandMenu({
       const blk = new Set(blacklistedModels);
       all = all.filter((it) => !it.model || !blk.has(it.model));
     }
+    // Always keep Modes (auto/write/explore/page) at the top, then models.
+    // Within models, surface favorites first if provided.
+    const isMode = (it: SlashItem) =>
+      it.provider === "auto" ||
+      it.provider === "write" ||
+      it.provider === "explore" ||
+      it.provider === "page";
+    const modes = all.filter(isMode);
+    const models = all.filter((it) => !isMode(it));
     if (favoriteModels?.length) {
       const favRank = new Map(favoriteModels.map((m, i) => [m, i] as const));
-      all = [...all].sort((a, b) => {
+      models.sort((a, b) => {
         const ai = favRank.has(a.model) ? favRank.get(a.model)! : Infinity;
         const bi = favRank.has(b.model) ? favRank.get(b.model)! : Infinity;
         return ai - bi;
       });
     }
+    all = [...modes, ...models];
     return all;
   }, [query, excludeProviders, disabledModes, blacklistedModels, favoriteModels]);
   const [active, setActive] = useState(0);
