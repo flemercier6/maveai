@@ -61,6 +61,7 @@ type Props = {
   thinking?: ThinkingStep[];
   thinkingMs?: number;
   thinkingDone?: boolean;
+  agentSteps?: AgentStep[];
   canvas?: string;
   canvasTitle?: string;
   canvasVersion?: number;
