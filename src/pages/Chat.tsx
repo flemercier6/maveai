@@ -1762,6 +1762,7 @@ export default function Chat() {
                   thinking={m.thinking}
                   thinkingMs={m.thinkingMs}
                   thinkingDone={m.thinkingDone}
+                  agentSteps={m.agentSteps}
                   canvas={m.canvas}
                   canvasTitle={m.canvasTitle}
                   attachments={m.attachments}
