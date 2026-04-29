@@ -3,9 +3,11 @@ import { Switch } from "@/components/ui/switch";
 import { useAiPreferences } from "@/hooks/useAiPreferences";
 import {
   MODE_DEFS,
+  RESPONSE_LENGTH_DEFS,
   allModelIds,
   type AiPreferences,
   type ModeId,
+  type ResponseLength,
 } from "@/lib/aiPreferences";
 import { PROVIDER_LABEL } from "@/lib/models";
 import { ProviderLogo } from "@/components/ProviderLogo";
