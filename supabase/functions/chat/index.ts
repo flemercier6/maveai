@@ -1235,6 +1235,7 @@ Deno.serve(async (req) => {
         disabledModes?: string[];
         blacklistedModels?: string[];
         favoriteModels?: string[];
+        responseLength?: "short" | "default" | "comprehensive";
       };
     };
 
@@ -1242,6 +1243,7 @@ Deno.serve(async (req) => {
     const blacklisted = new Set(aiPrefs?.blacklistedModels ?? []);
     const favorites = aiPrefs?.favoriteModels ?? [];
     const disabledModes = new Set(aiPrefs?.disabledModes ?? []);
+    const responseLength = aiPrefs?.responseLength ?? "default";
     let model = requestedModel;
     if (blacklisted.has(model)) {
       const fallbackOrder = [
@@ -1395,11 +1397,18 @@ Deno.serve(async (req) => {
         "Use `route` when the user asks for an itinerary / directions between 2 or more places (the polyline + distance + duration are computed automatically via Mapbox Directions). Always include matching `markers` for the start, intermediate stops and end so they're visible. " +
         "Provide accurate lat/lng coordinates yourself (you know them). Include 1 to 8 markers. Place the ```map block AFTER your textual answer, on its own. Do not mention the map block in prose.";
 
+    const lengthInstruction =
+      responseLength === "short"
+        ? "LENGTH: SHORT mode — give the briefest useful answer. Aim for ≤ 100 words. 1–3 short paragraphs or a tight bullet list. No headings unless strictly necessary. Cut every non-essential word. Never recap the question."
+        : responseLength === "comprehensive"
+          ? "LENGTH: COMPREHENSIVE mode — go deep. Provide thorough explanations with context, nuances, examples, edge cases and structured sections (headings, bullets, tables when helpful). Aim for 500–900 words when the topic warrants it, but stay focused and avoid filler."
+          : "LENGTH: be CONCISE. Aim for the SHORTEST useful answer. Default ≤ 250 words. Only go longer when the user explicitly asks for depth, a tutorial, or a long-form draft. No filler, no recap of the question, no closing pleasantries.";
+
     const styleSystem: Msg = {
       role: "system",
       content:
         "Style: airy markdown — short paragraphs, headings, bullets, dividers. Use tables for comparisons. Emojis sparingly. Reply in the user's language.\n" +
-        "LENGTH: be CONCISE. Aim for the SHORTEST useful answer. Default ≤ 250 words. Only go longer when the user explicitly asks for depth, a tutorial, or a long-form draft. No filler, no recap of the question, no closing pleasantries.\n" +
+        lengthInstruction + "\n" +
         "Diagrams: use SPARINGLY. Only emit a ```flow block when the question genuinely involves a multi-step process, system architecture, decision tree, state machine, or an abstract/hard-to-explain concept where a visual schema materially aids understanding beyond what prose, lists or tables can convey. " +
         "DO NOT use diagrams for: simple factual questions, definitions, short how-tos, comparisons (use a table), lists of items, code explanations, opinions, or anything a short paragraph already answers clearly. When in doubt, do NOT emit a diagram. " +
         "Format when used: fenced ```flow block containing JSON: { title?, direction?: 'TB'|'LR'|'RL'|'BT', nodes: [{id,label,kind?: 'default'|'input'|'output'|'decision'|'success'|'warning'|'danger'|'muted'}], edges: [{source,target,label?,animated?,dashed?}] }. " +

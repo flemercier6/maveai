@@ -12,12 +12,14 @@ type Row = {
   disabled_modes: string[] | null;
   blacklisted_models: string[] | null;
   favorite_models: string[] | null;
+  response_length: string | null;
 };
 
 const rowToPrefs = (row: Row | null | undefined): AiPreferences => ({
   disabledModes: ((row?.disabled_modes ?? []) as ModeId[]).filter(Boolean),
   blacklistedModels: (row?.blacklisted_models ?? []).filter(Boolean),
   favoriteModels: (row?.favorite_models ?? []).filter(Boolean),
+  responseLength: ((row?.response_length ?? "default") as AiPreferences["responseLength"]),
 });
 
 export function useAiPreferences() {
@@ -60,6 +62,7 @@ export function useAiPreferences() {
         disabled_modes: next.disabledModes,
         blacklisted_models: next.blacklistedModels,
         favorite_models: next.favoriteModels,
+        response_length: next.responseLength,
       });
       if (error) console.error("[ai-prefs] save error:", error);
       window.dispatchEvent(new CustomEvent("ai-prefs-updated"));

@@ -15,16 +15,26 @@ export const MODE_DEFS: { id: ModeId; label: string; description: string }[] = [
   { id: "web", label: "Web search", description: "Browse the web for fresh facts" },
 ];
 
+export type ResponseLength = "short" | "default" | "comprehensive";
+
+export const RESPONSE_LENGTH_DEFS: { id: ResponseLength; label: string; description: string }[] = [
+  { id: "short", label: "Short", description: "Quick, to-the-point answers (a few sentences)" },
+  { id: "default", label: "Default", description: "Balanced length — concise but complete" },
+  { id: "comprehensive", label: "Comprehensive", description: "Detailed answers with context, examples and nuance" },
+];
+
 export type AiPreferences = {
   disabledModes: ModeId[];
   blacklistedModels: string[];
   favoriteModels: string[];
+  responseLength: ResponseLength;
 };
 
 export const DEFAULT_AI_PREFS: AiPreferences = {
   disabledModes: [],
   blacklistedModels: [],
   favoriteModels: [],
+  responseLength: "default",
 };
 
 /** All known model ids across providers (used for validation + UI lists). */

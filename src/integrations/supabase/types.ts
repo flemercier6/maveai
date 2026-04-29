@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           disabled_modes: string[]
           favorite_models: string[]
+          response_length: string
           updated_at: string
           user_id: string
         }
@@ -28,6 +29,7 @@ export type Database = {
           created_at?: string
           disabled_modes?: string[]
           favorite_models?: string[]
+          response_length?: string
           updated_at?: string
           user_id: string
         }
@@ -36,6 +38,7 @@ export type Database = {
           created_at?: string
           disabled_modes?: string[]
           favorite_models?: string[]
+          response_length?: string
           updated_at?: string
           user_id?: string
         }
