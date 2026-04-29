@@ -420,6 +420,17 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
     h4: ({ node, children, ...props }: any) => renderBlock("h4" as any, children, props),
     h5: ({ node, children, ...props }: any) => renderBlock("h5" as any, children, props),
     h6: ({ node, children, ...props }: any) => renderBlock("h6" as any, children, props),
+    pre: ({ node, children, ...props }: any) => {
+      // Unwrap <pre> styling for special blocks (chart/graph/map/flow/diagram) so they render edge-to-edge without the muted background.
+      const astChildren: any[] = Array.isArray(node?.children) ? node.children : [];
+      const codeNode = astChildren.find((c) => c.tagName === "code");
+      const lang = codeNode?.properties?.className?.find?.((cn: string) => cn?.startsWith?.("language-"))?.replace("language-", "");
+      const SPECIAL = new Set(["chart", "graph", "map", "flow", "reactflow", "diagram"]);
+      if (lang && SPECIAL.has(lang)) {
+        return <>{children}</>;
+      }
+      return <pre {...props}>{children}</pre>;
+    },
     code: ({ node, inline, className, children, ...props }: any) => {
       const lang = /language-(\w+)/.exec(className || "")?.[1];
       const raw = String(children ?? "").replace(/\n$/, "");
