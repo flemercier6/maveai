@@ -96,6 +96,37 @@ export function AiPersonalizationTab() {
           </div>
         </section>
 
+        {/* ---------- Response length ---------- */}
+        <section className="space-y-3">
+          <div>
+            <h3 className="text-sm font-medium">Response length</h3>
+            <p className="text-xs text-muted-foreground">
+              Controls how detailed the AI's answers are. Affects every reply.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {RESPONSE_LENGTH_DEFS.map((opt) => {
+              const active = prefs.responseLength === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => update({ responseLength: opt.id as ResponseLength })}
+                  className={cn(
+                    "rounded-lg border px-3 py-2.5 text-left transition-colors",
+                    active
+                      ? "border-foreground bg-foreground/[0.04]"
+                      : "border-border bg-background hover:bg-dropdown-hover",
+                  )}
+                >
+                  <div className="text-sm font-medium text-foreground">{opt.label}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5 leading-snug">{opt.description}</div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         {/* ---------- Models ---------- */}
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
