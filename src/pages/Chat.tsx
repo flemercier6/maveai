@@ -915,6 +915,7 @@ export default function Chat() {
             disabledModes: aiPrefs.disabledModes,
             blacklistedModels: aiPrefs.blacklistedModels,
             favoriteModels: aiPrefs.favoriteModels,
+            responseLength: aiPrefs.responseLength,
           },
           messages: baseMsgs.map((m, i) => {
             // Only the LAST user message carries the live attachments
