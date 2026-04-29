@@ -1235,6 +1235,7 @@ Deno.serve(async (req) => {
         disabledModes?: string[];
         blacklistedModels?: string[];
         favoriteModels?: string[];
+        responseLength?: "short" | "default" | "comprehensive";
       };
     };
 
@@ -1242,6 +1243,7 @@ Deno.serve(async (req) => {
     const blacklisted = new Set(aiPrefs?.blacklistedModels ?? []);
     const favorites = aiPrefs?.favoriteModels ?? [];
     const disabledModes = new Set(aiPrefs?.disabledModes ?? []);
+    const responseLength = aiPrefs?.responseLength ?? "default";
     let model = requestedModel;
     if (blacklisted.has(model)) {
       const fallbackOrder = [
