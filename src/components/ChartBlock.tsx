@@ -167,13 +167,13 @@ function ChartBlockImpl({ code }: Props) {
   };
 
   return (
-    <div className="my-4 rounded-lg border border-border bg-card overflow-hidden">
+    <div className="my-4 rounded-lg border border-border bg-background overflow-hidden">
       {spec.title && (
-        <div className="px-3 py-2 text-[11px] font-medium text-muted-foreground border-b border-border bg-muted/30">
+        <div className="px-3 py-2 text-[11px] font-medium text-muted-foreground border-b border-border bg-background">
           {spec.title}
         </div>
       )}
-      <div style={{ height }} className="w-full p-2">
+      <div style={{ height }} className="w-full">
         <ResponsiveContainer width="100%" height="100%">
           {renderInner()}
         </ResponsiveContainer>
