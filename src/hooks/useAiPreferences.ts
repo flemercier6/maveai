@@ -12,12 +12,14 @@ type Row = {
   disabled_modes: string[] | null;
   blacklisted_models: string[] | null;
   favorite_models: string[] | null;
+  response_length: string | null;
 };
 
 const rowToPrefs = (row: Row | null | undefined): AiPreferences => ({
   disabledModes: ((row?.disabled_modes ?? []) as ModeId[]).filter(Boolean),
   blacklistedModels: (row?.blacklisted_models ?? []).filter(Boolean),
   favoriteModels: (row?.favorite_models ?? []).filter(Boolean),
+  responseLength: ((row?.response_length ?? "default") as AiPreferences["responseLength"]),
 });
 
 export function useAiPreferences() {
