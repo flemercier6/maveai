@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
 import { FlowDiagram } from "./FlowDiagram";
+import { ChartBlock } from "./ChartBlock";
 
 import { CanvasBlock } from "./CanvasBlock";
 import { MapBlock } from "./MapBlock";
@@ -427,6 +428,9 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
       }
       if (!inline && lang === "map") {
         return <MapBlock code={raw} />;
+      }
+      if (!inline && (lang === "chart" || lang === "graph")) {
+        return <ChartBlock code={raw} />;
       }
       return (
         <code className={className} {...props}>
