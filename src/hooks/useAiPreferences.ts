@@ -62,6 +62,7 @@ export function useAiPreferences() {
         disabled_modes: next.disabledModes,
         blacklisted_models: next.blacklistedModels,
         favorite_models: next.favoriteModels,
+        response_length: next.responseLength,
       });
       if (error) console.error("[ai-prefs] save error:", error);
       window.dispatchEvent(new CustomEvent("ai-prefs-updated"));
