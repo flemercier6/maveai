@@ -105,6 +105,7 @@ function ChartBlockImpl({ code }: Props) {
             outerRadius={90}
             innerRadius={45}
             paddingAngle={2}
+            isAnimationActive={false}
           >
             {spec.data.map((_, i) => (
               <Cell key={i} fill={PALETTE[i % PALETTE.length]} stroke="hsl(var(--background))" strokeWidth={2} />
@@ -138,7 +139,7 @@ function ChartBlockImpl({ code }: Props) {
         <BarChart data={spec.data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           {Common}
           {series.map((s) => (
-            <Bar key={s.key} dataKey={s.key} name={s.label ?? s.key} fill={s.color} radius={[4, 4, 0, 0]} stackId={spec.stacked ? "a" : undefined} />
+            <Bar key={s.key} dataKey={s.key} name={s.label ?? s.key} fill={s.color} radius={[4, 4, 0, 0]} stackId={spec.stacked ? "a" : undefined} isAnimationActive={false} />
           ))}
         </BarChart>
       );
@@ -149,7 +150,7 @@ function ChartBlockImpl({ code }: Props) {
         <AreaChart data={spec.data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           {Common}
           {series.map((s) => (
-            <Area key={s.key} type="monotone" dataKey={s.key} name={s.label ?? s.key} stroke={s.color} fill={s.color} fillOpacity={0.18} strokeWidth={2} stackId={spec.stacked ? "a" : undefined} />
+            <Area key={s.key} type="monotone" dataKey={s.key} name={s.label ?? s.key} stroke={s.color} fill={s.color} fillOpacity={0.18} strokeWidth={2} stackId={spec.stacked ? "a" : undefined} isAnimationActive={false} />
           ))}
         </AreaChart>
       );
@@ -160,20 +161,20 @@ function ChartBlockImpl({ code }: Props) {
       <LineChart data={spec.data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         {Common}
         {series.map((s) => (
-          <Line key={s.key} type="monotone" dataKey={s.key} name={s.label ?? s.key} stroke={s.color} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+          <Line key={s.key} type="monotone" dataKey={s.key} name={s.label ?? s.key} stroke={s.color} strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} />
         ))}
       </LineChart>
     );
   };
 
   return (
-    <div className="my-4 rounded-lg border border-border bg-card overflow-hidden">
+    <div className="my-4 rounded-lg border border-border bg-background overflow-hidden">
       {spec.title && (
-        <div className="px-3 py-2 text-[11px] font-medium text-muted-foreground border-b border-border bg-muted/30">
+        <div className="px-3 py-2 text-[11px] font-medium text-muted-foreground border-b border-border bg-background">
           {spec.title}
         </div>
       )}
-      <div style={{ height }} className="w-full p-2">
+      <div style={{ height }} className="w-full">
         <ResponsiveContainer width="100%" height="100%">
           {renderInner()}
         </ResponsiveContainer>
