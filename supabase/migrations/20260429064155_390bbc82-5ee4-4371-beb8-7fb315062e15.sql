@@ -1,0 +1,1 @@
+ALTER TABLE public.ai_preferences ADD COLUMN IF NOT EXISTS response_length text NOT NULL DEFAULT 'default';
