@@ -65,12 +65,13 @@ function ChartBlockImpl({ code }: Props) {
   }
 
   const xKey = spec.xKey ?? "name";
-  const series = (spec.series && spec.series.length
-    ? spec.series
-    : Object.keys(spec.data[0] ?? {})
-        .filter((k) => k !== xKey)
-        .map((k) => ({ key: k }))
-  ).map((s, i) => ({ ...s, color: s.color ?? PALETTE[i % PALETTE.length] }));
+  const rawSeries: { key: string; label?: string; color?: string }[] =
+    spec.series && spec.series.length
+      ? spec.series
+      : Object.keys(spec.data[0] ?? {})
+          .filter((k) => k !== xKey)
+          .map((k) => ({ key: k }));
+  const series = rawSeries.map((s, i) => ({ ...s, color: s.color ?? PALETTE[i % PALETTE.length] }));
 
   const unit = spec.unit ?? "";
   const tooltipFormatter = (v: any) =>
