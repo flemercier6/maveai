@@ -5,6 +5,7 @@ import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import maveIcon from "@/assets/mave_icon.svg";
 
 type Step = "email" | "code";
 
