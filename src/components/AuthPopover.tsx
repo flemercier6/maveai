@@ -32,6 +32,19 @@ export function AuthPopover() {
     }
   }, [user]);
 
+  // Allow other components (e.g. sidebar footer button) to open the popover.
+  useEffect(() => {
+    const handler = () => {
+      setDismissed(false);
+      setOpen(true);
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem("auth-popover-dismissed");
+      }
+    };
+    window.addEventListener("open-auth-popover", handler);
+    return () => window.removeEventListener("open-auth-popover", handler);
+  }, []);
+
   useEffect(() => {
     if (step === "code") {
       setTimeout(() => codeRef.current?.focus(), 50);
