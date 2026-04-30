@@ -236,7 +236,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/signin";
+    window.location.href = "/";
   };
 
   return (
