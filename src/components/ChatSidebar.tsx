@@ -673,38 +673,48 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
       </ScrollArea>
 
       <div className="p-2 border-t border-sidebar-border">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="w-full flex items-center gap-3 md:gap-2 px-2 py-2.5 md:py-1.5 rounded-[6px] md:rounded-md hover:bg-sidebar-accent text-sidebar-foreground"
-            >
-              <div className="w-9 h-9 md:w-7 md:h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-sm md:text-xs font-medium uppercase overflow-hidden">
-                {userAvatarUrl ? (
-                  <img src={userAvatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  (userName?.[0] ?? userEmail?.[0] ?? "?")
-                )}
-              </div>
-              <div className="flex-1 min-w-0 text-left">
-                <div className="text-[14px] md:text-xs font-semibold truncate">
-                  {userName ?? userEmail?.split("@")[0] ?? "User"}
+        {userEmail ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="w-full flex items-center gap-3 md:gap-2 px-2 py-2.5 md:py-1.5 rounded-[6px] md:rounded-md hover:bg-sidebar-accent text-sidebar-foreground"
+              >
+                <div className="w-9 h-9 md:w-7 md:h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-sm md:text-xs font-medium uppercase overflow-hidden">
+                  {userAvatarUrl ? (
+                    <img src={userAvatarUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    (userName?.[0] ?? userEmail?.[0] ?? "?")
+                  )}
                 </div>
-                <div className="text-[11px] md:text-[10px] text-muted-foreground truncate leading-tight">
-                  {planLabel}
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="text-[14px] md:text-xs font-semibold truncate">
+                    {userName ?? userEmail?.split("@")[0] ?? "User"}
+                  </div>
+                  <div className="text-[11px] md:text-[10px] text-muted-foreground truncate leading-tight">
+                    {planLabel}
+                  </div>
                 </div>
-              </div>
-              <ChevronsUpDown className="w-4 h-4 md:w-3.5 md:h-3.5 opacity-60 shrink-0" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" side="top" className="w-[--radix-dropdown-menu-trigger-width]">
-            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSettingsOpen(true); }}>
-              <Settings className="w-3.5 h-3.5 mr-2 opacity-70" /> Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={signOut}>
-              <LogOut className="w-3.5 h-3.5 mr-2 opacity-70" /> Sign out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+                <ChevronsUpDown className="w-4 h-4 md:w-3.5 md:h-3.5 opacity-60 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="top" className="w-[--radix-dropdown-menu-trigger-width]">
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSettingsOpen(true); }}>
+                <Settings className="w-3.5 h-3.5 mr-2 opacity-70" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={signOut}>
+                <LogOut className="w-3.5 h-3.5 mr-2 opacity-70" /> Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-auth-popover"))}
+            className="w-full px-3 py-2.5 md:py-2 rounded-[6px] md:rounded-md bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-opacity"
+          >
+            Sign in / Create account
+          </button>
+        )}
       </div>
 
       {/* Resize handle */}
