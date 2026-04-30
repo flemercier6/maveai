@@ -5,9 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
-import SignIn from "./pages/SignIn.tsx";
-import SignUp from "./pages/SignUp.tsx";
 import SharedChat from "./pages/SharedChat.tsx";
+import { AuthPopover } from "@/components/AuthPopover";
 
 
 const queryClient = new QueryClient();
@@ -21,13 +20,12 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/c/:id" element={<Index />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
           <Route path="/s/:token" element={<SharedChat />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <AuthPopover />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
