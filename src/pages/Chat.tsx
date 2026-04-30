@@ -193,9 +193,8 @@ export default function Chat() {
     el.style.height = `${el.scrollHeight}px`;
   }, [input]);
 
-  useEffect(() => {
-    if (!loading && !user) navigate("/signin", { replace: true });
-  }, [loading, user, navigate]);
+  // Anonymous users are allowed — they use the app in free mode without
+  // cloud persistence. The AuthPopover lets them sign in at any time.
 
   // Load conversations
   useEffect(() => {
@@ -1597,7 +1596,7 @@ export default function Chat() {
     toast.success("Exploration merged into the main chat");
   };
 
-  if (loading || !user) {
+  if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
 
@@ -2057,7 +2056,7 @@ export default function Chat() {
       {/* Global lightbox for chat images */}
       <ChatLightbox />
 
-      <ExplorePanel
+      {user && <ExplorePanel
         open={exploreOpen}
         seed={exploreSeed}
         userId={user.id}
@@ -2074,7 +2073,7 @@ export default function Chat() {
         onBranchDeleted={(id) =>
           setBranches((prev) => prev.filter((x) => x.id !== id))
         }
-      />
+      />}
       </div>
     </div>
   );
