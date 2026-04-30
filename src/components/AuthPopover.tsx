@@ -5,6 +5,7 @@ import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import maveIcon from "@/assets/mave_icon.svg";
 
 type Step = "email" | "code";
 
@@ -134,13 +135,16 @@ export function AuthPopover() {
           <X className="w-4 h-4" />
         </button>
 
-        <div className="text-center mb-5 mt-1">
-          <h3 className="text-lg font-semibold underline underline-offset-4 decoration-2">
-            Connect or Create an account
-          </h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Save and personalize your searches
-          </p>
+        <div className="flex flex-col items-center gap-3 mb-5 mt-1">
+          <img src={maveIcon} alt="Mave" className="w-12 h-12 rounded-xl" />
+          <div className="text-center">
+            <h3 className="text-lg font-semibold underline underline-offset-4 decoration-2">
+              Connect or Create an account
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Save and personalize your searches
+            </p>
+          </div>
         </div>
 
         {step === "email" ? (
