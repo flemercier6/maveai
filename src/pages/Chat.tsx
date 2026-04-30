@@ -2073,7 +2073,7 @@ export default function Chat() {
         onBranchDeleted={(id) =>
           setBranches((prev) => prev.filter((x) => x.id !== id))
         }
-      />
+      />}
       </div>
     </div>
   );
