@@ -1617,8 +1617,8 @@ export default function Chat() {
             prev.map((c) => (c.id === convId ? { ...c, folder_id: folderId } : c)),
           );
         }}
-        userEmail={user.email}
-        userName={displayName ?? (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0]}
+        userEmail={user?.email}
+        userName={displayName ?? (user?.user_metadata?.full_name as string | undefined) ?? user?.email?.split("@")[0]}
         userAvatarUrl={avatarUrl}
         onProfileUpdated={reloadProfile}
         titleAnim={titleAnim}
