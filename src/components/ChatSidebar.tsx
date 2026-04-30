@@ -714,7 +714,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("open-auth-popover"))}
-            className="w-full px-3 py-2.5 md:py-2 rounded-[6px] md:rounded-md bg-sidebar text-sidebar-foreground text-sm font-semibold hover:bg-sidebar-accent transition-colors"
+            className="w-full px-3 py-2.5 md:py-2 rounded-[6px] md:rounded-md bg-sidebar text-sidebar-foreground text-sm font-semibold hover:bg-sidebar-accent transition-colors text-left"
           >
             Sign in / Create account
           </button>
