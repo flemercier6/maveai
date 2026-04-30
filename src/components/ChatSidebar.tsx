@@ -263,7 +263,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
       >
       <div className="p-3 border-b border-sidebar-border">
         <div className="px-[10px] pt-1" style={{ marginBottom: 40 }}>
-          <img src={maveLogo} alt="Mave" className="h-6 w-auto" />
+          <img src={maveLogo} alt="Mave" className="h-4 w-auto" />
         </div>
         <div className="mt-2 space-y-0.5">
           <div className="group flex items-stretch w-full">
