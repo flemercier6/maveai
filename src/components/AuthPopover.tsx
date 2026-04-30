@@ -135,7 +135,7 @@ export function AuthPopover() {
           <X className="w-4 h-4" />
         </button>
 
-        <div className="flex flex-col items-center gap-6 mb-5 mt-1">
+        <div className="flex flex-col items-center mb-5 mt-1" style={{ gap: 44 }}>
           <img src={maveIcon} alt="Mave" className="w-12 h-12 rounded-xl" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">
