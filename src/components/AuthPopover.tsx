@@ -32,6 +32,19 @@ export function AuthPopover() {
     }
   }, [user]);
 
+  // Allow other components (e.g. sidebar footer button) to open the popover.
+  useEffect(() => {
+    const handler = () => {
+      setDismissed(false);
+      setOpen(true);
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem("auth-popover-dismissed");
+      }
+    };
+    window.addEventListener("open-auth-popover", handler);
+    return () => window.removeEventListener("open-auth-popover", handler);
+  }, []);
+
   useEffect(() => {
     if (step === "code") {
       setTimeout(() => codeRef.current?.focus(), 50);
@@ -106,34 +119,8 @@ export function AuthPopover() {
     toast.success("Welcome!");
   };
 
-  // Trigger button (collapsed)
-  if (!open) {
-    if (dismissed) {
-      // small floating "Sign in" pill
-      return (
-        <button
-          type="button"
-          onClick={() => {
-            setDismissed(false);
-            setOpen(true);
-            window.sessionStorage.removeItem("auth-popover-dismissed");
-          }}
-          className="fixed bottom-4 right-4 z-40 px-3 py-1.5 rounded-full bg-foreground text-background text-xs font-medium shadow-lg hover:opacity-90 transition-opacity"
-        >
-          Sign in
-        </button>
-      );
-    }
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-40 px-4 py-2 rounded-full bg-foreground text-background text-sm font-medium shadow-lg hover:opacity-90 transition-opacity"
-      >
-        Sign in / Create account
-      </button>
-    );
-  }
+  // Trigger button (collapsed) — hidden; the sidebar footer hosts the trigger.
+  if (!open) return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 w-[360px] max-w-[calc(100vw-2rem)]">
