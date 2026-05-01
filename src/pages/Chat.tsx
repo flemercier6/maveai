@@ -917,6 +917,7 @@ export default function Chat() {
           // a canvas — don't let it decide otherwise.
           forceCanvas: writeRequested === true,
           previousCanvas,
+          googleService: sentGoogleService,
           aiPrefs: {
             disabledModes: aiPrefs.disabledModes,
             blacklistedModels: aiPrefs.blacklistedModels,
