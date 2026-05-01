@@ -1,5 +1,6 @@
 import type { SVGProps } from "react";
 import gmailLogoUrl from "@/assets/logo-gmail.png";
+import calendarLogoUrl from "@/assets/logo-calendar.png";
 
 export type GoogleService = "gmail" | "calendar" | "drive";
 
