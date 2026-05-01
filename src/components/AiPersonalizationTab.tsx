@@ -1,4 +1,5 @@
-import { Star, X as Ban, Check } from "lucide-react";
+import { useMemo } from "react";
+import { Star, ChevronDown } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -7,6 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useAiPreferences } from "@/hooks/useAiPreferences";
 import {
   MODE_DEFS,
