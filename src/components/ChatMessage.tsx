@@ -3,6 +3,7 @@ import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, Arr
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
+import { GoogleServiceLogo, GOOGLE_SERVICE_LABEL, type GoogleService } from "./GoogleServiceLogo";
 import { FlowDiagram } from "./FlowDiagram";
 import { ChartBlock } from "./ChartBlock";
 
