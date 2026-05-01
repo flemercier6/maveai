@@ -387,7 +387,7 @@ export function UsageTab() {
             requests
           </span>
           <span>
-            <span className="font-medium tabular-nums">
+            <span className="font-medium tabular-nums text-sm">
               {fmtTokens(data.totalInputTokens)}
             </span>{" "}
             in
