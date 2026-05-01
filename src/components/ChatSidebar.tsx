@@ -25,8 +25,9 @@ import {
   ChevronsUpDown,
   FolderPlus,
   Folder as FolderIcon,
-  Ghost,
 } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { MessageSquareDashedIcon } from "@hugeicons/core-free-icons";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
