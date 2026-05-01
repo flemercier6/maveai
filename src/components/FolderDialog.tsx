@@ -87,7 +87,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
     if (!user) return;
     const trimmed = name.trim();
     if (!trimmed) {
-      toast.error("Folder name is required");
+      toast.error("Project name is required");
       return;
     }
     setSaving(true);
