@@ -78,41 +78,27 @@ export function AiPersonalizationTab() {
 
         {/* ---------- Response length ---------- */}
         <section className="space-y-3">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-4 text-base">
             <div className="min-w-0">
-              <h3 className="text-sm font-medium">Response length</h3>
-              <p className="text-xs text-muted-foreground">
+              <h3 className="font-medium text-base">Response length</h3>
+              <p className="text-muted-foreground text-sm">
                 Controls how detailed the AI's answers are. Affects every reply.
               </p>
             </div>
-            <Select
-              value={prefs.responseLength}
-              onValueChange={(v) => update({ responseLength: v as ResponseLength })}
-            >
-              <SelectTrigger className="w-44 shrink-0">
-                <SelectValue>
-                  {RESPONSE_LENGTH_DEFS.find((o) => o.id === prefs.responseLength)?.label}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
+... keep existing code
                 {RESPONSE_LENGTH_DEFS.map((opt) => (
                   <SelectItem key={opt.id} value={opt.id}>
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium">{opt.label}</span>
-                      <span className="text-xs text-muted-foreground">{opt.description}</span>
+                      <span className="font-medium text-base">{opt.label}</span>
+                      <span className="text-muted-foreground text-sm">{opt.description}</span>
                     </div>
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </section>
-
-        {/* ---------- Modes ---------- */}
+... keep existing code
         <section className="space-y-3">
           <div>
-            <h3 className="text-sm font-medium">Modes</h3>
-            <p className="text-xs text-muted-foreground">
+            <h3 className="font-medium text-base">Modes</h3>
+            <p className="text-muted-foreground text-sm">
               Disabled modes are hidden from the slash menu and never auto-triggered.
             </p>
           </div>
@@ -122,11 +108,11 @@ export function AiPersonalizationTab() {
               return (
                 <div
                   key={m.id}
-                  className="flex items-center justify-between px-4 py-3"
+                  className="flex items-center justify-between px-4 py-3 text-base"
                 >
                   <div className="min-w-0">
-                    <div className="text-sm font-medium text-foreground">{m.label}</div>
-                    <div className="text-xs text-muted-foreground">{m.description}</div>
+                    <div className="font-medium text-foreground text-base">{m.label}</div>
+                    <div className="text-muted-foreground text-sm">{m.description}</div>
                   </div>
                   <Switch checked={enabled} onCheckedChange={() => toggleMode(m.id)} />
                 </div>
@@ -139,8 +125,8 @@ export function AiPersonalizationTab() {
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
             <div>
-              <h3 className="text-sm font-medium">Models</h3>
-              <p className="text-xs text-muted-foreground">
+              <h3 className="font-medium text-base">Models</h3>
+              <p className="text-muted-foreground text-sm">
                 Star your favorites (used first in Auto mode) or blacklist models you never want to use.
               </p>
             </div>
@@ -153,17 +139,17 @@ export function AiPersonalizationTab() {
                 <div
                   key={m.id}
                   className={cn(
-                    "flex items-center justify-between px-4 py-3 gap-3",
+                    "flex items-center justify-between px-4 py-3 text-base gap-3",
                     isBlack && "opacity-60",
                   )}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <ProviderLogo provider={m.provider} className="w-4 h-4 shrink-0" />
                     <div className="min-w-0">
-                      <div className="text-sm font-medium text-foreground truncate">
+                      <div className="font-medium text-foreground truncate text-base">
                         {m.label}
                       </div>
-                      <div className="text-xs text-muted-foreground truncate">
+                      <div className="text-muted-foreground truncate text-sm">
                         {PROVIDER_LABEL[m.provider]}
                       </div>
                     </div>
