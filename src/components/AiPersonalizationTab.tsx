@@ -272,7 +272,7 @@ export function AiPersonalizationTab() {
           </div>
           {prefs.favoriteModels.length > 0 && (
             <p className="text-muted-foreground text-sm">
-              <span className="font-medium text-foreground">Priority order:</span>{" "}
+              <span className="font-medium text-foreground text-sm">Priority order:</span>{" "}
               {prefs.favoriteModels.join(" › ")}
             </p>
           )}
