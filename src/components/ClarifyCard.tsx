@@ -88,7 +88,7 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
             <span>A few quick questions to get this right</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] tabular-nums text-muted-foreground">
+            <span className="text-[11px] tabular-nums text-sm text-muted-foreground">
               {step + 1} / {total}
             </span>
             <button
