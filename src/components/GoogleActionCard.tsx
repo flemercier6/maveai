@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Calendar, Send, FileText, X, Check, Loader2 } from "lucide-react";
+import { Mail, Calendar, Send, FileText, X, Check, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -49,7 +49,6 @@ function formatDateTimeRange(start?: string, end?: string): string {
 }
 
 export function GoogleActionCard({ action, onChange }: Props) {
-  const [editing, setEditing] = useState(false);
   const [params, setParams] = useState<Record<string, unknown>>(action.params);
 
   const isEmail = action.action === "gmail.draft" || action.action === "gmail.send";
