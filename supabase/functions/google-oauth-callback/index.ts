@@ -9,20 +9,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-function htmlRedirect(target: string, message: string) {
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${message}</title></head>
-<body style="font-family:system-ui;padding:32px;color:#111">
-<p>${message}</p>
-<script>setTimeout(()=>{window.location.replace(${JSON.stringify(target)})},400)</script>
-</body></html>`;
-  const body = new TextEncoder().encode(html);
-  return new Response(body, {
-    status: 200,
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Content-Length": String(body.byteLength),
-      "X-Content-Type-Options": "nosniff",
-    },
+function htmlRedirect(target: string, _message: string) {
+  return new Response(null, {
+    status: 302,
+    headers: { Location: target || "/" },
   });
 }
 
