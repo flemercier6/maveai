@@ -1618,7 +1618,9 @@ Deno.serve(async (req) => {
         `- For "emails non lus" / "unread" → gmail.search with query "is:unread".\n` +
         `- For "email de X" / "from X" → gmail.search with query "from:X".\n` +
         `- Resolve relative dates ("tomorrow 3pm", "next monday") to ISO 8601 in UTC.\n` +
-        `- For drafts/sends, only fill fields the user actually provided. Leave subject/body empty strings if missing.\n` +
+        `- COMPOSING: When the user asks to write/draft/compose/redact an email ("écris un email", "rédige un mail", "compose un email", "draft an email", "write an email about X", "envoie un email à Y disant Z") → use gmail.draft (NOT gmail.send unless they explicitly say "send" / "envoie maintenant" with a recipient).\n` +
+        `- WRITE THE FULL BODY YOURSELF: For gmail.draft and gmail.send, you MUST write a complete, ready-to-send email body in the same language as the user's request, based on what the user described. Do NOT leave body empty just because the user didn't dictate the exact words — infer a polite, well-structured message from their intent. Same for subject: write a concise, relevant subject line.\n` +
+        `- Only leave "to" empty if the user did not specify any recipient (name, email, or "à X"). If they gave a name without an email, put the name in "to" so the user can complete it.\n` +
         `- Prefer gmail.search with a Gmail-style query when the user asks to find/check emails.\n` +
         `- Always reply with a single JSON object, no prose.` +
         scopeHint;
