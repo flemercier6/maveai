@@ -468,7 +468,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                                   <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => moveConvToFolder(c.id, null)}>
-                                      Remove from folder
+                                      Remove from project
                                     </DropdownMenuItem>
                                   </>
                                 )}
