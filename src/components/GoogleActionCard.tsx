@@ -152,7 +152,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
           type="button"
           onClick={handleCancel}
           disabled={busy}
-          className="px-3 py-1.5 rounded-lg border border-border bg-background text-sm hover:bg-dropdown-hover transition-colors disabled:opacity-50"
+          className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-dropdown-hover transition-colors disabled:opacity-50 text-base"
         >
           Annuler
         </button>
@@ -161,7 +161,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
           onClick={handleConfirm}
           disabled={busy}
           className={cn(
-            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60",
+            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background font-medium hover:opacity-90 transition-opacity disabled:opacity-60 text-base",
           )}
         >
           {busy ? (
@@ -193,7 +193,7 @@ function FieldRow({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <label className="text-xs text-muted-foreground w-[60px] shrink-0">{label}</label>
+      <label className="text-muted-foreground w-[60px] shrink-0 text-base">{label}</label>
       <div className="flex-1 min-w-0">{children}</div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>
@@ -215,7 +215,7 @@ function TextInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+      className="w-full rounded-md border border-input bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring text-base"
     />
   );
 }
@@ -237,7 +237,7 @@ function EmailFields({
         label="À"
         action={
           (!showCc || !showBcc) && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center text-base gap-0">
               {!showCc && (
                 <button
                   type="button"
@@ -276,13 +276,13 @@ function EmailFields({
         <TextInput value={fmt(params.subject)} onChange={(v) => set("subject", v)} placeholder="Sujet" />
       </FieldRow>
       <div className="flex gap-2">
-        <label className="text-xs text-muted-foreground w-[60px] shrink-0 pt-2">Corps</label>
+        <label className="text-muted-foreground w-[60px] shrink-0 pt-2 text-base">Corps</label>
         <textarea
           value={fmt(params.body)}
           onChange={(e) => set("body", e.target.value)}
           placeholder="Contenu de l'email"
           rows={6}
-          className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring resize-y"
+          className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring resize-y text-base"
         />
       </div>
     </>
@@ -328,13 +328,13 @@ function EventFields({
         />
       </FieldRow>
       <div className="flex gap-2">
-        <label className="text-xs text-muted-foreground w-[60px] shrink-0 pt-2">Détails</label>
+        <label className="text-muted-foreground w-[60px] shrink-0 pt-2 text-base">Détails</label>
         <textarea
           value={fmt(params.description)}
           onChange={(e) => set("description", e.target.value)}
           placeholder="Description"
           rows={4}
-          className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring resize-y"
+          className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring resize-y text-base"
         />
       </div>
     </>
