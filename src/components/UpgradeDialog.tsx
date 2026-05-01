@@ -21,9 +21,9 @@ const COPY: Record<Reason, { title: string; description: string }> = {
       "On Plus, the assistant remembers facts about you across all conversations and providers.",
   },
   folder: {
-    title: "Folders are a Plus feature",
+    title: "Projects are a Plus feature",
     description:
-      "Group your chats by project, set folder-level instructions and memory. Available on Plus.",
+      "Group your chats by project, set project-level instructions and memory. Available on Plus.",
   },
   "save-chat": {
     title: "Saved chats are a Plus feature",
