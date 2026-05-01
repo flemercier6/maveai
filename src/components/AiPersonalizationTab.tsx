@@ -176,72 +176,82 @@ export function AiPersonalizationTab() {
               </p>
             </div>
           </div>
-          <div className="rounded-lg border border-border divide-y divide-border bg-background">
-            {models.map((m) => {
-              const isFav = prefs.favoriteModels.includes(m.id);
-              const isBlack = prefs.blacklistedModels.includes(m.id);
+          <div className="space-y-2">
+            {grouped.map(([provider, providerModels]) => {
+              const ids = providerModels.map((m) => m.id);
+              const enabledCount = ids.filter((id) => !prefs.blacklistedModels.includes(id)).length;
+              const allEnabled = enabledCount === ids.length;
               return (
-                <div
-                  key={m.id}
-                  className={cn(
-                    "flex items-center justify-between px-4 py-3 text-base gap-3",
-                    isBlack && "opacity-60",
-                  )}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <ProviderLogo provider={m.provider} className="w-4 h-4 shrink-0" />
-                    <div className="min-w-0">
-                      <div className="font-medium text-foreground truncate text-base">
-                        {m.label}
+                <Collapsible key={provider} className="rounded-lg border border-border bg-background">
+                  <div className="flex items-center justify-between px-4 py-3 gap-3">
+                    <CollapsibleTrigger className="group flex items-center gap-2 min-w-0 flex-1 text-left">
+                      <ChevronDown className="w-3.5 h-3.5 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90 shrink-0" />
+                      <ProviderLogo provider={provider} className="w-4 h-4 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-medium text-foreground truncate text-base">
+                          {PROVIDER_LABEL[provider] ?? provider}
+                        </div>
+                        <div className="text-muted-foreground truncate text-sm">
+                          {enabledCount} / {ids.length} enabled
+                        </div>
                       </div>
-                      <div className="text-muted-foreground truncate text-sm">
-                        {PROVIDER_LABEL[m.provider]}
-                      </div>
+                    </CollapsibleTrigger>
+                    <Switch
+                      checked={allEnabled}
+                      onCheckedChange={(v) => setProviderEnabled(provider, v)}
+                    />
+                  </div>
+                  <CollapsibleContent>
+                    <div className="border-t border-border divide-y divide-border">
+                      {providerModels.map((m) => {
+                        const isFav = prefs.favoriteModels.includes(m.id);
+                        const isBlack = prefs.blacklistedModels.includes(m.id);
+                        return (
+                          <div
+                            key={m.id}
+                            className={cn(
+                              "flex items-center justify-between px-4 py-2.5 text-base gap-3 pl-10",
+                              isBlack && "opacity-60",
+                            )}
+                          >
+                            <div className="min-w-0">
+                              <div className="font-medium text-foreground truncate text-base">
+                                {m.label}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleFavorite(m.id)}
+                                    disabled={isBlack}
+                                    className={cn(
+                                      "h-8 w-8 inline-flex items-center justify-center rounded-[4px] transition-colors",
+                                      isFav
+                                        ? "text-amber-500 hover:bg-dropdown-hover"
+                                        : "text-muted-foreground hover:bg-dropdown-hover hover:text-foreground",
+                                      isBlack && "cursor-not-allowed opacity-50",
+                                    )}
+                                  >
+                                    <Star className={cn("w-4 h-4", isFav && "fill-current")} />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-tooltip text-tooltip-foreground text-xs px-2 py-1 rounded-[4px] border-0">
+                                  {isFav ? "Remove from favorites" : "Add to favorites"}
+                                </TooltipContent>
+                              </Tooltip>
+                              <Switch
+                                checked={!isBlack}
+                                onCheckedChange={() => toggleBlacklist(m.id)}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={() => toggleFavorite(m.id)}
-                          disabled={isBlack}
-                          className={cn(
-                            "h-8 w-8 inline-flex items-center justify-center rounded-[4px] transition-colors",
-                            isFav
-                              ? "text-amber-500 hover:bg-dropdown-hover"
-                              : "text-muted-foreground hover:bg-dropdown-hover hover:text-foreground",
-                            isBlack && "cursor-not-allowed opacity-50",
-                          )}
-                        >
-                          {isFav ? <Star className="w-4 h-4 fill-current" /> : <Star className="w-4 h-4" />}
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-tooltip text-tooltip-foreground text-xs px-2 py-1 rounded-[4px] border-0">
-                        {isFav ? "Remove from favorites" : "Add to favorites"}
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={() => toggleBlacklist(m.id)}
-                          className={cn(
-                            "h-8 w-8 inline-flex items-center justify-center rounded-[4px] transition-colors",
-                            isBlack
-                              ? "text-destructive hover:bg-dropdown-hover"
-                              : "text-muted-foreground hover:bg-dropdown-hover hover:text-foreground",
-                          )}
-                        >
-                          {isBlack ? <Check className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-tooltip text-tooltip-foreground text-xs px-2 py-1 rounded-[4px] border-0">
-                        {isBlack ? "Re-enable this model" : "Blacklist this model"}
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
+                  </CollapsibleContent>
+                </Collapsible>
               );
             })}
           </div>
