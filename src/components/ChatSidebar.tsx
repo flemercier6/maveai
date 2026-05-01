@@ -596,7 +596,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                                 <FIcon className={cn("w-3 h-3", col.fg)} />
                               )}
                             </span>
-                            <span className="flex-1 min-w-0 truncate text-[14px] md:text-xs font-medium">{f.name}</span>
+                            <span className="flex-1 min-w-0 truncate text-[14px] md:text-sm font-bold">{f.name}</span>
                             <span className="text-[10px] tabular-nums text-muted-foreground/70">
                               {items.length || ""}
                             </span>
