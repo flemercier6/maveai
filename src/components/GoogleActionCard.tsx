@@ -143,7 +143,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
       <div className="my-2 rounded-xl border border-border bg-card p-3 text-sm">
         <div className="flex items-center gap-2 text-destructive">
           <X className="w-4 h-4" />
-          <span className="font-medium">Échec de l'action</span>
+          <span className="font-medium text-foreground text-sm">Échec de l'action</span>
         </div>
         {action.error ? (
           <p className="mt-1 text-xs text-muted-foreground">{action.error}</p>
