@@ -1569,7 +1569,17 @@ Deno.serve(async (req) => {
       const mentionsMail = /\b(gmail|e-?mail|mail|courriel|inbox|boite mail|message?s? recus?)\b/.test(normalized);
       const wantsUnread = /\b(non lus?|unread)\b/.test(normalized);
       const wantsLatest = /\b(dernier(?:s|es)?|recent(?:s|es)?|nouveau(?:x|lles)?|recus?|inbox|boite mail|check|verifie|montre|liste|lis|regarde)\b/.test(normalized);
-      const isComposing = /\b(ecris|redige|compose|brouillon|draft|send|envoie|envoyer|reponds|reply)\b/.test(normalized);
+      const isComposing = /\b(ecris|redige|compose|brouillon|draft|reponds|reply|write|prepare|prepar)\b/.test(normalized);
+      const isSending = /\b(envoie|envoyer|send)\b/.test(normalized);
+
+      // Composing/drafting an email — surface an empty draft card so the LLM (or the user) can fill it.
+      if ((googleService === "gmail" && isComposing) || (mentionsMail && isComposing)) {
+        return {
+          action: isSending ? "gmail.send" : "gmail.draft",
+          params: { to: "", subject: "", body: "" },
+          rationale: "deterministic compose fallback",
+        };
+      }
 
       if (googleService === "gmail" && !isComposing && userText.trim()) {
         return {
@@ -1618,7 +1628,9 @@ Deno.serve(async (req) => {
         `- For "emails non lus" / "unread" → gmail.search with query "is:unread".\n` +
         `- For "email de X" / "from X" → gmail.search with query "from:X".\n` +
         `- Resolve relative dates ("tomorrow 3pm", "next monday") to ISO 8601 in UTC.\n` +
-        `- For drafts/sends, only fill fields the user actually provided. Leave subject/body empty strings if missing.\n` +
+        `- COMPOSING: When the user asks to write/draft/compose/redact an email ("écris un email", "rédige un mail", "compose un email", "draft an email", "write an email about X", "envoie un email à Y disant Z") → use gmail.draft (NOT gmail.send unless they explicitly say "send" / "envoie maintenant" with a recipient).\n` +
+        `- WRITE THE FULL BODY YOURSELF: For gmail.draft and gmail.send, you MUST write a complete, ready-to-send email body in the same language as the user's request, based on what the user described. Do NOT leave body empty just because the user didn't dictate the exact words — infer a polite, well-structured message from their intent. Same for subject: write a concise, relevant subject line.\n` +
+        `- Only leave "to" empty if the user did not specify any recipient (name, email, or "à X"). If they gave a name without an email, put the name in "to" so the user can complete it.\n` +
         `- Prefer gmail.search with a Gmail-style query when the user asks to find/check emails.\n` +
         `- Always reply with a single JSON object, no prose.` +
         scopeHint;
@@ -1670,6 +1682,55 @@ Deno.serve(async (req) => {
         console.warn("google router parse failed", e, text);
       }
       return { action: "none" };
+    }
+
+    async function draftEmailContent(
+      googleApiKey: string,
+      userText: string,
+      historyTail: { role: string; content: string }[],
+      current: { subject: string; body: string },
+    ): Promise<{ subject: string; body: string }> {
+      const sys =
+        `You are drafting an email on behalf of the user (${googleAccountEmail ?? "unknown"}).\n` +
+        `Today is ${new Date().toISOString()}.\n\n` +
+        `From the user's request and the recent conversation, write a complete, ready-to-send email:\n` +
+        `- Detect the language of the user's request and write the email in that same language.\n` +
+        `- Subject: short, specific, no quotes.\n` +
+        `- Body: polite greeting, well-structured paragraphs, clear sign-off. Do NOT include the recipient address or "From:" headers — only the message text.\n` +
+        `- Sign with the user's first name if known from context, otherwise leave the sign-off generic ("Bien à vous,") without inventing a name.\n` +
+        `- Do NOT use placeholders like [Your Name] or [Recipient]. If a fact is unknown, omit it gracefully rather than inserting a placeholder.\n` +
+        `- Reply with a single JSON object: {"subject": "...", "body": "..."}.` +
+        (current.subject ? `\nKeep this subject if reasonable: "${current.subject}".` : "") +
+        (current.body ? `\nUse this body as a starting point and improve it: "${current.body.slice(0, 500)}".` : "");
+
+      const body = {
+        contents: [
+          ...historyTail.slice(-6).map((m) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content.slice(0, 2000) }],
+          })),
+          { role: "user", parts: [{ text: userText.slice(0, 4000) }] },
+        ],
+        systemInstruction: { role: "user", parts: [{ text: sys }] },
+        generationConfig: {
+          temperature: 0.5,
+          responseMimeType: "application/json",
+        },
+      };
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`;
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(`drafter failed: ${JSON.stringify(d)}`);
+      const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+      const parsed = JSON.parse(text);
+      return {
+        subject: typeof parsed?.subject === "string" ? parsed.subject : current.subject,
+        body: typeof parsed?.body === "string" ? parsed.body : current.body,
+      };
     }
 
     async function execGoogleReadAction(
@@ -1764,6 +1825,34 @@ Deno.serve(async (req) => {
                   decision.action === "calendar.create";
 
                 if (isWrite) {
+                  // For email composition, ensure body & subject are filled — call the LLM
+                  // again to write a complete draft when the router left them empty.
+                  if (decision.action === "gmail.draft" || decision.action === "gmail.send") {
+                    const params = (decision.params ?? {}) as Record<string, unknown>;
+                    const currentBody = String(params.body ?? "").trim();
+                    const currentSubject = String(params.subject ?? "").trim();
+                    if (!currentBody || !currentSubject) {
+                      try {
+                        const drafted = await draftEmailContent(
+                          googleApiKey,
+                          lastUserText,
+                          trimmedHistory.map((m) => ({ role: m.role, content: m.content ?? "" })),
+                          { subject: currentSubject, body: currentBody },
+                        );
+                        decision = {
+                          ...decision,
+                          params: {
+                            ...params,
+                            subject: drafted.subject || currentSubject,
+                            body: drafted.body || currentBody,
+                          },
+                        };
+                      } catch (e) {
+                        console.warn("draftEmailContent failed", e);
+                      }
+                    }
+                  }
+
                   // Propose to user; do NOT execute. Frontend shows confirmation card.
                   controller.enqueue(
                     enc({
