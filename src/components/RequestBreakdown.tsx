@@ -30,7 +30,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
   // Build per-segment breakdown for the input side.
   const segments: Segment[] = [];
 
-  for (const s of meta.systems) {
+  for (const s of meta.systems ?? []) {
     segments.push({
       label: `System · ${s.label}`,
       tokens: s.approxTokens,
@@ -38,7 +38,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
     });
   }
 
-  if (meta.memoryMatches.length > 0) {
+  if (meta.memoryMatches && meta.memoryMatches.length > 0) {
     const memTokens = meta.memoryMatches.reduce(
       (s, m) => s + Math.ceil(m.content.length / 4),
       0,
