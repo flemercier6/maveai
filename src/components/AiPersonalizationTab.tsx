@@ -78,30 +78,34 @@ export function AiPersonalizationTab() {
 
         {/* ---------- Response length ---------- */}
         <section className="space-y-3">
-          <div>
-            <h3 className="text-sm font-medium">Response length</h3>
-            <p className="text-xs text-muted-foreground">
-              Controls how detailed the AI's answers are. Affects every reply.
-            </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h3 className="text-sm font-medium">Response length</h3>
+              <p className="text-xs text-muted-foreground">
+                Controls how detailed the AI's answers are. Affects every reply.
+              </p>
+            </div>
+            <Select
+              value={prefs.responseLength}
+              onValueChange={(v) => update({ responseLength: v as ResponseLength })}
+            >
+              <SelectTrigger className="w-44 shrink-0">
+                <SelectValue>
+                  {RESPONSE_LENGTH_DEFS.find((o) => o.id === prefs.responseLength)?.label}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {RESPONSE_LENGTH_DEFS.map((opt) => (
+                  <SelectItem key={opt.id} value={opt.id}>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{opt.label}</span>
+                      <span className="text-xs text-muted-foreground">{opt.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Select
-            value={prefs.responseLength}
-            onValueChange={(v) => update({ responseLength: v as ResponseLength })}
-          >
-            <SelectTrigger className="w-full md:w-72">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {RESPONSE_LENGTH_DEFS.map((opt) => (
-                <SelectItem key={opt.id} value={opt.id}>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{opt.label}</span>
-                    <span className="text-xs text-muted-foreground">{opt.description}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </section>
 
         {/* ---------- Modes ---------- */}
