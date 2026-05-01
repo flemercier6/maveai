@@ -653,6 +653,7 @@ function ChatMessageImpl({
   attachments,
   page,
   onOpenPage,
+  googleActionSlot,
 }: Props) {
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
