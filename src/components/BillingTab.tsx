@@ -379,7 +379,7 @@ export function BillingTab() {
         <div className="space-y-2">
           <Label className="text-sm">Saved cards</Label>
           {status.cards.length === 0 && (
-            <p className="text-xs text-muted-foreground">No saved cards.</p>
+            <p className="text-muted-foreground text-sm">No saved cards.</p>
           )}
           {status.cards.map((c) => (
             <div
