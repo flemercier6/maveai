@@ -77,15 +77,39 @@ function CanvasBlockImpl({ content, title, version, collapsed, streaming, onChan
           )}
         </div>
         {!isCollapsed && (
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={handleCopy}
-            aria-label={copied ? "Copied" : "Copy"}
-            className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors"
-          >
-            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-          </span>
+          <div className="flex items-center gap-1 shrink-0">
+            {onSendByEmail && (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSendByEmail();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSendByEmail();
+                  }
+                }}
+                aria-label="Send by email"
+                className="inline-flex items-center gap-1.5 h-6 px-2 rounded-md text-base text-foreground/80 hover:text-foreground hover:bg-dropdown-hover transition-colors"
+              >
+                <GoogleServiceLogo service="gmail" className="w-3.5 h-3.5" />
+                Send by email
+              </span>
+            )}
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={handleCopy}
+              aria-label={copied ? "Copied" : "Copy"}
+              className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors"
+            >
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            </span>
+          </div>
         )}
       </button>
       {open && (
