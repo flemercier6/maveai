@@ -847,6 +847,7 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.streaming === next.streaming &&
   prev.provider === next.provider &&
   prev.model === next.model &&
+  prev.googleService === next.googleService &&
   prev.memory?.added === next.memory?.added &&
   prev.memory?.updated === next.memory?.updated &&
   prev.tool?.tool === next.tool?.tool &&
