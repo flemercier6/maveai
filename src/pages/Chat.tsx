@@ -1184,8 +1184,9 @@ export default function Chat() {
               const mode = String(j.mode ?? "");
               const actionName = String(j.action ?? "");
               const params = (j.params && typeof j.params === "object") ? j.params as Record<string, unknown> : {};
+              const loading = Boolean(j.loading);
               if (mode === "proposal" && (actionName === "gmail.draft" || actionName === "gmail.send" || actionName === "calendar.create")) {
-                const ga: GoogleAction = { action: actionName, params, state: "pending" };
+                const ga: GoogleAction = { action: actionName, params, state: "pending", loading };
                 setMessages((prev) => {
                   const next = prev.slice();
                   next[next.length - 1] = { ...next[next.length - 1], googleAction: ga };
