@@ -41,7 +41,7 @@ function DriveLogo(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-const LOGOS: Record<GoogleService, React.ComponentType<SVGProps<SVGSVGElement>>> = {
+const LOGOS: Record<GoogleService, React.ComponentType<{ className?: string }>> = {
   gmail: GmailLogo,
   calendar: CalendarLogo,
   drive: DriveLogo,
@@ -55,5 +55,5 @@ export function GoogleServiceLogo({
   className?: string;
 }) {
   const Logo = LOGOS[service];
-  return <Logo className={className} aria-label={GOOGLE_SERVICE_LABEL[service]} />;
+  return <Logo className={className} />;
 }
