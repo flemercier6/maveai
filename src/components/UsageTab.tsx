@@ -498,7 +498,7 @@ export function UsageTab() {
 
       {/* Per-model breakdown */}
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold">By model</h3>
+        <h3 className="font-semibold text-base">By model</h3>
         <div className="rounded-lg border border-border overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-muted text-muted-foreground text-sm">
