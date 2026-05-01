@@ -1731,7 +1731,22 @@ export default function Chat() {
         >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
-              <h2 className="font-semibold mb-2 text-4xl">How can I help you?</h2>
+              {(() => {
+                const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
+                const fullName =
+                  (meta.full_name as string) ||
+                  (meta.name as string) ||
+                  "";
+                const firstName =
+                  (meta.given_name as string) ||
+                  (fullName ? fullName.trim().split(/\s+/)[0] : "") ||
+                  (user?.email ? user.email.split("@")[0] : "");
+                return (
+                  <h2 className="font-semibold mb-2 text-4xl">
+                    {firstName ? `How can I help you, ${firstName}?` : "How can I help you?"}
+                  </h2>
+                );
+              })()}
             </div>
           ) : (
             <div className="pt-8 pb-4">
