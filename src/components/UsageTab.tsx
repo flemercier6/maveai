@@ -533,7 +533,7 @@ export function UsageTab() {
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Costs are based on each provider's public per-token list price.
         </p>
       </div>
