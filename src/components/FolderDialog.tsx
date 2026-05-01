@@ -129,7 +129,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
 
   async function remove() {
     if (!folder) return;
-    if (!confirm("Delete this folder? Its conversations will be moved out.")) return;
+    if (!confirm("Delete this project? Its conversations will be moved out.")) return;
     const { error } = await supabase.from("folders").delete().eq("id", folder.id);
     if (error) {
       toast.error(error.message);
