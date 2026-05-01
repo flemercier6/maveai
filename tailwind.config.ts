@@ -79,6 +79,13 @@ export default {
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
         serif: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
       },
+      fontSize: {
+        xs: ['8px', { lineHeight: '1.4' }],
+        sm: ['10px', { lineHeight: '1.45' }],
+        base: ['13px', { lineHeight: '1.5' }],
+        lg: ['15px', { lineHeight: '1.5' }],
+        xl: ['18px', { lineHeight: '1.45' }],
+      },
       boxShadow: {
         soft: 'var(--shadow-sm)',
         elevated: 'var(--shadow-md)',
