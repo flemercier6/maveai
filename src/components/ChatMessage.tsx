@@ -624,6 +624,7 @@ function ChatMessageImpl({
   streaming,
   provider,
   model,
+  googleService,
   memory,
   tool,
   phase,
