@@ -1586,6 +1586,10 @@ Deno.serve(async (req) => {
         `- calendar.create { summary, start: ISO, end: ISO, description?, location?, attendees?: email[], timeZone? }\n\n` +
         `Rules:\n` +
         `- If the message is general chat or unrelated to Gmail/Calendar, return {"action":"none"}.\n` +
+        `- ANY mention of "email", "mail", "courriel", "boîte mail", "inbox", "Gmail", "messages reçus", "dernier email", "nouveaux emails", or asking about who wrote/sent something → use gmail.search.\n` +
+        `- For "mon dernier email" / "derniers emails reçus" → gmail.search with query "in:inbox" and maxResults 5-10, sorted by recency (Gmail default).\n` +
+        `- For "emails non lus" / "unread" → gmail.search with query "is:unread".\n` +
+        `- For "email de X" / "from X" → gmail.search with query "from:X".\n` +
         `- Resolve relative dates ("tomorrow 3pm", "next monday") to ISO 8601 in UTC.\n` +
         `- For drafts/sends, only fill fields the user actually provided. Leave subject/body empty strings if missing.\n` +
         `- Prefer gmail.search with a Gmail-style query when the user asks to find/check emails.\n` +
