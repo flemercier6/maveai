@@ -1819,20 +1819,6 @@ export default function Chat() {
                 }
                 return messages.map((m, i) => (
                 <div key={m.id ?? i}>
-                {m.role === "assistant" && m.googleAction ? (
-                  <div className="px-4 md:px-12 max-w-3xl mx-auto mb-2">
-                    <GoogleActionCard
-                      action={m.googleAction}
-                      onChange={(next) => {
-                        setMessages((prev) => {
-                          const arr = prev.slice();
-                          arr[i] = { ...arr[i], googleAction: next };
-                          return arr;
-                        });
-                      }}
-                    />
-                  </div>
-                ) : null}
                 <ChatMessage
                   id={m.id}
                   role={m.role}
@@ -1888,6 +1874,20 @@ export default function Chat() {
                     }, 0);
                   } : undefined}
                 />
+                {m.role === "assistant" && m.googleAction ? (
+                  <div className="px-4 md:px-12 max-w-3xl mx-auto mt-2">
+                    <GoogleActionCard
+                      action={m.googleAction}
+                      onChange={(next) => {
+                        setMessages((prev) => {
+                          const arr = prev.slice();
+                          arr[i] = { ...arr[i], googleAction: next };
+                          return arr;
+                        });
+                      }}
+                    />
+                  </div>
+                ) : null}
                 </div>
               ));
               })()}
