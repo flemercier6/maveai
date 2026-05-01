@@ -266,6 +266,43 @@ function TextInput({
   );
 }
 
+function AutoResizeTextarea({
+  value,
+  onChange,
+  placeholder,
+  minHeight = 60,
+  maxHeight = 400,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  minHeight?: number;
+  maxHeight?: number;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const next = Math.min(Math.max(el.scrollHeight, minHeight), maxHeight);
+    el.style.height = `${next}px`;
+    el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, [value, minHeight, maxHeight]);
+
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      style={{ minHeight, maxHeight }}
+      className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring resize-none text-base"
+    />
+  );
+}
+
+
 function EmailFields({
   params,
   onChange,
