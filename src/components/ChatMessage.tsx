@@ -740,9 +740,15 @@ function ChatMessageImpl({
   return (
     <div className="relative w-full my-[50px]" data-assistant-message="true" data-message-id={id ?? ""}>
       <div className="max-w-3xl mx-auto px-4">
-        {(provider || (tool && tool.status !== "failed")) && (
+        {(provider || googleService || (tool && tool.status !== "failed")) && (
           <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "10px" }}>
             {provider && <ProviderBadge provider={provider} model={model} />}
+            {googleService && (
+              <div className="inline-flex items-center h-6 gap-1.5 rounded-full border border-border bg-card px-2.5 text-[11px] font-medium text-muted-foreground max-w-full">
+                <GoogleServiceLogo service={googleService} className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate text-base">{GOOGLE_SERVICE_LABEL[googleService]}</span>
+              </div>
+            )}
             {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
           </div>
         )}
