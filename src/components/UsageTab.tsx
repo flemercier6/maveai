@@ -514,7 +514,7 @@ export function UsageTab() {
                     </div>
                   </div>
                 </div>
-                <div className="text-right tabular-nums font-semibold text-base shrink-0">
+                <div className="text-right tabular-nums text-sm font-semibold text-base shrink-0">
                   {fmtEUR(row.cost * mult)}
                 </div>
               </div>
