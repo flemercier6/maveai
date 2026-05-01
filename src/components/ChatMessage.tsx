@@ -798,6 +798,7 @@ function ChatMessageImpl({
             collapsed={canvasCollapsed}
             streaming={streaming}
             onChange={onCanvasChange}
+            onSendByEmail={onSendCanvasByEmail}
           />
         )}
         {page && onOpenPage && <PageCard page={page} onOpen={onOpenPage} />}
