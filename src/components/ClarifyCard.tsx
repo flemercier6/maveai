@@ -135,7 +135,7 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
                   ].join(" ")}
                 >
                   {active && <Check className="w-3 h-3 shrink-0" />}
-                  <span className="truncate">{opt.label}</span>
+                  <span className="truncate text-base">{opt.label}</span>
                 </button>
               );
             })}

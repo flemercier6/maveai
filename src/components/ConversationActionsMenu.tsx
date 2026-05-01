@@ -158,7 +158,7 @@ export function ConversationActionsMenu({
                         <FIcon className={cn("w-2.5 h-2.5", col.fg)} />
                       )}
                     </span>
-                    <span className="truncate">{f.name}</span>
+                    <span className="truncate text-base">{f.name}</span>
                   </DropdownMenuItem>
                 );
               })}
