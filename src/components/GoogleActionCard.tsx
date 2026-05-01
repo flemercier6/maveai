@@ -143,6 +143,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
   }
 
   const busy = action.state === "executing";
+  const loading = !!action.loading;
 
   // ---------- Confirmation card ----------
   return (
@@ -153,8 +154,14 @@ export function GoogleActionCard({ action, onChange }: Props) {
       </div>
 
       <div className="p-3 space-y-2 text-sm">
-        {isEmail ? <EmailFields params={params} onChange={setParams} /> : null}
-        {isEvent ? <EventFields params={params} onChange={setParams} /> : null}
+        {loading ? (
+          isEmail ? <EmailSkeleton /> : <EventSkeleton />
+        ) : (
+          <>
+            {isEmail ? <EmailFields params={params} onChange={setParams} /> : null}
+            {isEvent ? <EventFields params={params} onChange={setParams} /> : null}
+          </>
+        )}
       </div>
 
       <div className="flex items-center justify-end gap-2 px-3 py-2 bg-background">
