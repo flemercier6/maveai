@@ -3,6 +3,7 @@ import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, Arr
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
+import { GoogleServiceLogo, GOOGLE_SERVICE_LABEL, type GoogleService } from "./GoogleServiceLogo";
 import { FlowDiagram } from "./FlowDiagram";
 import { ChartBlock } from "./ChartBlock";
 
@@ -54,6 +55,7 @@ type Props = {
   streaming?: boolean;
   provider?: Provider;
   model?: string;
+  googleService?: GoogleService;
   memory?: { added: number; updated: number };
   tool?: ToolUse;
   phase?: Phase;
@@ -622,6 +624,7 @@ function ChatMessageImpl({
   streaming,
   provider,
   model,
+  googleService,
   memory,
   tool,
   phase,
@@ -737,9 +740,15 @@ function ChatMessageImpl({
   return (
     <div className="relative w-full my-[50px]" data-assistant-message="true" data-message-id={id ?? ""}>
       <div className="max-w-3xl mx-auto px-4">
-        {(provider || (tool && tool.status !== "failed")) && (
+        {(provider || googleService || (tool && tool.status !== "failed")) && (
           <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "10px" }}>
             {provider && <ProviderBadge provider={provider} model={model} />}
+            {googleService && (
+              <div className="inline-flex items-center h-6 gap-1.5 rounded-full border border-border bg-card px-2.5 text-[11px] font-medium text-muted-foreground max-w-full">
+                <GoogleServiceLogo service={googleService} className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate text-base">{GOOGLE_SERVICE_LABEL[googleService]}</span>
+              </div>
+            )}
             {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}
           </div>
         )}
@@ -838,6 +847,7 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.streaming === next.streaming &&
   prev.provider === next.provider &&
   prev.model === next.model &&
+  prev.googleService === next.googleService &&
   prev.memory?.added === next.memory?.added &&
   prev.memory?.updated === next.memory?.updated &&
   prev.tool?.tool === next.tool?.tool &&

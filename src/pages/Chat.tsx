@@ -71,7 +71,8 @@ export type AgentStep = {
   narrationDone?: boolean;
 };
 import { GoogleActionCard, type GoogleAction } from "@/components/GoogleActionCard";
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean; agentSteps?: AgentStep[]; googleAction?: GoogleAction };
+import { GoogleServiceLogo, type GoogleService, GOOGLE_SERVICE_LABEL } from "@/components/GoogleServiceLogo";
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean; agentSteps?: AgentStep[]; googleAction?: GoogleAction; googleService?: GoogleService };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -141,6 +142,8 @@ export default function Chat() {
   const [exploreRequested, setExploreRequested] = useState(false);
   // User explicitly invoked /page — next send generates a structured one-pager.
   const [pageRequested, setPageRequested] = useState(false);
+  // User explicitly invoked /gmail, /calendar or /drive — next send is scoped to that Google service.
+  const [googleService, setGoogleService] = useState<GoogleService | null>(null);
   // Side panel showing a generated PageSpec.
   const [pageOpen, setPageOpen] = useState(false);
   const [activePage, setActivePage] = useState<PageSpec | null>(null);
@@ -887,8 +890,10 @@ export default function Chat() {
     }
 
     const baseMsgs: Msg[] = [...messages, { id: userMsg?.id ?? `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
-    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel }]);
+    const sentGoogleService = googleService;
+    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel, googleService: sentGoogleService ?? undefined }]);
     setStreaming(true);
+    if (googleService) setGoogleService(null);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -912,6 +917,7 @@ export default function Chat() {
           // a canvas — don't let it decide otherwise.
           forceCanvas: writeRequested === true,
           previousCanvas,
+          googleService: sentGoogleService,
           aiPrefs: {
             disabledModes: aiPrefs.disabledModes,
             blacklistedModels: aiPrefs.blacklistedModels,
@@ -1418,6 +1424,9 @@ export default function Chat() {
       // Flag the next send to generate a structured one-pager.
       setPageRequested(true);
       toast.success("Page mode enabled for next message");
+    } else if (item.provider === "gmail" || item.provider === "calendar" || item.provider === "drive") {
+      setGoogleService(item.provider);
+      toast.success(`${GOOGLE_SERVICE_LABEL[item.provider]} enabled for next message`);
     } else {
       if (isModelBlacklisted(aiPrefs, item.model)) {
         toast.error("This model is blacklisted in your AI preferences");
@@ -1814,6 +1823,7 @@ export default function Chat() {
                   role={m.role}
                   content={m.content}
                   provider={m.provider}
+                  googleService={m.googleService}
                   model={m.model}
                   memory={m.memory}
                   tool={m.tool}
@@ -2061,6 +2071,21 @@ export default function Chat() {
                         <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
                       </span>
                       Page
+                    </button>
+                  )}
+                  {googleService && (
+                    <button
+                      type="button"
+                      onClick={() => setGoogleService(null)}
+                      aria-label={`Remove ${GOOGLE_SERVICE_LABEL[googleService]}`}
+                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-[#E6F1FF] transition-colors"
+                      style={{ color: "#0062FF" }}
+                    >
+                      <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                        <GoogleServiceLogo service={googleService} className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" />
+                        <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
+                      </span>
+                      {GOOGLE_SERVICE_LABEL[googleService]}
                     </button>
                   )}
                 </div>

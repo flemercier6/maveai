@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, Pencil, LayoutDashboard } from "lucide-react";
 import { MODELS, PROVIDERS, AUTO_MODEL_ID, type Provider } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
+import { GoogleServiceLogo, type GoogleService } from "./GoogleServiceLogo";
 
 export type SlashItem = {
-  provider: Provider | "auto" | "write" | "explore" | "page";
+  provider: Provider | "auto" | "write" | "explore" | "page" | GoogleService;
   model: string;
   label: string;
   description: string;
@@ -42,6 +43,27 @@ export function buildSlashItems(): SlashItem[] {
       label: "Page",
       description: "Generate a structured one-pager dashboard",
       slug: "page",
+    },
+    {
+      provider: "gmail",
+      model: "",
+      label: "Gmail",
+      description: "Search, read, draft or send emails",
+      slug: "gmail",
+    },
+    {
+      provider: "calendar",
+      model: "",
+      label: "Calendar",
+      description: "List or create events on your agenda",
+      slug: "calendar",
+    },
+    {
+      provider: "drive",
+      model: "",
+      label: "Drive",
+      description: "Browse files in your Google Drive",
+      slug: "drive",
     },
   ];
   for (const p of PROVIDERS) {
@@ -119,7 +141,10 @@ export function SlashCommandMenu({
       it.provider === "auto" ||
       it.provider === "write" ||
       it.provider === "explore" ||
-      it.provider === "page";
+      it.provider === "page" ||
+      it.provider === "gmail" ||
+      it.provider === "calendar" ||
+      it.provider === "drive";
     const modes = all.filter(isMode);
     const models = all.filter((it) => !isMode(it));
     if (favoriteModels?.length) {
@@ -203,6 +228,8 @@ export function SlashCommandMenu({
                 <Sparkles className="w-4 h-4 text-muted-foreground" />
               ) : it.provider === "page" ? (
                 <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
+              ) : it.provider === "gmail" || it.provider === "calendar" || it.provider === "drive" ? (
+                <GoogleServiceLogo service={it.provider} className="w-4 h-4" />
               ) : (
                 <ProviderLogo provider={it.provider as Provider} className="w-4 h-4" />
               )}
