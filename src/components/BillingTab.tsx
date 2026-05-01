@@ -341,7 +341,7 @@ export function BillingTab() {
               {status.outstandingEur.toFixed(2)} €
             </div>
             {status.account.next_billing_at && (
-              <div className="text-xs text-muted-foreground">
+              <div className="text-muted-foreground text-sm">
                 Next charge on{" "}
                 {new Date(status.account.next_billing_at).toLocaleDateString("en-US", {
                   day: "2-digit",
