@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Share2, Copy, Check, Globe, Lock, Loader2 } from "lucide-react";
+import { Copy, Check, Globe, Lock, Loader2 } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Share03Icon } from "@hugeicons/core-free-icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -104,7 +106,7 @@ export function ShareMenu({ conversationId }: Props) {
           size="sm"
           className="h-8 px-2.5 gap-1.5 text-sm font-medium"
         >
-          <Share2 className="w-4 h-4" />
+          <HugeiconsIcon icon={Share03Icon} className="w-4 h-4" strokeWidth={1.5} />
           <span className="hidden sm:inline">Share</span>
         </Button>
       </DropdownMenuTrigger>
