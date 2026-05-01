@@ -238,7 +238,7 @@ export function MemoryTab() {
 
       <Card className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <h3 className="text-sm font-medium">Add a memory</h3>
+          <h3 className="font-medium text-base">Add a memory</h3>
           <div className="flex items-center gap-2">
             <Dialog open={importOpen} onOpenChange={(o) => { if (o && isFree) { setShowUpgrade(true); return; } setImportOpen(o); }}>
               <DialogTrigger asChild>
@@ -263,7 +263,7 @@ export function MemoryTab() {
                   rows={10}
                   className="font-mono text-xs"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   {parseImport(importText).length} memor{parseImport(importText).length === 1 ? "y" : "ies"} detected.
                 </p>
                 <DialogFooter>
@@ -300,7 +300,7 @@ export function MemoryTab() {
       </Card>
 
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">{memories.length} memor{memories.length === 1 ? "y" : "ies"}</h3>
+        <h3 className="font-medium text-base">{memories.length} memor{memories.length === 1 ? "y" : "ies"}</h3>
         {memories.length > 0 && (
           <Button variant="ghost" size="sm" onClick={clearAll} className="text-destructive">
             Clear all

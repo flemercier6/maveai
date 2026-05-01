@@ -229,10 +229,10 @@ export function BillingTab() {
             {/* Free */}
             <div className="border border-border rounded-md p-4 bg-card flex flex-col gap-3">
               <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Free</div>
+                <div className="font-medium uppercase tracking-wide text-muted-foreground text-sm">Free</div>
                 <div className="mt-1 flex items-baseline gap-1">
                   <span className="text-2xl font-semibold">€0</span>
-                  <span className="text-xs text-muted-foreground">/ month</span>
+                  <span className="text-muted-foreground text-sm">/ month</span>
                 </div>
               </div>
               <ul className="space-y-1.5 text-sm">
@@ -266,11 +266,11 @@ export function BillingTab() {
                 <Sparkles className="w-3 h-3" /> Recommended
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wide text-primary">Plus</div>
+                <div className="font-medium uppercase tracking-wide text-primary text-sm">Plus</div>
                 <div className="mt-1 flex items-baseline gap-1">
                   <span className="text-2xl font-semibold">Pay-as-you-go</span>
                 </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
+                <div className="text-muted-foreground mt-0.5 text-sm">
                   Billed on actual usage. No fixed fee.
                 </div>
               </div>
@@ -326,7 +326,7 @@ export function BillingTab() {
             <button
               type="button"
               onClick={() => setShowUpgradeForm(false)}
-              className="text-xs text-muted-foreground underline mt-1"
+              className="text-muted-foreground underline mt-1 text-sm"
             >
               ← Back to plan comparison
             </button>
@@ -336,12 +336,12 @@ export function BillingTab() {
         {/* Current usage */}
         {isPlus && (
           <div className="border border-border rounded-md p-4 bg-card space-y-1">
-            <div className="text-xs text-muted-foreground">Current usage</div>
+            <div className="text-muted-foreground text-sm">Current usage</div>
             <div className="text-2xl font-semibold">
               {status.outstandingEur.toFixed(2)} €
             </div>
             {status.account.next_billing_at && (
-              <div className="text-xs text-muted-foreground">
+              <div className="text-muted-foreground text-sm">
                 Next charge on{" "}
                 {new Date(status.account.next_billing_at).toLocaleDateString("en-US", {
                   day: "2-digit",
@@ -379,7 +379,7 @@ export function BillingTab() {
         <div className="space-y-2">
           <Label className="text-sm">Saved cards</Label>
           {status.cards.length === 0 && (
-            <p className="text-xs text-muted-foreground">No saved cards.</p>
+            <p className="text-muted-foreground text-sm">No saved cards.</p>
           )}
           {status.cards.map((c) => (
             <div

@@ -437,7 +437,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                               </DropdownMenuSubTrigger>
                               <DropdownMenuSubContent className="w-48 max-h-64 overflow-auto">
                                 {folders.length === 0 && (
-                                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                                  <div className="px-2 py-1.5 text-muted-foreground text-sm">
                                     No folders yet
                                   </div>
                                 )}
@@ -521,7 +521,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                 {/* ============== FOLDERS ============== */}
                 <Collapsible defaultOpen>
                   <div className="flex items-center justify-between pr-1">
-                    <CollapsibleTrigger className="group flex items-center gap-1 px-[10px] py-[6px] text-sm font-medium text-muted-foreground hover:text-sidebar-foreground">
+                    <CollapsibleTrigger className="group flex items-center gap-1 px-[10px] py-[6px] font-medium text-muted-foreground hover:text-sidebar-foreground text-base">
                       <ChevronDown className="w-3 h-3 transition-transform group-data-[state=closed]:-rotate-90" />
                       <span>Projects</span>
                     </CollapsibleTrigger>
@@ -540,7 +540,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                   </div>
                   <CollapsibleContent className="space-y-0.5 pt-1 pl-3">
                     {foldersLoaded && folders.length === 0 && (
-                      <p className="text-xs text-muted-foreground px-3 py-2">
+                      <p className="text-muted-foreground px-3 py-2 text-sm">
                         Create a project to group related chats.
                       </p>
                     )}
@@ -635,7 +635,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                 {/* ============== RECENT (unfiled) ============== */}
                 <Collapsible defaultOpen>
                   <CollapsibleTrigger
-                    className="group flex w-full items-center gap-1 px-[10px] py-[6px] text-sm font-medium text-muted-foreground hover:text-sidebar-foreground"
+                    className="group flex w-full items-center gap-1 px-[10px] py-[6px] font-medium text-muted-foreground hover:text-sidebar-foreground text-base"
                   >
                     <ChevronDown className="w-3 h-3 transition-transform group-data-[state=closed]:-rotate-90" />
                     <span>Recent</span>
@@ -663,7 +663,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     }}
                   >
                     {unfiled.length === 0 && (
-                      <p className="text-xs text-muted-foreground px-3 py-2">
+                      <p className="text-muted-foreground px-3 py-2 text-sm">
                         {conversations.length === 0
                           ? "No conversations yet."
                           : "All chats are in projects."}

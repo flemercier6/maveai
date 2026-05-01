@@ -373,13 +373,13 @@ export function UsageTab() {
 
       {/* Total billed cost card */}
       <div className="rounded-xl border border-border bg-foreground text-background p-6">
-        <div className="text-xs font-medium uppercase tracking-wide opacity-70">
+        <div className="font-medium uppercase tracking-wide opacity-70 text-sm">
           Total spent on AI
         </div>
         <div className="mt-2 font-semibold tracking-tight tabular-nums text-xl">
           {fmtEUR(totalBilled)}
         </div>
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs opacity-70">
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 opacity-70 text-sm">
           <span>
             <span className="font-medium tabular-nums">
               {fmtTokens(data.totalRequests)}
@@ -405,7 +405,7 @@ export function UsageTab() {
       <div className="rounded-xl border border-border p-4 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h3 className="text-sm font-semibold">Spend over time</h3>
+            <h3 className="font-semibold text-base">Spend over time</h3>
           </div>
           <div className="inline-flex rounded-[6px] border border-border p-0.5 bg-[hsl(var(--dropdown-hover))]">
             {RANGES.map((r) => (
@@ -498,10 +498,10 @@ export function UsageTab() {
 
       {/* Per-model breakdown */}
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold">By model</h3>
+        <h3 className="font-semibold text-base">By model</h3>
         <div className="rounded-lg border border-border overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-muted text-xs text-muted-foreground">
+            <thead className="bg-muted text-muted-foreground text-sm">
               <tr>
                 <th className="text-left font-medium px-3 py-2">Model</th>
                 <th className="text-right font-medium px-3 py-2">Cost</th>
@@ -518,7 +518,7 @@ export function UsageTab() {
                         <ProviderLogo provider={provider} className="w-5 h-5 shrink-0" />
                         <div>
                           <div className="font-medium text-foreground">{modelLabel(row.model)}</div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-muted-foreground text-sm">
                             {PROVIDER_LABEL[provider] ?? row.provider}
                           </div>
                         </div>
@@ -533,7 +533,7 @@ export function UsageTab() {
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Costs are based on each provider's public per-token list price.
         </p>
       </div>
@@ -551,10 +551,10 @@ function DeveloperModeCard({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="rounded-xl border border-border p-4 flex items-start justify-between gap-4">
+    <div className="rounded-xl border border-border p-4 flex items-start justify-between gap-4 text-base">
       <div className="min-w-0">
         <div className="text-sm font-semibold">Developer Mode</div>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-muted-foreground text-sm">
           Affiche sous chaque réponse de l'IA un dropdown de breakdown détaillé
           (tokens et coût en €) pour comprendre ce qui pèse le plus dans la requête.
         </p>
