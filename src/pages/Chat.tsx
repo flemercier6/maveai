@@ -70,7 +70,8 @@ export type AgentStep = {
   narration: string;
   narrationDone?: boolean;
 };
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean; agentSteps?: AgentStep[] };
+import { GoogleActionCard, type GoogleAction } from "@/components/GoogleActionCard";
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean; agentSteps?: AgentStep[]; googleAction?: GoogleAction };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -1173,6 +1174,22 @@ export default function Chat() {
                 next[next.length - 1] = { ...cur, agentSteps: updated };
                 return next;
               });
+            } else if (j.type === "google_action") {
+              const mode = String(j.mode ?? "");
+              const actionName = String(j.action ?? "");
+              const params = (j.params && typeof j.params === "object") ? j.params as Record<string, unknown> : {};
+              if (mode === "proposal" && (actionName === "gmail.draft" || actionName === "gmail.send" || actionName === "calendar.create")) {
+                const ga: GoogleAction = { action: actionName, params, state: "pending" };
+                setMessages((prev) => {
+                  const next = prev.slice();
+                  next[next.length - 1] = { ...next[next.length - 1], googleAction: ga };
+                  return next;
+                });
+              } else if (mode === "result") {
+                // For read actions, the LLM response will narrate the result.
+                // We do not render a card; the existing tool indicator + the streamed
+                // text are enough. Still, we could store it if needed later.
+              }
             } else if (j.type === "title" && j.title) {
               const newTitle = String(j.title);
               setConversations((prev) =>
@@ -1791,8 +1808,8 @@ export default function Chat() {
                   }
                 }
                 return messages.map((m, i) => (
+                <div key={m.id ?? i}>
                 <ChatMessage
-                  key={m.id ?? i}
                   id={m.id}
                   role={m.role}
                   content={m.content}
@@ -1846,6 +1863,21 @@ export default function Chat() {
                     }, 0);
                   } : undefined}
                 />
+                {m.role === "assistant" && m.googleAction ? (
+                  <div className="px-4 md:px-12 max-w-3xl mx-auto -mt-2">
+                    <GoogleActionCard
+                      action={m.googleAction}
+                      onChange={(next) => {
+                        setMessages((prev) => {
+                          const arr = prev.slice();
+                          arr[i] = { ...arr[i], googleAction: next };
+                          return arr;
+                        });
+                      }}
+                    />
+                  </div>
+                ) : null}
+                </div>
               ));
               })()}
             </div>
