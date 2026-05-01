@@ -138,6 +138,7 @@ export function AiPersonalizationTab() {
             </Select>
           </div>
         </section>
+        <hr className="border-t border-border" />
 
         {/* ---------- Modes ---------- */}
         <section className="space-y-3">
@@ -165,6 +166,7 @@ export function AiPersonalizationTab() {
             })}
           </div>
         </section>
+        <hr className="border-t border-border" />
 
         {/* ---------- Models ---------- */}
         <section className="space-y-3">
