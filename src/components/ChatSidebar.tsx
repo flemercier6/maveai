@@ -274,7 +274,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                 if (isFree) { onLockedFeature?.("save-chat"); return; }
                 onNew();
               }}
-              className="flex-1 flex items-center gap-3 md:gap-2 px-3 md:px-[10px] py-[10px] md:py-[6px] rounded-[6px] md:rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-[15px] md:text-sm"
+              className="flex-1 flex items-center gap-3 md:gap-2 px-3 md:px-[10px] h-9 md:h-7 rounded-[6px] md:rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent text-[15px] md:text-sm"
             >
               <Plus className="w-5 h-5 md:w-4 md:h-4 opacity-70" />
               <span>New chat</span>
