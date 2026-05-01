@@ -147,13 +147,13 @@ export function AiPersonalizationTab() {
               Disabled modes are hidden from the slash menu and never auto-triggered.
             </p>
           </div>
-          <div className="rounded-lg border border-border divide-y divide-border bg-background">
+          <div className="space-y-1">
             {MODE_DEFS.map((m) => {
               const enabled = !prefs.disabledModes.includes(m.id);
               return (
                 <div
                   key={m.id}
-                  className="flex items-center justify-between px-4 py-3 text-base"
+                  className="flex items-center justify-between py-2 text-base gap-3"
                 >
                   <div className="min-w-0">
                     <div className="font-medium text-foreground text-base">{m.label}</div>
