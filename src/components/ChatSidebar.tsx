@@ -663,7 +663,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     }}
                   >
                     {unfiled.length === 0 && (
-                      <p className="text-xs text-muted-foreground px-3 py-2">
+                      <p className="text-muted-foreground px-3 py-2 text-sm">
                         {conversations.length === 0
                           ? "No conversations yet."
                           : "All chats are in projects."}
