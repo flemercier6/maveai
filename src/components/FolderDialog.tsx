@@ -284,18 +284,18 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
           {/* Instructions / shared memory */}
           <div className="space-y-1.5">
             <Label htmlFor="folder-instructions" className="text-sm">
-              Folder context (optional)
+              Project context (optional)
             </Label>
             <Textarea
               id="folder-instructions"
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
-              placeholder="Describe the project, the tone, any persistent context… Used as priority memory for all chats in this folder."
+              placeholder="Describe the project, the tone, any persistent context… Used as priority memory for all chats in this project."
               rows={4}
               maxLength={2000}
             />
             <p className="text-[11px] text-muted-foreground">
-              Memories captured inside this folder will also be searched first when chatting here.
+              Memories captured inside this project will also be searched first when chatting here.
             </p>
           </div>
         </div>
