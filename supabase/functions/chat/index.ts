@@ -1702,6 +1702,122 @@ Deno.serve(async (req) => {
             }
           }
 
+          // ---------- Google integration router ----------
+          // Run AFTER clarify, BEFORE web tools.
+          const googleApiKey = Deno.env.get("GOOGLE_API_KEY");
+          if (googleConnected && googleApiKey && !writingMode && lastUserText) {
+            try {
+              const decision = await classifyGoogleIntent(
+                googleApiKey,
+                lastUserText,
+                trimmedHistory.map((m) => ({ role: m.role, content: m.content ?? "" })),
+              );
+
+              if (decision.action !== "none") {
+                const isWrite =
+                  decision.action === "gmail.draft" ||
+                  decision.action === "gmail.send" ||
+                  decision.action === "calendar.create";
+
+                if (isWrite) {
+                  // Propose to user; do NOT execute. Frontend shows confirmation card.
+                  controller.enqueue(
+                    enc({
+                      type: "google_action",
+                      mode: "proposal",
+                      action: decision.action,
+                      params: decision.params,
+                    }),
+                  );
+                  const intros: Record<string, string> = {
+                    "gmail.draft": "Voici un brouillon d'email à valider :",
+                    "gmail.send": "Prêt à envoyer cet email — confirme pour partir :",
+                    "calendar.create": "Voici l'événement proposé — confirme pour le créer :",
+                  };
+                  const intro = intros[decision.action] ?? "Action proposée :";
+                  controller.enqueue(enc({ type: "delta", text: intro }));
+                  assistantText += intro;
+                  if (!ephemeral && conversationId) {
+                    try {
+                      await supabase.from("messages").insert({
+                        conversation_id: conversationId,
+                        user_id: user.id,
+                        role: "assistant",
+                        content: assistantText,
+                        model,
+                        meta: {
+                          google_action: {
+                            mode: "proposal",
+                            action: decision.action,
+                            params: decision.params,
+                          },
+                        },
+                      });
+                    } catch (e) {
+                      console.error("persist google proposal failed", e);
+                    }
+                  }
+                  controller.enqueue(enc({ type: "done" }));
+                  controller.close();
+                  return;
+                }
+
+                // READ action — execute now and inject result into the LLM context.
+                controller.enqueue(
+                  enc({
+                    type: "tool",
+                    tool: "google",
+                    label:
+                      decision.action === "gmail.search"
+                        ? "Recherche Gmail"
+                        : decision.action === "gmail.get"
+                          ? "Lecture email"
+                          : "Lecture agenda",
+                    status: "running",
+                  }),
+                );
+                try {
+                  const result = await execGoogleReadAction(
+                    authHeader,
+                    decision.action,
+                    decision.params,
+                  );
+                  controller.enqueue(
+                    enc({
+                      type: "google_action",
+                      mode: "result",
+                      action: decision.action,
+                      params: decision.params,
+                      result,
+                    }),
+                  );
+                  controller.enqueue(
+                    enc({ type: "tool", tool: "google", label: "Google", status: "done" }),
+                  );
+                  finalMessages.push({
+                    role: "system",
+                    content:
+                      `[Google ${decision.action} result for the user — summarize naturally in your reply, ` +
+                      `do NOT dump JSON]:\n${JSON.stringify(result).slice(0, 12000)}`,
+                  });
+                } catch (e) {
+                  console.error("google read action failed", e);
+                  controller.enqueue(
+                    enc({ type: "tool", tool: "google", label: "Google (échec)", status: "error" }),
+                  );
+                  finalMessages.push({
+                    role: "system",
+                    content: `[Google ${decision.action} failed: ${
+                      e instanceof Error ? e.message : "unknown"
+                    }. Tell the user briefly and suggest reconnecting Google if relevant.]`,
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn("google router skipped", e);
+            }
+          }
+
           // Run web tool detection + fetch (notify client of progress)
           const googleKeyForAgent = Deno.env.get("GOOGLE_API_KEY");
           if (!webDisabled && (firecrawlKey || linkupKey) && lastUserText) {
