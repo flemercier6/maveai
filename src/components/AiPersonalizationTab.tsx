@@ -185,7 +185,7 @@ export function AiPersonalizationTab() {
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
             <div>
-              <h3 className="font-medium text-base">Models</h3>
+              <h3 className="font-medium text-foreground text-sm text-base">Models</h3>
               <p className="text-muted-foreground text-sm">
                 Star your favorites (used first in Auto mode) or blacklist models you never want to use.
               </p>
