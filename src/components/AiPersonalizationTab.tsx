@@ -111,7 +111,7 @@ export function AiPersonalizationTab() {
         <section className="space-y-3">
           <div className="flex items-start justify-between gap-4 text-base">
             <div className="min-w-0">
-              <h3 className="font-medium text-base">Response length</h3>
+              <h3 className="font-medium text-foreground text-sm text-base">Response length</h3>
               <p className="text-muted-foreground text-sm">
                 Controls how detailed the AI's answers are. Affects every reply.
               </p>
