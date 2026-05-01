@@ -70,6 +70,7 @@ type Props = {
   canvasVersion?: number;
   canvasCollapsed?: boolean;
   onCanvasChange?: (next: string) => void;
+  onSendCanvasByEmail?: () => void;
   onRetry?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
