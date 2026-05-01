@@ -521,7 +521,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                   <div className="flex items-center justify-between pr-1">
                     <CollapsibleTrigger className="group flex items-center gap-1 px-[10px] py-[6px] text-[11px] font-medium text-muted-foreground hover:text-sidebar-foreground">
                       <ChevronDown className="w-3 h-3 transition-transform group-data-[state=closed]:-rotate-90" />
-                      <span>Folders</span>
+                      <span>Projects</span>
                     </CollapsibleTrigger>
                     <button
                       type="button"
