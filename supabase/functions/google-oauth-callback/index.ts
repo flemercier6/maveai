@@ -9,15 +9,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-function htmlRedirect(target: string, message: string) {
-  return new Response(
-    `<!doctype html><html><head><meta charset="utf-8"><title>${message}</title></head>
-<body style="font-family:system-ui;padding:32px;color:#111">
-<p>${message}</p>
-<script>setTimeout(()=>{window.location.replace(${JSON.stringify(target)})},400)</script>
-</body></html>`,
-    { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } },
-  );
+function htmlRedirect(target: string, _message: string) {
+  return new Response(null, {
+    status: 302,
+    headers: { Location: target || "/" },
+  });
 }
 
 Deno.serve(async (req) => {
