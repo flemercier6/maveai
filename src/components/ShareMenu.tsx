@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Share2, Copy, Check, Globe, Lock, Loader2 } from "lucide-react";
+import { Copy, Check, Globe, Lock, Loader2 } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Share03Icon } from "@hugeicons/core-free-icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
