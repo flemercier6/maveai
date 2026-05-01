@@ -164,5 +164,6 @@ export const LayoutDashboard = make(Analytics01Icon, "LayoutDashboard");
 export const ToggleOn = make(ToggleOnIcon, "ToggleOn");
 export const Mail = make(Mail01Icon, "Mail");
 export const Calendar = make(Calendar01Icon, "Calendar");
+export const Send = make(Send02Icon, "Send");
 export const HardDrive = make(HardDriveIcon, "HardDrive");
 
