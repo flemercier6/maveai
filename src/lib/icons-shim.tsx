@@ -69,6 +69,9 @@ import {
   CreditCardIcon,
   Share08Icon,
   ToggleOnIcon,
+  Mail01Icon,
+  Calendar01Icon,
+  HardDriveIcon,
 } from "@hugeicons/core-free-icons";
 
 export type LucideProps = SVGProps<SVGSVGElement> & {
