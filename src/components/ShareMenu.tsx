@@ -104,7 +104,7 @@ export function ShareMenu({ conversationId }: Props) {
           type="button"
           variant="ghost"
           size="sm"
-          className="h-8 px-2.5 gap-1.5 text-sm font-medium"
+          className="h-8 px-2.5 gap-1.5 font-medium text-base"
         >
           <HugeiconsIcon icon={Share03Icon} className="w-4 h-4" strokeWidth={2} />
           <span className="hidden sm:inline">Share</span>
