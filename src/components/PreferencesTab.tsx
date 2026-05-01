@@ -111,11 +111,11 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
 
       {/* Appearance */}
       <section className="mb-2">
-        <h2 className="text-sm text-muted-foreground mb-4">Appearance</h2>
-        <div className="flex items-start justify-between py-4 border-b border-border">
+        <h2 className="text-muted-foreground mb-4 text-base">Appearance</h2>
+        <div className="flex items-start justify-between py-4 text-base border-b border-border">
           <div>
-            <div className="font-medium text-sm">Appearance mode</div>
-            <div className="text-muted-foreground mt-0.5 text-xs">
+            <div className="font-medium text-base">Appearance mode</div>
+            <div className="text-muted-foreground mt-0.5 text-sm">
               Personalize the appearance of your account for a better experience.
             </div>
           </div>
@@ -127,12 +127,12 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
 
       {/* Profile */}
       <section className="mt-8">
-        <h2 className="text-sm text-muted-foreground mb-4">Profile</h2>
+        <h2 className="text-muted-foreground mb-4 text-base">Profile</h2>
 
         {/* Picture */}
-        <div className="py-4">
-          <div className="font-medium text-sm">Picture</div>
-          <div className="text-muted-foreground mt-0.5 mb-4 text-xs">
+        <div className="py-4 text-base">
+          <div className="font-medium text-base">Picture</div>
+          <div className="text-muted-foreground mt-0.5 mb-4 text-sm">
             Personalize your profile with your picture. Your picture will appear in your left-menu.
           </div>
           <div className="flex items-center gap-4">
@@ -147,13 +147,13 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
                 (name?.[0] ?? email?.[0] ?? "?")
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 text-sm">
               <button
                 type="button"
                 disabled={uploading}
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-muted hover:bg-dropdown-hover font-medium transition-colors text-xs",
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-muted hover:bg-dropdown-hover font-medium transition-colors text-sm",
                   uploading && "opacity-60 cursor-not-allowed",
                 )}
               >
@@ -165,7 +165,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
                   type="button"
                   disabled={uploading}
                   onClick={handleDelete}
-                  className="text-muted-foreground hover:text-foreground transition-colors text-xs"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                 >
                   Delete
                 </button>
@@ -184,10 +184,9 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
             />
           </div>
         </div>
-
         {/* Name */}
-        <div className="py-4">
-          <label className="font-medium text-sm">Name</label>
+        <div className="py-4 text-base">
+          <label className="font-medium text-base">Name</label>
           <input
             type="text"
             value={name}
@@ -195,19 +194,19 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
             onBlur={saveName}
             disabled={savingName}
             placeholder="ex: John"
-            className="mt-2 w-full px-3 py-2 rounded-[6px] bg-muted placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-border text-sm"
+            className="mt-2 w-full px-3 py-2 rounded-[6px] bg-muted placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-border text-base"
           />
         </div>
 
         {/* Email */}
-        <div className="py-4">
-          <label className="font-medium text-sm">Email</label>
+        <div className="py-4 text-base">
+          <label className="font-medium text-base">Email</label>
           <input
             type="email"
             value={email}
             disabled
             placeholder="ex: john.doe@gmail.com"
-            className="mt-2 w-full px-3 py-2 rounded-[6px] bg-muted text-sm text-muted-foreground placeholder:text-muted-foreground/60 cursor-not-allowed"
+            className="mt-2 w-full px-3 py-2 rounded-[6px] bg-muted text-base text-muted-foreground placeholder:text-muted-foreground/60 cursor-not-allowed"
           />
         </div>
       </section>
