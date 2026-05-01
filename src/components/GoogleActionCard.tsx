@@ -386,3 +386,42 @@ function EventFields({
     </>
   );
 }
+
+// ---------- Skeletons (shown while the LLM drafts the email/event) ----------
+
+function SkeletonRow({ labelWidth = "w-6", inputWidth = "w-full" }: { labelWidth?: string; inputWidth?: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <SkeletonShimmer className={cn("h-3 shrink-0", labelWidth)} style={{ width: 60 }} />
+      <SkeletonShimmer className={cn("h-8", inputWidth)} />
+    </div>
+  );
+}
+
+function EmailSkeleton() {
+  return (
+    <>
+      <SkeletonRow />
+      <SkeletonRow />
+      <div className="flex gap-2">
+        <SkeletonShimmer className="h-3 shrink-0" style={{ width: 60 }} />
+        <SkeletonShimmer className="h-32 flex-1" />
+      </div>
+    </>
+  );
+}
+
+function EventSkeleton() {
+  return (
+    <>
+      <SkeletonRow />
+      <SkeletonRow />
+      <SkeletonRow />
+      <SkeletonRow />
+      <div className="flex gap-2">
+        <SkeletonShimmer className="h-3 shrink-0" style={{ width: 60 }} />
+        <SkeletonShimmer className="h-20 flex-1" />
+      </div>
+    </>
+  );
+}
