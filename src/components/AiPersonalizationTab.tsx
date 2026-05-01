@@ -111,7 +111,7 @@ export function AiPersonalizationTab() {
         <section className="space-y-3">
           <div className="flex items-start justify-between gap-4 text-base">
             <div className="min-w-0">
-              <h3 className="font-medium text-foreground text-sm text-base">Response length</h3>
+              <h3 className="font-medium text-foreground text-base">Response length</h3>
               <p className="text-muted-foreground text-sm">
                 Controls how detailed the AI's answers are. Affects every reply.
               </p>
@@ -129,7 +129,7 @@ export function AiPersonalizationTab() {
                 {RESPONSE_LENGTH_DEFS.map((opt) => (
                   <SelectItem key={opt.id} value={opt.id}>
                     <div className="flex flex-col">
-                      <span className="font-medium text-foreground text-sm text-base">{opt.label}</span>
+                      <span className="font-medium text-foreground text-base">{opt.label}</span>
                       <span className="text-muted-foreground text-sm">{opt.description}</span>
                     </div>
                   </SelectItem>
@@ -143,7 +143,7 @@ export function AiPersonalizationTab() {
         {/* ---------- Modes ---------- */}
         <section className="space-y-3">
           <div>
-            <h3 className="font-medium text-foreground text-sm text-base">Modes</h3>
+            <h3 className="font-medium text-foreground text-base">Modes</h3>
             <p className="text-muted-foreground text-sm">
               Disabled modes are hidden from the slash menu and never auto-triggered.
             </p>
@@ -185,7 +185,7 @@ export function AiPersonalizationTab() {
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
             <div>
-              <h3 className="font-medium text-foreground text-sm text-base">Models</h3>
+              <h3 className="font-medium text-foreground text-base">Models</h3>
               <p className="text-muted-foreground text-sm">
                 Star your favorites (used first in Auto mode) or blacklist models you never want to use.
               </p>
@@ -272,7 +272,7 @@ export function AiPersonalizationTab() {
           </div>
           {prefs.favoriteModels.length > 0 && (
             <p className="text-muted-foreground text-sm">
-              <span className="font-medium text-foreground text-sm">Priority order:</span>{" "}
+              <span className="font-medium text-foreground text-base">Priority order:</span>{" "}
               {prefs.favoriteModels.join(" › ")}
             </p>
           )}

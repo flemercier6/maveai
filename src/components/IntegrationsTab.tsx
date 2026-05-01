@@ -103,7 +103,7 @@ export function IntegrationsTab() {
                     className="w-10 h-10 rounded-lg object-contain shrink-0"
                   />
                   <div className="min-w-0">
-                    <div className="font-medium text-foreground text-sm text-base">
+                    <div className="font-medium text-foreground text-base">
                       {p.title}
                     </div>
                     {connected && account?.account_email ? (

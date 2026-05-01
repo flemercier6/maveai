@@ -105,9 +105,9 @@ export function GoogleActionCard({ action, onChange }: Props) {
     const r = action.result as Record<string, unknown> | undefined;
     return (
       <div className="my-2 rounded-xl border border-border bg-card p-3 text-sm">
-        <div className="flex items-center gap-2 text-foreground/80">
+        <div className="flex items-center gap-2 text-foreground/80 text-base">
           <Check className="w-4 h-4 text-[hsl(140_70%_42%)]" />
-          <span className="font-medium text-foreground text-sm">
+          <span className="font-medium text-foreground text-base">
             {action.action === "gmail.draft" && "Brouillon enregistré dans Gmail"}
             {action.action === "gmail.send" && "Email envoyé"}
             {action.action === "calendar.create" && "Événement créé"}
@@ -143,7 +143,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
       <div className="my-2 rounded-xl border border-border bg-card p-3 text-sm">
         <div className="flex items-center gap-2 text-destructive">
           <X className="w-4 h-4" />
-          <span className="font-medium text-foreground text-sm">Échec de l'action</span>
+          <span className="font-medium text-foreground text-base">Échec de l'action</span>
         </div>
         {action.error ? (
           <p className="mt-1 text-xs text-muted-foreground">{action.error}</p>
@@ -159,7 +159,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
     <div className="my-2 rounded-xl border border-border bg-card overflow-hidden">
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-[hsl(var(--dropdown-hover))]">
         <Icon className="w-4 h-4 text-foreground/70" />
-        <span className="text-sm font-medium text-foreground text-sm">{title}</span>
+        <span className="font-medium text-foreground text-base">{title}</span>
       </div>
 
       <div className="p-3 space-y-2 text-sm">

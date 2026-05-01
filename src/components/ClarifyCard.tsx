@@ -83,7 +83,7 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
     <div className="max-w-2xl mx-auto mb-3">
       <div className="rounded-2xl border border-border bg-card shadow-[0_4px_16px_-6px_hsl(0_0%_0%/0.08)] overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/40">
-          <div className="flex items-center gap-2 text-xs font-medium text-foreground text-sm">
+          <div className="flex items-center gap-2 font-medium text-foreground text-base">
             <Sparkles className="w-3.5 h-3.5" />
             <span>A few quick questions to get this right</span>
           </div>
@@ -117,7 +117,7 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
                 {q.header}
               </span>
             )}
-            <h4 className="text-sm font-medium text-foreground text-sm">{q.question}</h4>
+            <h4 className="font-medium text-foreground text-base">{q.question}</h4>
           </div>
           <div className="flex flex-col gap-1.5 items-stretch">
             {q.options.map((opt, optIdx) => {
