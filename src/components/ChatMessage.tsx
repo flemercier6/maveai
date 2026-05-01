@@ -55,6 +55,7 @@ type Props = {
   streaming?: boolean;
   provider?: Provider;
   model?: string;
+  googleService?: GoogleService;
   memory?: { added: number; updated: number };
   tool?: ToolUse;
   phase?: Phase;
