@@ -431,7 +431,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                             </DropdownMenuItem>
                             <DropdownMenuSub>
                               <DropdownMenuSubTrigger>
-                                <FolderIcon className="w-3.5 h-3.5 mr-2 opacity-70" /> Move to folder
+                                <FolderIcon className="w-3.5 h-3.5 mr-2 opacity-70" /> Move to project
                               </DropdownMenuSubTrigger>
                               <DropdownMenuSubContent className="w-48 max-h-64 overflow-auto">
                                 {folders.length === 0 && (
@@ -468,7 +468,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                                   <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => moveConvToFolder(c.id, null)}>
-                                      Remove from folder
+                                      Remove from project
                                     </DropdownMenuItem>
                                   </>
                                 )}
@@ -521,7 +521,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                   <div className="flex items-center justify-between pr-1">
                     <CollapsibleTrigger className="group flex items-center gap-1 px-[10px] py-[6px] text-[11px] font-medium text-muted-foreground hover:text-sidebar-foreground">
                       <ChevronDown className="w-3 h-3 transition-transform group-data-[state=closed]:-rotate-90" />
-                      <span>Folders</span>
+                      <span>Projects</span>
                     </CollapsibleTrigger>
                     <button
                       type="button"
@@ -530,7 +530,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                         setEditingFolder(null);
                         setFolderDialogOpen(true);
                       }}
-                      title={isFree ? "Folders are a Plus feature" : "New folder"}
+                      title={isFree ? "Projects are a Plus feature" : "New project"}
                       className="h-6 w-6 flex items-center justify-center rounded-[4px] text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
                     >
                       <FolderPlus className="w-3.5 h-3.5" />
@@ -539,7 +539,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                   <CollapsibleContent className="space-y-0.5 pt-1">
                     {foldersLoaded && folders.length === 0 && (
                       <p className="text-xs text-muted-foreground px-3 py-2">
-                        Create a folder to group related chats.
+                        Create a project to group related chats.
                       </p>
                     )}
                     {folders.map((f) => {
@@ -607,7 +607,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                                 setEditingFolder(f);
                                 setFolderDialogOpen(true);
                               }}
-                              aria-label="Edit folder"
+                              aria-label="Edit project"
                               className="opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity h-5 w-5 flex items-center justify-center rounded-[3px] hover:bg-background/40"
                             >
                               <Pencil className="w-3 h-3" />
@@ -664,7 +664,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                       <p className="text-xs text-muted-foreground px-3 py-2">
                         {conversations.length === 0
                           ? "No conversations yet."
-                          : "All chats are in folders."}
+                          : "All chats are in projects."}
                       </p>
                     )}
                     {unfiled.map(renderConv)}

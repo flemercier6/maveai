@@ -8,7 +8,7 @@ const COPY: Record<Reason, { title: string; description: string }> = {
   "daily-limit": {
     title: "You've used your 5 free messages today",
     description:
-      "Upgrade to Plus for unlimited messages, access to premium models, persistent chats, folders and memory.",
+      "Upgrade to Plus for unlimited messages, access to premium models, persistent chats, projects and memory.",
   },
   "premium-model": {
     title: "This model is reserved for Plus",
@@ -21,9 +21,9 @@ const COPY: Record<Reason, { title: string; description: string }> = {
       "On Plus, the assistant remembers facts about you across all conversations and providers.",
   },
   folder: {
-    title: "Folders are a Plus feature",
+    title: "Projects are a Plus feature",
     description:
-      "Group your chats by project, set folder-level instructions and memory. Available on Plus.",
+      "Group your chats by project, set project-level instructions and memory. Available on Plus.",
   },
   "save-chat": {
     title: "Saved chats are a Plus feature",
@@ -35,7 +35,7 @@ const COPY: Record<Reason, { title: string; description: string }> = {
 const PLUS_FEATURES = [
   "Unlimited messages per day",
   "All premium models (GPT-5.5, Opus 4.7, Gemini Pro…)",
-  "Saved chats & folders",
+  "Saved chats & projects",
   "Persistent memory across conversations",
 ];
 

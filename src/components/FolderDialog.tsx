@@ -87,7 +87,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
     if (!user) return;
     const trimmed = name.trim();
     if (!trimmed) {
-      toast.error("Folder name is required");
+      toast.error("Project name is required");
       return;
     }
     setSaving(true);
@@ -108,7 +108,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
           .single();
         if (error) throw error;
         onSaved?.(data as FolderRow);
-        toast.success("Folder updated");
+        toast.success("Project updated");
       } else {
         const { data, error } = await supabase
           .from("folders")
@@ -117,7 +117,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
           .single();
         if (error) throw error;
         onSaved?.(data as FolderRow);
-        toast.success("Folder created");
+        toast.success("Project created");
       }
       onOpenChange(false);
     } catch (e) {
@@ -129,7 +129,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
 
   async function remove() {
     if (!folder) return;
-    if (!confirm("Delete this folder? Its conversations will be moved out.")) return;
+    if (!confirm("Delete this project? Its conversations will be moved out.")) return;
     const { error } = await supabase.from("folders").delete().eq("id", folder.id);
     if (error) {
       toast.error(error.message);
@@ -137,16 +137,16 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
     }
     onDeleted?.(folder.id);
     onOpenChange(false);
-    toast.success("Folder deleted");
+    toast.success("Project deleted");
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg" overlayClassName="bg-white/40 backdrop-blur-sm">
         <DialogHeader>
-          <DialogTitle>{folder ? "Edit folder" : "New folder"}</DialogTitle>
+          <DialogTitle>{folder ? "Edit project" : "New project"}</DialogTitle>
           <DialogDescription>
-            Group related chats. Folder instructions and memories are used as
+            Group related chats. Project instructions and memories are used as
             priority context for every chat inside.
           </DialogDescription>
         </DialogHeader>
@@ -166,7 +166,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
             )}
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-medium truncate">{name || "Untitled folder"}</div>
+            <div className="text-sm font-medium truncate">{name || "Untitled project"}</div>
             <div className="text-xs text-muted-foreground">Preview</div>
           </div>
         </div>
@@ -284,18 +284,18 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
           {/* Instructions / shared memory */}
           <div className="space-y-1.5">
             <Label htmlFor="folder-instructions" className="text-sm">
-              Folder context (optional)
+              Project context (optional)
             </Label>
             <Textarea
               id="folder-instructions"
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
-              placeholder="Describe the project, the tone, any persistent context… Used as priority memory for all chats in this folder."
+              placeholder="Describe the project, the tone, any persistent context… Used as priority memory for all chats in this project."
               rows={4}
               maxLength={2000}
             />
             <p className="text-[11px] text-muted-foreground">
-              Memories captured inside this folder will also be searched first when chatting here.
+              Memories captured inside this project will also be searched first when chatting here.
             </p>
           </div>
         </div>
@@ -316,7 +316,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
           </Button>
           <Button type="button" onClick={save} disabled={saving}>
             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            {folder ? "Save" : "Create folder"}
+            {folder ? "Save" : "Create project"}
           </Button>
         </DialogFooter>
       </DialogContent>
