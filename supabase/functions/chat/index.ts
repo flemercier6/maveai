@@ -1838,7 +1838,21 @@ Deno.serve(async (req) => {
                     const currentTo = String(params.to ?? "").trim();
                     const currentBody = String(params.body ?? "").trim();
                     const currentSubject = String(params.subject ?? "").trim();
-                    if (!currentTo || !currentBody || !currentSubject) {
+                    const needsDrafting = !currentTo || !currentBody || !currentSubject;
+
+                    // Emit the card IMMEDIATELY (with a loading flag if we still need to draft).
+                    // This way the user sees the email shell appear before any text streams.
+                    controller.enqueue(
+                      enc({
+                        type: "google_action",
+                        mode: "proposal",
+                        action: decision.action,
+                        params: decision.params,
+                        loading: needsDrafting,
+                      }),
+                    );
+
+                    if (needsDrafting) {
                       try {
                         const drafted = await draftEmailContent(
                           googleApiKey,
@@ -1855,21 +1869,42 @@ Deno.serve(async (req) => {
                             body: drafted.body || currentBody,
                           },
                         };
+                        // Update the card with drafted content.
+                        controller.enqueue(
+                          enc({
+                            type: "google_action",
+                            mode: "proposal",
+                            action: decision.action,
+                            params: decision.params,
+                            loading: false,
+                          }),
+                        );
                       } catch (e) {
                         console.warn("draftEmailContent failed", e);
+                        // Clear the loading state even on failure.
+                        controller.enqueue(
+                          enc({
+                            type: "google_action",
+                            mode: "proposal",
+                            action: decision.action,
+                            params: decision.params,
+                            loading: false,
+                          }),
+                        );
                       }
                     }
+                  } else {
+                    // Non-email write actions (calendar.create) — emit card directly.
+                    controller.enqueue(
+                      enc({
+                        type: "google_action",
+                        mode: "proposal",
+                        action: decision.action,
+                        params: decision.params,
+                        loading: false,
+                      }),
+                    );
                   }
-
-                  // Propose to user; do NOT execute. Frontend shows confirmation card.
-                  controller.enqueue(
-                    enc({
-                      type: "google_action",
-                      mode: "proposal",
-                      action: decision.action,
-                      params: decision.params,
-                    }),
-                  );
                   const intros: Record<string, string> = {
                     "gmail.draft": "Voici un brouillon d'email à valider :",
                     "gmail.send": "Prêt à envoyer cet email — confirme pour partir :",

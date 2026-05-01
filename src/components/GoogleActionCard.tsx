@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mail, Calendar, Send, FileText, X, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { SkeletonShimmer } from "@/components/SkeletonShimmer";
 
 export type GoogleActionState = "pending" | "executing" | "done" | "cancelled" | "error";
 
@@ -12,6 +13,7 @@ export type GoogleAction = {
   state: GoogleActionState;
   result?: unknown;
   error?: string;
+  loading?: boolean;
 };
 
 type Props = {
@@ -26,6 +28,13 @@ function fmt(value: unknown): string {
 
 export function GoogleActionCard({ action, onChange }: Props) {
   const [params, setParams] = useState<Record<string, unknown>>(action.params);
+
+  // When the backend sends an updated proposal (e.g. after drafting completes),
+  // sync local field state with the new params.
+  useEffect(() => {
+    setParams(action.params);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [action.params, action.loading]);
 
   const isEmail = action.action === "gmail.draft" || action.action === "gmail.send";
   const isEvent = action.action === "calendar.create";
@@ -134,6 +143,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
   }
 
   const busy = action.state === "executing";
+  const loading = !!action.loading;
 
   // ---------- Confirmation card ----------
   return (
@@ -144,15 +154,21 @@ export function GoogleActionCard({ action, onChange }: Props) {
       </div>
 
       <div className="p-3 space-y-2 text-sm">
-        {isEmail ? <EmailFields params={params} onChange={setParams} /> : null}
-        {isEvent ? <EventFields params={params} onChange={setParams} /> : null}
+        {loading ? (
+          isEmail ? <EmailSkeleton /> : <EventSkeleton />
+        ) : (
+          <>
+            {isEmail ? <EmailFields params={params} onChange={setParams} /> : null}
+            {isEvent ? <EventFields params={params} onChange={setParams} /> : null}
+          </>
+        )}
       </div>
 
       <div className="flex items-center justify-end gap-2 px-3 py-2 bg-background">
         <button
           type="button"
           onClick={handleCancel}
-          disabled={busy}
+          disabled={busy || loading}
           className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-dropdown-hover transition-colors disabled:opacity-50 text-base"
         >
           Annuler
@@ -162,7 +178,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
             <button
               type="button"
               onClick={() => handleConfirm("gmail.draft")}
-              disabled={busy}
+              disabled={busy || loading}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-dropdown-hover transition-colors disabled:opacity-50 text-base"
             >
               {busy && action.action === "gmail.draft" ? (
@@ -175,7 +191,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
             <button
               type="button"
               onClick={() => handleConfirm("gmail.send")}
-              disabled={busy}
+              disabled={busy || loading}
               className={cn(
                 "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background font-medium hover:opacity-90 transition-opacity disabled:opacity-60 text-base",
               )}
@@ -192,7 +208,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
           <button
             type="button"
             onClick={() => handleConfirm()}
-            disabled={busy}
+            disabled={busy || loading}
             className={cn(
               "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background font-medium hover:opacity-90 transition-opacity disabled:opacity-60 text-base",
             )}
@@ -366,6 +382,45 @@ function EventFields({
           rows={4}
           className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring resize-y text-base"
         />
+      </div>
+    </>
+  );
+}
+
+// ---------- Skeletons (shown while the LLM drafts the email/event) ----------
+
+function SkeletonRow({ labelWidth = "w-6", inputWidth = "w-full" }: { labelWidth?: string; inputWidth?: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <SkeletonShimmer className={cn("h-3 shrink-0", labelWidth)} style={{ width: 60 }} />
+      <SkeletonShimmer className={cn("h-8", inputWidth)} />
+    </div>
+  );
+}
+
+function EmailSkeleton() {
+  return (
+    <>
+      <SkeletonRow />
+      <SkeletonRow />
+      <div className="flex gap-2">
+        <SkeletonShimmer className="h-3 shrink-0" style={{ width: 60 }} />
+        <SkeletonShimmer className="h-32 flex-1" />
+      </div>
+    </>
+  );
+}
+
+function EventSkeleton() {
+  return (
+    <>
+      <SkeletonRow />
+      <SkeletonRow />
+      <SkeletonRow />
+      <SkeletonRow />
+      <div className="flex gap-2">
+        <SkeletonShimmer className="h-3 shrink-0" style={{ width: 60 }} />
+        <SkeletonShimmer className="h-20 flex-1" />
       </div>
     </>
   );
