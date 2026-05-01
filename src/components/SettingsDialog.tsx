@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Settings, Sparkles, Globe, Brain, BarChart3, CreditCard, Sparkles as Wand2 } from "lucide-react";
+import { ToggleOn } from "@/lib/icons-shim";
 import { UsageTab } from "@/components/UsageTab";
 import { MemoryTab } from "@/components/MemoryTab";
 import { BillingTab } from "@/components/BillingTab";
@@ -12,7 +13,7 @@ import { usePlan } from "@/hooks/usePlan";
 type Section = "preferences" | "ai" | "integrations" | "memory" | "usage" | "billing";
 
 const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?: string }>; soon?: boolean }[] = [
-  { id: "preferences", label: "Preferences", icon: Settings },
+  { id: "preferences", label: "Preferences", icon: ToggleOn },
   { id: "ai", label: "AI personalization", icon: Wand2 },
   { id: "integrations", label: "Integrations", icon: Globe, soon: true },
   { id: "memory", label: "Memory", icon: Brain },
