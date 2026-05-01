@@ -2064,7 +2064,7 @@ export default function Chat() {
                 </div>
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground text-center mt-[5px]">
+            <p className="text-muted-foreground text-center mt-[5px] text-xs">
               AI can make mistakes. Always use your own judgment.
             </p>
           </div>
