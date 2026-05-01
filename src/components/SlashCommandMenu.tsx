@@ -141,7 +141,10 @@ export function SlashCommandMenu({
       it.provider === "auto" ||
       it.provider === "write" ||
       it.provider === "explore" ||
-      it.provider === "page";
+      it.provider === "page" ||
+      it.provider === "gmail" ||
+      it.provider === "calendar" ||
+      it.provider === "drive";
     const modes = all.filter(isMode);
     const models = all.filter((it) => !isMode(it));
     if (favoriteModels?.length) {
