@@ -107,7 +107,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
       <div className="my-2 rounded-xl border border-border bg-card p-3 text-sm">
         <div className="flex items-center gap-2 text-foreground/80">
           <Check className="w-4 h-4 text-[hsl(140_70%_42%)]" />
-          <span className="font-medium">
+          <span className="font-medium text-foreground text-sm">
             {action.action === "gmail.draft" && "Brouillon enregistré dans Gmail"}
             {action.action === "gmail.send" && "Email envoyé"}
             {action.action === "calendar.create" && "Événement créé"}
