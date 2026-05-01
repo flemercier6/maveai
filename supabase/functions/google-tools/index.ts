@@ -363,10 +363,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { action, params } = (await req.json()) as {
-      action: string;
-      params: Record<string, unknown>;
+    const reqBody = (await req.json().catch(() => ({}))) as {
+      action?: string;
+      params?: Record<string, unknown>;
     };
+    const action = reqBody.action;
+    const params = reqBody.params ?? {};
 
     if (!action) {
       return new Response(JSON.stringify({ error: "action required" }), {
