@@ -405,7 +405,7 @@ export function UsageTab() {
       <div className="rounded-xl border border-border p-4 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h3 className="text-sm font-semibold">Spend over time</h3>
+            <h3 className="font-semibold text-base">Spend over time</h3>
           </div>
           <div className="inline-flex rounded-[6px] border border-border p-0.5 bg-[hsl(var(--dropdown-hover))]">
             {RANGES.map((r) => (
