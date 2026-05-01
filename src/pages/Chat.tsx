@@ -825,7 +825,7 @@ export default function Chat() {
     const lastAssistantWithCanvas = [...messages].reverse().find(
       (m) => m.role === "assistant" && typeof m.canvas === "string" && m.canvas.length > 0,
     );
-    const writingMode = writeRequested || looksLikeWritingRequest(text) || !!lastAssistantWithCanvas;
+    const writingMode = !googleService && (writeRequested || looksLikeWritingRequest(text) || !!lastAssistantWithCanvas);
     const previousCanvas = lastAssistantWithCanvas?.canvas ?? null;
     if (writeRequested) setWriteRequested(false);
 
