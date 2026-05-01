@@ -171,7 +171,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
           {cost && (
             <div className="flex items-center justify-between rounded-md bg-foreground text-background px-3 py-2">
               <span className="font-medium">Total billed</span>
-              <span className="tabular-nums font-semibold">{fmtEur(totalBilled)}</span>
+              <span className="tabular-nums text-sm font-semibold">{fmtEur(totalBilled)}</span>
             </div>
           )}
         </div>
