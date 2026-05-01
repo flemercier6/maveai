@@ -199,7 +199,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
         </div>
 
         {/* Email */}
-        <div className="py-4 text-base">
+        <div className="py-4 text-base pt-0 pb-[16px]">
           <label className="font-medium text-base">Email</label>
           <input
             type="email"
