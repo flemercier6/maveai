@@ -2033,7 +2033,7 @@ export default function Chat() {
                       type="button"
                       onClick={() => setWriteRequested(false)}
                       aria-label="Remove Note"
-                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-[#E6F1FF] transition-colors"
+                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[#E6F1FF] transition-colors text-base"
                       style={{ color: "#0062FF" }}
                     >
                       <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
