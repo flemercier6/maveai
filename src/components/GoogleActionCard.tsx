@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Calendar, Send, FileText, X, Check, Loader2, Plus } from "lucide-react";
+import { Mail, Calendar, Send, FileText, X, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -24,30 +24,6 @@ function fmt(value: unknown): string {
   return String(value);
 }
 
-function formatDateTimeRange(start?: string, end?: string): string {
-  if (!start) return "";
-  try {
-    const s = new Date(start);
-    const e = end ? new Date(end) : null;
-    const dateOpts: Intl.DateTimeFormatOptions = {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    };
-    const ds = s.toLocaleString(undefined, dateOpts);
-    if (!e) return ds;
-    const sameDay = s.toDateString() === e.toDateString();
-    const eFmt = sameDay
-      ? e.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-      : e.toLocaleString(undefined, dateOpts);
-    return `${ds} → ${eFmt}`;
-  } catch {
-    return `${start}${end ? ` → ${end}` : ""}`;
-  }
-}
-
 export function GoogleActionCard({ action, onChange }: Props) {
   const [params, setParams] = useState<Record<string, unknown>>(action.params);
 
@@ -70,17 +46,22 @@ export function GoogleActionCard({ action, onChange }: Props) {
         : "Créer l'événement";
 
   const handleConfirm = async () => {
-    onChange({ ...action, state: "executing", params });
+    // Strip UI-only fields before sending
+    const cleanParams: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(params)) {
+      if (!k.startsWith("_")) cleanParams[k] = v;
+    }
+    onChange({ ...action, state: "executing", params: cleanParams });
     try {
       const { data, error } = await supabase.functions.invoke("google-tools", {
-        body: { action: action.action, params },
+        body: { action: action.action, params: cleanParams },
       });
       if (error) throw error;
       if ((data as { error?: string })?.error) {
         throw new Error((data as { error: string }).error);
       }
       const result = (data as { result?: unknown })?.result;
-      onChange({ ...action, state: "done", params, result });
+      onChange({ ...action, state: "done", params: cleanParams, result });
       const successMsg =
         action.action === "gmail.draft"
           ? "Brouillon créé"
@@ -90,7 +71,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
       toast.success(successMsg);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Action échouée";
-      onChange({ ...action, state: "error", params, error: msg });
+      onChange({ ...action, state: "error", params: cleanParams, error: msg });
       toast.error(msg);
     }
   };
@@ -162,60 +143,38 @@ export function GoogleActionCard({ action, onChange }: Props) {
       </div>
 
       <div className="p-3 space-y-2 text-sm">
-        {isEmail ? (
-          <EmailFields
-            params={params}
-            editing={editing}
-            onChange={setParams}
-          />
-        ) : null}
-        {isEvent ? (
-          <EventFields
-            params={params}
-            editing={editing}
-            onChange={setParams}
-          />
-        ) : null}
+        {isEmail ? <EmailFields params={params} onChange={setParams} /> : null}
+        {isEvent ? <EventFields params={params} onChange={setParams} /> : null}
       </div>
 
-      <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-border bg-background">
+      <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-border bg-background">
         <button
           type="button"
-          onClick={() => setEditing((v) => !v)}
+          onClick={handleCancel}
           disabled={busy}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="px-3 py-1.5 rounded-lg border border-border bg-background text-sm hover:bg-dropdown-hover transition-colors disabled:opacity-50"
         >
-          {editing ? "Aperçu" : "Modifier"}
+          Annuler
         </button>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleCancel}
-            disabled={busy}
-            className="px-3 py-1.5 rounded-lg border border-border bg-background text-sm hover:bg-dropdown-hover transition-colors disabled:opacity-50"
-          >
-            Annuler
-          </button>
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={busy}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60",
-            )}
-          >
-            {busy ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : action.action === "gmail.send" ? (
-              <Send className="w-3.5 h-3.5" />
-            ) : action.action === "gmail.draft" ? (
-              <FileText className="w-3.5 h-3.5" />
-            ) : (
-              <Check className="w-3.5 h-3.5" />
-            )}
-            {primaryLabel}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleConfirm}
+          disabled={busy}
+          className={cn(
+            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60",
+          )}
+        >
+          {busy ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : action.action === "gmail.send" ? (
+            <Send className="w-3.5 h-3.5" />
+          ) : action.action === "gmail.draft" ? (
+            <FileText className="w-3.5 h-3.5" />
+          ) : (
+            <Check className="w-3.5 h-3.5" />
+          )}
+          {primaryLabel}
+        </button>
       </div>
     </div>
   );
@@ -223,88 +182,118 @@ export function GoogleActionCard({ action, onChange }: Props) {
 
 // ---------- Sub-views ----------
 
-function Field({
+function FieldRow({
   label,
-  value,
-  editing,
-  onChange,
-  multiline,
-  placeholder,
+  children,
+  action,
 }: {
   label: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <label className="text-xs text-muted-foreground w-[60px] shrink-0">{label}</label>
+      <div className="flex-1 min-w-0">{children}</div>
+      {action ? <div className="shrink-0">{action}</div> : null}
+    </div>
+  );
+}
+
+function TextInput({
+  value,
+  onChange,
+  placeholder,
+}: {
   value: string;
-  editing: boolean;
   onChange: (v: string) => void;
-  multiline?: boolean;
   placeholder?: string;
 }) {
-  if (!editing) {
-    if (!value) return null;
-    return (
-      <div className="grid grid-cols-[60px_1fr] gap-2">
-        <span className="text-xs text-muted-foreground pt-0.5">{label}</span>
-        <span
-          className={cn(
-            "text-sm text-foreground",
-            multiline && "whitespace-pre-wrap",
-          )}
-        >
-          {value}
-        </span>
-      </div>
-    );
-  }
   return (
-    <div className="grid grid-cols-[60px_1fr] gap-2">
-      <label className="text-xs text-muted-foreground pt-2">{label}</label>
-      {multiline ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={5}
-          className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-        />
-      ) : (
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-        />
-      )}
-    </div>
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+    />
   );
 }
 
 function EmailFields({
   params,
-  editing,
   onChange,
 }: {
   params: Record<string, unknown>;
-  editing: boolean;
   onChange: (next: Record<string, unknown>) => void;
 }) {
   const set = (k: string, v: string) => onChange({ ...params, [k]: v });
+  const showCc = !!fmt(params.cc) || (params as { _showCc?: boolean })._showCc;
+  const showBcc = !!fmt(params.bcc) || (params as { _showBcc?: boolean })._showBcc;
+
   return (
     <>
-      <Field label="À" value={fmt(params.to)} editing={editing} onChange={(v) => set("to", v)} placeholder="email@example.com" />
-      <Field label="Cc" value={fmt(params.cc)} editing={editing} onChange={(v) => set("cc", v)} />
-      <Field label="Objet" value={fmt(params.subject)} editing={editing} onChange={(v) => set("subject", v)} placeholder="Sujet" />
-      <Field label="Corps" value={fmt(params.body)} editing={editing} onChange={(v) => set("body", v)} multiline placeholder="Contenu de l'email" />
+      <FieldRow
+        label="À"
+        action={
+          (!showCc || !showBcc) && (
+            <div className="flex items-center gap-1">
+              {!showCc && (
+                <button
+                  type="button"
+                  onClick={() => onChange({ ...params, _showCc: true })}
+                  className="text-[11px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-dropdown-hover transition-colors"
+                >
+                  Cc
+                </button>
+              )}
+              {!showBcc && (
+                <button
+                  type="button"
+                  onClick={() => onChange({ ...params, _showBcc: true })}
+                  className="text-[11px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-dropdown-hover transition-colors"
+                >
+                  Cci
+                </button>
+              )}
+            </div>
+          )
+        }
+      >
+        <TextInput value={fmt(params.to)} onChange={(v) => set("to", v)} placeholder="email@example.com" />
+      </FieldRow>
+      {showCc && (
+        <FieldRow label="Cc">
+          <TextInput value={fmt(params.cc)} onChange={(v) => set("cc", v)} placeholder="cc@example.com" />
+        </FieldRow>
+      )}
+      {showBcc && (
+        <FieldRow label="Cci">
+          <TextInput value={fmt(params.bcc)} onChange={(v) => set("bcc", v)} placeholder="cci@example.com" />
+        </FieldRow>
+      )}
+      <FieldRow label="Objet">
+        <TextInput value={fmt(params.subject)} onChange={(v) => set("subject", v)} placeholder="Sujet" />
+      </FieldRow>
+      <div className="flex gap-2">
+        <label className="text-xs text-muted-foreground w-[60px] shrink-0 pt-2">Corps</label>
+        <textarea
+          value={fmt(params.body)}
+          onChange={(e) => set("body", e.target.value)}
+          placeholder="Contenu de l'email"
+          rows={6}
+          className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring resize-y"
+        />
+      </div>
     </>
   );
 }
 
 function EventFields({
   params,
-  editing,
   onChange,
 }: {
   params: Record<string, unknown>;
-  editing: boolean;
   onChange: (next: Record<string, unknown>) => void;
 }) {
   const set = (k: string, v: string) => onChange({ ...params, [k]: v });
@@ -312,45 +301,42 @@ function EventFields({
     ? (params.attendees as string[]).join(", ")
     : "";
 
-  if (!editing) {
-    return (
-      <>
-        <Field label="Titre" value={fmt(params.summary)} editing={false} onChange={() => {}} />
-        <div className="grid grid-cols-[60px_1fr] gap-2">
-          <span className="text-xs text-muted-foreground pt-0.5">Quand</span>
-          <span className="text-sm text-foreground">
-            {formatDateTimeRange(fmt(params.start), fmt(params.end))}
-          </span>
-        </div>
-        <Field label="Lieu" value={fmt(params.location)} editing={false} onChange={() => {}} />
-        <Field label="Invités" value={attendees} editing={false} onChange={() => {}} />
-        <Field label="Détails" value={fmt(params.description)} editing={false} onChange={() => {}} multiline />
-      </>
-    );
-  }
-
   return (
     <>
-      <Field label="Titre" value={fmt(params.summary)} editing onChange={(v) => set("summary", v)} />
-      <Field label="Début" value={fmt(params.start)} editing onChange={(v) => set("start", v)} placeholder="ISO 8601" />
-      <Field label="Fin" value={fmt(params.end)} editing onChange={(v) => set("end", v)} placeholder="ISO 8601" />
-      <Field label="Lieu" value={fmt(params.location)} editing onChange={(v) => set("location", v)} />
-      <Field
-        label="Invités"
-        value={attendees}
-        editing
-        onChange={(v) =>
-          onChange({
-            ...params,
-            attendees: v
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean),
-          })
-        }
-        placeholder="email1@..., email2@..."
-      />
-      <Field label="Détails" value={fmt(params.description)} editing onChange={(v) => set("description", v)} multiline />
+      <FieldRow label="Titre">
+        <TextInput value={fmt(params.summary)} onChange={(v) => set("summary", v)} placeholder="Titre" />
+      </FieldRow>
+      <FieldRow label="Début">
+        <TextInput value={fmt(params.start)} onChange={(v) => set("start", v)} placeholder="ISO 8601" />
+      </FieldRow>
+      <FieldRow label="Fin">
+        <TextInput value={fmt(params.end)} onChange={(v) => set("end", v)} placeholder="ISO 8601" />
+      </FieldRow>
+      <FieldRow label="Lieu">
+        <TextInput value={fmt(params.location)} onChange={(v) => set("location", v)} placeholder="Lieu" />
+      </FieldRow>
+      <FieldRow label="Invités">
+        <TextInput
+          value={attendees}
+          onChange={(v) =>
+            onChange({
+              ...params,
+              attendees: v.split(",").map((s) => s.trim()).filter(Boolean),
+            })
+          }
+          placeholder="email1@..., email2@..."
+        />
+      </FieldRow>
+      <div className="flex gap-2">
+        <label className="text-xs text-muted-foreground w-[60px] shrink-0 pt-2">Détails</label>
+        <textarea
+          value={fmt(params.description)}
+          onChange={(e) => set("description", e.target.value)}
+          placeholder="Description"
+          rows={4}
+          className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring resize-y"
+        />
+      </div>
     </>
   );
 }
