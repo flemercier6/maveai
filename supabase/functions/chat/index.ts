@@ -1829,7 +1829,7 @@ Deno.serve(async (req) => {
 
           // Run web tool detection + fetch (notify client of progress)
           const googleKeyForAgent = Deno.env.get("GOOGLE_API_KEY");
-          if (!webDisabled && (firecrawlKey || linkupKey) && lastUserText) {
+          if (!webDisabled && !googleService && (firecrawlKey || linkupKey) && lastUserText) {
             controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
 
             // First, try the agentic multi-step plan for COMPLEX queries.
