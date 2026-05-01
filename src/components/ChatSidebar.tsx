@@ -437,7 +437,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                               </DropdownMenuSubTrigger>
                               <DropdownMenuSubContent className="w-48 max-h-64 overflow-auto">
                                 {folders.length === 0 && (
-                                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                                  <div className="px-2 py-1.5 text-muted-foreground text-sm">
                                     No folders yet
                                   </div>
                                 )}
