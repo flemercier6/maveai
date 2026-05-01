@@ -232,7 +232,7 @@ export function BillingTab() {
                 <div className="font-medium uppercase tracking-wide text-muted-foreground text-sm">Free</div>
                 <div className="mt-1 flex items-baseline gap-1">
                   <span className="text-2xl font-semibold">€0</span>
-                  <span className="text-xs text-muted-foreground">/ month</span>
+                  <span className="text-muted-foreground text-sm">/ month</span>
                 </div>
               </div>
               <ul className="space-y-1.5 text-sm">
