@@ -117,7 +117,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
           .single();
         if (error) throw error;
         onSaved?.(data as FolderRow);
-        toast.success("Folder created");
+        toast.success("Project created");
       }
       onOpenChange(false);
     } catch (e) {
