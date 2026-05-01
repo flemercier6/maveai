@@ -1,5 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { FileText, Copy, Check, ChevronDown, ChevronRight } from "lucide-react";
+import { GoogleServiceLogo } from "./GoogleServiceLogo";
 
 type Props = {
   content: string;
@@ -8,6 +9,7 @@ type Props = {
   collapsed?: boolean;
   streaming?: boolean;
   onChange?: (next: string) => void;
+  onSendByEmail?: () => void;
 };
 
 function CanvasBlockImpl({ content, title, version, collapsed, streaming, onChange }: Props) {
