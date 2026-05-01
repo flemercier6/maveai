@@ -85,7 +85,7 @@ export function PagePanel({ open, page, onClose }: Props) {
       <aside
         className={cn(
           "fixed top-0 right-0 z-50 h-full page-surface overflow-hidden",
-          "shadow-[-24px_0_60px_-20px_rgba(27,26,23,0.35)]",
+          open && "shadow-[-24px_0_60px_-20px_rgba(27,26,23,0.35)]",
           dragging ? "transition-none" : "transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
           open ? "translate-x-0" : "translate-x-full",
         )}
