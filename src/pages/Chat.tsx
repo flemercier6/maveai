@@ -43,6 +43,7 @@ import { isModeDisabled, isModelBlacklisted, pickAllowedModel, type ModeId } fro
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useSwipe } from "@/hooks/useSwipe";
 import { ShareMenu } from "@/components/ShareMenu";
+import { ConversationActionsMenu } from "@/components/ConversationActionsMenu";
 
 type StoredBranch = {
   id: string;
