@@ -539,7 +539,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                   <CollapsibleContent className="space-y-0.5 pt-1">
                     {foldersLoaded && folders.length === 0 && (
                       <p className="text-xs text-muted-foreground px-3 py-2">
-                        Create a folder to group related chats.
+                        Create a project to group related chats.
                       </p>
                     )}
                     {folders.map((f) => {
