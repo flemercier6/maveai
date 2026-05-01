@@ -1569,7 +1569,17 @@ Deno.serve(async (req) => {
       const mentionsMail = /\b(gmail|e-?mail|mail|courriel|inbox|boite mail|message?s? recus?)\b/.test(normalized);
       const wantsUnread = /\b(non lus?|unread)\b/.test(normalized);
       const wantsLatest = /\b(dernier(?:s|es)?|recent(?:s|es)?|nouveau(?:x|lles)?|recus?|inbox|boite mail|check|verifie|montre|liste|lis|regarde)\b/.test(normalized);
-      const isComposing = /\b(ecris|redige|compose|brouillon|draft|send|envoie|envoyer|reponds|reply)\b/.test(normalized);
+      const isComposing = /\b(ecris|redige|compose|brouillon|draft|reponds|reply|write|prepare|prepar)\b/.test(normalized);
+      const isSending = /\b(envoie|envoyer|send)\b/.test(normalized);
+
+      // Composing/drafting an email — surface an empty draft card so the LLM (or the user) can fill it.
+      if ((googleService === "gmail" && isComposing) || (mentionsMail && isComposing)) {
+        return {
+          action: isSending ? "gmail.send" : "gmail.draft",
+          params: { to: "", subject: "", body: "" },
+          rationale: "deterministic compose fallback",
+        };
+      }
 
       if (googleService === "gmail" && !isComposing && userText.trim()) {
         return {
