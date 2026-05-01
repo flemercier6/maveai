@@ -159,7 +159,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
     <div className="my-2 rounded-xl border border-border bg-card overflow-hidden">
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-[hsl(var(--dropdown-hover))]">
         <Icon className="w-4 h-4 text-foreground/70" />
-        <span className="text-sm font-medium text-foreground">{title}</span>
+        <span className="text-sm font-medium text-foreground text-sm">{title}</span>
       </div>
 
       <div className="p-3 space-y-2 text-sm">
