@@ -777,7 +777,7 @@ function ChatMessageImpl({
                     <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{text}</ReactMarkdown>
                   ) : null
                 ) : streaming && !hasThinking ? (
-                  <span className="inline-flex items-center gap-1.5 text-shimmer text-sm font-medium">
+                  <span className="inline-flex items-center gap-1.5 text-shimmer text-base font-medium">
                     {googleService && (
                       <GoogleServiceLogo service={googleService} className="w-4 h-4 shrink-0" />
                     )}
