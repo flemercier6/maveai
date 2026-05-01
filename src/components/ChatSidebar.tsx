@@ -431,7 +431,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                             </DropdownMenuItem>
                             <DropdownMenuSub>
                               <DropdownMenuSubTrigger>
-                                <FolderIcon className="w-3.5 h-3.5 mr-2 opacity-70" /> Move to folder
+                                <FolderIcon className="w-3.5 h-3.5 mr-2 opacity-70" /> Move to project
                               </DropdownMenuSubTrigger>
                               <DropdownMenuSubContent className="w-48 max-h-64 overflow-auto">
                                 {folders.length === 0 && (
