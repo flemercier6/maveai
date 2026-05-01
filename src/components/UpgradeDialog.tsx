@@ -8,7 +8,7 @@ const COPY: Record<Reason, { title: string; description: string }> = {
   "daily-limit": {
     title: "You've used your 5 free messages today",
     description:
-      "Upgrade to Plus for unlimited messages, access to premium models, persistent chats, folders and memory.",
+      "Upgrade to Plus for unlimited messages, access to premium models, persistent chats, projects and memory.",
   },
   "premium-model": {
     title: "This model is reserved for Plus",
