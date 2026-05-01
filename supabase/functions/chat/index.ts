@@ -1561,6 +1561,33 @@ Deno.serve(async (req) => {
           rationale?: string;
         };
 
+    function fallbackGoogleIntent(userText: string): GoogleRouterDecision | null {
+      const normalized = userText
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      const mentionsMail = /\b(gmail|e-?mail|mail|courriel|inbox|boite mail|message?s? recus?)\b/.test(normalized);
+      const wantsUnread = /\b(non lus?|unread)\b/.test(normalized);
+      const wantsLatest = /\b(dernier(?:s|es)?|recent(?:s|es)?|nouveau(?:x|lles)?|recus?|inbox|boite mail|check|verifie|montre|liste|lis|regarde)\b/.test(normalized);
+      const isComposing = /\b(ecris|redige|compose|brouillon|draft|send|envoie|envoyer|reponds|reply)\b/.test(normalized);
+
+      if (googleService === "gmail" && !isComposing && userText.trim()) {
+        return {
+          action: "gmail.search",
+          params: { query: wantsUnread ? "is:unread" : "in:inbox", maxResults: wantsLatest ? 10 : 5 },
+          rationale: "deterministic /gmail fallback",
+        };
+      }
+      if (mentionsMail && (wantsUnread || wantsLatest) && !isComposing) {
+        return {
+          action: "gmail.search",
+          params: { query: wantsUnread ? "is:unread" : "in:inbox", maxResults: wantsLatest ? 10 : 5 },
+          rationale: "deterministic Gmail read fallback",
+        };
+      }
+      return null;
+    }
+
     async function classifyGoogleIntent(
       googleApiKey: string,
       userText: string,
