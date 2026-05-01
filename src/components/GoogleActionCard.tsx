@@ -147,7 +147,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
         {isEvent ? <EventFields params={params} onChange={setParams} /> : null}
       </div>
 
-      <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-border bg-background">
+      <div className="flex items-center justify-end gap-2 px-3 py-2 bg-background">
         <button
           type="button"
           onClick={handleCancel}
