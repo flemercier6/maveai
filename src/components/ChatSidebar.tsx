@@ -521,7 +521,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                 {/* ============== FOLDERS ============== */}
                 <Collapsible defaultOpen>
                   <div className="flex items-center justify-between pr-1">
-                    <CollapsibleTrigger className="group flex items-center gap-1 px-[10px] py-[6px] text-sm font-medium text-muted-foreground hover:text-sidebar-foreground">
+                    <CollapsibleTrigger className="group flex items-center gap-1 px-[10px] py-[6px] font-medium text-muted-foreground hover:text-sidebar-foreground text-base">
                       <ChevronDown className="w-3 h-3 transition-transform group-data-[state=closed]:-rotate-90" />
                       <span>Projects</span>
                     </CollapsibleTrigger>
