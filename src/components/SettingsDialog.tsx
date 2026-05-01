@@ -50,7 +50,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, onProfileUp
 
         {/* Sidebar */}
         <aside className="w-[200px] shrink-0 bg-[hsl(var(--dropdown-hover))] border-r border-border p-3 flex flex-col gap-1">
-          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+          <div className="px-2 py-1.5 font-semibold text-muted-foreground text-sm">
             Settings
           </div>
           {visibleNav.map((item) => {
@@ -64,7 +64,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, onProfileUp
                 disabled={disabled}
                 onClick={() => !disabled && setActive(item.id)}
                 className={cn(
-                  "flex items-center gap-2 px-2 py-1.5 rounded-[4px] text-sm text-left transition-colors",
+                  "flex items-center gap-2 px-2 py-1.5 rounded-[4px] text-left transition-colors text-base",
                   disabled
                     ? "text-foreground/40 cursor-not-allowed"
                     : isActive
@@ -73,7 +73,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, onProfileUp
                 )}
               >
                 <Icon className="w-4 h-4 opacity-70" />
-                <span className="flex-1">{item.label}</span>
+                <span className="flex-1 text-base">{item.label}</span>
                 {item.soon && (
                   <span className="text-[9px] font-semibold uppercase tracking-wider rounded-full bg-foreground/10 text-foreground/60 px-1.5 py-0.5">
                     Soon
