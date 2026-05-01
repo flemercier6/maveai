@@ -137,7 +137,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
     }
     onDeleted?.(folder.id);
     onOpenChange(false);
-    toast.success("Folder deleted");
+    toast.success("Project deleted");
   }
 
   return (
