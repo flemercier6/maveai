@@ -890,8 +890,10 @@ export default function Chat() {
     }
 
     const baseMsgs: Msg[] = [...messages, { id: userMsg?.id ?? `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
-    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel }]);
+    const sentGoogleService = googleService;
+    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel, googleService: sentGoogleService ?? undefined }]);
     setStreaming(true);
+    if (googleService) setGoogleService(null);
 
     const controller = new AbortController();
     abortRef.current = controller;
