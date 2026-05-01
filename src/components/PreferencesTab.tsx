@@ -171,9 +171,19 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
                 </button>
               )}
             </div>
-...
-        {/* Name */}
-        <div className="py-4 text-base">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFile(f);
+                e.target.value = "";
+              }}
+            />
+          </div>
+        </div>
           <label className="font-medium text-base">Name</label>
           <input
             type="text"
