@@ -1780,7 +1780,7 @@ Deno.serve(async (req) => {
                   const result = await execGoogleReadAction(
                     authHeader,
                     decision.action,
-                    decision.params,
+                    decision.params ?? {},
                   );
                   controller.enqueue(
                     enc({
