@@ -77,8 +77,8 @@ export type LucideProps = SVGProps<SVGSVGElement> & {
 };
 
 const make = (icon: IconSvgElement, displayName: string) => {
-  const Comp = forwardRef<SVGSVGElement, LucideProps>((props, ref) => (
-    <HugeiconsIcon ref={ref} icon={icon} {...(props as any)} />
+  const Comp = forwardRef<SVGSVGElement, LucideProps>(({ strokeWidth = 2, ...props }, ref) => (
+    <HugeiconsIcon ref={ref} icon={icon} strokeWidth={strokeWidth as number} {...(props as any)} />
   ));
   Comp.displayName = displayName;
   return Comp;
