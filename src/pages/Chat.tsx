@@ -1421,6 +1421,9 @@ export default function Chat() {
       // Flag the next send to generate a structured one-pager.
       setPageRequested(true);
       toast.success("Page mode enabled for next message");
+    } else if (item.provider === "gmail" || item.provider === "calendar" || item.provider === "drive") {
+      setGoogleService(item.provider);
+      toast.success(`${GOOGLE_SERVICE_LABEL[item.provider]} enabled for next message`);
     } else {
       if (isModelBlacklisted(aiPrefs, item.model)) {
         toast.error("This model is blacklisted in your AI preferences");
