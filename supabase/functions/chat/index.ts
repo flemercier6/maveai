@@ -1572,11 +1572,14 @@ Deno.serve(async (req) => {
       const isComposing = /\b(ecris|redige|compose|brouillon|draft|reponds|reply|write|prepare|prepar)\b/.test(normalized);
       const isSending = /\b(envoie|envoyer|send)\b/.test(normalized);
 
-      // Composing/drafting an email — surface an empty draft card so the LLM (or the user) can fill it.
+      // Composing/drafting an email — surface a draft card pre-filled with whatever recipient we can detect.
       if ((googleService === "gmail" && isComposing) || (mentionsMail && isComposing)) {
+        // Extract first email address mentioned in the user text, if any.
+        const emailMatch = userText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        const to = emailMatch ? emailMatch[0] : "";
         return {
           action: isSending ? "gmail.send" : "gmail.draft",
-          params: { to: "", subject: "", body: "" },
+          params: { to, subject: "", body: "" },
           rationale: "deterministic compose fallback",
         };
       }
