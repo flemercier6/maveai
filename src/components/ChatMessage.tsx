@@ -70,6 +70,7 @@ type Props = {
   canvasVersion?: number;
   canvasCollapsed?: boolean;
   onCanvasChange?: (next: string) => void;
+  onSendCanvasByEmail?: () => void;
   onRetry?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
@@ -640,6 +641,7 @@ function ChatMessageImpl({
   canvasVersion,
   canvasCollapsed,
   onCanvasChange,
+  onSendCanvasByEmail,
   onRetry,
   onDelete,
   onEdit,
@@ -796,6 +798,7 @@ function ChatMessageImpl({
             collapsed={canvasCollapsed}
             streaming={streaming}
             onChange={onCanvasChange}
+            onSendByEmail={onSendCanvasByEmail}
           />
         )}
         {page && onOpenPage && <PageCard page={page} onOpen={onOpenPage} />}
@@ -868,6 +871,7 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.canvasVersion === next.canvasVersion &&
   prev.canvasCollapsed === next.canvasCollapsed &&
   prev.onCanvasChange === next.onCanvasChange &&
+  prev.onSendCanvasByEmail === next.onSendCanvasByEmail &&
   prev.onRetry === next.onRetry &&
   prev.onDelete === next.onDelete &&
   prev.onEdit === next.onEdit &&

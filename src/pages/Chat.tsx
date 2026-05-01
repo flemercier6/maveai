@@ -1873,6 +1873,23 @@ export default function Chat() {
                       }
                     }, 0);
                   } : undefined}
+                  onSendCanvasByEmail={m.role === "assistant" && typeof m.canvas === "string" && m.canvas.trim().length > 0 ? () => {
+                    setMessages((prev) => {
+                      const arr = prev.slice();
+                      const cur = arr[i];
+                      const ga: GoogleAction = {
+                        action: "gmail.draft",
+                        params: {
+                          to: "",
+                          subject: cur.canvasTitle ?? "",
+                          body: cur.canvas ?? "",
+                        },
+                        state: "pending",
+                      };
+                      arr[i] = { ...cur, googleAction: ga };
+                      return arr;
+                    });
+                  } : undefined}
                 />
                 {m.role === "assistant" && m.googleAction ? (
                   <div className="px-4 md:px-12 max-w-3xl mx-auto mt-2">
