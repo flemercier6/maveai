@@ -258,8 +258,8 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         className={cn(
           "shrink-0 h-screen flex flex-col bg-sidebar border-r border-sidebar-border",
           // Mobile: fixed drawer overlay full width; Desktop: in-flow with custom width
-          "fixed top-0 left-0 z-50 w-screen max-w-full transition-transform duration-200 ease-out text-[15px]",
-          "md:relative md:w-[var(--sidebar-w)] md:max-w-none md:translate-x-0 md:transition-none md:text-sm",
+          "fixed top-0 left-0 z-50 w-screen max-w-full transition-transform duration-200 ease-out text-base",
+          "md:relative md:w-[var(--sidebar-w)] md:max-w-none md:translate-x-0 md:transition-none md:text-base",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -303,7 +303,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="w-full flex items-center gap-3 md:gap-2 px-3 md:px-[10px] py-[10px] md:py-[6px] rounded-[6px] text-sidebar-foreground hover:bg-sidebar-accent text-[15px] md:text-sm md:rounded-md"
+            className="w-full flex items-center gap-3 md:gap-2 px-3 md:px-[10px] py-[10px] md:py-[6px] rounded-[6px] text-sidebar-foreground hover:bg-sidebar-accent text-[15px] md:rounded-md md:text-base"
           >
             <Search className="w-5 h-5 md:w-4 md:h-4 opacity-70" /> Search chats
           </button>
@@ -598,7 +598,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                                 <FIcon className={cn("w-3 h-3", col.fg)} />
                               )}
                             </span>
-                            <span className="flex-1 min-w-0 truncate text-[14px] md:text-sm font-bold">{f.name}</span>
+                            <span className="flex-1 min-w-0 truncate text-[14px] font-bold md:text-base">{f.name}</span>
                             <span className="text-[10px] tabular-nums text-muted-foreground/70">
                               {items.length || ""}
                             </span>
