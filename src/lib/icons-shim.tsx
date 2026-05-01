@@ -69,6 +69,9 @@ import {
   CreditCardIcon,
   Share08Icon,
   ToggleOnIcon,
+  Mail01Icon,
+  Calendar01Icon,
+  HardDriveIcon,
 } from "@hugeicons/core-free-icons";
 
 export type LucideProps = SVGProps<SVGSVGElement> & {
@@ -158,3 +161,7 @@ export const Lock = make(LockIcon, "Lock");
 export const Share2 = make(Share08Icon, "Share2");
 export const LayoutDashboard = make(Analytics01Icon, "LayoutDashboard");
 export const ToggleOn = make(ToggleOnIcon, "ToggleOn");
+export const Mail = make(Mail01Icon, "Mail");
+export const Calendar = make(Calendar01Icon, "Calendar");
+export const HardDrive = make(HardDriveIcon, "HardDrive");
+
