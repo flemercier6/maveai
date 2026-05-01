@@ -1691,18 +1691,20 @@ Deno.serve(async (req) => {
       googleApiKey: string,
       userText: string,
       historyTail: { role: string; content: string }[],
-      current: { subject: string; body: string },
-    ): Promise<{ subject: string; body: string }> {
+      current: { to: string; subject: string; body: string },
+    ): Promise<{ to: string; subject: string; body: string }> {
       const sys =
         `You are drafting an email on behalf of the user (${googleAccountEmail ?? "unknown"}).\n` +
         `Today is ${new Date().toISOString()}.\n\n` +
-        `From the user's request and the recent conversation, write a complete, ready-to-send email:\n` +
+        `From the user's request and the recent conversation, fill in the email fields:\n` +
+        `- "to": Extract the recipient's email address if the user mentioned one (e.g. "envoie à john@acme.com" → "john@acme.com"). If the user gave only a name without email (e.g. "écris à Marie"), put the name as-is so the user can complete it. If no recipient was specified at all, leave it as an empty string.\n` +
         `- Detect the language of the user's request and write the email in that same language.\n` +
-        `- Subject: short, specific, no quotes.\n` +
-        `- Body: polite greeting, well-structured paragraphs, clear sign-off. Do NOT include the recipient address or "From:" headers — only the message text.\n` +
+        `- "subject": short, specific, no quotes.\n` +
+        `- "body": polite greeting, well-structured paragraphs, clear sign-off. Do NOT include the recipient address or "From:" headers — only the message text.\n` +
         `- Sign with the user's first name if known from context, otherwise leave the sign-off generic ("Bien à vous,") without inventing a name.\n` +
         `- Do NOT use placeholders like [Your Name] or [Recipient]. If a fact is unknown, omit it gracefully rather than inserting a placeholder.\n` +
-        `- Reply with a single JSON object: {"subject": "...", "body": "..."}.` +
+        `- Reply with a single JSON object: {"to": "...", "subject": "...", "body": "..."}.` +
+        (current.to ? `\nKeep this recipient if reasonable: "${current.to}".` : "") +
         (current.subject ? `\nKeep this subject if reasonable: "${current.subject}".` : "") +
         (current.body ? `\nUse this body as a starting point and improve it: "${current.body.slice(0, 500)}".` : "");
 
@@ -1731,6 +1733,7 @@ Deno.serve(async (req) => {
       const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
       const parsed = JSON.parse(text);
       return {
+        to: typeof parsed?.to === "string" ? parsed.to : current.to,
         subject: typeof parsed?.subject === "string" ? parsed.subject : current.subject,
         body: typeof parsed?.body === "string" ? parsed.body : current.body,
       };
