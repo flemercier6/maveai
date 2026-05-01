@@ -30,7 +30,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
   // Build per-segment breakdown for the input side.
   const segments: Segment[] = [];
 
-  for (const s of meta.systems) {
+  for (const s of meta.systems ?? []) {
     segments.push({
       label: `System · ${s.label}`,
       tokens: s.approxTokens,
