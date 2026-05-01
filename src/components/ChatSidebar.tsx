@@ -292,7 +292,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     aria-label="New ephemeral chat"
                     className="ml-1 h-10 w-10 md:h-7 md:w-7 flex items-center justify-center rounded-[6px] md:rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent"
                   >
-                    <Ghost className="w-5 h-5 md:w-4 md:h-4 opacity-70" />
+                    <HugeiconsIcon icon={MessageSquareDashedIcon} className="w-5 h-5 md:w-4 md:h-4 opacity-70" strokeWidth={1.5} />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>Ephemeral chat (not saved)</TooltipContent>
