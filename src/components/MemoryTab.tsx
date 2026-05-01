@@ -239,11 +239,66 @@ export function MemoryTab() {
       <Card className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-medium text-base">Add a memory</h3>
-... keep existing code
+          <div className="flex items-center gap-2">
+            <Dialog open={importOpen} onOpenChange={(o) => { if (o && isFree) { setShowUpgrade(true); return; } setImportOpen(o); }}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isFree}>
+                  <Upload className="w-4 h-4 mr-1" /> Import from another AI
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Import memory from another AI</DialogTitle>
+                  <DialogDescription>
+                    Paste here the memory exported from ChatGPT, Claude, Gemini, etc. Accepted formats: one
+                    memory per line, bullet/numbered list, or JSON (array of strings or of objects
+                    {" "}
+                    <code>{`{content, kind}`}</code>).
+                  </DialogDescription>
+                </DialogHeader>
+                <Textarea
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  placeholder={`- I work as a full-stack developer\n- I prefer TypeScript and React\n- I live in Paris`}
+                  rows={10}
+                  className="font-mono text-xs"
+                />
                 <p className="text-muted-foreground text-sm">
                   {parseImport(importText).length} memor{parseImport(importText).length === 1 ? "y" : "ies"} detected.
                 </p>
-... keep existing code
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setImportOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={importMemories}
+                    disabled={importing || parseImport(importText).length === 0}
+                  >
+                    <Upload className="w-4 h-4 mr-1" />
+                    Import {parseImport(importText).length || ""}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+        <Textarea
+          value={newContent}
+          onChange={(e) => setNewContent(e.target.value)}
+          placeholder="E.g. I prefer concise explanations and TypeScript code."
+          rows={2}
+        />
+        <div className="flex justify-end">
+          <Button
+            onClick={() => { if (isFree) { setShowUpgrade(true); return; } add(); }}
+            disabled={!newContent.trim()}
+            size="sm"
+          >
+            <Plus className="w-4 h-4 mr-1" /> Add
+          </Button>
+        </div>
+      </Card>
+
       <div className="flex items-center justify-between">
         <h3 className="font-medium text-base">{memories.length} memor{memories.length === 1 ? "y" : "ies"}</h3>
         {memories.length > 0 && (
