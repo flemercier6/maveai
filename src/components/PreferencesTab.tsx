@@ -112,7 +112,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
       {/* Appearance */}
       <section className="mb-2">
         <h2 className="text-muted-foreground mb-4 text-base">Appearance</h2>
-        <div className="flex items-start justify-between py-4 text-base border-b border-border">
+        <div className="flex items-start justify-between py-4 text-base border-b border-border pt-0">
           <div>
             <div className="font-medium text-base">Appearance mode</div>
             <div className="text-muted-foreground mt-0.5 text-sm">
@@ -130,7 +130,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
         <h2 className="text-muted-foreground mb-4 text-base">Profile</h2>
 
         {/* Picture */}
-        <div className="py-4 text-base">
+        <div className="py-4 text-base pt-0 pb-[16px]">
           <div className="font-medium text-base">Picture</div>
           <div className="text-muted-foreground mt-0.5 mb-4 text-sm">
             Personalize your profile with your picture. Your picture will appear in your left-menu.
@@ -185,7 +185,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
           </div>
         </div>
         {/* Name */}
-        <div className="py-4 text-base">
+        <div className="py-4 text-base pt-0 pb-[16px]">
           <label className="font-medium text-base">Name</label>
           <input
             type="text"
@@ -199,7 +199,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
         </div>
 
         {/* Email */}
-        <div className="py-4 text-base">
+        <div className="py-4 text-base pt-0 pb-[16px]">
           <label className="font-medium text-base">Email</label>
           <input
             type="email"
