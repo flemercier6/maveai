@@ -133,7 +133,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
                       <td className="px-2.5 py-1.5 text-right tabular-nums text-sm">
                         {fmtTok(cost.inputTokens)} tok
                       </td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums font-semibold">
+                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm font-semibold">
                         {fmtEur(inputCostBilled)}
                       </td>
                     </tr>
