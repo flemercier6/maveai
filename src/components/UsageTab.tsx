@@ -442,7 +442,7 @@ export function UsageTab() {
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <div className="text-xs font-medium tabular-nums">{title}</div>
+          <div className="text-xs font-medium tabular-nums text-sm">{title}</div>
           <button
             type="button"
             onClick={() => canNext && setOffset((o) => o + 1)}
