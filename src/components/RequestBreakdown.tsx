@@ -119,7 +119,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
                   {segments.map((s, i) => (
                     <tr key={i} className="border-b border-border last:border-b-0">
                       <td className="px-2.5 py-1.5 text-foreground">{s.label}</td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums text-muted-foreground">
+                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm text-muted-foreground">
                         {fmtTok(s.tokens)} tok
                       </td>
                       <td className="px-2.5 py-1.5 text-right tabular-nums font-medium">
