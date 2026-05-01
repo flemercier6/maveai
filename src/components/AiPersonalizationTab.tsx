@@ -85,7 +85,16 @@ export function AiPersonalizationTab() {
                 Controls how detailed the AI's answers are. Affects every reply.
               </p>
             </div>
-... keep existing code
+            <Select
+              value={prefs.responseLength}
+              onValueChange={(v) => update({ responseLength: v as ResponseLength })}
+            >
+              <SelectTrigger className="w-44 shrink-0">
+                <SelectValue>
+                  {RESPONSE_LENGTH_DEFS.find((o) => o.id === prefs.responseLength)?.label}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
                 {RESPONSE_LENGTH_DEFS.map((opt) => (
                   <SelectItem key={opt.id} value={opt.id}>
                     <div className="flex flex-col">
@@ -94,7 +103,12 @@ export function AiPersonalizationTab() {
                     </div>
                   </SelectItem>
                 ))}
-... keep existing code
+              </SelectContent>
+            </Select>
+          </div>
+        </section>
+
+        {/* ---------- Modes ---------- */}
         <section className="space-y-3">
           <div>
             <h3 className="font-medium text-base">Modes</h3>
