@@ -1823,6 +1823,7 @@ export default function Chat() {
                   role={m.role}
                   content={m.content}
                   provider={m.provider}
+                  googleService={m.googleService}
                   model={m.model}
                   memory={m.memory}
                   tool={m.tool}
