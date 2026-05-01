@@ -323,12 +323,12 @@ function EmailFields({
       </FieldRow>
       <div className="flex gap-2">
         <label className="text-muted-foreground w-[60px] shrink-0 pt-2 text-base">Corps</label>
-        <textarea
+        <AutoResizeTextarea
           value={fmt(params.body)}
-          onChange={(e) => set("body", e.target.value)}
+          onChange={(v) => set("body", v)}
           placeholder="Contenu de l'email"
-          rows={6}
-          className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring resize-y text-base"
+          minHeight={80}
+          maxHeight={400}
         />
       </div>
     </>
