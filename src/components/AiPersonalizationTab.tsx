@@ -68,7 +68,7 @@ export function AiPersonalizationTab() {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="space-y-8 max-w-2xl">
+      <div className="space-y-8 max-w-2xl text-base">
         <header>
           <h2 className="text-lg font-semibold">AI personalization</h2>
           <p className="text-sm text-muted-foreground">
