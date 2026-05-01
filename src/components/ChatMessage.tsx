@@ -744,7 +744,10 @@ function ChatMessageImpl({
           <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "10px" }}>
             {provider && <ProviderBadge provider={provider} model={model} />}
             {googleService && (
-              <div className="inline-flex items-center h-6 gap-1.5 rounded-full border border-border bg-card px-2.5 text-[11px] font-medium text-muted-foreground max-w-full">
+              <div
+                className="inline-flex items-center h-6 gap-1.5 rounded-full bg-[#E6F1FF] px-2.5 text-[11px] font-medium max-w-full"
+                style={{ color: "#0062FF" }}
+              >
                 <GoogleServiceLogo service={googleService} className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate text-base">{GOOGLE_SERVICE_LABEL[googleService]}</span>
               </div>
