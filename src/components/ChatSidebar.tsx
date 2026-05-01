@@ -537,7 +537,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                       <FolderPlus className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <CollapsibleContent className="space-y-0.5 pt-1">
+                  <CollapsibleContent className="space-y-0.5 pt-1 pl-3">
                     {foldersLoaded && folders.length === 0 && (
                       <p className="text-xs text-muted-foreground px-3 py-2">
                         Create a project to group related chats.
