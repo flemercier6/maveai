@@ -266,7 +266,7 @@ export function BillingTab() {
                 <Sparkles className="w-3 h-3" /> Recommended
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wide text-primary">Plus</div>
+                <div className="font-medium uppercase tracking-wide text-primary text-sm">Plus</div>
                 <div className="mt-1 flex items-baseline gap-1">
                   <span className="text-2xl font-semibold">Pay-as-you-go</span>
                 </div>
