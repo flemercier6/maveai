@@ -551,7 +551,7 @@ function DeveloperModeCard({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="rounded-xl border border-border p-4 flex items-start justify-between gap-4">
+    <div className="rounded-xl border border-border p-4 flex items-start justify-between gap-4 text-base">
       <div className="min-w-0">
         <div className="text-sm font-semibold">Developer Mode</div>
         <p className="mt-1 text-xs text-muted-foreground">
