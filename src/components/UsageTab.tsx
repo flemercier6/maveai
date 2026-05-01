@@ -376,7 +376,7 @@ export function UsageTab() {
         <div className="font-medium text-foreground text-sm uppercase tracking-wide opacity-70 text-sm">
           Total spent on AI
         </div>
-        <div className="mt-2 font-semibold tracking-tight tabular-nums text-xl">
+        <div className="mt-2 font-semibold tracking-tight tabular-nums text-sm text-xl">
           {fmtEUR(totalBilled)}
         </div>
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 opacity-70 text-sm">
