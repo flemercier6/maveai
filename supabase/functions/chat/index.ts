@@ -1566,6 +1566,13 @@ Deno.serve(async (req) => {
       userText: string,
       historyTail: { role: string; content: string }[],
     ): Promise<GoogleRouterDecision> {
+      const scopeHint = googleService === "gmail"
+        ? `\nThe user explicitly invoked /gmail — they want a Gmail action. Choose ONLY from gmail.* actions. Never return "none" unless the message is completely empty.`
+        : googleService === "calendar"
+          ? `\nThe user explicitly invoked /calendar — they want a Calendar action. Choose ONLY from calendar.* actions. Never return "none" unless the message is completely empty.`
+          : googleService === "drive"
+            ? `\nThe user explicitly invoked /drive — they want a Drive action. Drive support is not yet implemented; return {"action":"none"}.`
+            : "";
       const sys =
         `You decide if the last user message wants the assistant to call a Google action ` +
         `on the user's connected Google account. The user's email is ${googleAccountEmail ?? "unknown"}. ` +
@@ -1582,7 +1589,8 @@ Deno.serve(async (req) => {
         `- Resolve relative dates ("tomorrow 3pm", "next monday") to ISO 8601 in UTC.\n` +
         `- For drafts/sends, only fill fields the user actually provided. Leave subject/body empty strings if missing.\n` +
         `- Prefer gmail.search with a Gmail-style query when the user asks to find/check emails.\n` +
-        `- Always reply with a single JSON object, no prose.`;
+        `- Always reply with a single JSON object, no prose.` +
+        scopeHint;
 
       const body = {
         contents: [
