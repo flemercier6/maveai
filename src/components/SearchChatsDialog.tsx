@@ -129,7 +129,7 @@ export function SearchChatsDialog({ open, onOpenChange, conversations, onSelect 
                 onSelect={() => handlePick(c.id)}
               >
                 <MessageSquare className="w-3.5 h-3.5 opacity-70 mr-2" />
-                <span className="truncate">{c.title || "Untitled"}</span>
+                <span className="truncate text-base">{c.title || "Untitled"}</span>
               </CommandItem>
             ))}
           </CommandGroup>

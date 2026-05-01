@@ -126,7 +126,7 @@ function ToolBadge({ tool, label }: ToolUse) {
   return (
     <div className="inline-flex items-center h-6 gap-1.5 rounded-full border border-border bg-card px-2.5 text-[11px] font-medium text-muted-foreground max-w-full">
       <Icon className="w-3.5 h-3.5 shrink-0" />
-      <span className="truncate">{label ? `${text}: ${shortLabel}` : text}</span>
+      <span className="truncate text-base">{label ? `${text}: ${shortLabel}` : text}</span>
     </div>
   );
 }
@@ -579,7 +579,7 @@ function AgentStepCard({ step }: { step: AgentStep }) {
         {subject && (
           <>
             <span className="text-muted-foreground/50">·</span>
-            <span className="truncate" title={subject}>{shortSubject}</span>
+            <span className="truncate text-base" title={subject}>{shortSubject}</span>
           </>
         )}
         {step.status === "done" && step.foundCount !== undefined && step.foundCount > 0 && (
