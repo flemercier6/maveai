@@ -1,4 +1,5 @@
 import type { SVGProps } from "react";
+import gmailLogoUrl from "@/assets/logo-gmail.png";
 
 export type GoogleService = "gmail" | "calendar" | "drive";
 
@@ -8,16 +9,14 @@ export const GOOGLE_SERVICE_LABEL: Record<GoogleService, string> = {
   drive: "Drive",
 };
 
-function GmailLogo(props: SVGProps<SVGSVGElement>) {
+function GmailLogo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
-      <path d="M22 6.5v11a1.5 1.5 0 0 1-1.5 1.5H18V9.2l-6 4.4-6-4.4V19H3.5A1.5 1.5 0 0 1 2 17.5v-11l1-.5h.05L12 12.7 20.95 6H21l1 .5z" fill="#EA4335"/>
-      <path d="M3.5 19H6V9.2L2 6.5v11A1.5 1.5 0 0 0 3.5 19z" fill="#4285F4"/>
-      <path d="M18 19h2.5a1.5 1.5 0 0 0 1.5-1.5v-11L18 9.2V19z" fill="#34A853"/>
-      <path d="M6 9.2l6 4.4 6-4.4V6L12 10.4 6 6v3.2z" fill="#FBBC04"/>
-      <path d="M2 6.5L6 9.2V6L3 5.5l-1 1z" fill="#C5221F"/>
-      <path d="M22 6.5L18 9.2V6l3-.5 1 1z" fill="#C5221F"/>
-    </svg>
+    <img
+      src={gmailLogoUrl}
+      alt="Gmail"
+      className={className}
+      draggable={false}
+    />
   );
 }
 
