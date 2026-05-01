@@ -228,6 +228,8 @@ export function SlashCommandMenu({
                 <Sparkles className="w-4 h-4 text-muted-foreground" />
               ) : it.provider === "page" ? (
                 <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
+              ) : it.provider === "gmail" || it.provider === "calendar" || it.provider === "drive" ? (
+                <GoogleServiceLogo service={it.provider} className="w-4 h-4" />
               ) : (
                 <ProviderLogo provider={it.provider as Provider} className="w-4 h-4" />
               )}
