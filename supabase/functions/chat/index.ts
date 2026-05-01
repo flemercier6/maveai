@@ -1747,11 +1747,14 @@ Deno.serve(async (req) => {
           const googleApiKey = Deno.env.get("GOOGLE_API_KEY");
           if (googleConnected && googleApiKey && !writingMode && lastUserText) {
             try {
-              const decision = await classifyGoogleIntent(
+              let decision = await classifyGoogleIntent(
                 googleApiKey,
                 lastUserText,
                 trimmedHistory.map((m) => ({ role: m.role, content: m.content ?? "" })),
               );
+              if (decision.action === "none") {
+                decision = fallbackGoogleIntent(lastUserText) ?? decision;
+              }
               console.log("[google router] decision=", JSON.stringify(decision), "googleService=", googleService, "userText=", lastUserText.slice(0, 200));
 
               if (decision.action !== "none") {
