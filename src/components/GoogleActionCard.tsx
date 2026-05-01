@@ -157,25 +157,54 @@ export function GoogleActionCard({ action, onChange }: Props) {
         >
           Annuler
         </button>
-        <button
-          type="button"
-          onClick={handleConfirm}
-          disabled={busy}
-          className={cn(
-            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background font-medium hover:opacity-90 transition-opacity disabled:opacity-60 text-base",
-          )}
-        >
-          {busy ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : action.action === "gmail.send" ? (
-            <Send className="w-3.5 h-3.5" />
-          ) : action.action === "gmail.draft" ? (
-            <FileText className="w-3.5 h-3.5" />
-          ) : (
-            <Check className="w-3.5 h-3.5" />
-          )}
-          {primaryLabel}
-        </button>
+        {isEmail ? (
+          <>
+            <button
+              type="button"
+              onClick={() => handleConfirm("gmail.draft")}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-dropdown-hover transition-colors disabled:opacity-50 text-base"
+            >
+              {busy && action.action === "gmail.draft" ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <FileText className="w-3.5 h-3.5" />
+              )}
+              Enregistrer comme brouillon
+            </button>
+            <button
+              type="button"
+              onClick={() => handleConfirm("gmail.send")}
+              disabled={busy}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background font-medium hover:opacity-90 transition-opacity disabled:opacity-60 text-base",
+              )}
+            >
+              {busy && action.action === "gmail.send" ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Send className="w-3.5 h-3.5" />
+              )}
+              Envoyer
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => handleConfirm()}
+            disabled={busy}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background font-medium hover:opacity-90 transition-opacity disabled:opacity-60 text-base",
+            )}
+          >
+            {busy ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Check className="w-3.5 h-3.5" />
+            )}
+            {primaryLabel}
+          </button>
+        )}
       </div>
     </div>
   );
