@@ -1684,6 +1684,55 @@ Deno.serve(async (req) => {
       return { action: "none" };
     }
 
+    async function draftEmailContent(
+      googleApiKey: string,
+      userText: string,
+      historyTail: { role: string; content: string }[],
+      current: { subject: string; body: string },
+    ): Promise<{ subject: string; body: string }> {
+      const sys =
+        `You are drafting an email on behalf of the user (${googleAccountEmail ?? "unknown"}).\n` +
+        `Today is ${new Date().toISOString()}.\n\n` +
+        `From the user's request and the recent conversation, write a complete, ready-to-send email:\n` +
+        `- Detect the language of the user's request and write the email in that same language.\n` +
+        `- Subject: short, specific, no quotes.\n` +
+        `- Body: polite greeting, well-structured paragraphs, clear sign-off. Do NOT include the recipient address or "From:" headers — only the message text.\n` +
+        `- Sign with the user's first name if known from context, otherwise leave the sign-off generic ("Bien à vous,") without inventing a name.\n` +
+        `- Do NOT use placeholders like [Your Name] or [Recipient]. If a fact is unknown, omit it gracefully rather than inserting a placeholder.\n` +
+        `- Reply with a single JSON object: {"subject": "...", "body": "..."}.` +
+        (current.subject ? `\nKeep this subject if reasonable: "${current.subject}".` : "") +
+        (current.body ? `\nUse this body as a starting point and improve it: "${current.body.slice(0, 500)}".` : "");
+
+      const body = {
+        contents: [
+          ...historyTail.slice(-6).map((m) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content.slice(0, 2000) }],
+          })),
+          { role: "user", parts: [{ text: userText.slice(0, 4000) }] },
+        ],
+        systemInstruction: { role: "user", parts: [{ text: sys }] },
+        generationConfig: {
+          temperature: 0.5,
+          responseMimeType: "application/json",
+        },
+      };
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`;
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(`drafter failed: ${JSON.stringify(d)}`);
+      const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+      const parsed = JSON.parse(text);
+      return {
+        subject: typeof parsed?.subject === "string" ? parsed.subject : current.subject,
+        body: typeof parsed?.body === "string" ? parsed.body : current.body,
+      };
+    }
+
     async function execGoogleReadAction(
       authHeader: string,
       action: string,
