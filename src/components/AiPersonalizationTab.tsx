@@ -89,7 +89,7 @@ export function AiPersonalizationTab() {
               value={prefs.responseLength}
               onValueChange={(v) => update({ responseLength: v as ResponseLength })}
             >
-              <SelectTrigger className="w-44 shrink-0">
+              <SelectTrigger className="w-44 shrink-0 text-base">
                 <SelectValue>
                   {RESPONSE_LENGTH_DEFS.find((o) => o.id === prefs.responseLength)?.label}
                 </SelectValue>
