@@ -1508,6 +1508,24 @@ Deno.serve(async (req) => {
     const enc = sseEncoder();
     let assistantText = "";
 
+    // ---------- Google integration: detect connection ----------
+    let googleConnected = false;
+    let googleAccountEmail: string | null = null;
+    try {
+      const { data: gi } = await supabase
+        .from("user_integrations")
+        .select("account_email")
+        .eq("user_id", user.id)
+        .eq("provider", "google")
+        .maybeSingle();
+      if (gi) {
+        googleConnected = true;
+        googleAccountEmail = (gi as { account_email: string | null }).account_email;
+      }
+    } catch (e) {
+      console.warn("google integration lookup failed", e);
+    }
+
     // ---------- Web tools: detect & fetch BEFORE streaming ----------
     const lastUserText = lastUserMsg?.content ?? "";
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
@@ -1521,6 +1539,121 @@ Deno.serve(async (req) => {
     const agenticSources: WebSource[] = [];
     const agenticImages: WebImage[] = [];
     const agenticContextBlocks: string[] = [];
+
+    // ---------- Google router (Gemini Flash) ----------
+    // Decides if the last user message wants a Google action.
+    // Returns one of:
+    //   { action: "none" }
+    //   { action: "gmail.search" | "gmail.get" | "calendar.list", params }  -> read, executed server-side
+    //   { action: "gmail.draft" | "gmail.send" | "calendar.create", params } -> proposal, requires user confirmation
+    type GoogleRouterDecision =
+      | { action: "none" }
+      | {
+          action:
+            | "gmail.search"
+            | "gmail.get"
+            | "gmail.draft"
+            | "gmail.send"
+            | "calendar.list"
+            | "calendar.create";
+          params: Record<string, unknown>;
+          rationale?: string;
+        };
+
+    async function classifyGoogleIntent(
+      googleApiKey: string,
+      userText: string,
+      historyTail: { role: string; content: string }[],
+    ): Promise<GoogleRouterDecision> {
+      const sys =
+        `You decide if the last user message wants the assistant to call a Google action ` +
+        `on the user's connected Google account. The user's email is ${googleAccountEmail ?? "unknown"}. ` +
+        `Today is ${new Date().toISOString()}.\n\n` +
+        `Available actions:\n` +
+        `- gmail.search { query?: string (Gmail search syntax, e.g. "from:alice is:unread"), maxResults?: number<=25 }\n` +
+        `- gmail.get { id: string } (only if the user references a specific email already shown)\n` +
+        `- gmail.draft { to, subject, body, cc?, bcc? } (compose a draft, do NOT send)\n` +
+        `- gmail.send { to, subject, body, cc?, bcc? } (send immediately on user confirmation)\n` +
+        `- calendar.list { timeMin?: ISO, timeMax?: ISO, q?: string, maxResults?: number<=50 }\n` +
+        `- calendar.create { summary, start: ISO, end: ISO, description?, location?, attendees?: email[], timeZone? }\n\n` +
+        `Rules:\n` +
+        `- If the message is general chat or unrelated to Gmail/Calendar, return {"action":"none"}.\n` +
+        `- Resolve relative dates ("tomorrow 3pm", "next monday") to ISO 8601 in UTC.\n` +
+        `- For drafts/sends, only fill fields the user actually provided. Leave subject/body empty strings if missing.\n` +
+        `- Prefer gmail.search with a Gmail-style query when the user asks to find/check emails.\n` +
+        `- Always reply with a single JSON object, no prose.`;
+
+      const body = {
+        contents: [
+          ...historyTail.slice(-4).map((m) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content.slice(0, 2000) }],
+          })),
+          { role: "user", parts: [{ text: userText.slice(0, 4000) }] },
+        ],
+        systemInstruction: { role: "user", parts: [{ text: sys }] },
+        generationConfig: {
+          temperature: 0,
+          responseMimeType: "application/json",
+        },
+      };
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`;
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        console.warn("google router classify failed", d);
+        return { action: "none" };
+      }
+      const text: string =
+        d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{"action":"none"}';
+      try {
+        const parsed = JSON.parse(text);
+        if (
+          typeof parsed?.action === "string" &&
+          [
+            "none",
+            "gmail.search",
+            "gmail.get",
+            "gmail.draft",
+            "gmail.send",
+            "calendar.list",
+            "calendar.create",
+          ].includes(parsed.action)
+        ) {
+          return parsed as GoogleRouterDecision;
+        }
+      } catch (e) {
+        console.warn("google router parse failed", e, text);
+      }
+      return { action: "none" };
+    }
+
+    async function execGoogleReadAction(
+      authHeader: string,
+      action: string,
+      params: Record<string, unknown>,
+    ): Promise<unknown> {
+      const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/google-tools`;
+      const r = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/json",
+          apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        },
+        body: JSON.stringify({ action, params }),
+      });
+      const d = await r.json();
+      if (!r.ok || d.error) {
+        throw new Error(d.error ?? `google-tools failed (${r.status})`);
+      }
+      return d.result;
+    }
+
 
     const stream = new ReadableStream({
       async start(controller) {
