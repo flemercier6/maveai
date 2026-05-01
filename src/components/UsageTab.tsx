@@ -499,39 +499,27 @@ export function UsageTab() {
       {/* Per-model breakdown */}
       <div className="space-y-2">
         <h3 className="font-semibold text-base">By model</h3>
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted text-muted-foreground text-sm">
-              <tr>
-                <th className="text-left font-medium px-3 py-2">Model</th>
-                <th className="text-right font-medium px-3 py-2">Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.byModel.map((row) => {
-                const provider = providerForModel(row.model);
-                const mult = billingMultiplier(row.model);
-                return (
-                  <tr key={row.model} className="border-t border-border">
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <ProviderLogo provider={provider} className="w-5 h-5 shrink-0" />
-                        <div>
-                          <div className="font-medium text-foreground">{modelLabel(row.model)}</div>
-                          <div className="text-muted-foreground text-sm">
-                            {PROVIDER_LABEL[provider] ?? row.provider}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums font-semibold">
-                      {fmtEUR(row.cost * mult)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="space-y-1">
+          {data.byModel.map((row) => {
+            const provider = providerForModel(row.model);
+            const mult = billingMultiplier(row.model);
+            return (
+              <div key={row.model} className="flex items-center justify-between gap-3 py-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <ProviderLogo provider={provider} className="w-5 h-5 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-medium text-foreground text-base truncate">{modelLabel(row.model)}</div>
+                    <div className="text-muted-foreground text-sm truncate">
+                      {PROVIDER_LABEL[provider] ?? row.provider}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right tabular-nums font-semibold text-base shrink-0">
+                  {fmtEUR(row.cost * mult)}
+                </div>
+              </div>
+            );
+          })}
         </div>
         <p className="text-muted-foreground text-sm">
           Costs are based on each provider's public per-token list price.
