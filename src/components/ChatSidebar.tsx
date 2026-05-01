@@ -530,7 +530,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                         setEditingFolder(null);
                         setFolderDialogOpen(true);
                       }}
-                      title={isFree ? "Folders are a Plus feature" : "New folder"}
+                      title={isFree ? "Projects are a Plus feature" : "New project"}
                       className="h-6 w-6 flex items-center justify-center rounded-[4px] text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
                     >
                       <FolderPlus className="w-3.5 h-3.5" />
