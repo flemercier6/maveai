@@ -108,7 +108,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
           .single();
         if (error) throw error;
         onSaved?.(data as FolderRow);
-        toast.success("Folder updated");
+        toast.success("Project updated");
       } else {
         const { data, error } = await supabase
           .from("folders")
