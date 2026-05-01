@@ -144,10 +144,10 @@ export function SearchChatsDialog({ open, onOpenChange, conversations, onSelect 
                 onSelect={() => handlePick(m.conversation_id)}
                 className="flex flex-col items-start gap-0.5 py-2"
               >
-                <span className="text-xs text-muted-foreground truncate w-full">
+                <span className="text-xs text-muted-foreground truncate text-base w-full">
                   {m.conv_title}
                 </span>
-                <span className="text-sm truncate w-full">{snippet(m.content, query)}</span>
+                <span className="text-sm truncate text-base w-full">{snippet(m.content, query)}</span>
               </CommandItem>
             ))}
           </CommandGroup>
