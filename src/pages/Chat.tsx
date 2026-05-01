@@ -2072,6 +2072,21 @@ export default function Chat() {
                       Page
                     </button>
                   )}
+                  {googleService && (
+                    <button
+                      type="button"
+                      onClick={() => setGoogleService(null)}
+                      aria-label={`Remove ${GOOGLE_SERVICE_LABEL[googleService]}`}
+                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-[#E6F1FF] transition-colors"
+                      style={{ color: "#0062FF" }}
+                    >
+                      <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                        <GoogleServiceLogo service={googleService} className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" />
+                        <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
+                      </span>
+                      {GOOGLE_SERVICE_LABEL[googleService]}
+                    </button>
+                  )}
                 </div>
                 <div className="flex items-center gap-[15px]">
                   <ModelPicker
