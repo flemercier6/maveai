@@ -143,7 +143,7 @@ export function AiPersonalizationTab() {
         {/* ---------- Modes ---------- */}
         <section className="space-y-3">
           <div>
-            <h3 className="font-medium text-base">Modes</h3>
+            <h3 className="font-medium text-foreground text-sm text-base">Modes</h3>
             <p className="text-muted-foreground text-sm">
               Disabled modes are hidden from the slash menu and never auto-triggered.
             </p>
