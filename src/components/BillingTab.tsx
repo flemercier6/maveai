@@ -491,7 +491,7 @@ export function BillingTab() {
                   >
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">
+                        <span className="font-medium text-base">
                           {inv.amount_eur.toFixed(2)} €
                         </span>
                         <span className="text-muted-foreground">· {dateLabel}</span>
