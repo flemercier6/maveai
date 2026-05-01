@@ -96,14 +96,14 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
         <div className="border-t border-border px-3 py-3 space-y-3 text-xs">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
             <span>
-              Model: <span className="font-medium text-foreground">{meta.model}</span>
+              Model: <span className="font-medium text-foreground text-sm">{meta.model}</span>
             </span>
             <span>
-              Provider: <span className="font-medium text-foreground">{meta.provider}</span>
+              Provider: <span className="font-medium text-foreground text-sm">{meta.provider}</span>
             </span>
             {cost && (
               <span>
-                Markup: <span className="font-medium text-foreground">×{mult}</span>
+                Markup: <span className="font-medium text-foreground text-sm">×{mult}</span>
               </span>
             )}
           </div>
