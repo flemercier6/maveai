@@ -106,7 +106,7 @@ export function ShareMenu({ conversationId }: Props) {
           size="sm"
           className="h-8 px-2.5 gap-1.5 text-sm font-medium"
         >
-          <HugeiconsIcon icon={Share03Icon} className="w-4 h-4" strokeWidth={1.5} />
+          <HugeiconsIcon icon={Share03Icon} className="w-4 h-4" strokeWidth={2} />
           <span className="hidden sm:inline">Share</span>
         </Button>
       </DropdownMenuTrigger>
