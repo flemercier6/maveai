@@ -168,7 +168,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
         <button
           type="button"
           onClick={handleCancel}
-          disabled={busy}
+          disabled={busy || loading}
           className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-dropdown-hover transition-colors disabled:opacity-50 text-base"
         >
           Annuler
@@ -178,7 +178,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
             <button
               type="button"
               onClick={() => handleConfirm("gmail.draft")}
-              disabled={busy}
+              disabled={busy || loading}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-dropdown-hover transition-colors disabled:opacity-50 text-base"
             >
               {busy && action.action === "gmail.draft" ? (
