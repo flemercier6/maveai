@@ -885,6 +885,7 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.attachments === next.attachments &&
   prev.page === next.page &&
   prev.onOpenPage === next.onOpenPage &&
+  prev.googleActionSlot === next.googleActionSlot &&
   prev.thinking === next.thinking &&
   prev.thinkingMs === next.thinkingMs &&
   prev.thinkingDone === next.thinkingDone,
