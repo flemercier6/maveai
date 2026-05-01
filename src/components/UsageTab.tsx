@@ -485,7 +485,7 @@ export function UsageTab() {
                   return (
                     <div className="rounded-[4px] bg-tooltip text-tooltip-foreground text-xs px-2 py-1 shadow-md">
                       <div className="opacity-70">{label}</div>
-                      <div className="font-semibold tabular-nums">{fmtEUR(v)}</div>
+                      <div className="font-semibold tabular-nums text-sm">{fmtEUR(v)}</div>
                     </div>
                   );
                 }}
