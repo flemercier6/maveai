@@ -68,6 +68,7 @@ import {
   Analytics01Icon,
   CreditCardIcon,
   Share08Icon,
+  ToggleOnIcon,
 } from "@hugeicons/core-free-icons";
 
 export type LucideProps = SVGProps<SVGSVGElement> & {
