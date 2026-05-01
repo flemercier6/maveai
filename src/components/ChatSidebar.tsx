@@ -479,7 +479,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => remove(c.id)}
-                              className="text-destructive focus:text-destructive"
+                              className="text-destructive focus:text-destructive text-base"
                             >
                               <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
                             </DropdownMenuItem>
