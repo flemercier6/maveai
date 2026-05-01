@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Star, ChevronDown } from "lucide-react";
+import { Star, ChevronDown, Pencil, LayoutDashboard, Sparkles, Globe, Map as MapIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -151,14 +151,27 @@ export function AiPersonalizationTab() {
           <div className="space-y-1">
             {MODE_DEFS.map((m) => {
               const enabled = !prefs.disabledModes.includes(m.id);
+              const ModeIcon =
+                m.id === "note"
+                  ? Pencil
+                  : m.id === "page"
+                  ? LayoutDashboard
+                  : m.id === "explore"
+                  ? Sparkles
+                  : m.id === "map"
+                  ? MapIcon
+                  : Globe;
               return (
                 <div
                   key={m.id}
                   className="flex items-center justify-between py-2 text-base gap-3"
                 >
-                  <div className="min-w-0">
-                    <div className="font-medium text-foreground text-base">{m.label}</div>
-                    <div className="text-muted-foreground text-sm">{m.description}</div>
+                  <div className="flex items-start gap-3 min-w-0">
+                    <ModeIcon className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-medium text-foreground text-base">{m.label}</div>
+                      <div className="text-muted-foreground text-sm">{m.description}</div>
+                    </div>
                   </div>
                   <Switch checked={enabled} onCheckedChange={() => toggleMode(m.id)} />
                 </div>
