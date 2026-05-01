@@ -462,7 +462,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                                           <FIcon className={cn("w-2.5 h-2.5", col.fg)} />
                                         )}
                                       </span>
-                                      <span className="truncate">{f.name}</span>
+                                      <span className="truncate text-base">{f.name}</span>
                                     </DropdownMenuItem>
                                   );
                                 })}
@@ -506,7 +506,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                             title={b.title}
                           >
                             <Sparkles className="w-3 h-3 shrink-0 opacity-70" />
-                            <span className="truncate">{b.title}</span>
+                            <span className="truncate text-base">{b.title}</span>
                           </button>
                         );
                       })}
