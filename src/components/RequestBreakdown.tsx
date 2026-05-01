@@ -80,7 +80,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
       >
         <span className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5" />
-          <span className="font-medium text-foreground">Developer breakdown</span>
+          <span className="font-medium text-foreground text-sm">Developer breakdown</span>
           {cost && (
             <span className="tabular-nums">
               · {fmtTok(cost.inputTokens + cost.outputTokens)} tokens · {fmtEur(totalBilled)}
