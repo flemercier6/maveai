@@ -117,7 +117,7 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
                 {q.header}
               </span>
             )}
-            <h4 className="text-sm font-medium text-foreground">{q.question}</h4>
+            <h4 className="text-sm font-medium text-foreground text-sm">{q.question}</h4>
           </div>
           <div className="flex flex-col gap-1.5 items-stretch">
             {q.options.map((opt, optIdx) => {
