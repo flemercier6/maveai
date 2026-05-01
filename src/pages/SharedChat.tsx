@@ -68,7 +68,7 @@ export default function SharedChat() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/50 px-4 sm:px-6 py-3 flex items-center justify-between">
-        <h1 className="text-sm font-semibold truncate">{conv.title || "Shared conversation"}</h1>
+        <h1 className="font-semibold truncate text-base">{conv.title || "Shared conversation"}</h1>
         <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">
           Open app →
         </Link>
