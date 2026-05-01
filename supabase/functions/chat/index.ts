@@ -1776,6 +1776,34 @@ Deno.serve(async (req) => {
                   decision.action === "calendar.create";
 
                 if (isWrite) {
+                  // For email composition, ensure body & subject are filled — call the LLM
+                  // again to write a complete draft when the router left them empty.
+                  if (decision.action === "gmail.draft" || decision.action === "gmail.send") {
+                    const params = (decision.params ?? {}) as Record<string, unknown>;
+                    const currentBody = String(params.body ?? "").trim();
+                    const currentSubject = String(params.subject ?? "").trim();
+                    if (!currentBody || !currentSubject) {
+                      try {
+                        const drafted = await draftEmailContent(
+                          googleApiKey,
+                          lastUserText,
+                          trimmedHistory.map((m) => ({ role: m.role, content: m.content ?? "" })),
+                          { subject: currentSubject, body: currentBody },
+                        );
+                        decision = {
+                          ...decision,
+                          params: {
+                            ...params,
+                            subject: drafted.subject || currentSubject,
+                            body: drafted.body || currentBody,
+                          },
+                        };
+                      } catch (e) {
+                        console.warn("draftEmailContent failed", e);
+                      }
+                    }
+                  }
+
                   // Propose to user; do NOT execute. Frontend shows confirmation card.
                   controller.enqueue(
                     enc({
