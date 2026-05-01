@@ -129,7 +129,7 @@ export function AiPersonalizationTab() {
                 {RESPONSE_LENGTH_DEFS.map((opt) => (
                   <SelectItem key={opt.id} value={opt.id}>
                     <div className="flex flex-col">
-                      <span className="font-medium text-base">{opt.label}</span>
+                      <span className="font-medium text-foreground text-sm text-base">{opt.label}</span>
                       <span className="text-muted-foreground text-sm">{opt.description}</span>
                     </div>
                   </SelectItem>
