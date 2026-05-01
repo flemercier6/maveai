@@ -58,6 +58,7 @@
     --dropdown-hover: 0 0% 97%;       /* #F8F8F8 — hover bg for dropdown items */
 
     --link: 217 100% 50%;             /* #0062FF — clickable URLs */
+    --switch-on: 217 100% 50%;        /* #0062FF — switches when checked */
 
     --radius: 0.5rem;
 
