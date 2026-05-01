@@ -316,7 +316,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
           </Button>
           <Button type="button" onClick={save} disabled={saving}>
             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            {folder ? "Save" : "Create folder"}
+            {folder ? "Save" : "Create project"}
           </Button>
         </DialogFooter>
       </DialogContent>
