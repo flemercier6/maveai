@@ -35,7 +35,7 @@ const COPY: Record<Reason, { title: string; description: string }> = {
 const PLUS_FEATURES = [
   "Unlimited messages per day",
   "All premium models (GPT-5.5, Opus 4.7, Gemini Pro…)",
-  "Saved chats & folders",
+  "Saved chats & projects",
   "Persistent memory across conversations",
 ];
 
