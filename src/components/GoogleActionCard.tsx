@@ -12,6 +12,7 @@ export type GoogleAction = {
   state: GoogleActionState;
   result?: unknown;
   error?: string;
+  loading?: boolean;
 };
 
 type Props = {
