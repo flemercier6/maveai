@@ -107,7 +107,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-3xl font-semibold mb-8">Preference</h1>
+      <h1 className="font-semibold mb-8 text-xl">Preference</h1>
 
       {/* Appearance */}
       <section className="mb-2">
