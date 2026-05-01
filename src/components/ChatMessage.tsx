@@ -748,7 +748,7 @@ function ChatMessageImpl({
                 className="inline-flex items-center h-6 gap-1.5 rounded-full bg-[#E6F1FF] px-2.5 text-[11px] font-medium max-w-full"
                 style={{ color: "#0062FF" }}
               >
-                <GoogleServiceLogo service={googleService} className="w-3.5 h-3.5 shrink-0" />
+                <GoogleServiceLogo service={googleService} className="w-[18px] h-[18px] shrink-0" />
                 <span className="truncate text-base">{GOOGLE_SERVICE_LABEL[googleService]}</span>
               </div>
             )}
