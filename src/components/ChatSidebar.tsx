@@ -291,7 +291,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     type="button"
                     onClick={onNewEphemeral}
                     aria-label="New ephemeral chat"
-                    className="ml-1 self-stretch aspect-square flex items-center justify-center rounded-[6px] md:rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent"
+                    className="ml-1 h-9 w-9 md:h-7 md:w-7 shrink-0 flex items-center justify-center rounded-[6px] md:rounded-[4px] text-sidebar-foreground hover:bg-sidebar-accent"
                   >
                     <HugeiconsIcon icon={MessageSquareDashedIcon} className="w-5 h-5 md:w-4 md:h-4 opacity-70" strokeWidth={2} />
                   </button>
