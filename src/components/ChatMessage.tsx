@@ -287,7 +287,7 @@ function SourceTag({ indices, sources }: { indices: number[]; sources: Source[] 
                     <span className="block text-[13px] text-foreground line-clamp-2 leading-snug">
                       {src.title}
                     </span>
-                    <span className="block text-[11px] text-muted-foreground truncate">{host}</span>
+                    <span className="block text-[11px] text-muted-foreground truncate text-base">{host}</span>
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-1" />
                 </a>
@@ -551,7 +551,7 @@ function ThreadEntry({ branch, onClick }: { branch: MessageBranch; onClick: () =
         <span className="text-[12px] font-medium text-foreground whitespace-nowrap">
           {replyLabel}
         </span>
-        <span className="text-[12px] text-muted-foreground truncate italic">
+        <span className="text-[12px] text-muted-foreground truncate text-base italic">
           {preview}
         </span>
       </div>
@@ -703,7 +703,7 @@ function ChatMessageImpl({
                     className="flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground"
                   >
                     <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="max-w-[160px] truncate">{a.name}</span>
+                    <span className="max-w-[160px] truncate text-base">{a.name}</span>
                   </div>
                 ),
               )}
