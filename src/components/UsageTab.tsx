@@ -373,27 +373,27 @@ export function UsageTab() {
 
       {/* Total billed cost card */}
       <div className="rounded-xl border border-border bg-foreground text-background p-6">
-        <div className="font-medium uppercase tracking-wide opacity-70 text-sm">
+        <div className="font-medium text-foreground text-sm uppercase tracking-wide opacity-70 text-sm">
           Total spent on AI
         </div>
-        <div className="mt-2 font-semibold tracking-tight tabular-nums text-xl">
+        <div className="mt-2 font-semibold tracking-tight tabular-nums text-sm text-xl">
           {fmtEUR(totalBilled)}
         </div>
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 opacity-70 text-sm">
           <span>
-            <span className="font-medium tabular-nums">
+            <span className="font-medium tabular-nums text-sm">
               {fmtTokens(data.totalRequests)}
             </span>{" "}
             requests
           </span>
           <span>
-            <span className="font-medium tabular-nums">
+            <span className="font-medium tabular-nums text-sm">
               {fmtTokens(data.totalInputTokens)}
             </span>{" "}
             in
           </span>
           <span>
-            <span className="font-medium tabular-nums">
+            <span className="font-medium tabular-nums text-sm">
               {fmtTokens(data.totalOutputTokens)}
             </span>{" "}
             out
@@ -442,7 +442,7 @@ export function UsageTab() {
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <div className="text-xs font-medium tabular-nums">{title}</div>
+          <div className="text-xs font-medium tabular-nums text-sm">{title}</div>
           <button
             type="button"
             onClick={() => canNext && setOffset((o) => o + 1)}
@@ -485,7 +485,7 @@ export function UsageTab() {
                   return (
                     <div className="rounded-[4px] bg-tooltip text-tooltip-foreground text-xs px-2 py-1 shadow-md">
                       <div className="opacity-70">{label}</div>
-                      <div className="font-semibold tabular-nums">{fmtEUR(v)}</div>
+                      <div className="font-semibold tabular-nums text-sm">{fmtEUR(v)}</div>
                     </div>
                   );
                 }}
@@ -508,13 +508,13 @@ export function UsageTab() {
                 <div className="flex items-center gap-2.5 min-w-0">
                   <ProviderLogo provider={provider} className="w-5 h-5 shrink-0" />
                   <div className="min-w-0">
-                    <div className="font-medium text-foreground text-base truncate">{modelLabel(row.model)}</div>
+                    <div className="font-medium text-foreground text-sm text-base truncate">{modelLabel(row.model)}</div>
                     <div className="text-muted-foreground text-sm truncate">
                       {PROVIDER_LABEL[provider] ?? row.provider}
                     </div>
                   </div>
                 </div>
-                <div className="text-right tabular-nums font-semibold text-base shrink-0">
+                <div className="text-right tabular-nums text-sm font-semibold text-base shrink-0">
                   {fmtEUR(row.cost * mult)}
                 </div>
               </div>

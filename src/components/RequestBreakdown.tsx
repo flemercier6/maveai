@@ -80,9 +80,9 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
       >
         <span className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5" />
-          <span className="font-medium text-foreground">Developer breakdown</span>
+          <span className="font-medium text-foreground text-sm">Developer breakdown</span>
           {cost && (
-            <span className="tabular-nums">
+            <span className="tabular-nums text-sm">
               · {fmtTok(cost.inputTokens + cost.outputTokens)} tokens · {fmtEur(totalBilled)}
             </span>
           )}
@@ -96,14 +96,14 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
         <div className="border-t border-border px-3 py-3 space-y-3 text-xs">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
             <span>
-              Model: <span className="font-medium text-foreground">{meta.model}</span>
+              Model: <span className="font-medium text-foreground text-sm">{meta.model}</span>
             </span>
             <span>
-              Provider: <span className="font-medium text-foreground">{meta.provider}</span>
+              Provider: <span className="font-medium text-foreground text-sm">{meta.provider}</span>
             </span>
             {cost && (
               <span>
-                Markup: <span className="font-medium text-foreground">×{mult}</span>
+                Markup: <span className="font-medium text-foreground text-sm">×{mult}</span>
               </span>
             )}
           </div>
@@ -119,10 +119,10 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
                   {segments.map((s, i) => (
                     <tr key={i} className="border-b border-border last:border-b-0">
                       <td className="px-2.5 py-1.5 text-foreground">{s.label}</td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums text-muted-foreground">
+                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm text-muted-foreground">
                         {fmtTok(s.tokens)} tok
                       </td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums font-medium">
+                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm font-medium">
                         {fmtEur(s.costUsd)}
                       </td>
                     </tr>
@@ -130,10 +130,10 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
                   {cost && (
                     <tr className="bg-muted/40">
                       <td className="px-2.5 py-1.5 font-medium">Input total</td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums">
+                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm">
                         {fmtTok(cost.inputTokens)} tok
                       </td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums font-semibold">
+                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm font-semibold">
                         {fmtEur(inputCostBilled)}
                       </td>
                     </tr>
@@ -154,10 +154,10 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
                   <tbody>
                     <tr>
                       <td className="px-2.5 py-1.5 text-foreground">Generated tokens</td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums text-muted-foreground">
+                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm text-muted-foreground">
                         {fmtTok(cost.outputTokens)} tok
                       </td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums font-medium">
+                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm font-medium">
                         {fmtEur(outputCostBilled)}
                       </td>
                     </tr>
@@ -171,7 +171,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
           {cost && (
             <div className="flex items-center justify-between rounded-md bg-foreground text-background px-3 py-2">
               <span className="font-medium">Total billed</span>
-              <span className="tabular-nums font-semibold">{fmtEur(totalBilled)}</span>
+              <span className="tabular-nums text-sm font-semibold">{fmtEur(totalBilled)}</span>
             </div>
           )}
         </div>

@@ -302,7 +302,7 @@ function MapBlockImpl({ code }: Props) {
       <div className="flex items-center justify-between px-3 py-2 border-b border-border gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
-          <span className="text-sm font-medium text-foreground truncate font-sans">
+          <span className="text-sm font-medium text-foreground text-sm truncate font-sans">
             {spec.title || (spec.markers && spec.markers.length > 1 ? `${spec.markers.length} locations` : "Map")}
           </span>
         </div>
