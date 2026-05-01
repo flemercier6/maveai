@@ -1725,6 +1725,7 @@ Deno.serve(async (req) => {
                 lastUserText,
                 trimmedHistory.map((m) => ({ role: m.role, content: m.content ?? "" })),
               );
+              console.log("[google router] decision=", JSON.stringify(decision), "googleService=", googleService, "userText=", lastUserText.slice(0, 200));
 
               if (decision.action !== "none") {
                 const isWrite =
