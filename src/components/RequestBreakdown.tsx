@@ -38,7 +38,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
     });
   }
 
-  if (meta.memoryMatches.length > 0) {
+  if (meta.memoryMatches && meta.memoryMatches.length > 0) {
     const memTokens = meta.memoryMatches.reduce(
       (s, m) => s + Math.ceil(m.content.length / 4),
       0,
