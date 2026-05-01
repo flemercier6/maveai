@@ -130,7 +130,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
                   {cost && (
                     <tr className="bg-muted/40">
                       <td className="px-2.5 py-1.5 font-medium">Input total</td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums">
+                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm">
                         {fmtTok(cost.inputTokens)} tok
                       </td>
                       <td className="px-2.5 py-1.5 text-right tabular-nums font-semibold">
