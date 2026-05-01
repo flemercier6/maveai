@@ -664,7 +664,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                       <p className="text-xs text-muted-foreground px-3 py-2">
                         {conversations.length === 0
                           ? "No conversations yet."
-                          : "All chats are in folders."}
+                          : "All chats are in projects."}
                       </p>
                     )}
                     {unfiled.map(renderConv)}
