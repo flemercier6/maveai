@@ -166,7 +166,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
             )}
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-medium truncate">{name || "Untitled folder"}</div>
+            <div className="text-sm font-medium truncate">{name || "Untitled project"}</div>
             <div className="text-xs text-muted-foreground">Preview</div>
           </div>
         </div>
