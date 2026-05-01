@@ -1874,6 +1874,20 @@ export default function Chat() {
                     }, 0);
                   } : undefined}
                 />
+                {m.role === "assistant" && m.googleAction ? (
+                  <div className="px-4 md:px-12 max-w-3xl mx-auto mt-2">
+                    <GoogleActionCard
+                      action={m.googleAction}
+                      onChange={(next) => {
+                        setMessages((prev) => {
+                          const arr = prev.slice();
+                          arr[i] = { ...arr[i], googleAction: next };
+                          return arr;
+                        });
+                      }}
+                    />
+                  </div>
+                ) : null}
                 </div>
               ));
               })()}
