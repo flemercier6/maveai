@@ -190,7 +190,7 @@ export function AiPersonalizationTab() {
                       <ChevronDown className="w-3.5 h-3.5 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90 shrink-0" />
                       <ProviderLogo provider={provider as any} className="w-4 h-4 shrink-0" />
                       <div className="min-w-0">
-                        <div className="font-medium text-foreground truncate text-base">
+                        <div className="text-foreground truncate text-base font-normal">
                           {(PROVIDER_LABEL as any)[provider] ?? provider}
                         </div>
                         <div className="text-muted-foreground truncate text-sm">
