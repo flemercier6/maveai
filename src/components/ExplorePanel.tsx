@@ -820,16 +820,16 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           aria-label="Resize exploration panel"
         />
       )}
-      <header className="flex items-center justify-between h-12 px-4 border-b border-border/30 shrink-0">
+      <header className="flex items-center justify-between h-12 px-4 border-b border-border/30 shrink-0 text-base">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-semibold truncate">Thread</span>
+          <span className="font-semibold truncate text-base">Thread</span>
         </div>
         <div className="flex items-center gap-1">
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-8 text-xs gap-1.5"
+            className="h-8 gap-1.5 text-base"
             onClick={handleMerge}
             disabled={!branchId || messages.length === 0 || merging || streaming}
           >
