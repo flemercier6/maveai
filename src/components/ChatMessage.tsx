@@ -192,8 +192,9 @@ function ThinkingTrace({
   );
 }
 
-function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined, provider?: string): string {
+function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined, provider?: string, googleService?: GoogleService): string {
   if (provider === "page") return "Crafting your page…";
+  if (googleService) return `Searching in ${GOOGLE_SERVICE_LABEL[googleService]}…`;
   if (tool) {
     const short = tool.label.length > 50 ? tool.label.slice(0, 47) + "…" : tool.label;
     if (tool.status === "done") {
@@ -776,8 +777,11 @@ function ChatMessageImpl({
                     <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{text}</ReactMarkdown>
                   ) : null
                 ) : streaming && !hasThinking ? (
-                  <span className="text-shimmer text-sm font-medium">
-                    {getStatusMessage(phase, tool, provider)}
+                  <span className="inline-flex items-center gap-1.5 text-shimmer text-sm font-medium">
+                    {googleService && (
+                      <GoogleServiceLogo service={googleService} className="w-4 h-4 shrink-0" />
+                    )}
+                    <span>{getStatusMessage(phase, tool, provider, googleService)}</span>
                   </span>
                 ) : " "}
               </div>
