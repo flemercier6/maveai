@@ -379,7 +379,7 @@ export function UsageTab() {
         <div className="mt-2 font-semibold tracking-tight tabular-nums text-xl">
           {fmtEUR(totalBilled)}
         </div>
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs opacity-70">
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 opacity-70 text-sm">
           <span>
             <span className="font-medium tabular-nums">
               {fmtTokens(data.totalRequests)}
