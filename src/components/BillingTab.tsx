@@ -336,7 +336,7 @@ export function BillingTab() {
         {/* Current usage */}
         {isPlus && (
           <div className="border border-border rounded-md p-4 bg-card space-y-1">
-            <div className="text-xs text-muted-foreground">Current usage</div>
+            <div className="text-muted-foreground text-sm">Current usage</div>
             <div className="text-2xl font-semibold">
               {status.outstandingEur.toFixed(2)} €
             </div>
