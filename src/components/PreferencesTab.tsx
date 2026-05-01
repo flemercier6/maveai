@@ -185,7 +185,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
           </div>
         </div>
         {/* Name */}
-        <div className="py-4 text-base">
+        <div className="py-4 text-base pt-0 pb-[16px]">
           <label className="font-medium text-base">Name</label>
           <input
             type="text"
