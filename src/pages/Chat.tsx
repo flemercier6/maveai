@@ -1702,6 +1702,34 @@ export default function Chat() {
           )}
           <div className="ml-auto flex items-center gap-1">
             {!ephemeral && activeId && <ShareMenu conversationId={activeId} />}
+            {!ephemeral && activeId && (() => {
+              const conv = conversations.find((c) => c.id === activeId);
+              if (!conv) return null;
+              return (
+                <ConversationActionsMenu
+                  conversationId={activeId}
+                  currentTitle={conv.title}
+                  currentFolderId={conv.folder_id ?? null}
+                  onRenamed={(id, title) =>
+                    setConversations((prev) =>
+                      prev.map((c) => (c.id === id ? { ...c, title } : c)),
+                    )
+                  }
+                  onMoved={(id, folderId) =>
+                    setConversations((prev) =>
+                      prev.map((c) => (c.id === id ? { ...c, folder_id: folderId } : c)),
+                    )
+                  }
+                  onDeleted={(id) => {
+                    setConversations((prev) => prev.filter((c) => c.id !== id));
+                    if (activeId === id) {
+                      setActiveId(null);
+                      setMessages([]);
+                    }
+                  }}
+                />
+              );
+            })()}
           </div>
         </header>
         <ChatIndex
