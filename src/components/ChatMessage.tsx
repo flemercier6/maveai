@@ -192,8 +192,9 @@ function ThinkingTrace({
   );
 }
 
-function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined, provider?: string): string {
+function getStatusMessage(phase: Phase | undefined, tool: ToolUse | undefined, provider?: string, googleService?: GoogleService): string {
   if (provider === "page") return "Crafting your page…";
+  if (googleService) return `Searching in ${GOOGLE_SERVICE_LABEL[googleService]}…`;
   if (tool) {
     const short = tool.label.length > 50 ? tool.label.slice(0, 47) + "…" : tool.label;
     if (tool.status === "done") {
