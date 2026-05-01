@@ -130,7 +130,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
         <h2 className="text-muted-foreground mb-4 text-base">Profile</h2>
 
         {/* Picture */}
-        <div className="py-4 text-base">
+        <div className="py-4 text-base pt-0 pb-[16px]">
           <div className="font-medium text-base">Picture</div>
           <div className="text-muted-foreground mt-0.5 mb-4 text-sm">
             Personalize your profile with your picture. Your picture will appear in your left-menu.
