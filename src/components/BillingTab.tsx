@@ -270,7 +270,7 @@ export function BillingTab() {
                 <div className="mt-1 flex items-baseline gap-1">
                   <span className="text-2xl font-semibold">Pay-as-you-go</span>
                 </div>
-                <div className="text-xs text-muted-foreground mt-0.5">
+                <div className="text-muted-foreground mt-0.5 text-sm">
                   Billed on actual usage. No fixed fee.
                 </div>
               </div>
