@@ -1174,6 +1174,22 @@ export default function Chat() {
                 next[next.length - 1] = { ...cur, agentSteps: updated };
                 return next;
               });
+            } else if (j.type === "google_action") {
+              const mode = String(j.mode ?? "");
+              const actionName = String(j.action ?? "");
+              const params = (j.params && typeof j.params === "object") ? j.params as Record<string, unknown> : {};
+              if (mode === "proposal" && (actionName === "gmail.draft" || actionName === "gmail.send" || actionName === "calendar.create")) {
+                const ga: GoogleAction = { action: actionName, params, state: "pending" };
+                setMessages((prev) => {
+                  const next = prev.slice();
+                  next[next.length - 1] = { ...next[next.length - 1], googleAction: ga };
+                  return next;
+                });
+              } else if (mode === "result") {
+                // For read actions, the LLM response will narrate the result.
+                // We do not render a card; the existing tool indicator + the streamed
+                // text are enough. Still, we could store it if needed later.
+              }
             } else if (j.type === "title" && j.title) {
               const newTitle = String(j.title);
               setConversations((prev) =>
