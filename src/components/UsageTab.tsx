@@ -373,7 +373,7 @@ export function UsageTab() {
 
       {/* Total billed cost card */}
       <div className="rounded-xl border border-border bg-foreground text-background p-6">
-        <div className="font-medium uppercase tracking-wide opacity-70 text-sm">
+        <div className="font-medium text-foreground text-sm uppercase tracking-wide opacity-70 text-sm">
           Total spent on AI
         </div>
         <div className="mt-2 font-semibold tracking-tight tabular-nums text-xl">
