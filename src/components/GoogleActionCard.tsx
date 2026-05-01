@@ -29,6 +29,13 @@ function fmt(value: unknown): string {
 export function GoogleActionCard({ action, onChange }: Props) {
   const [params, setParams] = useState<Record<string, unknown>>(action.params);
 
+  // When the backend sends an updated proposal (e.g. after drafting completes),
+  // sync local field state with the new params.
+  useEffect(() => {
+    setParams(action.params);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [action.params, action.loading]);
+
   const isEmail = action.action === "gmail.draft" || action.action === "gmail.send";
   const isEvent = action.action === "calendar.create";
   const Icon = isEmail ? Mail : Calendar;
