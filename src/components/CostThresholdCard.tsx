@@ -266,7 +266,7 @@ export function CostThresholdCard({ spendByPeriod }: Props) {
         <div className="mt-3 space-y-2">
           <div className="flex items-baseline justify-between gap-2">
             <div className="text-sm text-foreground">
-              <span className="font-semibold tabular-nums">{fmtEUR(currentSpend)}</span>
+              <span className="font-semibold tabular-nums text-sm">{fmtEUR(currentSpend)}</span>
               <span className="text-muted-foreground"> / {fmtEUR(Number(threshold.amount_eur))} </span>
               <span className="text-muted-foreground">par {PERIOD_LABEL[threshold.period]}</span>
             </div>
