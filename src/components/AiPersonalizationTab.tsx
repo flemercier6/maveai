@@ -180,7 +180,7 @@ export function AiPersonalizationTab() {
             {grouped.map(([provider, providerModels]) => {
               const ids = providerModels.map((m) => m.id);
               const enabledCount = ids.filter((id) => !prefs.blacklistedModels.includes(id)).length;
-              const allEnabled = enabledCount === ids.length;
+              const anyEnabled = enabledCount > 0;
               return (
                 <Collapsible key={provider} className="rounded-lg border border-border bg-background">
                   <div className="flex items-center justify-between px-4 py-3 gap-3">
@@ -197,7 +197,7 @@ export function AiPersonalizationTab() {
                       </div>
                     </CollapsibleTrigger>
                     <Switch
-                      checked={allEnabled}
+                      checked={anyEnabled}
                       onCheckedChange={(v) => setProviderEnabled(provider, v)}
                     />
                   </div>
