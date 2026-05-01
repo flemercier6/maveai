@@ -554,7 +554,7 @@ function DeveloperModeCard({
     <div className="rounded-xl border border-border p-4 flex items-start justify-between gap-4 text-base">
       <div className="min-w-0">
         <div className="text-sm font-semibold">Developer Mode</div>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-muted-foreground text-sm">
           Affiche sous chaque réponse de l'IA un dropdown de breakdown détaillé
           (tokens et coût en €) pour comprendre ce qui pèse le plus dans la requête.
         </p>
