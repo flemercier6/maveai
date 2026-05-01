@@ -375,12 +375,12 @@ function EventFields({
       </FieldRow>
       <div className="flex gap-2">
         <label className="text-muted-foreground w-[60px] shrink-0 pt-2 text-base">Détails</label>
-        <textarea
+        <AutoResizeTextarea
           value={fmt(params.description)}
-          onChange={(e) => set("description", e.target.value)}
+          onChange={(v) => set("description", v)}
           placeholder="Description"
-          rows={4}
-          className="flex-1 min-w-0 rounded-md border border-input bg-background px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring resize-y text-base"
+          minHeight={60}
+          maxHeight={400}
         />
       </div>
     </>
