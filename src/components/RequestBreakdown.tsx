@@ -58,10 +58,11 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
     });
   }
 
-  const histTokens = meta.history.reduce((s, h) => s + h.approxTokens, 0);
+  const history = meta.history ?? [];
+  const histTokens = history.reduce((s, h) => s + h.approxTokens, 0);
   if (histTokens > 0) {
     segments.push({
-      label: `Conversation history (${meta.history.length} msgs)`,
+      label: `Conversation history (${history.length} msgs)`,
       tokens: histTokens,
       costUsd: histTokens * inputPricePerTok * mult,
     });
