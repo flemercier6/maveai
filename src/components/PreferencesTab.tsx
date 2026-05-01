@@ -112,7 +112,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
       {/* Appearance */}
       <section className="mb-2">
         <h2 className="text-muted-foreground mb-4 text-base">Appearance</h2>
-        <div className="flex items-start justify-between py-4 text-base border-b border-border">
+        <div className="flex items-start justify-between py-4 text-base border-b border-border pt-0">
           <div>
             <div className="font-medium text-base">Appearance mode</div>
             <div className="text-muted-foreground mt-0.5 text-sm">
