@@ -114,12 +114,12 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
         <h2 className="text-sm text-muted-foreground mb-4">Appearance</h2>
         <div className="flex items-start justify-between py-4 border-b border-border">
           <div>
-            <div className="text-base font-medium">Appearance mode</div>
-            <div className="text-sm text-muted-foreground mt-0.5">
+            <div className="font-medium text-sm">Appearance mode</div>
+            <div className="text-muted-foreground mt-0.5 text-xs">
               Personalize the appearance of your account for a better experience.
             </div>
           </div>
-          <span className="text-[10px] font-semibold uppercase tracking-wider rounded-full bg-foreground/10 text-foreground/60 px-2 py-1">
+          <span className="font-semibold uppercase tracking-wider rounded-full bg-foreground/10 text-foreground/60 px-2 py-1 text-xs">
             Soon
           </span>
         </div>
@@ -131,8 +131,8 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
 
         {/* Picture */}
         <div className="py-4">
-          <div className="text-base font-medium">Picture</div>
-          <div className="text-sm text-muted-foreground mt-0.5 mb-4">
+          <div className="font-medium text-sm">Picture</div>
+          <div className="text-muted-foreground mt-0.5 mb-4 text-xs">
             Personalize your profile with your picture. Your picture will appear in your left-menu.
           </div>
           <div className="flex items-center gap-4">
@@ -153,7 +153,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
                 disabled={uploading}
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-muted hover:bg-dropdown-hover text-sm font-medium transition-colors",
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-muted hover:bg-dropdown-hover font-medium transition-colors text-xs",
                   uploading && "opacity-60 cursor-not-allowed",
                 )}
               >
@@ -165,7 +165,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
                   type="button"
                   disabled={uploading}
                   onClick={handleDelete}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-xs"
                 >
                   Delete
                 </button>
@@ -187,7 +187,7 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
 
         {/* Name */}
         <div className="py-4">
-          <label className="text-base font-medium">Name</label>
+          <label className="font-medium text-sm">Name</label>
           <input
             type="text"
             value={name}
@@ -195,13 +195,13 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
             onBlur={saveName}
             disabled={savingName}
             placeholder="ex: John"
-            className="mt-2 w-full px-3 py-2 rounded-[6px] bg-muted text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-border"
+            className="mt-2 w-full px-3 py-2 rounded-[6px] bg-muted placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-border text-sm"
           />
         </div>
 
         {/* Email */}
         <div className="py-4">
-          <label className="text-base font-medium">Email</label>
+          <label className="font-medium text-sm">Email</label>
           <input
             type="email"
             value={email}
