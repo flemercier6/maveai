@@ -607,7 +607,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                                 setEditingFolder(f);
                                 setFolderDialogOpen(true);
                               }}
-                              aria-label="Edit folder"
+                              aria-label="Edit project"
                               className="opacity-0 group-hover:opacity-70 hover:opacity-100 transition-opacity h-5 w-5 flex items-center justify-center rounded-[3px] hover:bg-background/40"
                             >
                               <Pencil className="w-3 h-3" />
