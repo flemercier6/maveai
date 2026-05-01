@@ -12,7 +12,7 @@ type Props = {
   onSendByEmail?: () => void;
 };
 
-function CanvasBlockImpl({ content, title, version, collapsed, streaming, onChange }: Props) {
+function CanvasBlockImpl({ content, title, version, collapsed, streaming, onChange, onSendByEmail }: Props) {
   const [copied, setCopied] = useState(false);
   // Older canvases default to collapsed; user can expand to peek at the previous version.
   const [open, setOpen] = useState(!collapsed);
