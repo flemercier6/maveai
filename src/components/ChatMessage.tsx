@@ -81,6 +81,7 @@ type Props = {
   attachments?: MessageAttachmentPreview[];
   page?: PageSpec;
   onOpenPage?: () => void;
+  googleActionSlot?: React.ReactNode;
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
