@@ -501,7 +501,7 @@ export function UsageTab() {
         <h3 className="text-sm font-semibold">By model</h3>
         <div className="rounded-lg border border-border overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-muted text-xs text-muted-foreground">
+            <thead className="bg-muted text-muted-foreground text-sm">
               <tr>
                 <th className="text-left font-medium px-3 py-2">Model</th>
                 <th className="text-right font-medium px-3 py-2">Cost</th>
