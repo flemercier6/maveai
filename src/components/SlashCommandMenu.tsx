@@ -44,6 +44,27 @@ export function buildSlashItems(): SlashItem[] {
       description: "Generate a structured one-pager dashboard",
       slug: "page",
     },
+    {
+      provider: "gmail",
+      model: "",
+      label: "Gmail",
+      description: "Search, read, draft or send emails",
+      slug: "gmail",
+    },
+    {
+      provider: "calendar",
+      model: "",
+      label: "Calendar",
+      description: "List or create events on your agenda",
+      slug: "calendar",
+    },
+    {
+      provider: "drive",
+      model: "",
+      label: "Drive",
+      description: "Browse files in your Google Drive",
+      slug: "drive",
+    },
   ];
   for (const p of PROVIDERS) {
     for (const m of MODELS[p.id]) {
