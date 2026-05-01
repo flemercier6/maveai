@@ -518,7 +518,7 @@ export function UsageTab() {
                         <ProviderLogo provider={provider} className="w-5 h-5 shrink-0" />
                         <div>
                           <div className="font-medium text-foreground">{modelLabel(row.model)}</div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-muted-foreground text-sm">
                             {PROVIDER_LABEL[provider] ?? row.provider}
                           </div>
                         </div>
