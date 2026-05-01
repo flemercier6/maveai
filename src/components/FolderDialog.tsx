@@ -144,9 +144,9 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg" overlayClassName="bg-white/40 backdrop-blur-sm">
         <DialogHeader>
-          <DialogTitle>{folder ? "Edit folder" : "New folder"}</DialogTitle>
+          <DialogTitle>{folder ? "Edit project" : "New project"}</DialogTitle>
           <DialogDescription>
-            Group related chats. Folder instructions and memories are used as
+            Group related chats. Project instructions and memories are used as
             priority context for every chat inside.
           </DialogDescription>
         </DialogHeader>
