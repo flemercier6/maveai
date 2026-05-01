@@ -208,7 +208,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
           <button
             type="button"
             onClick={() => handleConfirm()}
-            disabled={busy}
+            disabled={busy || loading}
             className={cn(
               "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background font-medium hover:opacity-90 transition-opacity disabled:opacity-60 text-base",
             )}
