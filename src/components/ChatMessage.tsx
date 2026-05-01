@@ -641,6 +641,7 @@ function ChatMessageImpl({
   canvasVersion,
   canvasCollapsed,
   onCanvasChange,
+  onSendCanvasByEmail,
   onRetry,
   onDelete,
   onEdit,
