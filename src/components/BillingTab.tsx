@@ -326,7 +326,7 @@ export function BillingTab() {
             <button
               type="button"
               onClick={() => setShowUpgradeForm(false)}
-              className="text-xs text-muted-foreground underline mt-1"
+              className="text-muted-foreground underline mt-1 text-sm"
             >
               ← Back to plan comparison
             </button>
