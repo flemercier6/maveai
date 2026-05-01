@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, Pencil, LayoutDashboard } from "lucide-react";
 import { MODELS, PROVIDERS, AUTO_MODEL_ID, type Provider } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
+import { GoogleServiceLogo, type GoogleService } from "./GoogleServiceLogo";
 
 export type SlashItem = {
-  provider: Provider | "auto" | "write" | "explore" | "page";
+  provider: Provider | "auto" | "write" | "explore" | "page" | GoogleService;
   model: string;
   label: string;
   description: string;
