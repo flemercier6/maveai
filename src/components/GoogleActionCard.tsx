@@ -111,7 +111,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
   if (action.state === "cancelled") {
     return (
       <div className="my-2 rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 text-base">
           <X className="w-4 h-4" />
           Action annulée
         </div>
