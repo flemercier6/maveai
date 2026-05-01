@@ -81,6 +81,7 @@ type Props = {
   attachments?: MessageAttachmentPreview[];
   page?: PageSpec;
   onOpenPage?: () => void;
+  googleActionSlot?: React.ReactNode;
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
@@ -652,6 +653,7 @@ function ChatMessageImpl({
   attachments,
   page,
   onOpenPage,
+  googleActionSlot,
 }: Props) {
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
@@ -802,6 +804,7 @@ function ChatMessageImpl({
           />
         )}
         {page && onOpenPage && <PageCard page={page} onOpen={onOpenPage} />}
+        {googleActionSlot}
         {!streaming && content && (
           <div className="relative mt-2 flex items-center gap-1 -ml-1.5">
             <ActionButton onClick={handleCopy} ariaLabel={copied ? "Copied" : "Copy"}>
@@ -882,6 +885,7 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.attachments === next.attachments &&
   prev.page === next.page &&
   prev.onOpenPage === next.onOpenPage &&
+  prev.googleActionSlot === next.googleActionSlot &&
   prev.thinking === next.thinking &&
   prev.thinkingMs === next.thinkingMs &&
   prev.thinkingDone === next.thinkingDone,
