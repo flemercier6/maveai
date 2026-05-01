@@ -700,7 +700,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     {planLabel}
                   </div>
                 </div>
-                <img src={sidebarUserArrows} alt="" aria-hidden className="w-[10px] h-[15px] opacity-70 shrink-0" />
+                <img src={sidebarUserArrows} alt="" aria-hidden className="w-[8px] h-[12px] opacity-70 shrink-0" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" side="top" className="w-[--radix-dropdown-menu-trigger-width]">
