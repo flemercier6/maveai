@@ -45,33 +45,34 @@ export function GoogleActionCard({ action, onChange }: Props) {
         ? "Envoyer"
         : "Créer l'événement";
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (overrideAction?: GoogleAction["action"]) => {
+    const effectiveAction = overrideAction ?? action.action;
     // Strip UI-only fields before sending
     const cleanParams: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(params)) {
       if (!k.startsWith("_")) cleanParams[k] = v;
     }
-    onChange({ ...action, state: "executing", params: cleanParams });
+    onChange({ ...action, action: effectiveAction, state: "executing", params: cleanParams });
     try {
       const { data, error } = await supabase.functions.invoke("google-tools", {
-        body: { action: action.action, params: cleanParams },
+        body: { action: effectiveAction, params: cleanParams },
       });
       if (error) throw error;
       if ((data as { error?: string })?.error) {
         throw new Error((data as { error: string }).error);
       }
       const result = (data as { result?: unknown })?.result;
-      onChange({ ...action, state: "done", params: cleanParams, result });
+      onChange({ ...action, action: effectiveAction, state: "done", params: cleanParams, result });
       const successMsg =
-        action.action === "gmail.draft"
-          ? "Brouillon créé"
-          : action.action === "gmail.send"
+        effectiveAction === "gmail.draft"
+          ? "Brouillon enregistré"
+          : effectiveAction === "gmail.send"
             ? "Email envoyé"
             : "Événement créé";
       toast.success(successMsg);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Action échouée";
-      onChange({ ...action, state: "error", params: cleanParams, error: msg });
+      onChange({ ...action, action: effectiveAction, state: "error", params: cleanParams, error: msg });
       toast.error(msg);
     }
   };
