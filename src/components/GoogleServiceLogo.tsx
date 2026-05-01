@@ -1,6 +1,6 @@
-import type { SVGProps } from "react";
 import gmailLogoUrl from "@/assets/logo-gmail.png";
 import calendarLogoUrl from "@/assets/logo-calendar.png";
+import driveLogoUrl from "@/assets/logo-drive.png";
 
 export type GoogleService = "gmail" | "calendar" | "drive";
 
@@ -32,13 +32,14 @@ function CalendarLogo({ className }: { className?: string }) {
   );
 }
 
-function DriveLogo(props: SVGProps<SVGSVGElement>) {
+function DriveLogo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
-      <path d="M9 3h6l6 10.5h-6z" fill="#FBBC04"/>
-      <path d="M9 3l-6 10.5L6 19l6-10.5z" fill="#34A853"/>
-      <path d="M6 19h12l3-5.5H9z" fill="#4285F4"/>
-    </svg>
+    <img
+      src={driveLogoUrl}
+      alt="Drive"
+      className={className}
+      draggable={false}
+    />
   );
 }
 
