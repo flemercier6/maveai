@@ -215,7 +215,7 @@ export function AiPersonalizationTab() {
             })}
           </div>
           {prefs.favoriteModels.length > 0 && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               <span className="font-medium text-foreground">Priority order:</span>{" "}
               {prefs.favoriteModels.join(" › ")}
             </p>
