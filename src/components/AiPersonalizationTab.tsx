@@ -66,6 +66,31 @@ export function AiPersonalizationTab() {
     update({ favoriteModels: favs });
   };
 
+  // Group models by provider for the collapsible sections
+  const grouped = useMemo(() => {
+    const map = new Map<string, typeof models>();
+    for (const m of models) {
+      const arr = map.get(m.provider) ?? [];
+      arr.push(m);
+      map.set(m.provider, arr);
+    }
+    return Array.from(map.entries());
+  }, [models]);
+
+  // Enable/disable an entire provider at once
+  const setProviderEnabled = (provider: string, enabled: boolean) => {
+    const ids = models.filter((m) => m.provider === provider).map((m) => m.id);
+    const set = new Set(prefs.blacklistedModels);
+    if (enabled) {
+      ids.forEach((id) => set.delete(id));
+      update({ blacklistedModels: Array.from(set) });
+    } else {
+      ids.forEach((id) => set.add(id));
+      const favs = prefs.favoriteModels.filter((m) => !ids.includes(m));
+      update({ blacklistedModels: Array.from(set), favoriteModels: favs });
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-sm text-muted-foreground">Loading preferences…</div>
