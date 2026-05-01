@@ -1835,20 +1835,22 @@ Deno.serve(async (req) => {
                   // again to write a complete draft when the router left them empty.
                   if (decision.action === "gmail.draft" || decision.action === "gmail.send") {
                     const params = (decision.params ?? {}) as Record<string, unknown>;
+                    const currentTo = String(params.to ?? "").trim();
                     const currentBody = String(params.body ?? "").trim();
                     const currentSubject = String(params.subject ?? "").trim();
-                    if (!currentBody || !currentSubject) {
+                    if (!currentTo || !currentBody || !currentSubject) {
                       try {
                         const drafted = await draftEmailContent(
                           googleApiKey,
                           lastUserText,
                           trimmedHistory.map((m) => ({ role: m.role, content: m.content ?? "" })),
-                          { subject: currentSubject, body: currentBody },
+                          { to: currentTo, subject: currentSubject, body: currentBody },
                         );
                         decision = {
                           ...decision,
                           params: {
                             ...params,
+                            to: drafted.to || currentTo,
                             subject: drafted.subject || currentSubject,
                             body: drafted.body || currentBody,
                           },
