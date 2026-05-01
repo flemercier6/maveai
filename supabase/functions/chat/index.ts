@@ -1807,19 +1807,10 @@ Deno.serve(async (req) => {
                 }
 
                 // READ action — execute now and inject result into the LLM context.
-                controller.enqueue(
-                  enc({
-                    type: "tool",
-                    tool: "google",
-                    label:
-                      decision.action === "gmail.search"
-                        ? "Recherche Gmail"
-                        : decision.action === "gmail.get"
-                          ? "Lecture email"
-                          : "Lecture agenda",
-                    status: "running",
-                  }),
-                );
+                // NOTE: we intentionally do NOT emit `tool` events here — the Google
+                // service badge is already shown via the message's `googleService`
+                // field, and emitting a `tool` event would render a misleading
+                // "Web search: ..." tag in the UI.
                 try {
                   const result = await execGoogleReadAction(
                     authHeader,
@@ -1835,9 +1826,6 @@ Deno.serve(async (req) => {
                       result,
                     }),
                   );
-                  controller.enqueue(
-                    enc({ type: "tool", tool: "google", label: "Google", status: "done" }),
-                  );
                   finalMessages.push({
                     role: "system",
                     content:
@@ -1846,9 +1834,6 @@ Deno.serve(async (req) => {
                   });
                 } catch (e) {
                   console.error("google read action failed", e);
-                  controller.enqueue(
-                    enc({ type: "tool", tool: "google", label: "Google (échec)", status: "error" }),
-                  );
                   finalMessages.push({
                     role: "system",
                     content: `[Google ${decision.action} failed: ${
