@@ -13,7 +13,7 @@ import { usePlan } from "@/hooks/usePlan";
 type Section = "preferences" | "ai" | "integrations" | "memory" | "usage" | "billing";
 
 const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?: string }>; soon?: boolean }[] = [
-  { id: "preferences", label: "Preferences", icon: Settings },
+  { id: "preferences", label: "Preferences", icon: ToggleOn },
   { id: "ai", label: "AI personalization", icon: Wand2 },
   { id: "integrations", label: "Integrations", icon: Globe, soon: true },
   { id: "memory", label: "Memory", icon: Brain },
