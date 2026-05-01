@@ -381,7 +381,7 @@ export function UsageTab() {
         </div>
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 opacity-70 text-sm">
           <span>
-            <span className="font-medium tabular-nums">
+            <span className="font-medium tabular-nums text-sm">
               {fmtTokens(data.totalRequests)}
             </span>{" "}
             requests
