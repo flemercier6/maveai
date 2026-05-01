@@ -196,7 +196,7 @@ export function AuthPopover() {
           <form onSubmit={verifyCode} className="space-y-3">
             <p className="text-sm text-muted-foreground text-center">
               We sent a 6-digit code to<br />
-              <span className="font-medium text-foreground text-sm">{email}</span>
+              <span className="font-medium text-foreground text-base">{email}</span>
             </p>
             <input
               ref={codeRef}

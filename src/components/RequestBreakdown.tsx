@@ -81,7 +81,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
       >
         <span className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5" />
-          <span className="font-medium text-foreground text-sm">Developer breakdown</span>
+          <span className="font-medium text-foreground text-base">Developer breakdown</span>
           {cost && (
             <span className="tabular-nums text-sm">
               · {fmtTok(cost.inputTokens + cost.outputTokens)} tokens · {fmtEur(totalBilled)}
@@ -97,14 +97,14 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
         <div className="border-t border-border px-3 py-3 space-y-3 text-xs">
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
             <span>
-              Model: <span className="font-medium text-foreground text-sm">{meta.model}</span>
+              Model: <span className="font-medium text-foreground text-base">{meta.model}</span>
             </span>
             <span>
-              Provider: <span className="font-medium text-foreground text-sm">{meta.provider}</span>
+              Provider: <span className="font-medium text-foreground text-base">{meta.provider}</span>
             </span>
             {cost && (
               <span>
-                Markup: <span className="font-medium text-foreground text-sm">×{mult}</span>
+                Markup: <span className="font-medium text-foreground text-base">×{mult}</span>
               </span>
             )}
           </div>
