@@ -507,6 +507,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_integrations: {
+        Row: {
+          access_token: string
+          account_email: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          provider: string
+          refresh_token: string | null
+          scopes: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          account_email?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          provider: string
+          refresh_token?: string | null
+          scopes?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          account_email?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          provider?: string
+          refresh_token?: string | null
+          scopes?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_memories: {
         Row: {
           consolidated_at: string | null

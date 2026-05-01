@@ -8,6 +8,7 @@ import { MemoryTab } from "@/components/MemoryTab";
 import { BillingTab } from "@/components/BillingTab";
 import { PreferencesTab } from "@/components/PreferencesTab";
 import { AiPersonalizationTab } from "@/components/AiPersonalizationTab";
+import { IntegrationsTab } from "@/components/IntegrationsTab";
 import { usePlan } from "@/hooks/usePlan";
 
 type Section = "preferences" | "ai" | "integrations" | "memory" | "usage" | "billing";
@@ -15,7 +16,7 @@ type Section = "preferences" | "ai" | "integrations" | "memory" | "usage" | "bil
 const NAV: { id: Section; label: string; icon: React.ComponentType<{ className?: string }>; soon?: boolean }[] = [
   { id: "preferences", label: "Preferences", icon: ToggleOn },
   { id: "ai", label: "AI personalization", icon: Wand2 },
-  { id: "integrations", label: "Integrations", icon: Globe, soon: true },
+  { id: "integrations", label: "Integrations", icon: Globe },
   { id: "memory", label: "Memory", icon: Brain },
   { id: "usage", label: "Usage", icon: BarChart3 },
   { id: "billing", label: "Plans & Billing", icon: CreditCard },
@@ -91,14 +92,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, onProfileUp
             <PreferencesTab onProfileUpdated={onProfileUpdated} />
           )}
           {active === "ai" && <AiPersonalizationTab />}
-          {active === "integrations" && (
-            <section className="space-y-2">
-              <h2 className="text-lg font-semibold">Integrations</h2>
-              <p className="text-sm text-muted-foreground">
-                Connect external services and providers.
-              </p>
-            </section>
-          )}
+          {active === "integrations" && <IntegrationsTab />}
           {active === "memory" && <MemoryTab />}
           {active === "usage" && <UsageTab />}
           {active === "billing" && <BillingTab />}
