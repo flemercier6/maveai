@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIntegrations } from "@/hooks/useIntegrations";
 import { cn } from "@/lib/utils";
+import { getOAuthReturnUri, shouldUseFullPageOAuthRedirect } from "@/lib/oauthRedirect";
 import geminiLogo from "@/assets/gemini-logo.png";
 
 type ProviderDef = {
@@ -38,11 +39,15 @@ export function IntegrationsTab() {
     try {
       const { data, error } = await supabase.functions.invoke(
         "google-oauth-start",
-        { body: { return_to: window.location.href } },
+        { body: { return_to: getOAuthReturnUri() } },
       );
       if (error) throw error;
       const url = (data as { url?: string })?.url;
       if (!url) throw new Error("No OAuth URL returned");
+      if (shouldUseFullPageOAuthRedirect()) {
+        window.location.href = url;
+        return;
+      }
       // Open in a popup so the user stays in context.
       const popup = window.open(url, "google-oauth", "width=520,height=640");
       if (!popup) {
