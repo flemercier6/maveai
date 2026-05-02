@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
+import { getOAuthRedirectUri } from "@/lib/oauthRedirect";
 
 export function GoogleSignInButton({ label = "Continue with Google" }: { label?: string }) {
   const [loading, setLoading] = useState(false);
@@ -9,7 +10,7 @@ export function GoogleSignInButton({ label = "Continue with Google" }: { label?:
   const onClick = async () => {
     setLoading(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: getOAuthRedirectUri(),
     });
     if (result.error) {
       setLoading(false);
