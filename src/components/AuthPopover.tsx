@@ -5,6 +5,7 @@ import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getOAuthRedirectUri } from "@/lib/oauthRedirect";
 import maveIcon from "@/assets/mave_icon.svg";
 
 type Step = "email" | "code";
@@ -65,7 +66,7 @@ export function AuthPopover() {
   const onGoogle = async () => {
     setGoogleLoading(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: getOAuthRedirectUri(),
     });
     if (result.error) {
       setGoogleLoading(false);
@@ -87,7 +88,7 @@ export function AuthPopover() {
       email: trimmed,
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: getOAuthRedirectUri(),
       },
     });
     setSubmitting(false);
