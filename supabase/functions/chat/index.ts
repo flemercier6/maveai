@@ -1592,6 +1592,37 @@ Deno.serve(async (req) => {
       if (/\b(ajoute|crée|cree|nouveau|nouvelle)\b/i.test(text)) return { resource: "contacts", method: "POST", payload: {} };
       return { resource: "contacts", method: "PATCH", query: {}, payload: {} };
     };
+    const normalizeVoyagerDecision = (decision: VoyagerRouterDecision): VoyagerRouterDecision => {
+      const resourceMap: Record<string, string> = {
+        contact: "contacts",
+        contacts: "contacts",
+        company: "companies",
+        companies: "companies",
+        societe: "companies",
+        société: "companies",
+        deal: "deals",
+        deals: "deals",
+        opportunite: "deals",
+        opportunité: "deals",
+        none: "none",
+      };
+      const methodMap: Record<string, string> = {
+        CREATE: "POST",
+        ADD: "POST",
+        POST: "POST",
+        UPDATE: "PATCH",
+        MODIFY: "PATCH",
+        CHANGE: "PATCH",
+        PUT: "PATCH",
+        PATCH: "PATCH",
+        DELETE: "DELETE",
+        REMOVE: "DELETE",
+        GET: "GET",
+      };
+      const resource = resourceMap[String(decision.resource ?? "none").toLowerCase()] ?? decision.resource;
+      const method = methodMap[String(decision.method ?? "GET").toUpperCase()] ?? decision.method;
+      return { ...decision, resource, method };
+    };
     const inferVoyagerSearchTerm = (text: string, payload?: Record<string, unknown>): string => {
       const withoutEmail = text.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig, " ");
       const match = withoutEmail.match(/(?:^|\s)(?:de|du|d'|pour)\s+([^,.;:]+?)(?:\s+(?:par|en|à|a|avec|vers|pour)\b|$)/i);
