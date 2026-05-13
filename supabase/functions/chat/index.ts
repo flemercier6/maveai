@@ -2009,7 +2009,7 @@ Deno.serve(async (req) => {
 
           // ---------- Voyager CRM router ----------
           // Only when the user explicitly invoked /voyager.
-          if (voyagerService && !writingMode && lastUserText) {
+          if (voyagerEnabled && !writingMode && lastUserText) {
             try {
               const googleKeyForVoyager = Deno.env.get("GOOGLE_API_KEY");
               const sys =
