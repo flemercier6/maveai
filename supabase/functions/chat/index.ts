@@ -1565,7 +1565,6 @@ Deno.serve(async (req) => {
       payload?: Record<string, unknown>;
     };
     const fallbackVoyagerIntent = (text: string): VoyagerRouterDecision | null => {
-      const normalized = text.toLowerCase();
       const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
       const wantsContactEmailUpdate =
         !!emailMatch &&
@@ -1586,7 +1585,6 @@ Deno.serve(async (req) => {
         };
       }
 
-      if (/\b(contact|contacts|société|societe|company|deal|opportunité|opportunite)\b/i.test(normalized)) return null;
       return null;
     };
     const normalizeVoyagerDecision = (decision: VoyagerRouterDecision): VoyagerRouterDecision => {
