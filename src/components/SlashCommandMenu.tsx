@@ -3,9 +3,10 @@ import { Sparkles, Pencil, LayoutDashboard } from "lucide-react";
 import { MODELS, PROVIDERS, AUTO_MODEL_ID, type Provider } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
 import { GoogleServiceLogo, type GoogleService } from "./GoogleServiceLogo";
+import { VoyagerLogo } from "./VoyagerLogo";
 
 export type SlashItem = {
-  provider: Provider | "auto" | "write" | "explore" | "page" | GoogleService;
+  provider: Provider | "auto" | "write" | "explore" | "page" | GoogleService | "voyager";
   model: string;
   label: string;
   description: string;
