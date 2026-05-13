@@ -1204,6 +1204,19 @@ export default function Chat() {
                 // We do not render a card; the existing tool indicator + the streamed
                 // text are enough. Still, we could store it if needed later.
               }
+            } else if (j.type === "voyager_action") {
+              const resource = String(j.resource ?? "") as VoyagerAction["resource"];
+              const method = String(j.method ?? "GET") as VoyagerAction["method"];
+              const id = typeof j.id === "string" ? j.id : undefined;
+              const payload = (j.payload && typeof j.payload === "object") ? j.payload as Record<string, unknown> : undefined;
+              if (["contacts", "companies", "deals"].includes(resource) && ["POST", "PATCH", "DELETE"].includes(method)) {
+                const va: VoyagerAction = { resource, method, id, payload, state: "pending" };
+                setMessages((prev) => {
+                  const next = prev.slice();
+                  next[next.length - 1] = { ...next[next.length - 1], voyagerAction: va };
+                  return next;
+                });
+              }
             } else if (j.type === "title" && j.title) {
               const newTitle = String(j.title);
               setConversations((prev) =>
