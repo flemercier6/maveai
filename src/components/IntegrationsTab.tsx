@@ -184,7 +184,7 @@ export function IntegrationsTab() {
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-lg bg-[hsl(var(--dropdown-hover))] flex items-center justify-center shrink-0">
-                <Database className="w-5 h-5 text-foreground/70" />
+                <HardDrive className="w-5 h-5 text-foreground/70" />
               </div>
               <div className="min-w-0">
                 <div className="font-medium text-foreground text-base">Voyager CRM</div>
@@ -206,9 +206,9 @@ export function IntegrationsTab() {
           </p>
           <div className="flex flex-wrap gap-1.5">
             {[
-              { icon: Users, label: "Contacts" },
-              { icon: Building2, label: "Companies" },
-              { icon: Briefcase, label: "Deals" },
+              { icon: Mail, label: "Contacts" },
+              { icon: Briefcase, label: "Companies" },
+              { icon: Calendar, label: "Deals" },
             ].map((f) => {
               const Icon = f.icon;
               return (
