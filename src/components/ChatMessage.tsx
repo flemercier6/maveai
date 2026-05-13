@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
 import { GoogleServiceLogo, GOOGLE_SERVICE_LABEL, type GoogleService } from "./GoogleServiceLogo";
+import { VoyagerLogo, VOYAGER_LABEL } from "./VoyagerLogo";
 import { FlowDiagram } from "./FlowDiagram";
 import { ChartBlock } from "./ChartBlock";
 
@@ -56,6 +57,7 @@ type Props = {
   provider?: Provider;
   model?: string;
   googleService?: GoogleService;
+  voyagerService?: boolean;
   memory?: { added: number; updated: number };
   tool?: ToolUse;
   phase?: Phase;
@@ -628,6 +630,7 @@ function ChatMessageImpl({
   provider,
   model,
   googleService,
+  voyagerService,
   memory,
   tool,
   phase,
@@ -745,7 +748,7 @@ function ChatMessageImpl({
   return (
     <div className="relative w-full my-[50px]" data-assistant-message="true" data-message-id={id ?? ""}>
       <div className="max-w-3xl mx-auto px-4">
-        {(provider || googleService || (tool && tool.status !== "failed")) && (
+        {(provider || googleService || voyagerService || (tool && tool.status !== "failed")) && (
           <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "10px" }}>
             {provider && <ProviderBadge provider={provider} model={model} />}
             {googleService && (
@@ -755,6 +758,15 @@ function ChatMessageImpl({
               >
                 <GoogleServiceLogo service={googleService} className="w-[18px] h-[18px] shrink-0" />
                 <span className="truncate text-base">{GOOGLE_SERVICE_LABEL[googleService]}</span>
+              </div>
+            )}
+            {voyagerService && (
+              <div
+                className="inline-flex items-center h-6 gap-1.5 rounded-full bg-[#E6F1FF] px-2.5 text-[11px] font-medium max-w-full"
+                style={{ color: "#0062FF" }}
+              >
+                <VoyagerLogo className="w-[18px] h-[18px] shrink-0" />
+                <span className="truncate text-base">{VOYAGER_LABEL}</span>
               </div>
             )}
             {tool && tool.status !== "failed" && <ToolBadge tool={tool.tool} label={tool.label} />}

@@ -1848,6 +1848,7 @@ export default function Chat() {
                   content={m.content}
                   provider={m.provider}
                   googleService={m.googleService}
+                  voyagerService={m.voyagerService}
                   model={m.model}
                   memory={m.memory}
                   tool={m.tool}
