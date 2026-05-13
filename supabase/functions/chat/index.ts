@@ -2086,7 +2086,8 @@ Deno.serve(async (req) => {
 
           // ---------- Voyager CRM router ----------
           // Runs for explicit /voyager requests and for CRM intents when Voyager is connected.
-          if (voyagerEnabled && !writingMode && lastUserText) {
+          const forcedVoyagerDecision = writingMode ? fallbackVoyagerIntent(lastUserText) : null;
+          if (voyagerEnabled && lastUserText && (!writingMode || forcedVoyagerDecision)) {
             try {
               const googleKeyForVoyager = Deno.env.get("GOOGLE_API_KEY");
               const sys =
@@ -2122,7 +2123,7 @@ Deno.serve(async (req) => {
                 try { decision = JSON.parse(text); } catch { /* keep none */ }
               }
               if (decision.resource === "none") {
-                decision = fallbackVoyagerIntent(lastUserText) ?? decision;
+                decision = forcedVoyagerDecision ?? fallbackVoyagerIntent(lastUserText) ?? decision;
               }
               decision = normalizeVoyagerDecision(decision);
               console.log("[voyager router] decision=", JSON.stringify(decision), "voyagerService=", voyagerService, "voyagerConnected=", voyagerConnected, "userText=", lastUserText.slice(0, 200));
