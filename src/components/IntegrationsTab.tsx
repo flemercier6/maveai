@@ -6,6 +6,7 @@ import { useIntegrations } from "@/hooks/useIntegrations";
 import { cn } from "@/lib/utils";
 import { getOAuthReturnUri, shouldUseFullPageOAuthRedirect } from "@/lib/oauthRedirect";
 import geminiLogo from "@/assets/gemini-logo.png";
+import voyagerLogo from "@/assets/logo-voyager.png";
 
 export function IntegrationsTab() {
   const { integrations, loading, isConnected, refresh } = useIntegrations();
