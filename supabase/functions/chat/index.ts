@@ -2020,32 +2020,100 @@ Deno.serve(async (req) => {
               const validRes = ["contacts", "companies", "deals"].includes(decision.resource);
               const method = (decision.method ?? "GET").toUpperCase();
               if (validRes) {
-                if (method === "GET") {
-                  // Execute server-side and inject result.
-                  const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/voyager-crm`, {
+                // Helper to call voyager-crm proxy
+                const voyagerCall = (payload: Record<string, unknown>) =>
+                  fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/voyager-crm`, {
                     method: "POST",
                     headers: {
                       Authorization: authHeader,
                       "Content-Type": "application/json",
                       apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
                     },
-                    body: JSON.stringify({
-                      resource: decision.resource,
-                      method: "GET",
-                      id: decision.id,
-                      query: decision.query,
-                    }),
+                    body: JSON.stringify(payload),
+                  }).then(async (r) => ({ ok: r.ok, status: r.status, json: await r.json().catch(() => ({})) }));
+
+                const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                // For PATCH/DELETE: if id is missing or not a UUID, try to resolve by searching.
+                if (["PATCH", "DELETE"].includes(method) && (!decision.id || !UUID_RE.test(decision.id))) {
+                  const searchTerm = (decision.id && String(decision.id)) ||
+                    (decision.query?.search as string | undefined) ||
+                    "";
+                  if (searchTerm) {
+                    try {
+                      const sr = await voyagerCall({
+                        resource: decision.resource,
+                        method: "GET",
+                        query: { search: searchTerm, limit: 5 },
+                      });
+                      const arr: any[] = Array.isArray(sr.json?.data)
+                        ? sr.json.data
+                        : Array.isArray(sr.json?.data?.items)
+                          ? sr.json.data.items
+                          : Array.isArray(sr.json?.data?.results)
+                            ? sr.json.data.results
+                            : Array.isArray(sr.json?.data?.data)
+                              ? sr.json.data.data
+                              : [];
+                      if (arr.length === 1 && typeof arr[0]?.id === "string") {
+                        decision.id = arr[0].id;
+                      } else if (arr.length > 1) {
+                        // Ambiguous — ask user via assistant text instead of proposing a broken action.
+                        const names = arr.slice(0, 5).map((x: any) =>
+                          `- ${x.first_name ?? ""} ${x.last_name ?? ""} ${x.email ? `(${x.email})` : ""}`.trim()
+                        ).join("\n");
+                        const ask = `Plusieurs résultats correspondent à « ${searchTerm} » :\n${names}\n\nPrécise lequel je dois mettre à jour.`;
+                        controller.enqueue(enc({ type: "delta", text: ask }));
+                        assistantText += ask;
+                        if (!ephemeral && conversationId) {
+                          try {
+                            await supabase.from("messages").insert({
+                              conversation_id: conversationId, user_id: user.id, role: "assistant",
+                              content: assistantText, model,
+                            });
+                          } catch (_) { /* ignore */ }
+                        }
+                        controller.enqueue(enc({ type: "done" }));
+                        controller.close();
+                        return;
+                      } else {
+                        const msg = `Je n'ai trouvé aucun ${decision.resource === "contacts" ? "contact" : decision.resource === "companies" ? "société" : "deal"} correspondant à « ${searchTerm} » dans Voyager CRM.`;
+                        controller.enqueue(enc({ type: "delta", text: msg }));
+                        assistantText += msg;
+                        if (!ephemeral && conversationId) {
+                          try {
+                            await supabase.from("messages").insert({
+                              conversation_id: conversationId, user_id: user.id, role: "assistant",
+                              content: assistantText, model,
+                            });
+                          } catch (_) { /* ignore */ }
+                        }
+                        controller.enqueue(enc({ type: "done" }));
+                        controller.close();
+                        return;
+                      }
+                    } catch (e) {
+                      console.warn("voyager name resolution failed", e);
+                    }
+                  }
+                }
+
+                if (method === "GET") {
+                  // Execute server-side and inject result.
+                  const sr = await voyagerCall({
+                    resource: decision.resource,
+                    method: "GET",
+                    id: decision.id,
+                    query: decision.query,
                   });
-                  const d = await r.json();
-                  if (r.ok && !d.error) {
+                  if (sr.ok && !sr.json?.error) {
                     finalMessages.push({
                       role: "system",
-                      content: `[Voyager CRM ${decision.resource} GET result — summarize naturally, do NOT dump JSON]:\n${JSON.stringify(d.data).slice(0, 12000)}`,
+                      content: `[Voyager CRM ${decision.resource} GET result — summarize naturally, do NOT dump JSON]:\n${JSON.stringify(sr.json?.data).slice(0, 12000)}`,
                     });
                   } else {
                     finalMessages.push({
                       role: "system",
-                      content: `[Voyager CRM call failed: ${d.error ?? r.status}. Tell the user briefly and suggest checking the API key in Settings → Integrations.]`,
+                      content: `[Voyager CRM call failed: ${sr.json?.error ?? sr.status}. Tell the user briefly and suggest checking the API key in Settings → Integrations.]`,
                     });
                   }
                 } else if (["POST", "PATCH", "DELETE"].includes(method)) {
