@@ -1647,6 +1647,19 @@ Deno.serve(async (req) => {
       const search = selectedEmail || selectedName;
       return search ? { ...previousWrite, id: undefined, query: { search } } : null;
     };
+    const normalizeVoyagerText = (value: unknown): string =>
+      String(value ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9@.]+/g, " ").trim();
+    const pickExactVoyagerMatch = (items: any[], searchTerm: string): any | null => {
+      if (items.length === 1) return items[0];
+      const term = normalizeVoyagerText(searchTerm);
+      if (!term) return null;
+      const email = searchTerm.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]?.toLowerCase();
+      if (email) {
+        const byEmail = items.find((x) => String(x?.email ?? "").toLowerCase() === email);
+        if (byEmail) return byEmail;
+      }
+      return items.find((x) => normalizeVoyagerText(`${x?.first_name ?? ""} ${x?.last_name ?? ""}`) === term) ?? null;
+    };
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     const linkupKey = Deno.env.get("LINKUP_API_KEY");
     let webContext:
