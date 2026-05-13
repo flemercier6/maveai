@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Calendar, HardDrive } from "lucide-react";
+import { Mail, Calendar, HardDrive, Database, Users, Building2, Briefcase } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIntegrations } from "@/hooks/useIntegrations";
@@ -11,13 +11,16 @@ type ProviderDef = {
   id: string;
   title: string;
   description: string;
-  logo: string;
   features: { icon: React.ComponentType<{ className?: string }>; label: string }[];
-};
+} & (
+  | { kind: "oauth"; logo: string }
+  | { kind: "static"; logoIcon: React.ComponentType<{ className?: string }>; alwaysOn?: boolean }
+);
 
 const PROVIDERS: ProviderDef[] = [
   {
     id: "google",
+    kind: "oauth",
     title: "Google",
     description:
       "Connect Gmail, Calendar and Drive so the AI can read and draft emails, manage events and pull files.",
@@ -26,6 +29,20 @@ const PROVIDERS: ProviderDef[] = [
       { icon: Mail, label: "Gmail" },
       { icon: Calendar, label: "Calendar" },
       { icon: HardDrive, label: "Drive" },
+    ],
+  },
+  {
+    id: "voyager",
+    kind: "static",
+    title: "Voyager CRM",
+    description:
+      "Sync contacts, companies and deals with your Voyager CRM. The AI can create and look up records on your behalf.",
+    logoIcon: Database,
+    alwaysOn: true,
+    features: [
+      { icon: Users, label: "Contacts" },
+      { icon: Building2, label: "Companies" },
+      { icon: Briefcase, label: "Deals" },
     ],
   },
 ];
@@ -92,7 +109,8 @@ export function IntegrationsTab() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {PROVIDERS.map((p) => {
-          const connected = isConnected(p.id);
+          const isStatic = p.kind === "static";
+          const connected = isStatic ? !!p.alwaysOn : isConnected(p.id);
           const account = integrations.find((i) => i.provider === p.id);
           const isBusy = busy === p.id;
           return (
@@ -102,18 +120,29 @@ export function IntegrationsTab() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <img
-                    src={p.logo}
-                    alt={p.title}
-                    className="w-10 h-10 rounded-lg object-contain shrink-0"
-                  />
+                  {p.kind === "oauth" ? (
+                    <img
+                      src={p.logo}
+                      alt={p.title}
+                      className="w-10 h-10 rounded-lg object-contain shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-[hsl(var(--dropdown-hover))] flex items-center justify-center shrink-0">
+                      <p.logoIcon className="w-5 h-5 text-foreground/70" />
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <div className="font-medium text-foreground text-base">
                       {p.title}
                     </div>
-                    {connected && account?.account_email ? (
+                    {p.kind === "oauth" && connected && account?.account_email ? (
                       <div className="text-muted-foreground text-sm truncate">
                         {account.account_email}
+                      </div>
+                    ) : null}
+                    {isStatic ? (
+                      <div className="text-muted-foreground text-sm truncate">
+                        Workspace API key
                       </div>
                     ) : null}
                   </div>
@@ -121,7 +150,7 @@ export function IntegrationsTab() {
                 {connected && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--dropdown-hover))] px-2 py-0.5 text-sm text-foreground/80 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-[hsl(140_70%_42%)]" />
-                    Synced
+                    {isStatic ? "Active" : "Synced"}
                   </span>
                 )}
               </div>
@@ -144,7 +173,11 @@ export function IntegrationsTab() {
               </div>
 
               <div className="mt-auto pt-1">
-                {connected ? (
+                {isStatic ? (
+                  <div className="text-sm text-muted-foreground">
+                    Managed at the workspace level — always available to the AI.
+                  </div>
+                ) : connected ? (
                   <button
                     type="button"
                     disabled={isBusy || loading}
