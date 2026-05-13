@@ -1586,11 +1586,8 @@ Deno.serve(async (req) => {
         };
       }
 
-      const isWrite = /\b(ajoute|crée|cree|nouveau|nouvelle|modifie|modifier|change|changer|met\s+à\s+jour|mettre\s+à\s+jour|update|remplace|remplacer|supprime|supprimer|efface|effacer|delete)\b/i.test(text);
-      if (!isWrite || !/\b(contact|contacts|société|societe|company|deal|opportunité|opportunite)\b/i.test(normalized)) return null;
-      if (/\b(supprime|supprimer|efface|effacer|delete)\b/i.test(text)) return { resource: "contacts", method: "DELETE", query: {} };
-      if (/\b(ajoute|crée|cree|nouveau|nouvelle)\b/i.test(text)) return { resource: "contacts", method: "POST", payload: {} };
-      return { resource: "contacts", method: "PATCH", query: {}, payload: {} };
+      if (/\b(contact|contacts|société|societe|company|deal|opportunité|opportunite)\b/i.test(normalized)) return null;
+      return null;
     };
     const normalizeVoyagerDecision = (decision: VoyagerRouterDecision): VoyagerRouterDecision => {
       const resourceMap: Record<string, string> = {
