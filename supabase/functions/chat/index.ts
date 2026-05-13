@@ -1557,6 +1557,41 @@ Deno.serve(async (req) => {
 
     // ---------- Web tools: detect & fetch BEFORE streaming ----------
     const lastUserText = lastUserMsg?.content ?? "";
+    type VoyagerRouterDecision = {
+      resource: string;
+      method?: string;
+      id?: string;
+      query?: Record<string, unknown>;
+      payload?: Record<string, unknown>;
+    };
+    const fallbackVoyagerIntent = (text: string): VoyagerRouterDecision | null => {
+      const normalized = text.toLowerCase();
+      const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+      const wantsContactEmailUpdate =
+        !!emailMatch &&
+        /\b(email|e-mail|mail|adresse email|adresse e-mail)\b/i.test(text) &&
+        /\b(change|changer|modifie|modifier|met\s+à\s+jour|mettre\s+à\s+jour|update|remplace|remplacer)\b/i.test(text);
+
+      if (wantsContactEmailUpdate) {
+        const beforeEmail = text.slice(0, emailMatch.index).replace(/\b(par|en|à|a|avec|vers|pour)\s*$/i, "").trim();
+        const nameMatch = beforeEmail.match(/(?:^|\s)(?:de|du|d'|pour)\s+([^,.;:]+)$/i);
+        const contactSearch = (nameMatch?.[1] ?? "")
+          .replace(/^contact\s+/i, "")
+          .trim();
+        return {
+          resource: "contacts",
+          method: "PATCH",
+          query: contactSearch ? { search: contactSearch } : undefined,
+          payload: { email: emailMatch[0] },
+        };
+      }
+
+      const isWrite = /\b(ajoute|crée|cree|nouveau|nouvelle|modifie|modifier|change|changer|met\s+à\s+jour|mettre\s+à\s+jour|update|remplace|remplacer|supprime|supprimer|efface|effacer|delete)\b/i.test(text);
+      if (!isWrite || !/\b(contact|contacts|société|societe|company|deal|opportunité|opportunite)\b/i.test(normalized)) return null;
+      if (/\b(supprime|supprimer|efface|effacer|delete)\b/i.test(text)) return { resource: "contacts", method: "DELETE", query: {} };
+      if (/\b(ajoute|crée|cree|nouveau|nouvelle)\b/i.test(text)) return { resource: "contacts", method: "POST", payload: {} };
+      return { resource: "contacts", method: "PATCH", query: {}, payload: {} };
+    };
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     const linkupKey = Deno.env.get("LINKUP_API_KEY");
     let webContext:
