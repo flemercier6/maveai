@@ -1223,22 +1223,6 @@ Deno.serve(async (req) => {
     const user = { id: userData.user.id };
 
     const { conversationId, provider, model: requestedModel, messages, skipClarify, writingMode, previousCanvas, forceCanvas, aiPrefs, googleService, voyagerService } = await req.json() as {
-      conversationId?: string;
-      provider?: string;
-      model?: string;
-      messages: Array<{ role: string; content: string; attachments?: unknown[] }>;
-      skipClarify?: boolean;
-      writingMode?: boolean;
-      previousCanvas?: string | null;
-      forceCanvas?: boolean;
-      aiPrefs?: {
-        disabledModes?: string[];
-        blacklistedModels?: string[];
-        favoriteModels?: string[];
-        responseLength?: string;
-      };
-      googleService?: "gmail" | "calendar" | "drive" | null;
-      voyagerService?: boolean;
       conversationId: string | null;
       provider: "openai" | "anthropic" | "google" | "mistral";
       model: string;
@@ -1254,6 +1238,7 @@ Deno.serve(async (req) => {
         responseLength?: "short" | "default" | "comprehensive";
       };
       googleService?: "gmail" | "calendar" | "drive" | null;
+      voyagerService?: boolean;
     };
 
     // ---- Apply user AI preferences: blacklist fallback ----
