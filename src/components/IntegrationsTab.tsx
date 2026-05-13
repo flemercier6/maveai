@@ -6,6 +6,7 @@ import { useIntegrations } from "@/hooks/useIntegrations";
 import { cn } from "@/lib/utils";
 import { getOAuthReturnUri, shouldUseFullPageOAuthRedirect } from "@/lib/oauthRedirect";
 import geminiLogo from "@/assets/gemini-logo.png";
+import voyagerLogo from "@/assets/logo-voyager.png";
 
 export function IntegrationsTab() {
   const { integrations, loading, isConnected, refresh } = useIntegrations();
@@ -183,8 +184,8 @@ export function IntegrationsTab() {
         <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-lg bg-[hsl(var(--dropdown-hover))] flex items-center justify-center shrink-0">
-                <HardDrive className="w-5 h-5 text-foreground/70" />
+              <div className="w-10 h-10 rounded-lg bg-[hsl(var(--dropdown-hover))] flex items-center justify-center shrink-0 overflow-hidden">
+                <img src={voyagerLogo} alt="Voyager CRM" className="w-7 h-7 object-contain" />
               </div>
               <div className="min-w-0">
                 <div className="font-medium text-foreground text-base">Voyager CRM</div>
