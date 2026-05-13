@@ -2061,7 +2061,7 @@ Deno.serve(async (req) => {
                 `- If the request is unclear or unrelated to the CRM, return {"resource":"none"}.\n` +
                 `- For "liste/affiche/cherche/montre" → GET. For "ajoute/crée/nouveau" → POST. For "modifie/met à jour" → PATCH. For "supprime/efface" → DELETE.\n` +
                 `- Default GET limit to 20 unless user specifies.`;
-              let decision: { resource: string; method?: string; id?: string; query?: Record<string, unknown>; payload?: Record<string, unknown> } = { resource: "none" };
+              let decision: VoyagerRouterDecision = { resource: "none" };
               if (googleKeyForVoyager) {
                 const r = await fetch(
                   `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleKeyForVoyager}`,
@@ -2079,6 +2079,10 @@ Deno.serve(async (req) => {
                 const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{"resource":"none"}';
                 try { decision = JSON.parse(text); } catch { /* keep none */ }
               }
+              if (decision.resource === "none") {
+                decision = fallbackVoyagerIntent(lastUserText) ?? decision;
+              }
+              console.log("[voyager router] decision=", JSON.stringify(decision), "voyagerService=", voyagerService, "voyagerConnected=", voyagerConnected, "userText=", lastUserText.slice(0, 200));
               const validRes = ["contacts", "companies", "deals"].includes(decision.resource);
               const method = (decision.method ?? "GET").toUpperCase();
               if (validRes) {
@@ -2099,6 +2103,7 @@ Deno.serve(async (req) => {
                 if (["PATCH", "DELETE"].includes(method) && (!decision.id || !UUID_RE.test(decision.id))) {
                   const searchTerm = (decision.id && String(decision.id)) ||
                     (decision.query?.search as string | undefined) ||
+                    inferVoyagerSearchTerm(lastUserText, decision.payload) ||
                     "";
                   if (searchTerm) {
                     try {
