@@ -2194,8 +2194,9 @@ Deno.serve(async (req) => {
                             : Array.isArray(sr.json?.data?.data)
                               ? sr.json.data.data
                               : [];
-                      if (arr.length === 1 && typeof arr[0]?.id === "string") {
-                        decision.id = arr[0].id;
+                      const exact = pickExactVoyagerMatch(arr, searchTerm);
+                      if (exact && typeof exact.id === "string") {
+                        decision.id = exact.id;
                         decision.query = undefined;
                       } else if (arr.length > 1) {
                         // Ambiguous — ask user via assistant text instead of proposing a broken action.
