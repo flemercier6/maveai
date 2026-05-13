@@ -1222,7 +1222,7 @@ Deno.serve(async (req) => {
     }
     const user = { id: userData.user.id };
 
-    const { conversationId, provider, model: requestedModel, messages, skipClarify, writingMode, previousCanvas, forceCanvas, aiPrefs, googleService } = await req.json() as {
+    const { conversationId, provider, model: requestedModel, messages, skipClarify, writingMode, previousCanvas, forceCanvas, aiPrefs, googleService, voyagerService } = await req.json() as {
       conversationId: string | null;
       provider: "openai" | "anthropic" | "google" | "mistral";
       model: string;
@@ -1238,6 +1238,7 @@ Deno.serve(async (req) => {
         responseLength?: "short" | "default" | "comprehensive";
       };
       googleService?: "gmail" | "calendar" | "drive" | null;
+      voyagerService?: boolean;
     };
 
     // ---- Apply user AI preferences: blacklist fallback ----
@@ -1979,9 +1980,111 @@ Deno.serve(async (req) => {
             }
           }
 
+          // ---------- Voyager CRM router ----------
+          // Only when the user explicitly invoked /voyager.
+          if (voyagerService && !writingMode && lastUserText) {
+            try {
+              const googleKeyForVoyager = Deno.env.get("GOOGLE_API_KEY");
+              const sys =
+                `You decide how to call the Voyager CRM API on behalf of the user. ` +
+                `Today: ${new Date().toISOString()}.\n\n` +
+                `Available resources: contacts, companies, deals.\n` +
+                `Methods:\n` +
+                `- GET (list or get one) — query params like { limit?: number, search?: string }, optional id for single fetch\n` +
+                `- POST (create) — payload with the new entity fields\n` +
+                `- PATCH (update) — id required + payload with fields to change\n` +
+                `- DELETE — id required\n\n` +
+                `Rules:\n` +
+                `- Reply with a single JSON object: {"resource":"contacts|companies|deals","method":"GET|POST|PATCH|DELETE","id"?:string,"query"?:object,"payload"?:object}\n` +
+                `- If the request is unclear or unrelated to the CRM, return {"resource":"none"}.\n` +
+                `- For "liste/affiche/cherche/montre" → GET. For "ajoute/crée/nouveau" → POST. For "modifie/met à jour" → PATCH. For "supprime/efface" → DELETE.\n` +
+                `- Default GET limit to 20 unless user specifies.`;
+              let decision: { resource: string; method?: string; id?: string; query?: Record<string, unknown>; payload?: Record<string, unknown> } = { resource: "none" };
+              if (googleKeyForVoyager) {
+                const r = await fetch(
+                  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleKeyForVoyager}`,
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      contents: [{ role: "user", parts: [{ text: lastUserText.slice(0, 4000) }] }],
+                      systemInstruction: { role: "user", parts: [{ text: sys }] },
+                      generationConfig: { temperature: 0, responseMimeType: "application/json" },
+                    }),
+                  },
+                );
+                const d = await r.json();
+                const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{"resource":"none"}';
+                try { decision = JSON.parse(text); } catch { /* keep none */ }
+              }
+              const validRes = ["contacts", "companies", "deals"].includes(decision.resource);
+              const method = (decision.method ?? "GET").toUpperCase();
+              if (validRes) {
+                if (method === "GET") {
+                  // Execute server-side and inject result.
+                  const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/voyager-crm`, {
+                    method: "POST",
+                    headers: {
+                      Authorization: authHeader,
+                      "Content-Type": "application/json",
+                      apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+                    },
+                    body: JSON.stringify({
+                      resource: decision.resource,
+                      method: "GET",
+                      id: decision.id,
+                      query: decision.query,
+                    }),
+                  });
+                  const d = await r.json();
+                  if (r.ok && !d.error) {
+                    finalMessages.push({
+                      role: "system",
+                      content: `[Voyager CRM ${decision.resource} GET result — summarize naturally, do NOT dump JSON]:\n${JSON.stringify(d.data).slice(0, 12000)}`,
+                    });
+                  } else {
+                    finalMessages.push({
+                      role: "system",
+                      content: `[Voyager CRM call failed: ${d.error ?? r.status}. Tell the user briefly and suggest checking the API key in Settings → Integrations.]`,
+                    });
+                  }
+                } else if (["POST", "PATCH", "DELETE"].includes(method)) {
+                  // Write — emit proposal card, halt streaming text.
+                  controller.enqueue(enc({
+                    type: "voyager_action",
+                    resource: decision.resource,
+                    method,
+                    id: decision.id,
+                    payload: decision.payload,
+                  }));
+                  const intro = `Voici l'action Voyager CRM proposée — confirme pour l'exécuter :`;
+                  controller.enqueue(enc({ type: "delta", text: intro }));
+                  assistantText += intro;
+                  if (!ephemeral && conversationId) {
+                    try {
+                      await supabase.from("messages").insert({
+                        conversation_id: conversationId,
+                        user_id: user.id,
+                        role: "assistant",
+                        content: assistantText,
+                        model,
+                        meta: { voyager_action: { resource: decision.resource, method, id: decision.id, payload: decision.payload } },
+                      });
+                    } catch (e) { console.error("persist voyager proposal failed", e); }
+                  }
+                  controller.enqueue(enc({ type: "done" }));
+                  controller.close();
+                  return;
+                }
+              }
+            } catch (e) {
+              console.warn("voyager router skipped", e);
+            }
+          }
+
           // Run web tool detection + fetch (notify client of progress)
           const googleKeyForAgent = Deno.env.get("GOOGLE_API_KEY");
-          if (!webDisabled && !googleService && (firecrawlKey || linkupKey) && lastUserText) {
+          if (!webDisabled && !googleService && !voyagerService && (firecrawlKey || linkupKey) && lastUserText) {
             controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
 
             // First, try the agentic multi-step plan for COMPLEX queries.

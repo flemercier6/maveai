@@ -3,9 +3,10 @@ import { Sparkles, Pencil, LayoutDashboard } from "lucide-react";
 import { MODELS, PROVIDERS, AUTO_MODEL_ID, type Provider } from "@/lib/models";
 import { ProviderLogo } from "./ProviderLogo";
 import { GoogleServiceLogo, type GoogleService } from "./GoogleServiceLogo";
+import { VoyagerLogo } from "./VoyagerLogo";
 
 export type SlashItem = {
-  provider: Provider | "auto" | "write" | "explore" | "page" | GoogleService;
+  provider: Provider | "auto" | "write" | "explore" | "page" | GoogleService | "voyager";
   model: string;
   label: string;
   description: string;
@@ -64,6 +65,13 @@ export function buildSlashItems(): SlashItem[] {
       label: "Drive",
       description: "Browse files in your Google Drive",
       slug: "drive",
+    },
+    {
+      provider: "voyager",
+      model: "",
+      label: "Voyager CRM",
+      description: "Query or update your Voyager CRM",
+      slug: "voyager",
     },
   ];
   for (const p of PROVIDERS) {
@@ -144,7 +152,8 @@ export function SlashCommandMenu({
       it.provider === "page" ||
       it.provider === "gmail" ||
       it.provider === "calendar" ||
-      it.provider === "drive";
+      it.provider === "drive" ||
+      it.provider === "voyager";
     const modes = all.filter(isMode);
     const models = all.filter((it) => !isMode(it));
     if (favoriteModels?.length) {
@@ -230,6 +239,8 @@ export function SlashCommandMenu({
                 <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
               ) : it.provider === "gmail" || it.provider === "calendar" || it.provider === "drive" ? (
                 <GoogleServiceLogo service={it.provider} className="w-4 h-4" />
+              ) : it.provider === "voyager" ? (
+                <VoyagerLogo className="w-4 h-4" />
               ) : (
                 <ProviderLogo provider={it.provider as Provider} className="w-4 h-4" />
               )}

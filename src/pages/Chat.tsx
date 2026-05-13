@@ -72,7 +72,9 @@ export type AgentStep = {
 };
 import { GoogleActionCard, type GoogleAction } from "@/components/GoogleActionCard";
 import { GoogleServiceLogo, type GoogleService, GOOGLE_SERVICE_LABEL } from "@/components/GoogleServiceLogo";
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean; agentSteps?: AgentStep[]; googleAction?: GoogleAction; googleService?: GoogleService };
+import { VoyagerLogo, VOYAGER_LABEL } from "@/components/VoyagerLogo";
+import { VoyagerActionCard, type VoyagerAction } from "@/components/VoyagerActionCard";
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean; agentSteps?: AgentStep[]; googleAction?: GoogleAction; googleService?: GoogleService; voyagerAction?: VoyagerAction; voyagerService?: boolean };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -144,6 +146,8 @@ export default function Chat() {
   const [pageRequested, setPageRequested] = useState(false);
   // User explicitly invoked /gmail, /calendar or /drive — next send is scoped to that Google service.
   const [googleService, setGoogleService] = useState<GoogleService | null>(null);
+  // User explicitly invoked /voyager — next send is scoped to Voyager CRM.
+  const [voyagerService, setVoyagerService] = useState<boolean>(false);
   // Side panel showing a generated PageSpec.
   const [pageOpen, setPageOpen] = useState(false);
   const [activePage, setActivePage] = useState<PageSpec | null>(null);
@@ -825,7 +829,7 @@ export default function Chat() {
     const lastAssistantWithCanvas = [...messages].reverse().find(
       (m) => m.role === "assistant" && typeof m.canvas === "string" && m.canvas.length > 0,
     );
-    const writingMode = !googleService && (writeRequested || looksLikeWritingRequest(text) || !!lastAssistantWithCanvas);
+    const writingMode = !googleService && !voyagerService && (writeRequested || looksLikeWritingRequest(text) || !!lastAssistantWithCanvas);
     const previousCanvas = lastAssistantWithCanvas?.canvas ?? null;
     if (writeRequested) setWriteRequested(false);
 
@@ -891,9 +895,11 @@ export default function Chat() {
 
     const baseMsgs: Msg[] = [...messages, { id: userMsg?.id ?? `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
     const sentGoogleService = googleService;
-    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel, googleService: sentGoogleService ?? undefined }]);
+    const sentVoyagerService = voyagerService;
+    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel, googleService: sentGoogleService ?? undefined, voyagerService: sentVoyagerService || undefined }]);
     setStreaming(true);
     if (googleService) setGoogleService(null);
+    if (voyagerService) setVoyagerService(false);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -918,6 +924,7 @@ export default function Chat() {
           forceCanvas: writeRequested === true,
           previousCanvas,
           googleService: sentGoogleService,
+          voyagerService: sentVoyagerService,
           aiPrefs: {
             disabledModes: aiPrefs.disabledModes,
             blacklistedModels: aiPrefs.blacklistedModels,
@@ -1197,6 +1204,19 @@ export default function Chat() {
                 // We do not render a card; the existing tool indicator + the streamed
                 // text are enough. Still, we could store it if needed later.
               }
+            } else if (j.type === "voyager_action") {
+              const resource = String(j.resource ?? "") as VoyagerAction["resource"];
+              const method = String(j.method ?? "GET") as VoyagerAction["method"];
+              const id = typeof j.id === "string" ? j.id : undefined;
+              const payload = (j.payload && typeof j.payload === "object") ? j.payload as Record<string, unknown> : undefined;
+              if (["contacts", "companies", "deals"].includes(resource) && ["POST", "PATCH", "DELETE"].includes(method)) {
+                const va: VoyagerAction = { resource, method, id, payload, state: "pending" };
+                setMessages((prev) => {
+                  const next = prev.slice();
+                  next[next.length - 1] = { ...next[next.length - 1], voyagerAction: va };
+                  return next;
+                });
+              }
             } else if (j.type === "title" && j.title) {
               const newTitle = String(j.title);
               setConversations((prev) =>
@@ -1428,6 +1448,9 @@ export default function Chat() {
     } else if (item.provider === "gmail" || item.provider === "calendar" || item.provider === "drive") {
       setGoogleService(item.provider);
       toast.success(`${GOOGLE_SERVICE_LABEL[item.provider]} enabled for next message`);
+    } else if (item.provider === "voyager") {
+      setVoyagerService(true);
+      toast.success(`${VOYAGER_LABEL} enabled for next message`);
     } else {
       if (isModelBlacklisted(aiPrefs, item.model)) {
         toast.error("This model is blacklisted in your AI preferences");
@@ -1890,18 +1913,32 @@ export default function Chat() {
                       return arr;
                     });
                   } : undefined}
-                  googleActionSlot={m.role === "assistant" && m.googleAction ? (
+                  googleActionSlot={m.role === "assistant" && (m.googleAction || m.voyagerAction) ? (
                     <div className="mt-2">
-                      <GoogleActionCard
-                        action={m.googleAction}
-                        onChange={(next) => {
-                          setMessages((prev) => {
-                            const arr = prev.slice();
-                            arr[i] = { ...arr[i], googleAction: next };
-                            return arr;
-                          });
-                        }}
-                      />
+                      {m.googleAction && (
+                        <GoogleActionCard
+                          action={m.googleAction}
+                          onChange={(next) => {
+                            setMessages((prev) => {
+                              const arr = prev.slice();
+                              arr[i] = { ...arr[i], googleAction: next };
+                              return arr;
+                            });
+                          }}
+                        />
+                      )}
+                      {m.voyagerAction && (
+                        <VoyagerActionCard
+                          action={m.voyagerAction}
+                          onChange={(next) => {
+                            setMessages((prev) => {
+                              const arr = prev.slice();
+                              arr[i] = { ...arr[i], voyagerAction: next };
+                              return arr;
+                            });
+                          }}
+                        />
+                      )}
                     </div>
                   ) : null}
                 />
@@ -2104,6 +2141,21 @@ export default function Chat() {
                         <X className="w-[18px] h-[18px] absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
                       </span>
                       {GOOGLE_SERVICE_LABEL[googleService]}
+                    </button>
+                  )}
+                  {voyagerService && (
+                    <button
+                      type="button"
+                      onClick={() => setVoyagerService(false)}
+                      aria-label={`Remove ${VOYAGER_LABEL}`}
+                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[#E6F1FF] transition-colors text-base"
+                      style={{ color: "#0062FF" }}
+                    >
+                      <span className="relative inline-flex items-center justify-center w-[18px] h-[18px]">
+                        <VoyagerLogo className="w-[18px] h-[18px] group-hover:opacity-0 transition-opacity" />
+                        <X className="w-[18px] h-[18px] absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
+                      </span>
+                      {VOYAGER_LABEL}
                     </button>
                   )}
                 </div>
