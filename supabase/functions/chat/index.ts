@@ -1557,6 +1557,78 @@ Deno.serve(async (req) => {
 
     // ---------- Web tools: detect & fetch BEFORE streaming ----------
     const lastUserText = lastUserMsg?.content ?? "";
+    type VoyagerRouterDecision = {
+      resource: string;
+      method?: string;
+      id?: string;
+      query?: Record<string, unknown>;
+      payload?: Record<string, unknown>;
+    };
+    const fallbackVoyagerIntent = (text: string): VoyagerRouterDecision | null => {
+      const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+      const wantsContactEmailUpdate =
+        !!emailMatch &&
+        /\b(email|e-mail|mail|adresse email|adresse e-mail)\b/i.test(text) &&
+        /\b(change|changer|modifie|modifier|met\s+à\s+jour|mettre\s+à\s+jour|update|remplace|remplacer)\b/i.test(text);
+
+      if (wantsContactEmailUpdate) {
+        const beforeEmail = text.slice(0, emailMatch.index).replace(/\b(par|en|à|a|avec|vers|pour)\s*$/i, "").trim();
+        const nameMatch = beforeEmail.match(/(?:^|\s)(?:de|du|d'|pour)\s+([^,.;:]+)$/i);
+        const contactSearch = (nameMatch?.[1] ?? "")
+          .replace(/^contact\s+/i, "")
+          .trim();
+        return {
+          resource: "contacts",
+          method: "PATCH",
+          query: contactSearch ? { search: contactSearch } : undefined,
+          payload: { email: emailMatch[0] },
+        };
+      }
+
+      return null;
+    };
+    const normalizeVoyagerDecision = (decision: VoyagerRouterDecision): VoyagerRouterDecision => {
+      const resourceMap: Record<string, string> = {
+        contact: "contacts",
+        contacts: "contacts",
+        company: "companies",
+        companies: "companies",
+        societe: "companies",
+        société: "companies",
+        deal: "deals",
+        deals: "deals",
+        opportunite: "deals",
+        opportunité: "deals",
+        none: "none",
+      };
+      const methodMap: Record<string, string> = {
+        CREATE: "POST",
+        ADD: "POST",
+        POST: "POST",
+        UPDATE: "PATCH",
+        MODIFY: "PATCH",
+        CHANGE: "PATCH",
+        PUT: "PATCH",
+        PATCH: "PATCH",
+        DELETE: "DELETE",
+        REMOVE: "DELETE",
+        GET: "GET",
+      };
+      const resource = resourceMap[String(decision.resource ?? "none").toLowerCase()] ?? decision.resource;
+      const method = methodMap[String(decision.method ?? "GET").toUpperCase()] ?? decision.method;
+      return { ...decision, resource, method };
+    };
+    const inferVoyagerSearchTerm = (text: string, payload?: Record<string, unknown>): string => {
+      const withoutEmail = text.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig, " ");
+      const match = withoutEmail.match(/(?:^|\s)(?:de|du|d'|pour)\s+([^,.;:]+?)(?:\s+(?:par|en|à|a|avec|vers|pour)\b|$)/i);
+      const fromText = (match?.[1] ?? "").replace(/^contact\s+/i, "").trim();
+      if (fromText) return fromText;
+      for (const key of ["name", "full_name", "fullName", "email"] as const) {
+        const value = payload?.[key];
+        if (typeof value === "string" && value.trim()) return value.trim();
+      }
+      return "";
+    };
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     const linkupKey = Deno.env.get("LINKUP_API_KEY");
     let webContext:
@@ -2008,8 +2080,9 @@ Deno.serve(async (req) => {
           }
 
           // ---------- Voyager CRM router ----------
-          // Only when the user explicitly invoked /voyager.
-          if (voyagerEnabled && !writingMode && lastUserText) {
+          // Runs for explicit /voyager requests and for CRM intents when Voyager is connected.
+          const forcedVoyagerDecision = writingMode ? fallbackVoyagerIntent(lastUserText) : null;
+          if (voyagerEnabled && lastUserText && (!writingMode || forcedVoyagerDecision)) {
             try {
               const googleKeyForVoyager = Deno.env.get("GOOGLE_API_KEY");
               const sys =
@@ -2026,7 +2099,7 @@ Deno.serve(async (req) => {
                 `- If the request is unclear or unrelated to the CRM, return {"resource":"none"}.\n` +
                 `- For "liste/affiche/cherche/montre" → GET. For "ajoute/crée/nouveau" → POST. For "modifie/met à jour" → PATCH. For "supprime/efface" → DELETE.\n` +
                 `- Default GET limit to 20 unless user specifies.`;
-              let decision: { resource: string; method?: string; id?: string; query?: Record<string, unknown>; payload?: Record<string, unknown> } = { resource: "none" };
+              let decision: VoyagerRouterDecision = { resource: "none" };
               if (googleKeyForVoyager) {
                 const r = await fetch(
                   `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleKeyForVoyager}`,
@@ -2044,6 +2117,11 @@ Deno.serve(async (req) => {
                 const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{"resource":"none"}';
                 try { decision = JSON.parse(text); } catch { /* keep none */ }
               }
+              if (decision.resource === "none") {
+                decision = forcedVoyagerDecision ?? fallbackVoyagerIntent(lastUserText) ?? decision;
+              }
+              decision = normalizeVoyagerDecision(decision);
+              console.log("[voyager router] decision=", JSON.stringify(decision), "voyagerService=", voyagerService, "voyagerConnected=", voyagerConnected, "userText=", lastUserText.slice(0, 200));
               const validRes = ["contacts", "companies", "deals"].includes(decision.resource);
               const method = (decision.method ?? "GET").toUpperCase();
               if (validRes) {
@@ -2064,6 +2142,7 @@ Deno.serve(async (req) => {
                 if (["PATCH", "DELETE"].includes(method) && (!decision.id || !UUID_RE.test(decision.id))) {
                   const searchTerm = (decision.id && String(decision.id)) ||
                     (decision.query?.search as string | undefined) ||
+                    inferVoyagerSearchTerm(lastUserText, decision.payload) ||
                     "";
                   if (searchTerm) {
                     try {
