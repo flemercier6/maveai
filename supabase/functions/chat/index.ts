@@ -1555,20 +1555,6 @@ Deno.serve(async (req) => {
       console.warn("google integration lookup failed", e);
     }
 
-    // ---------- Voyager CRM integration: detect connection ----------
-    let voyagerConnected = false;
-    try {
-      const { data: vi } = await supabase
-        .from("user_integrations")
-        .select("user_id")
-        .eq("user_id", user.id)
-        .eq("provider", "voyager")
-        .maybeSingle();
-      if (vi) voyagerConnected = true;
-    } catch (e) {
-      console.warn("voyager integration lookup failed", e);
-    }
-
     // ---------- Web tools: detect & fetch BEFORE streaming ----------
     const lastUserText = lastUserMsg?.content ?? "";
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
