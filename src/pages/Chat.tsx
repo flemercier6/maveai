@@ -895,9 +895,11 @@ export default function Chat() {
 
     const baseMsgs: Msg[] = [...messages, { id: userMsg?.id ?? `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
     const sentGoogleService = googleService;
-    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel, googleService: sentGoogleService ?? undefined }]);
+    const sentVoyagerService = voyagerService;
+    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel, googleService: sentGoogleService ?? undefined, voyagerService: sentVoyagerService || undefined }]);
     setStreaming(true);
     if (googleService) setGoogleService(null);
+    if (voyagerService) setVoyagerService(false);
 
     const controller = new AbortController();
     abortRef.current = controller;
