@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Loader2, X, Database } from "lucide-react";
+import { Check, Loader2, X, HardDrive } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -111,7 +111,7 @@ export function VoyagerActionCard({ action, onChange }: Props) {
   return (
     <div className="my-2 rounded-xl border border-border bg-card overflow-hidden">
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-[hsl(var(--dropdown-hover))]">
-        <Database className="w-4 h-4 text-foreground/70" />
+        <HardDrive className="w-4 h-4 text-foreground/70" />
         <span className="font-medium text-foreground text-base">{title}</span>
         <span className="ml-auto text-[11px] text-muted-foreground font-mono">
           {action.method} /{action.resource}
