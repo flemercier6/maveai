@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Calendar, HardDrive, Database, Users, Building2, Briefcase } from "lucide-react";
+import { Mail, Calendar, HardDrive, Briefcase } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIntegrations } from "@/hooks/useIntegrations";
