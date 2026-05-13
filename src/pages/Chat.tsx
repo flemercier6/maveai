@@ -146,6 +146,8 @@ export default function Chat() {
   const [pageRequested, setPageRequested] = useState(false);
   // User explicitly invoked /gmail, /calendar or /drive — next send is scoped to that Google service.
   const [googleService, setGoogleService] = useState<GoogleService | null>(null);
+  // User explicitly invoked /voyager — next send is scoped to Voyager CRM.
+  const [voyagerService, setVoyagerService] = useState<boolean>(false);
   // Side panel showing a generated PageSpec.
   const [pageOpen, setPageOpen] = useState(false);
   const [activePage, setActivePage] = useState<PageSpec | null>(null);
