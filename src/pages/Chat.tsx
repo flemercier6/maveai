@@ -322,6 +322,20 @@ export default function Chat() {
                   .filter((s) => s && typeof s.url === "string")
                   .map((s) => ({ title: String(s.title ?? s.url), url: String(s.url) }))
               : [];
+            const persistedVoyager = (m.meta as any)?.voyager_action;
+            const voyagerAction: VoyagerAction | undefined =
+              persistedVoyager && ["contacts", "companies", "deals"].includes(persistedVoyager.resource) &&
+              ["POST", "PATCH", "DELETE"].includes(persistedVoyager.method)
+                ? {
+                    resource: persistedVoyager.resource,
+                    method: persistedVoyager.method,
+                    id: typeof persistedVoyager.id === "string" ? persistedVoyager.id : undefined,
+                    payload: persistedVoyager.payload && typeof persistedVoyager.payload === "object"
+                      ? persistedVoyager.payload
+                      : undefined,
+                    state: "pending",
+                  }
+                : undefined;
             return {
               id: m.id,
               role: m.role,
@@ -331,6 +345,7 @@ export default function Chat() {
               ...(hasCanvas ? { canvas: parsed.canvas, canvasTitle: parsed.canvasTitle, canvasVersion: canvasCounter } : {}),
               ...(meta ? { meta } : {}),
               ...(persistedSources.length ? { sources: persistedSources } : {}),
+              ...(voyagerAction ? { voyagerAction } : {}),
             };
           }
           // Parse legacy "📎 Image: name" / "📎 File: name" trailing lines into attachment chips.
