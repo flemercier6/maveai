@@ -2117,8 +2117,11 @@ Deno.serve(async (req) => {
                 const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{"resource":"none"}';
                 try { decision = JSON.parse(text); } catch { /* keep none */ }
               }
-              if (decision.resource === "none") {
-                decision = forcedVoyagerDecision ?? fallbackVoyagerIntent(lastUserText) ?? decision;
+              const fallbackDecision = forcedVoyagerDecision ?? fallbackVoyagerIntent(lastUserText);
+              if (fallbackDecision && fallbackDecision.method && ["POST", "PATCH", "DELETE"].includes(fallbackDecision.method)) {
+                decision = fallbackDecision;
+              } else if (decision.resource === "none") {
+                decision = fallbackDecision ?? decision;
               }
               decision = normalizeVoyagerDecision(decision);
               console.log("[voyager router] decision=", JSON.stringify(decision), "voyagerService=", voyagerService, "voyagerConnected=", voyagerConnected, "userText=", lastUserText.slice(0, 200));
