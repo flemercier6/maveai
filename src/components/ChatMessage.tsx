@@ -630,6 +630,7 @@ function ChatMessageImpl({
   provider,
   model,
   googleService,
+  voyagerService,
   memory,
   tool,
   phase,
