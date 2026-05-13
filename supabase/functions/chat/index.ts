@@ -1456,17 +1456,30 @@ Deno.serve(async (req) => {
       }
       : null;
 
-    // Hard guardrail: without /voyager scope, the model has NO ability to call the CRM.
-    // It must NEVER claim it created/updated/deleted anything in Voyager CRM.
+    // Detect Voyager CRM connection early so we can auto-route CRM intents without /voyager.
+    let voyagerConnected = false;
+    try {
+      const { data: vi } = await supabase
+        .from("user_integrations")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .eq("provider", "voyager")
+        .maybeSingle();
+      if (vi) voyagerConnected = true;
+    } catch (e) {
+      console.warn("voyager integration lookup failed", e);
+    }
+    const voyagerEnabled = voyagerService || voyagerConnected;
+
+    // Hard guardrail: the model never executes CRM ops itself.
     const voyagerGuardSystem: Msg = {
       role: "system",
       content:
         "VOYAGER CRM RULES (strict):\n" +
-        "- You can ONLY interact with the user's Voyager CRM when the `/voyager` scope is active for the current message.\n" +
-        (voyagerService
-          ? "- /voyager IS active for this turn. CRM actions are handled by the server: read operations (GET) are executed and their result is injected into your context; write operations (POST/PATCH/DELETE) are emitted as a confirmation card and NEVER executed by you. You MUST NOT pretend an action was already performed — wait for the user's confirmation.\n"
-          : "- /voyager is NOT active for this turn. You CANNOT read, create, modify or delete any contact/company/deal in Voyager CRM. NEVER claim that you have done so. If the user asks for a CRM action, reply briefly that you need them to retype their request prefixed with `/voyager` so the action can be confirmed and executed safely.\n") +
-        "- Any modification (create, update, delete) ALWAYS requires the user to explicitly confirm via the in-chat confirmation card. Never assume confirmation.",
+        (voyagerEnabled
+          ? "- The user has Voyager CRM connected. The server handles all CRM calls: read ops (GET) are executed server-side and their result is injected into your context; write ops (POST/PATCH/DELETE) are emitted as a confirmation card and NEVER executed by you. You MUST NOT pretend an action was already performed — wait for the user's confirmation card.\n"
+          : "- The user has NOT connected Voyager CRM. You CANNOT read, create, modify or delete any contact/company/deal. If asked, tell them briefly to connect Voyager CRM in Settings → Integrations.\n") +
+        "- Any modification (create, update, delete) ALWAYS requires the user to explicitly confirm via the in-chat confirmation card. Never claim success without that confirmation.",
     };
 
     // Prepend system messages (style + memory) and drop any previous duplicates from the client.
