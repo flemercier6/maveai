@@ -2181,8 +2181,9 @@ Deno.serve(async (req) => {
                             : Array.isArray(sr.json?.data?.data)
                               ? sr.json.data.data
                               : [];
-                      if (arr.length === 1 && typeof arr[0]?.id === "string") {
+                      if (arr.length >= 1 && typeof arr[0]?.id === "string") {
                         decision.id = arr[0].id;
+                        decision.query = undefined;
                       } else if (arr.length > 1) {
                         // Ambiguous — ask user via assistant text instead of proposing a broken action.
                         const names = arr.slice(0, 5).map((x: any) =>
