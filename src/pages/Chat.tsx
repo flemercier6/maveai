@@ -1913,18 +1913,32 @@ export default function Chat() {
                       return arr;
                     });
                   } : undefined}
-                  googleActionSlot={m.role === "assistant" && m.googleAction ? (
+                  googleActionSlot={m.role === "assistant" && (m.googleAction || m.voyagerAction) ? (
                     <div className="mt-2">
-                      <GoogleActionCard
-                        action={m.googleAction}
-                        onChange={(next) => {
-                          setMessages((prev) => {
-                            const arr = prev.slice();
-                            arr[i] = { ...arr[i], googleAction: next };
-                            return arr;
-                          });
-                        }}
-                      />
+                      {m.googleAction && (
+                        <GoogleActionCard
+                          action={m.googleAction}
+                          onChange={(next) => {
+                            setMessages((prev) => {
+                              const arr = prev.slice();
+                              arr[i] = { ...arr[i], googleAction: next };
+                              return arr;
+                            });
+                          }}
+                        />
+                      )}
+                      {m.voyagerAction && (
+                        <VoyagerActionCard
+                          action={m.voyagerAction}
+                          onChange={(next) => {
+                            setMessages((prev) => {
+                              const arr = prev.slice();
+                              arr[i] = { ...arr[i], voyagerAction: next };
+                              return arr;
+                            });
+                          }}
+                        />
+                      )}
                     </div>
                   ) : null}
                 />
