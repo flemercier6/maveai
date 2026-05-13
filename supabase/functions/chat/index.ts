@@ -2124,6 +2124,7 @@ Deno.serve(async (req) => {
               if (decision.resource === "none") {
                 decision = fallbackVoyagerIntent(lastUserText) ?? decision;
               }
+              decision = normalizeVoyagerDecision(decision);
               console.log("[voyager router] decision=", JSON.stringify(decision), "voyagerService=", voyagerService, "voyagerConnected=", voyagerConnected, "userText=", lastUserText.slice(0, 200));
               const validRes = ["contacts", "companies", "deals"].includes(decision.resource);
               const method = (decision.method ?? "GET").toUpperCase();
