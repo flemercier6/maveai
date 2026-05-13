@@ -1592,6 +1592,17 @@ Deno.serve(async (req) => {
       if (/\b(ajoute|crée|cree|nouveau|nouvelle)\b/i.test(text)) return { resource: "contacts", method: "POST", payload: {} };
       return { resource: "contacts", method: "PATCH", query: {}, payload: {} };
     };
+    const inferVoyagerSearchTerm = (text: string, payload?: Record<string, unknown>): string => {
+      const withoutEmail = text.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig, " ");
+      const match = withoutEmail.match(/(?:^|\s)(?:de|du|d'|pour)\s+([^,.;:]+?)(?:\s+(?:par|en|à|a|avec|vers|pour)\b|$)/i);
+      const fromText = (match?.[1] ?? "").replace(/^contact\s+/i, "").trim();
+      if (fromText) return fromText;
+      for (const key of ["name", "full_name", "fullName", "email"] as const) {
+        const value = payload?.[key];
+        if (typeof value === "string" && value.trim()) return value.trim();
+      }
+      return "";
+    };
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     const linkupKey = Deno.env.get("LINKUP_API_KEY");
     let webContext:
