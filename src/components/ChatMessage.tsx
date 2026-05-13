@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
 import { GoogleServiceLogo, GOOGLE_SERVICE_LABEL, type GoogleService } from "./GoogleServiceLogo";
+import { VoyagerLogo, VOYAGER_LABEL } from "./VoyagerLogo";
 import { FlowDiagram } from "./FlowDiagram";
 import { ChartBlock } from "./ChartBlock";
 
