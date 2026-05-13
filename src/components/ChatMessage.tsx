@@ -57,6 +57,7 @@ type Props = {
   provider?: Provider;
   model?: string;
   googleService?: GoogleService;
+  voyagerService?: boolean;
   memory?: { added: number; updated: number };
   tool?: ToolUse;
   phase?: Phase;
