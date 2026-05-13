@@ -66,6 +66,13 @@ export function buildSlashItems(): SlashItem[] {
       description: "Browse files in your Google Drive",
       slug: "drive",
     },
+    {
+      provider: "voyager",
+      model: "",
+      label: "Voyager CRM",
+      description: "Query or update your Voyager CRM",
+      slug: "voyager",
+    },
   ];
   for (const p of PROVIDERS) {
     for (const m of MODELS[p.id]) {
