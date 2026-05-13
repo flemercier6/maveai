@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Loader2, X, Database } from "lucide-react";
+import { Check, Loader2, X, HardDrive } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
