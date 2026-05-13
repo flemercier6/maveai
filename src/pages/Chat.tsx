@@ -1448,6 +1448,9 @@ export default function Chat() {
     } else if (item.provider === "gmail" || item.provider === "calendar" || item.provider === "drive") {
       setGoogleService(item.provider);
       toast.success(`${GOOGLE_SERVICE_LABEL[item.provider]} enabled for next message`);
+    } else if (item.provider === "voyager") {
+      setVoyagerService(true);
+      toast.success(`${VOYAGER_LABEL} enabled for next message`);
     } else {
       if (isModelBlacklisted(aiPrefs, item.model)) {
         toast.error("This model is blacklisted in your AI preferences");
