@@ -2085,7 +2085,7 @@ Deno.serve(async (req) => {
           }
 
           // ---------- Voyager CRM router ----------
-          // Only when the user explicitly invoked /voyager.
+          // Runs for explicit /voyager requests and for CRM intents when Voyager is connected.
           if (voyagerEnabled && !writingMode && lastUserText) {
             try {
               const googleKeyForVoyager = Deno.env.get("GOOGLE_API_KEY");
