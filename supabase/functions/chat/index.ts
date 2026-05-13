@@ -1629,6 +1629,37 @@ Deno.serve(async (req) => {
       }
       return "";
     };
+    const pendingVoyagerWriteFromHistory = (): VoyagerRouterDecision | null => {
+      const currentFallback = fallbackVoyagerIntent(lastUserText);
+      if (currentFallback) return currentFallback;
+      const previousUser = [...trimmedHistory.slice(0, -1)].reverse().find((m) => m.role === "user")?.content ?? "";
+      const previousWrite = fallbackVoyagerIntent(previousUser);
+      if (!previousWrite || !previousWrite.payload) return null;
+      const previousAssistant = [...trimmedHistory.slice(0, -1)].reverse().find((m) => m.role === "assistant")?.content ?? "";
+      const wasChoosingContact = /Plusieurs résultats correspondent|Précise lequel je dois mettre à jour/i.test(previousAssistant);
+      if (!wasChoosingContact) return null;
+      const selectedEmail = lastUserText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
+      const selectedName = lastUserText
+        .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig, " ")
+        .replace(/[()]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      const search = selectedEmail || selectedName;
+      return search ? { ...previousWrite, id: undefined, query: { search } } : null;
+    };
+    const normalizeVoyagerText = (value: unknown): string =>
+      String(value ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9@.]+/g, " ").trim();
+    const pickExactVoyagerMatch = (items: any[], searchTerm: string): any | null => {
+      if (items.length === 1) return items[0];
+      const term = normalizeVoyagerText(searchTerm);
+      if (!term) return null;
+      const email = searchTerm.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]?.toLowerCase();
+      if (email) {
+        const byEmail = items.find((x) => String(x?.email ?? "").toLowerCase() === email);
+        if (byEmail) return byEmail;
+      }
+      return items.find((x) => normalizeVoyagerText(`${x?.first_name ?? ""} ${x?.last_name ?? ""}`) === term) ?? null;
+    };
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     const linkupKey = Deno.env.get("LINKUP_API_KEY");
     let webContext:
@@ -2081,7 +2112,7 @@ Deno.serve(async (req) => {
 
           // ---------- Voyager CRM router ----------
           // Runs for explicit /voyager requests and for CRM intents when Voyager is connected.
-          const forcedVoyagerDecision = writingMode ? fallbackVoyagerIntent(lastUserText) : null;
+          const forcedVoyagerDecision = pendingVoyagerWriteFromHistory();
           if (voyagerEnabled && lastUserText && (!writingMode || forcedVoyagerDecision)) {
             try {
               const googleKeyForVoyager = Deno.env.get("GOOGLE_API_KEY");
@@ -2163,8 +2194,10 @@ Deno.serve(async (req) => {
                             : Array.isArray(sr.json?.data?.data)
                               ? sr.json.data.data
                               : [];
-                      if (arr.length === 1 && typeof arr[0]?.id === "string") {
-                        decision.id = arr[0].id;
+                      const exact = pickExactVoyagerMatch(arr, searchTerm);
+                      if (exact && typeof exact.id === "string") {
+                        decision.id = exact.id;
+                        decision.query = undefined;
                       } else if (arr.length > 1) {
                         // Ambiguous — ask user via assistant text instead of proposing a broken action.
                         const names = arr.slice(0, 5).map((x: any) =>
