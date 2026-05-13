@@ -1629,6 +1629,24 @@ Deno.serve(async (req) => {
       }
       return "";
     };
+    const pendingVoyagerWriteFromHistory = (): VoyagerRouterDecision | null => {
+      const currentFallback = fallbackVoyagerIntent(lastUserText);
+      if (currentFallback) return currentFallback;
+      const previousUser = [...trimmedHistory.slice(0, -1)].reverse().find((m) => m.role === "user")?.content ?? "";
+      const previousWrite = fallbackVoyagerIntent(previousUser);
+      if (!previousWrite || !previousWrite.payload) return null;
+      const previousAssistant = [...trimmedHistory.slice(0, -1)].reverse().find((m) => m.role === "assistant")?.content ?? "";
+      const wasChoosingContact = /Plusieurs résultats correspondent|Précise lequel je dois mettre à jour/i.test(previousAssistant);
+      if (!wasChoosingContact) return null;
+      const selectedEmail = lastUserText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
+      const selectedName = lastUserText
+        .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig, " ")
+        .replace(/[()]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      const search = selectedEmail || selectedName;
+      return search ? { ...previousWrite, id: undefined, query: { search } } : null;
+    };
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     const linkupKey = Deno.env.get("LINKUP_API_KEY");
     let webContext:
