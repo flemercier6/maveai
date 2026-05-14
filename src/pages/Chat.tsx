@@ -1827,11 +1827,13 @@ export default function Chat() {
             })()}
           </div>
         </header>
-        {(() => {
-          const indexItems = messages
+        <ChatIndex
+          scrollContainer={scrollEl}
+          items={messages
             .map((m, i) => ({ m, i }))
             .filter(({ m }) => {
               if (m.role !== "user" || !m.id) return false;
+              // Exclude clarify answer messages (built by ClarifyCard as lines starting with `**question** answer`).
               const trimmed = m.content.trim();
               if (!trimmed.startsWith("**")) return true;
               const lines = trimmed.split("\n").filter((l) => l.trim().length > 0);
@@ -1842,10 +1844,9 @@ export default function Chat() {
               id: m.id as string,
               preview: m.content.replace(/\n+/g, " ").trim().slice(0, 60) +
                 (m.content.length > 60 ? "…" : ""),
-            }));
-          (window as any).__chatIndexCount = indexItems.length;
-          return <ChatIndex scrollContainer={scrollEl} items={indexItems} />;
-        })()}
+            }))}
+          onWidthChange={(w) => setIndexReservedWidth(w)}
+        />
         <div
           ref={(el) => {
             (scrollRef as any).current = el;
