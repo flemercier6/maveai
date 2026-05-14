@@ -280,9 +280,80 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         )}
       >
       <div className="p-3">
-        <div className="px-[10px] pt-1" style={{ marginBottom: 40 }}>
-          <img src={maveLogo} alt="Mave" className="h-4 w-auto" />
+        <div
+          className={cn(
+            "px-[10px] pt-1 flex items-center",
+            collapsed ? "justify-center" : "justify-between",
+          )}
+          style={{ marginBottom: collapsed ? 16 : 40 }}
+        >
+          {!collapsed && <img src={maveLogo} alt="Mave" className="h-4 w-auto" />}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={toggleCollapsed}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="flex items-center justify-center w-7 h-7 rounded-[6px] md:rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+              >
+                {collapsed ? (
+                  <PanelLeftOpen className="w-4 h-4 opacity-70" />
+                ) : (
+                  <PanelLeftClose className="w-4 h-4 opacity-70" />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{collapsed ? "Expand sidebar" : "Collapse sidebar"}</TooltipContent>
+          </Tooltip>
         </div>
+        {collapsed ? (
+          <div className="mt-2 flex flex-col items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isFree) { onLockedFeature?.("save-chat"); return; }
+                    onNew();
+                  }}
+                  aria-label="New chat"
+                  className="w-9 h-9 flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+                >
+                  <Plus className="w-4 h-4 opacity-70" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">New chat</TooltipContent>
+            </Tooltip>
+            {onNewEphemeral && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={onNewEphemeral}
+                    aria-label="New ephemeral chat"
+                    className="w-9 h-9 flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+                  >
+                    <HugeiconsIcon icon={MessageSquareDashedIcon} className="w-4 h-4 opacity-70" strokeWidth={2} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Ephemeral chat</TooltipContent>
+              </Tooltip>
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setSearchOpen(true)}
+                  aria-label="Search chats"
+                  className="w-9 h-9 flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+                >
+                  <Search className="w-4 h-4 opacity-70" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Search chats</TooltipContent>
+            </Tooltip>
+          </div>
+        ) : (
         <div className="mt-2 space-y-0.5">
           <div className="group flex items-stretch w-full">
             <button
@@ -324,6 +395,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
             <Search className="w-5 h-5 md:w-4 md:h-4 opacity-70" /> Search chats
           </button>
         </div>
+        )}
       </div>
 
       <ScrollArea className="flex-1">
