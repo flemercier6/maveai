@@ -270,7 +270,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
       )}
       <aside
         ref={asideRef}
-        style={{ ['--sidebar-w' as any]: `${width}px` }}
+        style={{ ['--sidebar-w' as any]: `${effectiveWidth}px` }}
         className={cn(
           "shrink-0 h-screen flex flex-col bg-sidebar",
           // Mobile: fixed drawer overlay full width; Desktop: in-flow with custom width
