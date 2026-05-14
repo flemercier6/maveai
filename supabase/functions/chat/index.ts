@@ -2611,16 +2611,72 @@ Deno.serve(async (req) => {
           // ---------- Emit a META event so the client can show what was actually sent ----------
           // Estimate tokens with a cheap heuristic (~4 chars per token).
           const approxTokens = (s: string) => Math.ceil((s?.length ?? 0) / 4);
+          const labelSystem = (c: string, i: number): { label: string; description: string } => {
+            if (c.startsWith("Style:"))
+              return {
+                label: "Style & format rules",
+                description:
+                  "Tells the model how to format its reply (markdown, length target, when to emit ```flow / ```chart / ```map blocks, language matching).",
+              };
+            if (c.startsWith("WRITING CANVAS MODE"))
+              return {
+                label: "Writing canvas mode",
+                description:
+                  "Active when the user is drafting a document. Forces the strict CANVAS_EDIT: yes/no protocol and includes the previous canvas if any.",
+              };
+            if (c.startsWith("USER PROFILE") || c.startsWith("Additional relevant context"))
+              return {
+                label: "User profile & memory",
+                description:
+                  "Authoritative facts about the user (name, role, preferences) plus relevant memory snippets filtered by the current message keywords.",
+              };
+            if (c.startsWith("VOYAGER CRM RULES"))
+              return {
+                label: "Voyager CRM guardrail",
+                description:
+                  "Hard rule preventing the model from pretending it executed CRM writes. Server handles reads; writes require a user-confirmed card.",
+              };
+            if (c.startsWith("[Google "))
+              return {
+                label: "Google action result",
+                description:
+                  "Result of a Google read action (Gmail/Calendar/Drive) executed server-side, injected so the model can summarize it naturally.",
+              };
+            if (c.startsWith("[Voyager CRM "))
+              return {
+                label: "Voyager CRM result",
+                description:
+                  "Result of a Voyager CRM GET executed server-side, or an error message if the call failed.",
+              };
+            if (c.startsWith("Content of the requested web page"))
+              return {
+                label: "Web page content (scrape)",
+                description:
+                  "Full text of the page the user (or the agent) asked to scrape, plus citation rules so the model uses [source:N] markers.",
+              };
+            if (c.startsWith("Web search results"))
+              return {
+                label: "Web search results",
+                description:
+                  "Top web search results (titles + snippets + URLs) gathered by the agent, with citation rules and optional embeddable images.",
+              };
+            if (c.startsWith("IMPORTANT — AGENTIC CONTEXT"))
+              return {
+                label: "Agent finalization brief",
+                description:
+                  "Added at the end of an agentic loop. Tells the main model that narration was already streamed — write only the final answer, cite sources, stay concise.",
+              };
+            return {
+              label: `System #${i + 1}`,
+              description: "Unrecognized system message — contains the model's core identity / behavior rules.",
+            };
+          };
           const metaSystems = messagesForLLM
             .filter((m) => m.role === "system")
             .map((m, i) => {
               const c = m.content ?? "";
-              let label = `System #${i + 1}`;
-              if (c.startsWith("Style:")) label = "Style & format";
-              else if (c.startsWith("Relevant user memory")) label = "User memory (filtered)";
-              else if (c.startsWith("Content of the requested web page")) label = "Web page content";
-              else if (c.startsWith("Web search results")) label = "Web search results";
-              return { label, content: c, approxTokens: approxTokens(c) };
+              const { label, description } = labelSystem(c, i);
+              return { label, description, content: c, approxTokens: approxTokens(c) };
             });
           const metaHistory = messagesForLLM
             .filter((m) => m.role !== "system")
