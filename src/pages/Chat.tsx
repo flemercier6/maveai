@@ -205,6 +205,23 @@ export default function Chat() {
   // Anonymous users are allowed — they use the app in free mode without
   // cloud persistence. The AuthPopover lets them sign in at any time.
 
+  // Clear active conversation on a fresh sign-in so users land on a new chat.
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") {
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem("fresh-signin", "1");
+          window.localStorage.removeItem("chat-active-id");
+        }
+        setActiveIdRaw(null);
+        setMessages([]);
+        navigate("/", { replace: true });
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Load conversations
   useEffect(() => {
     if (!user) return;
@@ -212,6 +229,18 @@ export default function Chat() {
       .then(({ data }) => {
         const list = (data ?? []) as Conversation[];
         setConversations(list);
+        // After a fresh sign-in, force a new chat (no fallback to recent).
+        const freshSignin =
+          typeof window !== "undefined" &&
+          window.sessionStorage.getItem("fresh-signin") === "1";
+        if (freshSignin) {
+          window.sessionStorage.removeItem("fresh-signin");
+          setActiveIdRaw(null);
+          if (typeof window !== "undefined") {
+            window.localStorage.removeItem("chat-active-id");
+          }
+          return;
+        }
         // Restore last active conversation on refresh. If the persisted id is
         // missing/invalid, fall back to the most recent conversation so users
         // never land on a blank chat.
