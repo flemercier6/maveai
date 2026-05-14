@@ -678,12 +678,12 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         </div>
       </ScrollArea>
 
-      <div className="p-2 bg-background">
+      <div className="p-2">
         {userEmail ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="w-full flex items-center gap-3 md:gap-2 px-2 py-2.5 md:py-1.5 rounded-[6px] md:rounded-md hover:bg-sidebar-accent text-sidebar-foreground"
+                className="w-full flex items-center gap-3 md:gap-2 px-2 py-2.5 md:py-1.5 rounded-[6px] md:rounded-md bg-background hover:bg-sidebar-accent text-sidebar-foreground"
               >
                 <div className="w-9 h-9 md:w-7 md:h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-sm md:text-xs font-medium uppercase overflow-hidden">
                   {userAvatarUrl ? (
