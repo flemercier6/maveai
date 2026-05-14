@@ -155,7 +155,7 @@ export function ShareMenu({ conversationId }: Props) {
             </Button>
           </div>
         ) : (
-          <div className="text-xs text-muted-foreground py-1">
+          <div className="text-muted-foreground text-sm py-1">
             Sharing is off. New messages stay private.
           </div>
         )}
