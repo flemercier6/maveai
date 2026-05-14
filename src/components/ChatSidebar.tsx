@@ -398,7 +398,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         )}
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className={cn("flex-1", collapsed && "hidden")}>
         <div className="p-2 space-y-2">
           {(() => {
             // Inline renderer for one conversation row (used in folders & Recent)
@@ -765,6 +765,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           })()}
         </div>
       </ScrollArea>
+      {collapsed && <div className="flex-1" />}
 
       <div className="p-2">
         {userEmail ? (
@@ -811,17 +812,19 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         )}
       </div>
 
-      {/* Resize handle */}
-      <div
-        onMouseDown={(e) => { e.preventDefault(); setResizing(true); }}
-        onDoubleClick={() => { setWidth(DEFAULT_WIDTH); localStorage.setItem(STORAGE_KEY, String(DEFAULT_WIDTH)); }}
-        className={cn(
-          "hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize group z-10",
-          "hover:bg-primary/40 transition-colors",
-          resizing && "bg-primary/60"
-        )}
-        title="Drag to resize — double-click to reset"
-      />
+      {/* Resize handle — hidden when collapsed */}
+      {!collapsed && (
+        <div
+          onMouseDown={(e) => { e.preventDefault(); setResizing(true); }}
+          onDoubleClick={() => { setWidth(DEFAULT_WIDTH); localStorage.setItem(STORAGE_KEY, String(DEFAULT_WIDTH)); }}
+          className={cn(
+            "hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize group z-10",
+            "hover:bg-primary/40 transition-colors",
+            resizing && "bg-primary/60"
+          )}
+          title="Drag to resize — double-click to reset"
+        />
+      )}
 
       <SettingsDialog
         open={settingsOpen}
