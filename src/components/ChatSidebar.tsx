@@ -520,10 +520,10 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
               <>
                 {/* ============== FOLDERS ============== */}
                 <Collapsible defaultOpen>
-                  <div className="flex items-center justify-between pr-1">
-                    <CollapsibleTrigger className="group flex items-center gap-1 px-[10px] py-[6px] font-medium text-muted-foreground hover:text-sidebar-foreground text-base">
-                      <ChevronDown className="w-3 h-3 transition-transform group-data-[state=closed]:-rotate-90" />
-                      <span>Projects</span>
+                  <div className="flex items-center justify-between gap-1 pr-1">
+                    <CollapsibleTrigger className="group min-w-0 flex-1 flex items-center gap-1 px-[10px] py-[6px] font-medium text-muted-foreground hover:text-sidebar-foreground text-base">
+                      <ChevronDown className="w-3 h-3 shrink-0 transition-transform group-data-[state=closed]:-rotate-90" />
+                      <span className="truncate">Projects</span>
                     </CollapsibleTrigger>
                     <button
                       type="button"
@@ -533,7 +533,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                         setFolderDialogOpen(true);
                       }}
                       title={isFree ? "Projects are a Plus feature" : "New project"}
-                      className="h-6 w-6 flex items-center justify-center rounded-[4px] text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                      className="h-6 w-6 shrink-0 flex items-center justify-center rounded-[4px] text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
                     >
                       <FolderPlus className="w-3.5 h-3.5" />
                     </button>
