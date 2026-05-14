@@ -27,6 +27,7 @@ import {
   Folder as FolderIcon,
   PanelLeftClose,
   PanelLeftOpen,
+  MessageSquare,
 } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { MessageSquareDashedIcon } from "@hugeicons/core-free-icons";
@@ -352,6 +353,37 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
               </TooltipTrigger>
               <TooltipContent side="right">Search chats</TooltipContent>
             </Tooltip>
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Recent chats"
+                      className="w-9 h-9 flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+                    >
+                      <MessageSquare className="w-4 h-4 opacity-70" />
+                    </button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="right">Recent chats</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent side="right" align="start" className="w-64 max-h-[60vh] overflow-y-auto">
+                {conversations.length === 0 ? (
+                  <div className="px-2 py-3 text-sm text-muted-foreground">No recent chats</div>
+                ) : (
+                  conversations.slice(0, 30).map((c) => (
+                    <DropdownMenuItem
+                      key={c.id}
+                      onSelect={() => onSelect(c.id)}
+                      className={cn("truncate", activeId === c.id && "font-semibold")}
+                    >
+                      <span className="truncate">{c.title || "Untitled"}</span>
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ) : (
         <div className="mt-2 space-y-0.5">
