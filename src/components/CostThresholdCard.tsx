@@ -284,7 +284,7 @@ export function CostThresholdCard({ spendByPeriod }: Props) {
             />
           </div>
           {!threshold.enabled && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Notifications désactivées.
             </p>
           )}
