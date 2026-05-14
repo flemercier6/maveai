@@ -173,7 +173,7 @@ export function AuthPopover() {
             type="submit"
             disabled={submitting}
             className={cn(
-              "w-full px-4 py-2.5 rounded-xl bg-foreground text-background font-semibold hover:opacity-90 transition-opacity text-base",
+              "w-full px-4 py-2.5 rounded-xl bg-foreground text-background font-semibold hover:opacity-90 transition-opacity text-sm",
               submitting && "opacity-60 cursor-not-allowed",
             )}
           >
