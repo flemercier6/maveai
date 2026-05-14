@@ -2809,26 +2809,36 @@ Deno.serve(async (req) => {
           // ---------- Extract memorable facts ----------
           if (!ephemeral && !isFreeUser) {
             if (memoryMode === "smart") {
-              // Fire-and-forget: invoke the smart pipeline async so it never
-              // blocks the user-visible stream. The function itself uses
-              // EdgeRuntime.waitUntil internally, but we still avoid awaiting
-              // the network round-trip here.
+              // Await the smart pipeline so we can emit a `memory` event
+              // back to the client (powers MemoryInsights). The call happens
+              // after the assistant stream is done, so it only adds latency
+              // to the post-stream tail.
               try {
                 const fnUrl = `${supabaseUrl}/functions/v1/memory-extract-smart`;
-                fetch(fnUrl, {
+                const r = await fetch(fnUrl, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
-                    // Forward the user's JWT so the function can identify them.
                     Authorization: authHeader,
                     apikey: anonKey,
                   },
                   body: JSON.stringify({ userText: lastUser, assistantText }),
-                }).catch((e) => console.warn("[smart-memory] dispatch failed", e));
+                });
+                if (r.ok) {
+                  const j = await r.json().catch(() => ({} as any));
+                  const added = Number(j?.added) || 0;
+                  const updated = Number(j?.updated) || 0;
+                  if (added + updated > 0) {
+                    controller.enqueue(enc({ type: "memory", added, updated }));
+                  }
+                } else {
+                  console.warn("[smart-memory] http error", r.status, await r.text().catch(() => ""));
+                }
               } catch (err) {
                 console.error("smart memory dispatch failed:", err);
               }
             } else {
+
               try {
                 const memResult = await extractAndSaveMemory({
                   supabase,
