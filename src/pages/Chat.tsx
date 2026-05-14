@@ -1769,7 +1769,7 @@ export default function Chat() {
             <div className="flex flex-col items-center gap-3 px-8 py-6 transition-all duration-200 ease-out opacity-100 scale-100">
               <Upload className="w-8 h-8 text-foreground" />
               <div className="text-base font-semibold text-foreground">Drop to add to context</div>
-              <div className="text-xs text-muted-foreground">Image, PDF or text — up to 15 MB</div>
+              <div className="text-muted-foreground text-sm">Image, PDF or text — up to 15 MB</div>
             </div>
           </div>
         )}
