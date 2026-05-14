@@ -24,22 +24,16 @@ const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
 // Cheap signals that the user is sharing something durable about themselves.
 // Mix of FR + EN. Anything matching at least once → continue to LLM judge.
 const SIGNAL_PATTERNS: RegExp[] = [
-  // Identity / role / job
+  // Identity / role / job — durable self-statements
   /\bje\s+(?:suis|m'appelle|bosse|travaille|vis|habite)\b/i,
-  /\bmon\s+\p{L}+/iu,
-  /\bma\s+\p{L}+/iu,
-  /\bmes\s+\p{L}+/iu,
   /\bj['e]\s*(?:préfère|déteste|adore|utilise|évite|veux|aime|n'aime|cherche|construis|développe|écris|gère|pilote)\b/i,
   /\bI[' ]?m\s+(?:a|an|the|working|based|from|using|building|writing|trying|currently)\b/i,
   /\bI\s+(?:prefer|like|love|hate|use|avoid|work\s+at|live\s+in|build|run|own|manage|lead)\b/i,
-  /\bmy\s+\p{L}+/iu,
-  // Explicit "remember" — broad: cover garde/retiens/souviens/note/oublie/mémorise/sauvegarde
-  /\b(?:garde|retiens|retenir|souviens|souvenir|note|noter|n'oublie|mémorise|mémoriser|sauvegarde|enregistre|stocke)\b/i,
-  /\b(?:remember|note|keep\s+in\s+mind|save|store|memorize)\b/i,
-  /\b(?:en\s+mémoire|in\s+memory)\b/i,
-  // Family / relations (often a durable fact)
-  /\b(?:mon|ma|mes)\s+(?:père|mère|frère|sœur|soeur|fils|fille|femme|mari|époux|épouse|copain|copine|conjoint|conjointe|parent|enfant|cousin|cousine|oncle|tante|grand-père|grand-mère)\b/i,
-  /\b(?:my)\s+(?:father|mother|dad|mom|brother|sister|son|daughter|wife|husband|partner|spouse|kid|child|cousin|uncle|aunt|grandfather|grandmother)\b/i,
+  // Explicit "remember" verbs — FR
+  /\b(?:garde|gardes?|gardez)\b.*\b(?:en\s+(?:mémoire|tête|tete)|pour\s+plus\s+tard)\b/i,
+  /\b(?:retiens|retenir|retenez|souviens|souvenir|souvenez|mémorise|mémoriser|mémorisez|enregistre|enregistrer|enregistrez|sauvegarde|sauvegarder|stocke|stocker|note|notez|n'oublie|n'oubliez)\b/i,
+  // Explicit "remember" verbs — EN
+  /\b(?:remember|memorize|memorise|save|store|note|keep\s+in\s+mind|don'?t\s+forget)\b/i,
 ];
 
 function passesHeuristic(text: string): boolean {
