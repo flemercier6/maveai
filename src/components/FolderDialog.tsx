@@ -277,7 +277,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
                   Remove
                 </Button>
               )}
-              <span className="text-xs text-muted-foreground">PNG, JPG, WEBP up to 5MB</span>
+              <span className="text-muted-foreground text-sm">PNG, JPG, WEBP up to 5MB</span>
             </div>
           </div>
 
