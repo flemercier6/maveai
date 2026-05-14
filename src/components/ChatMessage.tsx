@@ -721,7 +721,7 @@ function ChatMessageImpl({
             </div>
           )}
           {(rest || !attachments || attachments.length === 0) && (
-            <div className={`max-w-[80%] rounded-2xl ${variant === "explore" ? "bg-background" : "bg-bubble-user"} text-bubble-user-foreground px-4 py-2.5 chat-prose break-words`}>
+            <div className={`max-w-[80%] rounded-2xl ${variant === "explore" ? "bg-background" : "bg-bubble-user"} text-bubble-user-foreground px-6 md:px-4 py-2.5 chat-prose break-words`}>
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{rest || " "}</ReactMarkdown>
             </div>
           )}
@@ -747,7 +747,7 @@ function ChatMessageImpl({
 
   return (
     <div className="relative w-full my-[50px]" data-assistant-message="true" data-message-id={id ?? ""}>
-      <div className="max-w-3xl mx-auto px-4">
+      <div className="max-w-3xl mx-auto px-6 md:px-4">
         {(provider || googleService || voyagerService || (tool && tool.status !== "failed")) && (
           <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "10px" }}>
             {provider && <ProviderBadge provider={provider} model={model} />}
