@@ -6,6 +6,7 @@ export type MetaSystem = {
   label: string;
   content: string;
   approxTokens: number;
+  description?: string;
 };
 
 export type MetaHistoryEntry = {
