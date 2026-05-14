@@ -25,6 +25,8 @@ import {
   ChevronsUpDown,
   FolderPlus,
   Folder as FolderIcon,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { MessageSquareDashedIcon } from "@hugeicons/core-free-icons";
@@ -85,7 +87,9 @@ type Props = {
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
 const DEFAULT_WIDTH = 240;
+const COLLAPSED_WIDTH = 56;
 const STORAGE_KEY = "chat-sidebar-width";
+const COLLAPSED_KEY = "chat-sidebar-collapsed";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
@@ -110,6 +114,18 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
     return saved >= MIN_WIDTH && saved <= MAX_WIDTH ? saved : DEFAULT_WIDTH;
   });
   const [resizing, setResizing] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(COLLAPSED_KEY) === "1";
+  });
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      try { localStorage.setItem(COLLAPSED_KEY, next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
+  const effectiveWidth = collapsed ? COLLAPSED_WIDTH : width;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsInitialSection, setSettingsInitialSection] = useState<
