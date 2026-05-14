@@ -49,6 +49,8 @@ export function MemoryTab() {
   const [editingTitle, setEditingTitle] = useState("");
   const { isFree } = usePlan();
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [spentEur, setSpentEur] = useState(0);
+  const [autoTriggered, setAutoTriggered] = useState(false);
 
   const load = async () => {
     const { data } = await supabase
@@ -59,8 +61,35 @@ export function MemoryTab() {
     setMemories((data ?? []) as Memory[]);
   };
 
+  const loadSpend = async () => {
+    if (!user) return;
+    // Find last successful consolidation; spend is summed from that point on.
+    const { data: runs } = await supabase
+      .from("memory_consolidation_runs")
+      .select("finished_at")
+      .eq("user_id", user.id)
+      .eq("status", "success")
+      .order("finished_at", { ascending: false })
+      .limit(1);
+    const since = runs?.[0]?.finished_at as string | undefined;
+    let q = supabase
+      .from("usage_events")
+      .select("model, total_cost_usd")
+      .eq("user_id", user.id);
+    if (since) q = q.gt("created_at", since);
+    const { data: events } = await q;
+    const total = (events ?? []).reduce(
+      (sum, e: any) => sum + billedCostEur(Number(e.total_cost_usd) || 0, String(e.model || "")),
+      0,
+    );
+    setSpentEur(total);
+  };
+
   useEffect(() => {
-    if (user) load();
+    if (user) {
+      load();
+      loadSpend();
+    }
   }, [user]);
 
   const add = async () => {
