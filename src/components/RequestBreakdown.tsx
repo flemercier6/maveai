@@ -33,9 +33,10 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
 
   for (const s of meta.systems ?? []) {
     segments.push({
-      label: `System · ${s.label}`,
+      label: s.label,
       tokens: s.approxTokens,
       costUsd: s.approxTokens * inputPricePerTok * mult,
+      description: s.description,
     });
   }
 
