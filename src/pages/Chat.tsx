@@ -1844,7 +1844,7 @@ export default function Chat() {
             })()}
           </div>
         </header>
-        {(() => null)()}
+        <ChatIndex scrollContainer={scrollEl} items={chatIndexItems} />
         <div
           ref={(el) => {
             (scrollRef as any).current = el;
