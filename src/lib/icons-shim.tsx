@@ -73,6 +73,8 @@ import {
   Calendar01Icon,
   HardDriveIcon,
   Sent02Icon,
+  User02Icon,
+  Building03Icon,
 } from "@hugeicons/core-free-icons";
 
 export type LucideProps = SVGProps<SVGSVGElement> & {
@@ -166,4 +168,6 @@ export const Mail = make(Mail01Icon, "Mail");
 export const Calendar = make(Calendar01Icon, "Calendar");
 export const Send = make(Sent02Icon, "Send");
 export const HardDrive = make(HardDriveIcon, "HardDrive");
+export const UserRound = make(User02Icon, "UserRound");
+export const Building2 = make(Building03Icon, "Building2");
 
