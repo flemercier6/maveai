@@ -201,7 +201,7 @@ export function CostThresholdCard({ spendByPeriod }: Props) {
 
       {editing ? (
         <div className="mt-3 space-y-3">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Recevez une alerte lorsque vos dépenses atteignent ce montant sur la période choisie.
           </p>
           <div className="flex flex-wrap items-center gap-2">
