@@ -2819,10 +2819,9 @@ Deno.serve(async (req) => {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${anonKey}`,
-                    apikey: anonKey,
                     // Forward the user's JWT so the function can identify them.
-                    "x-user-jwt": authHeader.replace(/^Bearer\s+/i, ""),
+                    Authorization: authHeader,
+                    apikey: anonKey,
                   },
                   body: JSON.stringify({ userText: lastUser, assistantText }),
                 }).catch((e) => console.warn("[smart-memory] dispatch failed", e));
