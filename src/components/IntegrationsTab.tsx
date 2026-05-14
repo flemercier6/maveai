@@ -258,7 +258,7 @@ export function IntegrationsTab() {
                 >
                   {busy === "voyager" ? "Connecting…" : "Connect"}
                 </button>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Create a key in Voyager → Settings → Developer. Requires Pro or Max plan.
                 </p>
               </>
