@@ -215,7 +215,7 @@ export function CostThresholdCard({ spendByPeriod }: Props) {
                 onChange={(e) => setDraftAmount(e.target.value)}
                 className="w-24 h-8 pl-2 pr-6 text-sm rounded-[4px] border border-border bg-background tabular-nums focus:outline-none focus:ring-1 focus:ring-foreground"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
                 €
               </span>
             </div>
