@@ -823,7 +823,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           aria-label="Resize exploration panel"
         />
       )}
-      <header className="flex items-center justify-between h-12 px-4 border-b border-border/30 shrink-0 text-base">
+      <header className="flex items-center justify-between h-12 pl-2 pr-4 border-b border-border/30 shrink-0 text-base">
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-semibold truncate text-base">Thread</span>
         </div>
