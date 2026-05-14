@@ -19,6 +19,12 @@ import { toast } from "sonner";
 import { extractKeywords } from "@/lib/keywords";
 import { usePlan } from "@/hooks/usePlan";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { billedCostEur } from "@/lib/pricing";
+
+// Memory is auto-compressed once the user has spent ~CONSOLIDATION_THRESHOLD_EUR
+// in billed tokens since the last successful consolidation. Compression fires at 95%.
+const CONSOLIDATION_THRESHOLD_EUR = 1;
+const CONSOLIDATION_TRIGGER_RATIO = 0.95;
 
 type Memory = {
   id: string;
