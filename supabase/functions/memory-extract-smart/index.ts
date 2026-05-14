@@ -26,20 +26,24 @@ const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
 const SIGNAL_PATTERNS: RegExp[] = [
   // Identity / role / job
   /\bje\s+(?:suis|m'appelle|bosse|travaille|vis|habite)\b/i,
-  /\bmon\s+(?:job|métier|boulot|rôle|poste|équipe|entreprise|boîte|prénom|nom|objectif|but|projet|client|chef|patron)\b/i,
-  /\bma\s+(?:boîte|société|startup|entreprise|mission|spécialité|formation|stack|équipe|cliente?)\b/i,
-  /\bmes\s+(?:clients|projets|outils|préférences|objectifs|valeurs)\b/i,
+  /\bmon\s+\p{L}+/iu,
+  /\bma\s+\p{L}+/iu,
+  /\bmes\s+\p{L}+/iu,
   /\bj['e]\s*(?:préfère|déteste|adore|utilise|évite|veux|aime|n'aime|cherche|construis|développe|écris|gère|pilote)\b/i,
   /\bI[' ]?m\s+(?:a|an|the|working|based|from|using|building|writing|trying|currently)\b/i,
   /\bI\s+(?:prefer|like|love|hate|use|avoid|work\s+at|live\s+in|build|run|own|manage|lead)\b/i,
-  /\bmy\s+(?:job|role|company|team|startup|project|client|stack|goal|wife|husband|kid|child|name|email)\b/i,
-  // Explicit "remember"
-  /\b(?:retiens|souviens|note|n'oublie\s+pas)\b.*(?:que|de|moi|mon|ma|mes)/i,
-  /\b(?:remember|note|keep\s+in\s+mind)\b\s+(?:that|this|me|i)/i,
+  /\bmy\s+\p{L}+/iu,
+  // Explicit "remember" — broad: cover garde/retiens/souviens/note/oublie/mémorise/sauvegarde
+  /\b(?:garde|retiens|retenir|souviens|souvenir|note|noter|n'oublie|mémorise|mémoriser|sauvegarde|enregistre|stocke)\b/i,
+  /\b(?:remember|note|keep\s+in\s+mind|save|store|memorize)\b/i,
+  /\b(?:en\s+mémoire|in\s+memory)\b/i,
+  // Family / relations (often a durable fact)
+  /\b(?:mon|ma|mes)\s+(?:père|mère|frère|sœur|soeur|fils|fille|femme|mari|époux|épouse|copain|copine|conjoint|conjointe|parent|enfant|cousin|cousine|oncle|tante|grand-père|grand-mère)\b/i,
+  /\b(?:my)\s+(?:father|mother|dad|mom|brother|sister|son|daughter|wife|husband|partner|spouse|kid|child|cousin|uncle|aunt|grandfather|grandmother)\b/i,
 ];
 
 function passesHeuristic(text: string): boolean {
-  if (text.length < 15 || text.length > 2000) return false;
+  if (text.length < 10 || text.length > 2000) return false;
   return SIGNAL_PATTERNS.some((re) => re.test(text));
 }
 
