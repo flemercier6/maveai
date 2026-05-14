@@ -172,6 +172,7 @@ export function MemoryTab() {
             toast.error(run.error ?? "Consolidation failed");
           }
           await load();
+          await loadSpend();
           setConsolidating(false);
           return;
         }
