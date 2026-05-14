@@ -1995,7 +1995,7 @@ export default function Chat() {
           )}
         </div>
 
-        <div className="bg-background p-4 pb-[5px] pt-[5px] relative">
+        <div className="bg-background px-6 md:px-10 pb-[5px] pt-[5px] relative">
           <div
             aria-hidden
             className="pointer-events-none absolute left-0 right-0 -top-20 h-20 bg-gradient-to-t from-background to-transparent"
