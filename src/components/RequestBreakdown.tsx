@@ -115,12 +115,19 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
               <table className="w-full">
                 <tbody>
                   {segments.map((s, i) => (
-                    <tr key={i} className="border-b border-border last:border-b-0">
-                      <td className="px-2.5 py-1.5 text-foreground">{s.label}</td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm text-muted-foreground">
+                    <tr key={i} className="border-b border-border last:border-b-0 align-top">
+                      <td className="px-2.5 py-1.5 text-foreground">
+                        <div>{s.label}</div>
+                        {s.description && (
+                          <div className="mt-0.5 text-xs text-muted-foreground leading-snug max-w-[520px]">
+                            {s.description}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm text-muted-foreground whitespace-nowrap">
                         {fmtTok(s.tokens)} tok
                       </td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums font-medium text-sm">
+                      <td className="px-2.5 py-1.5 text-right tabular-nums font-medium text-sm whitespace-nowrap">
                         {fmtEur(s.costUsd)}
                       </td>
                     </tr>
