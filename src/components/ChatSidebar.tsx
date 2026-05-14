@@ -256,14 +256,14 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         ref={asideRef}
         style={{ ['--sidebar-w' as any]: `${width}px` }}
         className={cn(
-          "shrink-0 h-screen flex flex-col bg-sidebar border-r border-sidebar-border",
+          "shrink-0 h-screen flex flex-col bg-sidebar",
           // Mobile: fixed drawer overlay full width; Desktop: in-flow with custom width
           "fixed top-0 left-0 z-50 w-screen max-w-full transition-transform duration-200 ease-out text-base",
           "md:relative md:w-[var(--sidebar-w)] md:max-w-none md:translate-x-0 md:transition-none md:text-base",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-      <div className="p-3 border-b border-sidebar-border">
+      <div className="p-3">
         <div className="px-[10px] pt-1" style={{ marginBottom: 40 }}>
           <img src={maveLogo} alt="Mave" className="h-4 w-auto" />
         </div>
@@ -678,7 +678,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         </div>
       </ScrollArea>
 
-      <div className="p-2 border-t border-sidebar-border">
+      <div className="p-2">
         {userEmail ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
