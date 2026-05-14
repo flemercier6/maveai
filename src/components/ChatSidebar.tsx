@@ -772,7 +772,12 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="w-full flex items-center gap-3 md:gap-2 px-2 py-2.5 md:py-1.5 rounded-[6px] md:rounded-md bg-background hover:bg-sidebar-accent text-sidebar-foreground"
+                className={cn(
+                  "w-full flex items-center rounded-[6px] md:rounded-md bg-background hover:bg-sidebar-accent text-sidebar-foreground",
+                  collapsed
+                    ? "justify-center p-1"
+                    : "gap-3 md:gap-2 px-2 py-2.5 md:py-1.5",
+                )}
               >
                 <div className="w-9 h-9 md:w-7 md:h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-sm md:text-xs font-medium uppercase overflow-hidden">
                   {userAvatarUrl ? (
@@ -781,15 +786,19 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     (userName?.[0] ?? userEmail?.[0] ?? "?")
                   )}
                 </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <div className="font-semibold truncate text-base">
-                    {userName ?? userEmail?.split("@")[0] ?? "User"}
-                  </div>
-                  <div className="text-[11px] md:text-[10px] text-muted-foreground truncate leading-tight">
-                    {planLabel}
-                  </div>
-                </div>
-                <img src={sidebarUserArrows} alt="" aria-hidden className="w-[8px] h-[12px] opacity-70 shrink-0" />
+                {!collapsed && (
+                  <>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="font-semibold truncate text-base">
+                        {userName ?? userEmail?.split("@")[0] ?? "User"}
+                      </div>
+                      <div className="text-[11px] md:text-[10px] text-muted-foreground truncate leading-tight">
+                        {planLabel}
+                      </div>
+                    </div>
+                    <img src={sidebarUserArrows} alt="" aria-hidden className="w-[8px] h-[12px] opacity-70 shrink-0" />
+                  </>
+                )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" side="top" className="w-[--radix-dropdown-menu-trigger-width]">
