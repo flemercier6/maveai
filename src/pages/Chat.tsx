@@ -1695,6 +1695,23 @@ export default function Chat() {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
 
+  const chatIndexItems = messages
+    .map((m, i) => ({ m, i }))
+    .filter(({ m }) => {
+      if (m.role !== "user" || !m.id) return false;
+      const trimmed = m.content.trim();
+      if (!trimmed.startsWith("**")) return true;
+      const lines = trimmed.split("\n").filter((l) => l.trim().length > 0);
+      const allClarify = lines.every((l) => /^\*\*[^*]+\*\*\s/.test(l.trim()));
+      return !allClarify;
+    })
+    .map(({ m }) => ({
+      id: m.id as string,
+      preview: m.content.replace(/\n+/g, " ").trim().slice(0, 60) +
+        (m.content.length > 60 ? "…" : ""),
+    }));
+  const hasChatIndex = chatIndexItems.length >= 2;
+
   return (
     <div ref={rootRef} className="flex h-screen w-full bg-background">
       <ChatSidebar
@@ -1827,25 +1844,7 @@ export default function Chat() {
             })()}
           </div>
         </header>
-        <ChatIndex
-          scrollContainer={scrollEl}
-          items={messages
-            .map((m, i) => ({ m, i }))
-            .filter(({ m }) => {
-              if (m.role !== "user" || !m.id) return false;
-              // Exclude clarify answer messages (built by ClarifyCard as lines starting with `**question** answer`).
-              const trimmed = m.content.trim();
-              if (!trimmed.startsWith("**")) return true;
-              const lines = trimmed.split("\n").filter((l) => l.trim().length > 0);
-              const allClarify = lines.every((l) => /^\*\*[^*]+\*\*\s/.test(l.trim()));
-              return !allClarify;
-            })
-            .map(({ m }) => ({
-              id: m.id as string,
-              preview: m.content.replace(/\n+/g, " ").trim().slice(0, 60) +
-                (m.content.length > 60 ? "…" : ""),
-            }))}
-        />
+        <ChatIndex scrollContainer={scrollEl} items={chatIndexItems} />
         <div
           ref={(el) => {
             (scrollRef as any).current = el;
@@ -1995,7 +1994,7 @@ export default function Chat() {
           )}
         </div>
 
-        <div className="bg-background px-6 md:px-10 pb-[5px] pt-[5px] relative">
+        <div className={`bg-background ${hasChatIndex ? "pl-[60px] pr-6 md:pr-10" : "px-6 md:px-10"} pb-[5px] pt-[5px] relative`}>
           <div
             aria-hidden
             className="pointer-events-none absolute left-0 right-0 -top-20 h-20 bg-gradient-to-t from-background to-transparent"
