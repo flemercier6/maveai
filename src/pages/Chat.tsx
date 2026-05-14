@@ -1272,8 +1272,17 @@ export default function Chat() {
               if (mem.added + mem.updated > 0) {
                 setMessages((prev) => {
                   const next = prev.slice();
+                  // Attach to the most recent user message (for the legacy badge)
                   for (let i = next.length - 1; i >= 0; i--) {
                     if (next[i].role === "user") {
+                      next[i] = { ...next[i], memory: mem };
+                      break;
+                    }
+                  }
+                  // Also attach to the latest assistant message so the
+                  // MemoryInsights dropdown can show the saved counts.
+                  for (let i = next.length - 1; i >= 0; i--) {
+                    if (next[i].role === "assistant") {
                       next[i] = { ...next[i], memory: mem };
                       break;
                     }
