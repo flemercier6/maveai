@@ -1854,7 +1854,7 @@ export default function Chat() {
           className="flex-1 overflow-y-auto"
         >
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-4">
+            <div className="h-full flex flex-col items-center justify-center text-center px-6 md:px-4">
               {(() => {
                 const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
                 const fullName =
