@@ -159,7 +159,7 @@ export function AuthPopover() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
             autoComplete="email"
-            className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 text-sm"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 text-base"
           />
           <input
             type="password"
@@ -167,7 +167,7 @@ export function AuthPopover() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 text-sm"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 text-base"
           />
           <button
             type="submit"
