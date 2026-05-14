@@ -142,7 +142,7 @@ export function ShareMenu({ conversationId }: Props) {
               readOnly
               value={shareUrl}
               onFocus={(e) => e.currentTarget.select()}
-              className="flex-1 min-w-0 h-8 rounded-[4px] border border-input bg-background px-2 text-xs text-foreground"
+              className="flex-1 min-w-0 h-8 rounded-[4px] border border-input bg-background px-2 text-foreground text-sm"
             />
             <Button
               type="button"
