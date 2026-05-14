@@ -104,7 +104,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
             </span>
             {cost && (
               <span>
-                Markup: <span className="font-medium text-foreground text-base">×{mult}</span>
+                Multiplier: <span className="font-medium text-foreground text-base">×{mult}</span>
               </span>
             )}
           </div>
