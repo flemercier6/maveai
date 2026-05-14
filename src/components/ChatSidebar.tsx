@@ -325,21 +325,6 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
               </TooltipTrigger>
               <TooltipContent side="right">New chat</TooltipContent>
             </Tooltip>
-            {onNewEphemeral && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={onNewEphemeral}
-                    aria-label="New ephemeral chat"
-                    className="w-9 h-9 flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
-                  >
-                    <HugeiconsIcon icon={MessageSquareDashedIcon} className="w-4 h-4 opacity-70" strokeWidth={2} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Ephemeral chat</TooltipContent>
-              </Tooltip>
-            )}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
