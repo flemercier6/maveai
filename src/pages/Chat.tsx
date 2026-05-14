@@ -1695,6 +1695,23 @@ export default function Chat() {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
 
+  const chatIndexItems = messages
+    .map((m, i) => ({ m, i }))
+    .filter(({ m }) => {
+      if (m.role !== "user" || !m.id) return false;
+      const trimmed = m.content.trim();
+      if (!trimmed.startsWith("**")) return true;
+      const lines = trimmed.split("\n").filter((l) => l.trim().length > 0);
+      const allClarify = lines.every((l) => /^\*\*[^*]+\*\*\s/.test(l.trim()));
+      return !allClarify;
+    })
+    .map(({ m }) => ({
+      id: m.id as string,
+      preview: m.content.replace(/\n+/g, " ").trim().slice(0, 60) +
+        (m.content.length > 60 ? "…" : ""),
+    }));
+  const hasChatIndex = chatIndexItems.length >= 2;
+
   return (
     <div ref={rootRef} className="flex h-screen w-full bg-background">
       <ChatSidebar
