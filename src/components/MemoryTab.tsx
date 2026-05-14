@@ -245,15 +245,82 @@ export function MemoryTab() {
     load();
   };
 
+  const ratio = Math.max(0, Math.min(1, spentEur / CONSOLIDATION_THRESHOLD_EUR));
+  const pct = Math.round(ratio * 100);
+
+  // Auto-trigger consolidation once the user crosses the trigger ratio.
+  useEffect(() => {
+    if (!user || isFree) return;
+    if (consolidating || autoTriggered) return;
+    if (ratio >= CONSOLIDATION_TRIGGER_RATIO) {
+      setAutoTriggered(true);
+      consolidate();
+    }
+  }, [ratio, user, isFree, consolidating, autoTriggered]);
+
+  // Circular ring
+  const size = 56;
+  const stroke = 5;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const dash = c * ratio;
+
   return (
     <section className="space-y-4">
       <div className="space-y-1">
         <h2 className="font-semibold text-lg">Memory</h2>
         <p className="text-sm text-muted-foreground">
           These memories are automatically injected into all your conversations, no matter the model or
-          provider (OpenAI, Anthropic, Google). They are auto-consolidated weekly, or whenever you ask.
+          provider (OpenAI, Anthropic, Google). They are auto-consolidated once you've used roughly
+          €{CONSOLIDATION_THRESHOLD_EUR.toFixed(2)} worth of tokens (compression triggers at 95%), or
+          whenever you ask.
         </p>
       </div>
+
+      <Card className="p-4 flex items-center gap-4">
+        <div className="relative shrink-0" style={{ width: size, height: size }}>
+          <svg width={size} height={size} className="-rotate-90">
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              fill="none"
+              stroke="hsl(var(--border))"
+              strokeWidth={stroke}
+            />
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              fill="none"
+              stroke={ratio >= CONSOLIDATION_TRIGGER_RATIO ? "hsl(var(--switch-on))" : "hsl(var(--primary))"}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              strokeDasharray={`${dash} ${c}`}
+              style={{ transition: "stroke-dasharray 0.5s ease" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold tabular-nums">
+            {pct}%
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium">Compression cycle</div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            €{spentEur.toFixed(3)} used of €{CONSOLIDATION_THRESHOLD_EUR.toFixed(2)} before the next
+            auto-compression.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => { if (isFree) { setShowUpgrade(true); return; } consolidate(); }}
+          disabled={consolidating}
+        >
+          {consolidating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+          Compress now
+        </Button>
+      </Card>
 
       {isFree && (
         <div className="rounded-[8px] border border-border bg-[hsl(var(--dropdown-hover))] p-3 flex items-start gap-3">
