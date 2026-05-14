@@ -846,6 +846,7 @@ function ChatMessageImpl({
             )}
           </div>
         )}
+        {!streaming && (meta || memory) && <MemoryInsights meta={meta} memory={memory} />}
         {!streaming && devMode && meta && <RequestBreakdown meta={meta} />}
         {/* Slack-thread style explorations list, shown under the assistant response */}
         {!streaming && allBranches.length > 0 && (
