@@ -26,7 +26,7 @@ export function PageCard({ page, onOpen }: Props) {
         <span className="block text-sm font-semibold text-foreground truncate">
           {page.title}
         </span>
-        <span className="block text-xs text-muted-foreground mt-0.5 truncate">
+        <span className="block text-muted-foreground text-sm mt-0.5 truncate">
           {tabCount > 1 ? `${tabCount} tabs · ` : ""}
           {blockCount} block{blockCount > 1 ? "s" : ""} · Click to open
         </span>
