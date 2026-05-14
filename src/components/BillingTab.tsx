@@ -193,7 +193,7 @@ export function BillingTab() {
   if (!pk) {
     return (
       <section className="space-y-2 max-w-xl">
-        <h2 className="text-lg font-semibold">Plans & Billing</h2>
+        <h2 className="font-semibold text-lg">Plans & Billing</h2>
         <p className="text-sm text-muted-foreground">
           The payment system is not configured yet. Please try again in a few moments.
         </p>

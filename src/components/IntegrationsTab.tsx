@@ -97,7 +97,7 @@ export function IntegrationsTab() {
   return (
     <section className="space-y-6 max-w-3xl">
       <header>
-        <h2 className="text-lg font-semibold">Integrations</h2>
+        <h2 className="font-semibold text-lg">Integrations</h2>
         <p className="text-sm text-muted-foreground">
           Connect external services so the AI can act on your behalf.
         </p>
