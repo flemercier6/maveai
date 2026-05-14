@@ -122,6 +122,7 @@ export function MemoryTab() {
     if (user) {
       load();
       loadSpend();
+      loadMode();
     }
   }, [user]);
 
