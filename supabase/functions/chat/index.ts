@@ -1326,15 +1326,38 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Read memory_mode from DB (server-side, not client-trusted).
+    const { data: memPrefRow } = await supabase
+      .from("ai_preferences")
+      .select("memory_mode")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const memoryMode: "classic" | "smart" =
+      (memPrefRow as { memory_mode?: string } | null)?.memory_mode === "smart" ? "smart" : "classic";
+
+    // Smart mode injects top facts only at the START of a new conversation
+    // (= no prior assistant turns). Subsequent turns rely on conversation history.
+    const isFirstTurn = (messages as Msg[]).filter((m) => m.role === "assistant").length === 0;
+    const skipMemoryInjection = memoryMode === "smart" && !isFirstTurn;
+
     // Free-tier: no memory injection at all.
-    const { data: memRows } = isFreeUser
-      ? { data: [] as Array<{ id: string; content: string; kind: string; keywords: string[] | null; folder_id: string | null }> }
-      : await supabase
-          .from("user_memories")
-          .select("id,content,kind,keywords,folder_id")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(100);
+    const { data: memRows } = isFreeUser || skipMemoryInjection
+      ? { data: [] as Array<{ id: string; content: string; kind: string; keywords: string[] | null; folder_id: string | null; confidence?: number; last_seen_at?: string }> }
+      : memoryMode === "smart"
+        ? await supabase
+            .from("user_memories")
+            .select("id,content,kind,keywords,folder_id,confidence,last_seen_at")
+            .eq("user_id", user.id)
+            .order("confidence", { ascending: false })
+            .order("last_seen_at", { ascending: false })
+            .limit(15)
+        : await supabase
+            .from("user_memories")
+            .select("id,content,kind,keywords,folder_id")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(100);
+
 
     const PROFILE_KINDS = new Set(["identity", "preference"]);
     const profileMems: { content: string; kind: string }[] = [];
