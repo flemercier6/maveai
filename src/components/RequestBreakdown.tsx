@@ -102,11 +102,6 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
             <span>
               Provider: <span className="font-medium text-foreground text-base">{meta.provider}</span>
             </span>
-            {cost && (
-              <span>
-                Markup: <span className="font-medium text-foreground text-base">×{mult}</span>
-              </span>
-            )}
           </div>
 
           {/* Input segments */}
