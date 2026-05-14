@@ -854,7 +854,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       </header>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto py-2">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto py-[10px]">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center px-6 text-center">
             <p className="text-sm text-muted-foreground">
