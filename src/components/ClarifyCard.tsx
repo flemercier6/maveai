@@ -164,7 +164,7 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
             <button
               type="button"
               onClick={onSkip}
-              className="text-xs text-muted-foreground hover:text-foreground px-2"
+              className="text-muted-foreground text-sm hover:text-foreground px-2"
             >
               Skip
             </button>

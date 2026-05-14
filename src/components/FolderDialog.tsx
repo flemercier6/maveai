@@ -166,8 +166,8 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
             )}
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-medium truncate">{name || "Untitled project"}</div>
-            <div className="text-xs text-muted-foreground">Preview</div>
+            <div className="font-medium text-sm truncate">{name || "Untitled project"}</div>
+            <div className="text-muted-foreground text-sm">Preview</div>
           </div>
         </div>
 
@@ -277,7 +277,7 @@ export function FolderDialog({ open, onOpenChange, folder, onSaved, onDeleted }:
                   Remove
                 </Button>
               )}
-              <span className="text-xs text-muted-foreground">PNG, JPG, WEBP up to 5MB</span>
+              <span className="text-muted-foreground text-sm">PNG, JPG, WEBP up to 5MB</span>
             </div>
           </div>
 

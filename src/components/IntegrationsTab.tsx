@@ -158,7 +158,7 @@ export function IntegrationsTab() {
                 disabled={busy === "google" || loading}
                 onClick={disconnectGoogle}
                 className={cn(
-                  "w-full px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium hover:bg-dropdown-hover transition-colors",
+                  "w-full px-3 py-2 rounded-lg border border-border bg-background font-medium text-sm hover:bg-dropdown-hover transition-colors",
                   (busy === "google" || loading) && "opacity-60 cursor-not-allowed",
                 )}
               >
@@ -230,7 +230,7 @@ export function IntegrationsTab() {
                 disabled={busy === "voyager" || loading}
                 onClick={disconnectVoyager}
                 className={cn(
-                  "w-full px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium hover:bg-dropdown-hover transition-colors",
+                  "w-full px-3 py-2 rounded-lg border border-border bg-background font-medium text-sm hover:bg-dropdown-hover transition-colors",
                   (busy === "voyager" || loading) && "opacity-60 cursor-not-allowed",
                 )}
               >
@@ -258,7 +258,7 @@ export function IntegrationsTab() {
                 >
                   {busy === "voyager" ? "Connecting…" : "Connect"}
                 </button>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Create a key in Voyager → Settings → Developer. Requires Pro or Max plan.
                 </p>
               </>

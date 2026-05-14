@@ -120,8 +120,8 @@ export function ShareMenu({ conversationId }: Props) {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium">Public link</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="font-medium text-sm">Public link</div>
+            <div className="text-muted-foreground text-sm">
               Anyone with the link can view this conversation in read-only.
             </div>
           </div>
@@ -133,7 +133,7 @@ export function ShareMenu({ conversationId }: Props) {
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
             <Loader2 className="w-3 h-3 animate-spin" /> Loading…
           </div>
         ) : state.isPublic && shareUrl ? (
@@ -142,7 +142,7 @@ export function ShareMenu({ conversationId }: Props) {
               readOnly
               value={shareUrl}
               onFocus={(e) => e.currentTarget.select()}
-              className="flex-1 min-w-0 h-8 rounded-[4px] border border-input bg-background px-2 text-xs text-foreground"
+              className="flex-1 min-w-0 h-8 rounded-[4px] border border-input bg-background px-2 text-foreground text-sm"
             />
             <Button
               type="button"
@@ -155,7 +155,7 @@ export function ShareMenu({ conversationId }: Props) {
             </Button>
           </div>
         ) : (
-          <div className="text-xs text-muted-foreground py-1">
+          <div className="text-muted-foreground text-sm py-1">
             Sharing is off. New messages stay private.
           </div>
         )}

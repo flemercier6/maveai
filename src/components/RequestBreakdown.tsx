@@ -77,7 +77,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-dropdown-hover transition-colors"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 text-muted-foreground text-sm hover:bg-dropdown-hover transition-colors"
       >
         <span className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5" />
@@ -118,7 +118,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
                       <td className="px-2.5 py-1.5 text-right tabular-nums text-sm text-muted-foreground">
                         {fmtTok(s.tokens)} tok
                       </td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm font-medium">
+                      <td className="px-2.5 py-1.5 text-right tabular-nums font-medium text-sm">
                         {fmtEur(s.costUsd)}
                       </td>
                     </tr>
@@ -153,7 +153,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
                       <td className="px-2.5 py-1.5 text-right tabular-nums text-sm text-muted-foreground">
                         {fmtTok(cost.outputTokens)} tok
                       </td>
-                      <td className="px-2.5 py-1.5 text-right tabular-nums text-sm font-medium">
+                      <td className="px-2.5 py-1.5 text-right tabular-nums font-medium text-sm">
                         {fmtEur(outputCostBilled)}
                       </td>
                     </tr>
