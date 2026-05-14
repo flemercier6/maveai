@@ -295,7 +295,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                 type="button"
                 onClick={toggleCollapsed}
                 aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                className="flex items-center justify-center w-7 h-7 rounded-none text-sidebar-foreground hover:bg-sidebar-accent"
+                className="flex items-center justify-center w-9 h-9 rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
               >
                 {collapsed ? (
                   <PanelLeftOpen className="w-4 h-4 opacity-70" />
