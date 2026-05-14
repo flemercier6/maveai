@@ -252,7 +252,7 @@ export function AiPersonalizationTab() {
                                     <Star className={cn("w-4 h-4", isFav && "fill-current")} />
                                   </button>
                                 </TooltipTrigger>
-                                <TooltipContent className="bg-tooltip text-tooltip-foreground text-xs px-2 py-1 rounded-[4px] border-0">
+                                <TooltipContent className="bg-tooltip text-tooltip-foreground text-sm px-2 py-1 rounded-[4px] border-0">
                                   {isFav ? "Remove from favorites" : "Add to favorites"}
                                 </TooltipContent>
                               </Tooltip>
