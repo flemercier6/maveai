@@ -831,21 +831,6 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
           <Button
             type="button"
             variant="ghost"
-            size="sm"
-            className="h-8 gap-1.5 text-base"
-            onClick={handleMerge}
-            disabled={!branchId || messages.length === 0 || merging || streaming}
-          >
-            {merging ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <ChevronDown className="w-3.5 h-3.5" />
-            )}
-            Merge
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
             size="icon"
             className="h-8 w-8"
             onClick={handleClose}
