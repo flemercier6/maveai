@@ -73,6 +73,8 @@ import {
   Calendar01Icon,
   HardDriveIcon,
   Sent02Icon,
+  User02Icon,
+  Building03Icon,
 } from "@hugeicons/core-free-icons";
 
 export type LucideProps = SVGProps<SVGSVGElement> & {
