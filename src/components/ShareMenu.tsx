@@ -133,7 +133,7 @@ export function ShareMenu({ conversationId }: Props) {
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
             <Loader2 className="w-3 h-3 animate-spin" /> Loading…
           </div>
         ) : state.isPublic && shareUrl ? (
