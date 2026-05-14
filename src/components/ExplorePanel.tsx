@@ -794,6 +794,8 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       style={{
         backgroundColor: "#F8F8F8",
         width: entered ? effectiveWidth : 0,
+        paddingTop: 10,
+        paddingBottom: 10,
         transition: `width ${activeMs}ms ${activeEase}`,
         willChange: "width",
       }}
@@ -854,7 +856,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       </header>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto py-[10px]">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center px-6 text-center">
             <p className="text-sm text-muted-foreground">
