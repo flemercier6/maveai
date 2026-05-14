@@ -77,7 +77,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-dropdown-hover transition-colors"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 text-muted-foreground text-sm hover:bg-dropdown-hover transition-colors"
       >
         <span className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5" />
