@@ -18,6 +18,7 @@ type Segment = {
   tokens: number;
   costUsd: number;
   detail?: string;
+  description?: string;
 };
 
 export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
