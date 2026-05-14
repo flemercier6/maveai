@@ -124,7 +124,7 @@ export function AuthPopover() {
             <h3 className="font-semibold text-lg">
               {mode === "signup" ? "Create your account" : "Connect to your account"}
             </h3>
-            <p className="text-muted-foreground mt-1 text-xs">
+            <p className="text-muted-foreground mt-1 text-sm">
               Save and personalize your searches
             </p>
           </div>
@@ -184,7 +184,7 @@ export function AuthPopover() {
           <button
             type="button"
             onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
-            className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="w-full text-muted-foreground hover:text-foreground transition-colors text-sm"
           >
             {mode === "signup"
               ? "Already have an account? Sign in"
