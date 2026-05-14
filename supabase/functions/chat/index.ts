@@ -2806,25 +2806,49 @@ Deno.serve(async (req) => {
           // (Title generation moved to the start of the stream so it runs even on early returns.)
           const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
 
-          // ---------- Extract memorable facts (await so we can notify the client) ----------
+          // ---------- Extract memorable facts ----------
           if (!ephemeral && !isFreeUser) {
-            try {
-              const memResult = await extractAndSaveMemory({
-                supabase,
-                userId: user.id,
-                openaiKey: Deno.env.get("OPENAI_API_KEY"),
-                googleKey: Deno.env.get("GOOGLE_API_KEY"),
-                anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
-                userText: lastUser,
-                assistantText,
-              });
-              if (memResult && (memResult.added > 0 || memResult.updated > 0)) {
-                controller.enqueue(enc({ type: "memory", added: memResult.added, updated: memResult.updated }));
+            if (memoryMode === "smart") {
+              // Fire-and-forget: invoke the smart pipeline async so it never
+              // blocks the user-visible stream. The function itself uses
+              // EdgeRuntime.waitUntil internally, but we still avoid awaiting
+              // the network round-trip here.
+              try {
+                const fnUrl = `${supabaseUrl}/functions/v1/memory-extract-smart`;
+                fetch(fnUrl, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${anonKey}`,
+                    apikey: anonKey,
+                    // Forward the user's JWT so the function can identify them.
+                    "x-user-jwt": authHeader.replace(/^Bearer\s+/i, ""),
+                  },
+                  body: JSON.stringify({ userText: lastUser, assistantText }),
+                }).catch((e) => console.warn("[smart-memory] dispatch failed", e));
+              } catch (err) {
+                console.error("smart memory dispatch failed:", err);
               }
-            } catch (err) {
-              console.error("memory extract failed:", err);
+            } else {
+              try {
+                const memResult = await extractAndSaveMemory({
+                  supabase,
+                  userId: user.id,
+                  openaiKey: Deno.env.get("OPENAI_API_KEY"),
+                  googleKey: Deno.env.get("GOOGLE_API_KEY"),
+                  anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+                  userText: lastUser,
+                  assistantText,
+                });
+                if (memResult && (memResult.added > 0 || memResult.updated > 0)) {
+                  controller.enqueue(enc({ type: "memory", added: memResult.added, updated: memResult.updated }));
+                }
+              } catch (err) {
+                console.error("memory extract failed:", err);
+              }
             }
           }
+
 
           controller.enqueue(enc({ type: "done" }));
           controller.close();
