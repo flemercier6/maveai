@@ -341,7 +341,7 @@ export function UsageTab() {
   if (loading) {
     return (
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Usage</h2>
+        <h2 className="font-semibold text-lg">Usage</h2>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 animate-spin" /> Loading usage…
         </div>

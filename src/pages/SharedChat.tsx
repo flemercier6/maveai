@@ -56,7 +56,7 @@ export default function SharedChat() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-center px-6">
         <MessageSquare className="w-8 h-8 text-muted-foreground" />
-        <h1 className="text-lg font-semibold">Conversation not found</h1>
+        <h1 className="font-semibold text-lg">Conversation not found</h1>
         <p className="text-sm text-muted-foreground">
           This share link is invalid or has been disabled.
         </p>

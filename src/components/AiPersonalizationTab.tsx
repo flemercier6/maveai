@@ -101,7 +101,7 @@ export function AiPersonalizationTab() {
     <TooltipProvider delayDuration={150}>
       <div className="space-y-8 max-w-2xl text-base">
         <header>
-          <h2 className="text-lg font-semibold">AI personalization</h2>
+          <h2 className="font-semibold text-lg">AI personalization</h2>
           <p className="text-sm text-muted-foreground">
             Choose which modes and models the AI is allowed to use when answering you.
           </p>

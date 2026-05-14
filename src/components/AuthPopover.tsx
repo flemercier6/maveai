@@ -139,10 +139,10 @@ export function AuthPopover() {
         <div className="flex flex-col items-center mb-5 mt-1" style={{ gap: 44 }}>
           <img src={maveIcon} alt="Mave" className="w-12 h-12 rounded-xl" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">
+            <h3 className="font-semibold text-lg">
               Connect or Create an account
             </h3>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-xs">
               Save and personalize your searches
             </p>
           </div>
@@ -155,7 +155,7 @@ export function AuthPopover() {
               onClick={onGoogle}
               disabled={googleLoading}
               className={cn(
-                "w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-background border border-border text-sm font-medium hover:bg-dropdown-hover transition-colors",
+                "w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-background border border-border font-medium hover:bg-dropdown-hover transition-colors text-base",
                 googleLoading && "opacity-60 cursor-not-allowed",
               )}
             >
@@ -179,13 +179,13 @@ export function AuthPopover() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 autoFocus
-                className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 text-sm"
               />
               <button
                 type="submit"
                 disabled={submitting}
                 className={cn(
-                  "w-full px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-opacity",
+                  "w-full px-4 py-2.5 rounded-xl bg-foreground text-background font-semibold hover:opacity-90 transition-opacity text-base",
                   submitting && "opacity-60 cursor-not-allowed",
                 )}
               >
@@ -214,7 +214,7 @@ export function AuthPopover() {
               type="submit"
               disabled={submitting || code.length !== 6}
               className={cn(
-                "w-full px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-opacity",
+                "w-full px-4 py-2.5 rounded-xl bg-foreground text-background font-semibold hover:opacity-90 transition-opacity text-base",
                 (submitting || code.length !== 6) && "opacity-60 cursor-not-allowed",
               )}
             >
