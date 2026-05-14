@@ -61,19 +61,28 @@ async function consolidateForUser(userId: string) {
 
 GOAL: produce around ${targetMax} entries (NEVER more than ${targetMax + 2}). Be bold: merge anything related under a single theme even if the link is loose.
 
+PROJECT DETECTION (HIGH PRIORITY):
+- Actively scan all entries for recurring PROJECT names, product names, codenames, app names, or initiatives the user keeps mentioning.
+- A "project" is anything the user is actively working on: a product, app, website, startup, internal tool, research effort, client deliverable, side project, etc.
+- Detect projects even when the name is mentioned only 2 times, or referenced indirectly ("my SaaS", "the dashboard I'm building", "the XYZ app").
+- For EACH detected project, create ONE dedicated entry titled exactly with the project name (e.g. "Project XYZ", "Acme Dashboard"), kind="project".
+- Merge into that single project entry EVERYTHING related: features, tech stack, users/customers, pricing, UX decisions, problems faced, goals, deadlines, team members, competitors, brand, tone of voice.
+- If two project candidates look like the same thing under different names, merge them and pick the most specific name.
+
 GROUPING RULES:
-- Group by THEME, not by exact topic. Examples of valid themes: "Project Explorer AI", "Identity & background", "Email writing preferences", "Client work — Danone", "AI/tech preferences".
+- Group by THEME, not by exact topic. Examples of valid themes: "Project XYZ", "Identity & background", "Email writing preferences", "Client work — Danone", "AI/tech preferences".
 - All identity facts (name, job, location, role) → ONE entry titled "Identity".
 - All preferences about a single domain (emails, tone, writing style) → ONE entry.
-- All facts about ONE project → ONE entry, even if they cover features, pricing, UX, tech stack.
+- All facts about ONE project → ONE entry, even if they cover features, pricing, UX, tech stack (see PROJECT DETECTION above).
 - All facts about ONE client → ONE entry.
-- Only keep an entry alone if it truly doesn't fit any theme.
+- Only keep an entry alone if it truly doesn't fit any theme or project.
 - Preserve specific names, numbers, dates, tools — but write densely, no filler.
 
 Return STRICT JSON: {"groups":[{"title":"Short label (2-5 words)","summary":"Dense paragraph merging all relevant facts.","kind":"identity|preference|project|context|fact","source_count":N}]}
 
-- title: 2-5 words, like a section heading.
+- title: 2-5 words, like a section heading. For projects, use the project name as-is.
 - summary: dense paragraph (can be 3-6 sentences if many facts merged), neutral third-person about the user.
+- kind: use "project" for any entry that groups facts about a specific project/product the user works on.
 - source_count: how many input entries were merged.
 - No prose outside JSON.`;
 
