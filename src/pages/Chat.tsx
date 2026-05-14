@@ -1773,6 +1773,7 @@ export default function Chat() {
             </div>
           </div>
         )}
+        <div className="flex-1 flex flex-col min-h-0 bg-background rounded-[12px] overflow-hidden">
         <header className="flex items-center gap-2 h-14 md:h-12 px-3 sm:px-4 border-b border-border/50 shrink-0">
           <button
             type="button"
@@ -2240,6 +2241,7 @@ export default function Chat() {
               AI can make mistakes. Always use your own judgment.
             </p>
           </div>
+        </div>
         </div>
       </main>
 
