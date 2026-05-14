@@ -1850,7 +1850,7 @@ export default function Chat() {
             (scrollRef as any).current = el;
             setScrollEl(el);
           }}
-          className="flex-1 overflow-y-auto py-[10px]"
+          className="flex-1 overflow-y-auto"
         >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-6 md:px-4">
