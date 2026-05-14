@@ -1326,15 +1326,38 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Read memory_mode from DB (server-side, not client-trusted).
+    const { data: memPrefRow } = await supabase
+      .from("ai_preferences")
+      .select("memory_mode")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const memoryMode: "classic" | "smart" =
+      (memPrefRow as { memory_mode?: string } | null)?.memory_mode === "smart" ? "smart" : "classic";
+
+    // Smart mode injects top facts only at the START of a new conversation
+    // (= no prior assistant turns). Subsequent turns rely on conversation history.
+    const isFirstTurn = (messages as Msg[]).filter((m) => m.role === "assistant").length === 0;
+    const skipMemoryInjection = memoryMode === "smart" && !isFirstTurn;
+
     // Free-tier: no memory injection at all.
-    const { data: memRows } = isFreeUser
-      ? { data: [] as Array<{ id: string; content: string; kind: string; keywords: string[] | null; folder_id: string | null }> }
-      : await supabase
-          .from("user_memories")
-          .select("id,content,kind,keywords,folder_id")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(100);
+    const { data: memRows } = isFreeUser || skipMemoryInjection
+      ? { data: [] as Array<{ id: string; content: string; kind: string; keywords: string[] | null; folder_id: string | null; confidence?: number; last_seen_at?: string }> }
+      : memoryMode === "smart"
+        ? await supabase
+            .from("user_memories")
+            .select("id,content,kind,keywords,folder_id,confidence,last_seen_at")
+            .eq("user_id", user.id)
+            .order("confidence", { ascending: false })
+            .order("last_seen_at", { ascending: false })
+            .limit(15)
+        : await supabase
+            .from("user_memories")
+            .select("id,content,kind,keywords,folder_id")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(100);
+
 
     const PROFILE_KINDS = new Set(["identity", "preference"]);
     const profileMems: { content: string; kind: string }[] = [];
@@ -1342,7 +1365,8 @@ Deno.serve(async (req) => {
     const scored: ScoredMem[] = [];
 
     for (const m of (memRows ?? []) as Array<{ content: string; kind: string; keywords: string[] | null }>) {
-      if (PROFILE_KINDS.has(m.kind)) {
+      // In smart mode the rows are already top-N by confidence — promote all to profile.
+      if (memoryMode === "smart" || PROFILE_KINDS.has(m.kind)) {
         profileMems.push({ content: m.content, kind: m.kind });
         continue;
       }
@@ -2782,25 +2806,48 @@ Deno.serve(async (req) => {
           // (Title generation moved to the start of the stream so it runs even on early returns.)
           const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
 
-          // ---------- Extract memorable facts (await so we can notify the client) ----------
+          // ---------- Extract memorable facts ----------
           if (!ephemeral && !isFreeUser) {
-            try {
-              const memResult = await extractAndSaveMemory({
-                supabase,
-                userId: user.id,
-                openaiKey: Deno.env.get("OPENAI_API_KEY"),
-                googleKey: Deno.env.get("GOOGLE_API_KEY"),
-                anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
-                userText: lastUser,
-                assistantText,
-              });
-              if (memResult && (memResult.added > 0 || memResult.updated > 0)) {
-                controller.enqueue(enc({ type: "memory", added: memResult.added, updated: memResult.updated }));
+            if (memoryMode === "smart") {
+              // Fire-and-forget: invoke the smart pipeline async so it never
+              // blocks the user-visible stream. The function itself uses
+              // EdgeRuntime.waitUntil internally, but we still avoid awaiting
+              // the network round-trip here.
+              try {
+                const fnUrl = `${supabaseUrl}/functions/v1/memory-extract-smart`;
+                fetch(fnUrl, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    // Forward the user's JWT so the function can identify them.
+                    Authorization: authHeader,
+                    apikey: anonKey,
+                  },
+                  body: JSON.stringify({ userText: lastUser, assistantText }),
+                }).catch((e) => console.warn("[smart-memory] dispatch failed", e));
+              } catch (err) {
+                console.error("smart memory dispatch failed:", err);
               }
-            } catch (err) {
-              console.error("memory extract failed:", err);
+            } else {
+              try {
+                const memResult = await extractAndSaveMemory({
+                  supabase,
+                  userId: user.id,
+                  openaiKey: Deno.env.get("OPENAI_API_KEY"),
+                  googleKey: Deno.env.get("GOOGLE_API_KEY"),
+                  anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+                  userText: lastUser,
+                  assistantText,
+                });
+                if (memResult && (memResult.added > 0 || memResult.updated > 0)) {
+                  controller.enqueue(enc({ type: "memory", added: memResult.added, updated: memResult.updated }));
+                }
+              } catch (err) {
+                console.error("memory extract failed:", err);
+              }
             }
           }
+
 
           controller.enqueue(enc({ type: "done" }));
           controller.close();

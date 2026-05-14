@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           disabled_modes: string[]
           favorite_models: string[]
+          memory_mode: string
           response_length: string
           updated_at: string
           user_id: string
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string
           disabled_modes?: string[]
           favorite_models?: string[]
+          memory_mode?: string
           response_length?: string
           updated_at?: string
           user_id: string
@@ -38,6 +40,7 @@ export type Database = {
           created_at?: string
           disabled_modes?: string[]
           favorite_models?: string[]
+          memory_mode?: string
           response_length?: string
           updated_at?: string
           user_id?: string
@@ -358,6 +361,39 @@ export type Database = {
         }
         Relationships: []
       }
+      memory_extraction_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          outcome: string | null
+          started_at: string
+          status: string
+          tokens_used: number
+          user_id: string
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          outcome?: string | null
+          started_at?: string
+          status?: string
+          tokens_used?: number
+          user_id: string
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          outcome?: string | null
+          started_at?: string
+          status?: string
+          tokens_used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -548,39 +584,51 @@ export type Database = {
       }
       user_memories: {
         Row: {
+          confidence: number
           consolidated_at: string | null
           content: string
           created_at: string
+          embedding: number[] | null
           folder_id: string | null
+          hit_count: number
           id: string
           keywords: string[]
           kind: string
+          last_seen_at: string
           source_count: number
           title: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          confidence?: number
           consolidated_at?: string | null
           content: string
           created_at?: string
+          embedding?: number[] | null
           folder_id?: string | null
+          hit_count?: number
           id?: string
           keywords?: string[]
           kind?: string
+          last_seen_at?: string
           source_count?: number
           title?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          confidence?: number
           consolidated_at?: string | null
           content?: string
           created_at?: string
+          embedding?: number[] | null
           folder_id?: string | null
+          hit_count?: number
           id?: string
           keywords?: string[]
           kind?: string
+          last_seen_at?: string
           source_count?: number
           title?: string | null
           updated_at?: string
