@@ -796,6 +796,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
         width: entered ? effectiveWidth : 0,
         paddingTop: 10,
         paddingBottom: 10,
+        paddingLeft: 0,
         transition: `width ${activeMs}ms ${activeEase}`,
         willChange: "width",
       }}
