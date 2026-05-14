@@ -678,7 +678,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         </div>
       </ScrollArea>
 
-      <div className="p-2">
+      <div className="p-2 bg-background">
         {userEmail ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
