@@ -25,6 +25,8 @@ import {
   ChevronsUpDown,
   FolderPlus,
   Folder as FolderIcon,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { MessageSquareDashedIcon } from "@hugeicons/core-free-icons";
@@ -85,7 +87,9 @@ type Props = {
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
 const DEFAULT_WIDTH = 240;
+const COLLAPSED_WIDTH = 56;
 const STORAGE_KEY = "chat-sidebar-width";
+const COLLAPSED_KEY = "chat-sidebar-collapsed";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
@@ -110,6 +114,18 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
     return saved >= MIN_WIDTH && saved <= MAX_WIDTH ? saved : DEFAULT_WIDTH;
   });
   const [resizing, setResizing] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(COLLAPSED_KEY) === "1";
+  });
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      try { localStorage.setItem(COLLAPSED_KEY, next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
+  const effectiveWidth = collapsed ? COLLAPSED_WIDTH : width;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsInitialSection, setSettingsInitialSection] = useState<
@@ -254,7 +270,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
       )}
       <aside
         ref={asideRef}
-        style={{ ['--sidebar-w' as any]: `${width}px` }}
+        style={{ ['--sidebar-w' as any]: `${effectiveWidth}px` }}
         className={cn(
           "shrink-0 h-screen flex flex-col bg-sidebar",
           // Mobile: fixed drawer overlay full width; Desktop: in-flow with custom width
@@ -264,9 +280,80 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         )}
       >
       <div className="p-3">
-        <div className="px-[10px] pt-1" style={{ marginBottom: 40 }}>
-          <img src={maveLogo} alt="Mave" className="h-4 w-auto" />
+        <div
+          className={cn(
+            "px-[10px] pt-1 flex items-center",
+            collapsed ? "justify-center" : "justify-between",
+          )}
+          style={{ marginBottom: collapsed ? 16 : 40 }}
+        >
+          {!collapsed && <img src={maveLogo} alt="Mave" className="h-4 w-auto" />}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={toggleCollapsed}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="flex items-center justify-center w-7 h-7 rounded-[6px] md:rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+              >
+                {collapsed ? (
+                  <PanelLeftOpen className="w-4 h-4 opacity-70" />
+                ) : (
+                  <PanelLeftClose className="w-4 h-4 opacity-70" />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{collapsed ? "Expand sidebar" : "Collapse sidebar"}</TooltipContent>
+          </Tooltip>
         </div>
+        {collapsed ? (
+          <div className="mt-2 flex flex-col items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isFree) { onLockedFeature?.("save-chat"); return; }
+                    onNew();
+                  }}
+                  aria-label="New chat"
+                  className="w-9 h-9 flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+                >
+                  <Plus className="w-4 h-4 opacity-70" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">New chat</TooltipContent>
+            </Tooltip>
+            {onNewEphemeral && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={onNewEphemeral}
+                    aria-label="New ephemeral chat"
+                    className="w-9 h-9 flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+                  >
+                    <HugeiconsIcon icon={MessageSquareDashedIcon} className="w-4 h-4 opacity-70" strokeWidth={2} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Ephemeral chat</TooltipContent>
+              </Tooltip>
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setSearchOpen(true)}
+                  aria-label="Search chats"
+                  className="w-9 h-9 flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+                >
+                  <Search className="w-4 h-4 opacity-70" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Search chats</TooltipContent>
+            </Tooltip>
+          </div>
+        ) : (
         <div className="mt-2 space-y-0.5">
           <div className="group flex items-stretch w-full">
             <button
@@ -308,9 +395,10 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
             <Search className="w-5 h-5 md:w-4 md:h-4 opacity-70" /> Search chats
           </button>
         </div>
+        )}
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className={cn("flex-1", collapsed && "hidden")}>
         <div className="p-2 space-y-2">
           {(() => {
             // Inline renderer for one conversation row (used in folders & Recent)
@@ -677,13 +765,19 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           })()}
         </div>
       </ScrollArea>
+      {collapsed && <div className="flex-1" />}
 
       <div className="p-2">
         {userEmail ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="w-full flex items-center gap-3 md:gap-2 px-2 py-2.5 md:py-1.5 rounded-[6px] md:rounded-md bg-background hover:bg-sidebar-accent text-sidebar-foreground"
+                className={cn(
+                  "w-full flex items-center rounded-[6px] md:rounded-md bg-background hover:bg-sidebar-accent text-sidebar-foreground",
+                  collapsed
+                    ? "justify-center p-1"
+                    : "gap-3 md:gap-2 px-2 py-2.5 md:py-1.5",
+                )}
               >
                 <div className="w-9 h-9 md:w-7 md:h-7 shrink-0 rounded-full bg-sidebar-accent text-sidebar-accent-foreground flex items-center justify-center text-sm md:text-xs font-medium uppercase overflow-hidden">
                   {userAvatarUrl ? (
@@ -692,15 +786,19 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     (userName?.[0] ?? userEmail?.[0] ?? "?")
                   )}
                 </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <div className="font-semibold truncate text-base">
-                    {userName ?? userEmail?.split("@")[0] ?? "User"}
-                  </div>
-                  <div className="text-[11px] md:text-[10px] text-muted-foreground truncate leading-tight">
-                    {planLabel}
-                  </div>
-                </div>
-                <img src={sidebarUserArrows} alt="" aria-hidden className="w-[8px] h-[12px] opacity-70 shrink-0" />
+                {!collapsed && (
+                  <>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="font-semibold truncate text-base">
+                        {userName ?? userEmail?.split("@")[0] ?? "User"}
+                      </div>
+                      <div className="text-[11px] md:text-[10px] text-muted-foreground truncate leading-tight">
+                        {planLabel}
+                      </div>
+                    </div>
+                    <img src={sidebarUserArrows} alt="" aria-hidden className="w-[8px] h-[12px] opacity-70 shrink-0" />
+                  </>
+                )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" side="top" className="w-[--radix-dropdown-menu-trigger-width]">
@@ -723,17 +821,19 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         )}
       </div>
 
-      {/* Resize handle */}
-      <div
-        onMouseDown={(e) => { e.preventDefault(); setResizing(true); }}
-        onDoubleClick={() => { setWidth(DEFAULT_WIDTH); localStorage.setItem(STORAGE_KEY, String(DEFAULT_WIDTH)); }}
-        className={cn(
-          "hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize group z-10",
-          "hover:bg-primary/40 transition-colors",
-          resizing && "bg-primary/60"
-        )}
-        title="Drag to resize — double-click to reset"
-      />
+      {/* Resize handle — hidden when collapsed */}
+      {!collapsed && (
+        <div
+          onMouseDown={(e) => { e.preventDefault(); setResizing(true); }}
+          onDoubleClick={() => { setWidth(DEFAULT_WIDTH); localStorage.setItem(STORAGE_KEY, String(DEFAULT_WIDTH)); }}
+          className={cn(
+            "hidden md:block absolute top-0 right-0 h-full w-1 cursor-col-resize group z-10",
+            "hover:bg-primary/40 transition-colors",
+            resizing && "bg-primary/60"
+          )}
+          title="Drag to resize — double-click to reset"
+        />
+      )}
 
       <SettingsDialog
         open={settingsOpen}
