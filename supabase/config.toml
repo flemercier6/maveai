@@ -12,3 +12,6 @@ verify_jwt = false
 [functions.google-oauth-callback]
 verify_jwt = false
 
+[functions.memory-extract-smart]
+verify_jwt = false
+
