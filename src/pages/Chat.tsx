@@ -1873,7 +1873,7 @@ export default function Chat() {
               })()}
             </div>
           ) : (
-            <div className="pt-8 pb-4">
+            <div className="pt-8 pb-4 px-6 md:px-10">
               {(() => {
                 // Find the index of the most recent assistant message that has a canvas,
                 // so older canvases can be collapsed/greyed with their V{n} tag.
