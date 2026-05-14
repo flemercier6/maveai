@@ -912,7 +912,7 @@ export function ExplorePanel({ open, seed, userId, onClose, onMerge, onBranchCre
       </div>
 
       {/* Input — mirrors the main chat composer's sizing & bottom spacing */}
-      <div className="p-4 pb-[5px] pt-[5px]" style={{ backgroundColor: "#F8F8F8" }}>
+      <div className="pr-4 pl-0 pb-[5px] pt-[5px]" style={{ backgroundColor: "#F8F8F8" }}>
         <div
           className={`relative bg-card border border-border rounded-2xl transition-all duration-200 focus-within:shadow-[0_8px_24px_-4px_hsl(0_0%_0%/0.12)] ${
             dimmed ? "opacity-50" : "opacity-100"
