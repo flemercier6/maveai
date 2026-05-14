@@ -91,6 +91,7 @@ const DEFAULT_WIDTH = 240;
 const COLLAPSED_WIDTH = 56;
 const STORAGE_KEY = "chat-sidebar-width";
 const COLLAPSED_KEY = "chat-sidebar-collapsed";
+const COLLAPSED_ICON_BUTTON_CLASS = "flex h-10 w-10 min-w-10 shrink-0 items-center justify-center rounded-[6px] p-0 text-sidebar-foreground transition-colors hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent";
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
@@ -295,7 +296,11 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                 type="button"
                 onClick={toggleCollapsed}
                 aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                className="flex items-center justify-center w-9 h-9 rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+                className={cn(
+                  collapsed
+                    ? COLLAPSED_ICON_BUTTON_CLASS
+                    : "flex items-center justify-center w-9 h-9 rounded-md text-sidebar-foreground hover:bg-sidebar-accent",
+                )}
               >
                 {collapsed ? (
                   <PanelLeftOpen className="w-4 h-4 opacity-70" />
@@ -318,7 +323,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     onNew();
                   }}
                   aria-label="New chat"
-                  className="w-9 h-9 flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+                  className={COLLAPSED_ICON_BUTTON_CLASS}
                 >
                   <Plus className="w-4 h-4 opacity-70" />
                 </button>
@@ -331,7 +336,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                   type="button"
                   onClick={() => setSearchOpen(true)}
                   aria-label="Search chats"
-                  className="w-9 h-9 flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+                  className={COLLAPSED_ICON_BUTTON_CLASS}
                 >
                   <Search className="w-4 h-4 opacity-70" />
                 </button>
@@ -345,7 +350,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     <button
                       type="button"
                       aria-label="Recent chats"
-                      className="w-9 h-9 flex items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+                      className={COLLAPSED_ICON_BUTTON_CLASS}
                     >
                       <MessageSquare className="w-4 h-4 opacity-70" />
                     </button>
