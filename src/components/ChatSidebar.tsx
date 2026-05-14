@@ -519,7 +519,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
             return (
               <>
                 {/* ============== FOLDERS ============== */}
-                <Collapsible defaultOpen>
+                <Collapsible>
                   <div className="flex items-center justify-between gap-1 pr-1">
                     <CollapsibleTrigger className="group min-w-0 flex-1 flex items-center gap-1 px-[10px] py-[6px] font-medium text-muted-foreground hover:text-sidebar-foreground text-base">
                       <ChevronDown className="w-3 h-3 shrink-0 transition-transform group-data-[state=closed]:-rotate-90" />
