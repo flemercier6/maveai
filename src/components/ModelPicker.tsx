@@ -114,7 +114,7 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
                 >
                   <span className="flex items-center gap-2 leading-none">
                     <ProviderLogo provider={p} className="w-5 h-5 shrink-0" />
-                    <span className="leading-none">{m.label}</span>
+                    <span className="leading-none text-sm">{m.label}</span>
                     {isFav && (
                       <Star className="w-3 h-3 text-amber-500 fill-current shrink-0" />
                     )}
