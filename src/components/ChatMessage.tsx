@@ -747,7 +747,7 @@ function ChatMessageImpl({
 
   return (
     <div className="relative w-full my-[50px]" data-assistant-message="true" data-message-id={id ?? ""}>
-      <div className="max-w-3xl mx-auto px-4">
+      <div className="max-w-3xl mx-auto px-6 md:px-4">
         {(provider || googleService || voyagerService || (tool && tool.status !== "failed")) && (
           <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "10px" }}>
             {provider && <ProviderBadge provider={provider} model={model} />}
