@@ -52,6 +52,38 @@ export function MemoryTab() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [spentEur, setSpentEur] = useState(0);
   const [autoTriggered, setAutoTriggered] = useState(false);
+  const [memoryMode, setMemoryMode] = useState<"classic" | "smart">("classic");
+  const [savingMode, setSavingMode] = useState(false);
+
+  const loadMode = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("ai_preferences")
+      .select("memory_mode")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const mode = (data as { memory_mode?: string } | null)?.memory_mode;
+    setMemoryMode(mode === "smart" ? "smart" : "classic");
+  };
+
+  const toggleMode = async (next: boolean) => {
+    if (!user) return;
+    if (isFree) { setShowUpgrade(true); return; }
+    const newMode: "classic" | "smart" = next ? "smart" : "classic";
+    setMemoryMode(newMode); // optimistic
+    setSavingMode(true);
+    const { error } = await supabase
+      .from("ai_preferences")
+      .upsert({ user_id: user.id, memory_mode: newMode }, { onConflict: "user_id" });
+    setSavingMode(false);
+    if (error) {
+      toast.error(error.message);
+      setMemoryMode(newMode === "smart" ? "classic" : "smart");
+      return;
+    }
+    toast.success(newMode === "smart" ? "Smart memory enabled (experimental)" : "Classic memory restored");
+  };
+
 
   const load = async () => {
     const { data } = await supabase
