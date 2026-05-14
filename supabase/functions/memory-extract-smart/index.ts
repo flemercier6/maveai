@@ -299,18 +299,22 @@ Deno.serve(async (req) => {
     }
 
     const userId = userData.user.id;
-    // Run in background so the HTTP response returns immediately.
-    // @ts-ignore EdgeRuntime is provided by Supabase
-    EdgeRuntime.waitUntil(
-      run(supabase, userId, userText, assistantText).catch((e) =>
-        console.error("[smart-memory] run failed", e),
-      ),
-    );
+    // Run synchronously so the chat function can read the outcome and emit
+    // a `memory` SSE event back to the client (powers the MemoryInsights UI).
+    // The chat function still calls us *after* the assistant stream is done,
+    // so this only adds latency to the post-stream tail, not to the user-visible response.
+    const result = await run(supabase, userId, userText, assistantText).catch((e) => {
+      console.error("[smart-memory] run failed", e);
+      return { outcome: "error", tokens: 0 } as { outcome: string; tokens: number };
+    });
+    const added = result.outcome === "added" ? 1 : 0;
+    const updated = result.outcome === "reinforced" ? 1 : 0;
 
-    return new Response(JSON.stringify({ queued: true }), {
-      status: 202,
+    return new Response(JSON.stringify({ ...result, added, updated }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), {
       status: 500,
