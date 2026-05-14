@@ -63,7 +63,7 @@ export function UpgradeDialog({ open, onOpenChange, reason }: Props) {
           <DialogDescription className="text-left">{copy.description}</DialogDescription>
         </DialogHeader>
 
-        <ul className="space-y-2 py-2">
+        <ul className="space-y-2 py-2 text-sm">
           {PLUS_FEATURES.map((f) => (
             <li key={f} className="flex items-start gap-2 text-sm">
               <Check className="w-4 h-4 mt-0.5 shrink-0 text-foreground/70" />
