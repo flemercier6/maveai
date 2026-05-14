@@ -1365,7 +1365,8 @@ Deno.serve(async (req) => {
     const scored: ScoredMem[] = [];
 
     for (const m of (memRows ?? []) as Array<{ content: string; kind: string; keywords: string[] | null }>) {
-      if (PROFILE_KINDS.has(m.kind)) {
+      // In smart mode the rows are already top-N by confidence — promote all to profile.
+      if (memoryMode === "smart" || PROFILE_KINDS.has(m.kind)) {
         profileMems.push({ content: m.content, kind: m.kind });
         continue;
       }
