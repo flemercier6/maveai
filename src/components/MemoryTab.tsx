@@ -373,6 +373,30 @@ export function MemoryTab() {
 
       <UpgradeDialog open={showUpgrade} onOpenChange={setShowUpgrade} reason="memory" />
 
+      <Card className="p-4 flex items-start gap-4">
+        <div className="mt-0.5 shrink-0 rounded-[8px] bg-[hsl(var(--dropdown-hover))] p-2">
+          <FlaskConical className="w-4 h-4 text-foreground/70" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-base">Smart memory</h3>
+            <Badge variant="outline" className="text-xs">Experimental</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Replaces the classic extractor with a 3-stage pipeline (heuristic pre-filter → mini-LLM
+            judge → embedding-based dedup). Top facts are injected only at the start of new
+            conversations, ranked by confidence. Runs fully in background — no impact on chat
+            latency.
+          </p>
+        </div>
+        <Switch
+          checked={memoryMode === "smart"}
+          onCheckedChange={toggleMode}
+          disabled={savingMode}
+          aria-label="Toggle smart memory"
+        />
+      </Card>
+
       <Card className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="font-medium text-base">Add a memory</h3>
