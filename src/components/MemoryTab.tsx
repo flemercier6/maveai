@@ -14,11 +14,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Upload, Sparkles, Check, X, Pencil, Loader2, Lock } from "lucide-react";
+import { Plus, Trash2, Upload, Sparkles, Check, X, Pencil, Loader2, Lock, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import { extractKeywords } from "@/lib/keywords";
 import { usePlan } from "@/hooks/usePlan";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { Switch } from "@/components/ui/switch";
 import { billedCostEur } from "@/lib/pricing";
 
 // Memory is auto-compressed once the user has spent ~CONSOLIDATION_THRESHOLD_EUR
