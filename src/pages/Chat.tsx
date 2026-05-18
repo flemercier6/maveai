@@ -225,18 +225,23 @@ export default function Chat() {
   // Anonymous users are allowed — they use the app in free mode without
   // cloud persistence. The AuthPopover lets them sign in at any time.
 
-  // Clear active conversation on a fresh sign-in so users land on a new chat.
+  // Clear active conversation only when a DIFFERENT user signs in. Supabase fires
+  // SIGNED_IN on every tab refocus / token refresh — we must not wipe state then.
+  const lastUserIdRef = useRef<string | null>(null);
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN") {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      const newUid = session?.user?.id ?? null;
+      const prevUid = lastUserIdRef.current;
+      if (event === "SIGNED_IN" && newUid && prevUid && prevUid !== newUid) {
         if (typeof window !== "undefined") {
           window.sessionStorage.setItem("fresh-signin", "1");
-          window.localStorage.removeItem("chat-active-id");
+          writePersistedActiveId(null);
         }
         setActiveIdRaw(null);
         setMessages([]);
         navigate("/", { replace: true });
       }
+      lastUserIdRef.current = newUid;
     });
     return () => sub.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
