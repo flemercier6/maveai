@@ -388,7 +388,21 @@ export default function Chat() {
                     payload: persistedVoyager.payload && typeof persistedVoyager.payload === "object"
                       ? persistedVoyager.payload
                       : undefined,
-                    state: "pending",
+                    state: typeof persistedVoyager.state === "string" ? persistedVoyager.state : "pending",
+                  }
+                : undefined;
+            const persistedGoogle = (m.meta as any)?.google_action;
+            const googleAction: GoogleAction | undefined =
+              persistedGoogle &&
+              (persistedGoogle.action === "gmail.draft" ||
+                persistedGoogle.action === "gmail.send" ||
+                persistedGoogle.action === "calendar.create")
+                ? {
+                    action: persistedGoogle.action,
+                    params: (persistedGoogle.params && typeof persistedGoogle.params === "object")
+                      ? persistedGoogle.params as Record<string, unknown>
+                      : {},
+                    state: typeof persistedGoogle.state === "string" ? persistedGoogle.state : "pending",
                   }
                 : undefined;
             return {
@@ -401,6 +415,7 @@ export default function Chat() {
               ...(meta ? { meta } : {}),
               ...(persistedSources.length ? { sources: persistedSources } : {}),
               ...(voyagerAction ? { voyagerAction } : {}),
+              ...(googleAction ? { googleAction } : {}),
             };
           }
           // Parse legacy "📎 Image: name" / "📎 File: name" trailing lines into attachment chips.
