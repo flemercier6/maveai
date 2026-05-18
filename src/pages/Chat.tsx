@@ -388,7 +388,21 @@ export default function Chat() {
                     payload: persistedVoyager.payload && typeof persistedVoyager.payload === "object"
                       ? persistedVoyager.payload
                       : undefined,
-                    state: "pending",
+                    state: typeof persistedVoyager.state === "string" ? persistedVoyager.state : "pending",
+                  }
+                : undefined;
+            const persistedGoogle = (m.meta as any)?.google_action;
+            const googleAction: GoogleAction | undefined =
+              persistedGoogle &&
+              (persistedGoogle.action === "gmail.draft" ||
+                persistedGoogle.action === "gmail.send" ||
+                persistedGoogle.action === "calendar.create")
+                ? {
+                    action: persistedGoogle.action,
+                    params: (persistedGoogle.params && typeof persistedGoogle.params === "object")
+                      ? persistedGoogle.params as Record<string, unknown>
+                      : {},
+                    state: typeof persistedGoogle.state === "string" ? persistedGoogle.state : "pending",
                   }
                 : undefined;
             return {
@@ -401,6 +415,7 @@ export default function Chat() {
               ...(meta ? { meta } : {}),
               ...(persistedSources.length ? { sources: persistedSources } : {}),
               ...(voyagerAction ? { voyagerAction } : {}),
+              ...(googleAction ? { googleAction } : {}),
             };
           }
           // Parse legacy "📎 Image: name" / "📎 File: name" trailing lines into attachment chips.
@@ -2004,6 +2019,27 @@ export default function Chat() {
                               arr[i] = { ...arr[i], googleAction: next };
                               return arr;
                             });
+                            // Persist updated draft/state so it survives reloads & tab switches.
+                            const mid = m.id;
+                            if (mid) {
+                              const prevMeta = (m.meta ?? {}) as Record<string, unknown>;
+                              const nextMeta = {
+                                ...prevMeta,
+                                google_action: {
+                                  mode: "proposal",
+                                  action: next.action,
+                                  params: next.params,
+                                  state: next.state,
+                                },
+                              };
+                              supabase
+                                .from("messages")
+                                .update({ meta: nextMeta as any })
+                                .eq("id", mid)
+                                .then(({ error }) => {
+                                  if (error) console.error("persist google_action update failed", error);
+                                });
+                            }
                           }}
                         />
                       )}
