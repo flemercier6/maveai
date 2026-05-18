@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Upload, Sparkles, Check, X, Pencil, Loader2, Lock, FlaskConical } from "lucide-react";
+import { Plus, Trash2, Upload, Sparkles, Check, X, Pencil, Loader2, Lock, FlaskConical, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { extractKeywords } from "@/lib/keywords";
 import { usePlan } from "@/hooks/usePlan";
