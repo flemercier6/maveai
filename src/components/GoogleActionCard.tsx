@@ -144,25 +144,40 @@ export function GoogleActionCard({ action, onChange }: Props) {
 
   const busy = action.state === "executing";
   const loading = !!action.loading;
+  const [collapsed, setCollapsed] = useState(false);
 
   // ---------- Confirmation card ----------
   return (
     <div className="my-2 rounded-xl border border-border bg-card overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-[hsl(var(--dropdown-hover))]">
+      <button
+        type="button"
+        onClick={() => setCollapsed((c) => !c)}
+        className="w-full flex items-center gap-2 px-3 py-2 border-b border-border bg-[hsl(var(--dropdown-hover))] hover:opacity-90 transition-opacity text-left"
+      >
         <Icon className="w-4 h-4 text-foreground/70" />
-        <span className="font-medium text-foreground text-base">{title}</span>
-      </div>
+        <span className="font-medium text-foreground text-base flex-1 truncate">
+          {title}
+          {collapsed && isEmail && params.subject ? (
+            <span className="ml-2 text-muted-foreground font-normal truncate">— {String(params.subject)}</span>
+          ) : null}
+        </span>
+        <ChevronDown
+          className={cn("w-4 h-4 text-foreground/60 transition-transform", collapsed ? "-rotate-90" : "rotate-0")}
+        />
+      </button>
 
-      <div className="p-3 space-y-2 text-sm">
-        {loading ? (
-          isEmail ? <EmailSkeleton /> : <EventSkeleton />
-        ) : (
-          <>
-            {isEmail ? <EmailFields params={params} onChange={setParams} /> : null}
-            {isEvent ? <EventFields params={params} onChange={setParams} /> : null}
-          </>
-        )}
-      </div>
+      {!collapsed && (
+        <div className="p-3 space-y-2 text-sm">
+          {loading ? (
+            isEmail ? <EmailSkeleton /> : <EventSkeleton />
+          ) : (
+            <>
+              {isEmail ? <EmailFields params={params} onChange={setParams} /> : null}
+              {isEvent ? <EventFields params={params} onChange={setParams} /> : null}
+            </>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center justify-end gap-2 px-3 py-2 bg-background">
         <button
