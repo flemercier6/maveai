@@ -2256,6 +2256,7 @@ export default function Chat() {
                       </svg>
                     </Button>
                   )}
+                  </div>
                   {writeRequested && (
                     <button
                       type="button"
