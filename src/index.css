@@ -74,6 +74,70 @@
     --sidebar-border: 0 0% 88%;      /* #E0E0E0 */
     --sidebar-ring: 0 0% 0%;
   }
+
+  .dark {
+    --background: 222 14% 8%;
+    --foreground: 220 13% 92%;
+
+    --surface: 222 14% 10%;
+    --surface-foreground: 220 13% 92%;
+
+    --sidebar-bg: 222 14% 7%;
+    --sidebar-fg: 220 13% 85%;
+    --sidebar-active: 222 14% 14%;
+    --sidebar-hover: 222 14% 12%;
+
+    --card: 222 14% 11%;
+    --card-foreground: 220 13% 92%;
+
+    --popover: 222 14% 11%;
+    --popover-foreground: 220 13% 92%;
+
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+    --primary-hover: 0 0% 80%;
+
+    --secondary: 222 14% 16%;
+    --secondary-foreground: 220 13% 85%;
+
+    --muted: 222 14% 14%;
+    --muted-foreground: 220 9% 55%;
+
+    --accent: 222 14% 16%;
+    --accent-foreground: 220 13% 92%;
+
+    --select-active: 217 50% 22%;
+    --select-active-foreground: 220 13% 92%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 14% 20%;
+    --input: 222 14% 20%;
+    --ring: 0 0% 100%;
+
+    --bubble-user: 222 14% 12%;
+    --bubble-user-fg: 220 13% 92%;
+    --bubble-assistant: 222 14% 8%;
+    --bubble-assistant-fg: 220 13% 92%;
+
+    --tooltip: 222 14% 16%;
+    --tooltip-foreground: 220 13% 92%;
+
+    --dropdown-hover: 222 14% 14%;
+
+    --link: 217 100% 68%;
+    --switch-on: 217 100% 68%;
+
+    --sidebar-background: 222 14% 7%;
+    --sidebar-foreground: 220 13% 85%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 222 14% 14%;
+    --sidebar-accent-foreground: 220 13% 92%;
+    --sidebar-border: 222 14% 18%;
+    --sidebar-ring: 0 0% 100%;
+  }
 }
 
 @layer base {

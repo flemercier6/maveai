@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Sun, Moon, Monitor } from "lucide-react";
+import { useTheme } from "next-themes";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function PreferencesTab({ onProfileUpdated }: Props) {
+  const { theme, setTheme } = useTheme();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
@@ -119,9 +121,29 @@ export function PreferencesTab({ onProfileUpdated }: Props) {
               Personalize the appearance of your account for a better experience.
             </div>
           </div>
-          <span className="font-semibold uppercase tracking-wider rounded-full bg-foreground/10 text-foreground/60 px-2 py-1 text-xs">
-            Soon
-          </span>
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
+            {([
+              { value: "light", icon: Sun, label: "Light" },
+              { value: "system", icon: Monitor, label: "System" },
+              { value: "dark", icon: Moon, label: "Dark" },
+            ] as const).map(({ value, icon: Icon, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTheme(value)}
+                title={label}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                  theme === value
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
