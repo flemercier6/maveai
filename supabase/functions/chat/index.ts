@@ -804,9 +804,7 @@ async function decideClarify(args: {
 }): Promise<ClarifyQuestion[] | null> {
   const { userText, hasHistory } = args;
   const trimmed = userText.trim();
-  // Skip clarify aggressively — it's the single biggest source of latency before
-  // the first token streams. Only run for genuinely long / open-ended prompts.
-  if (trimmed.length < 160) return null;
+  if (trimmed.length < 40) return null;
   // Skip when the user already asks a direct question or gives a clear write/code instruction.
   const lower = trimmed.toLowerCase();
   const quickSkipPrefixes = [
