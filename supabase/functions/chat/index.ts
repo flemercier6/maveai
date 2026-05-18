@@ -803,7 +803,21 @@ async function decideClarify(args: {
   hasHistory: boolean;
 }): Promise<ClarifyQuestion[] | null> {
   const { userText, hasHistory } = args;
-  if (!userText.trim() || userText.trim().length < 40) return null;
+  const trimmed = userText.trim();
+  // Skip clarify aggressively — it's the single biggest source of latency before
+  // the first token streams. Only run for genuinely long / open-ended prompts.
+  if (trimmed.length < 160) return null;
+  // Skip when the user already asks a direct question or gives a clear write/code instruction.
+  const lower = trimmed.toLowerCase();
+  const quickSkipPrefixes = [
+    "écris", "ecris", "rédige", "redige", "compose", "traduis", "résume", "resume",
+    "explique", "définis", "definis", "donne-moi", "donne moi", "fais", "calcule",
+    "code", "corrige", "améliore", "ameliore", "réécris", "reecris",
+    "write", "draft", "compose", "translate", "summarize", "explain", "define",
+    "give me", "make", "fix", "improve", "rewrite", "list", "show",
+  ];
+  if (trimmed.endsWith("?") || trimmed.includes("?\n")) return null;
+  if (quickSkipPrefixes.some((p) => lower.startsWith(p))) return null;
 
   const prompt = `You are a clarification gatekeeper. Your DEFAULT answer is ALWAYS {"needs_clarification": false}.
 Only return true in rare cases where an answer CANNOT be reasonably attempted without knowing one specific missing piece of information that would fundamentally change the output.
@@ -865,7 +879,10 @@ ${userText.slice(0, 2000)}`;
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" },
+            generationConfig: {
+              responseMimeType: "application/json",
+              thinkingConfig: { thinkingBudget: 0 },
+            },
           }),
         },
       );
@@ -1805,9 +1822,10 @@ Deno.serve(async (req) => {
         generationConfig: {
           temperature: 0,
           responseMimeType: "application/json",
+          thinkingConfig: { thinkingBudget: 0 },
         },
       };
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleApiKey}`;
       const r = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1956,8 +1974,8 @@ Deno.serve(async (req) => {
             });
             if (clarify && clarify.length) {
               controller.enqueue(enc({ type: "clarify", questions: clarify }));
-              // Give the title generation a moment to land before closing.
-              await new Promise((r) => setTimeout(r, 1200));
+              // Tiny yield so the title event (fired in parallel) can flush if it's ready.
+              await new Promise((r) => setTimeout(r, 50));
               controller.enqueue(enc({ type: "done" }));
               controller.close();
               return;
@@ -2157,14 +2175,18 @@ Deno.serve(async (req) => {
               let decision: VoyagerRouterDecision = { resource: "none" };
               if (googleKeyForVoyager) {
                 const r = await fetch(
-                  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleKeyForVoyager}`,
+                  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleKeyForVoyager}`,
                   {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       contents: [{ role: "user", parts: [{ text: lastUserText.slice(0, 4000) }] }],
                       systemInstruction: { role: "user", parts: [{ text: sys }] },
-                      generationConfig: { temperature: 0, responseMimeType: "application/json" },
+                      generationConfig: {
+                        temperature: 0,
+                        responseMimeType: "application/json",
+                        thinkingConfig: { thinkingBudget: 0 },
+                      },
                     }),
                   },
                 );
