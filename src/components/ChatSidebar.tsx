@@ -16,6 +16,7 @@ import {
   Plus,
   Trash2,
   LogOut,
+  LogIn,
   Sparkles,
   MoreHorizontal,
   Pencil,
@@ -836,9 +837,15 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("open-auth-popover"))}
-            className="w-full px-3 py-2.5 md:py-2 rounded-[6px] md:rounded-md bg-sidebar text-sidebar-foreground font-semibold hover:bg-sidebar-accent transition-colors text-left text-base"
+            className={cn(
+              "w-full rounded-[6px] md:rounded-md bg-sidebar text-sidebar-foreground font-semibold hover:bg-sidebar-accent transition-colors text-base",
+              collapsed
+                ? "flex items-center justify-center p-2"
+                : "flex items-center gap-2.5 px-3 py-2.5 md:py-2 text-left",
+            )}
           >
-            Sign in / Create account
+            <LogIn className="w-4 h-4 shrink-0" />
+            {!collapsed && <span>Sign in / Create account</span>}
           </button>
         )}
       </div>
