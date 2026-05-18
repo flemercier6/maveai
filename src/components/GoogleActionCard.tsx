@@ -238,6 +238,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
           </button>
         )}
       </div>
+      )}
     </div>
   );
 }
