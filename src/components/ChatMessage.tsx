@@ -754,8 +754,8 @@ function ChatMessageImpl({
             {provider && <ProviderBadge provider={provider} model={model} />}
             {googleService && (
               <div
-                className="inline-flex items-center h-6 gap-1.5 rounded-full bg-[#E6F1FF] px-2.5 text-[11px] font-medium max-w-full"
-                style={{ color: "#0062FF" }}
+                className="inline-flex items-center h-6 gap-1.5 rounded-full bg-[var(--blue-tag-bg)] px-2.5 text-[11px] font-medium max-w-full"
+                style={{ color: "var(--blue-tag-fg)" }}
               >
                 <GoogleServiceLogo service={googleService} className="w-[18px] h-[18px] shrink-0" />
                 <span className="truncate text-base">{GOOGLE_SERVICE_LABEL[googleService]}</span>
@@ -763,8 +763,8 @@ function ChatMessageImpl({
             )}
             {voyagerService && (
               <div
-                className="inline-flex items-center h-6 gap-1.5 rounded-full bg-[#E6F1FF] px-2.5 text-[11px] font-medium max-w-full"
-                style={{ color: "#0062FF" }}
+                className="inline-flex items-center h-6 gap-1.5 rounded-full bg-[var(--blue-tag-bg)] px-2.5 text-[11px] font-medium max-w-full"
+                style={{ color: "var(--blue-tag-fg)" }}
               >
                 <VoyagerLogo className="w-[18px] h-[18px] shrink-0" />
                 <span className="truncate text-base">{VOYAGER_LABEL}</span>
