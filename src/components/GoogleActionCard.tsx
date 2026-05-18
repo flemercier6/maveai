@@ -39,7 +39,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
 
   const isEmail = action.action === "gmail.draft" || action.action === "gmail.send";
   const isEvent = action.action === "calendar.create";
-  const Icon = isEmail ? Mail : Calendar;
+  const service: "gmail" | "calendar" = isEmail ? "gmail" : "calendar";
 
   const title =
     action.action === "gmail.draft"
