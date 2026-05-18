@@ -42,7 +42,7 @@ export function SettingsDialog({ open, onOpenChange, initialSection, onProfileUp
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        overlayClassName="bg-white/40 backdrop-blur-sm"
+        overlayClassName="bg-black/30 backdrop-blur-sm"
         className="p-0 overflow-hidden max-w-5xl w-[min(1100px,95vw)] h-[min(720px,90vh)] flex gap-0"
       >
         <DialogTitle className="sr-only">Settings</DialogTitle>
