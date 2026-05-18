@@ -803,7 +803,21 @@ async function decideClarify(args: {
   hasHistory: boolean;
 }): Promise<ClarifyQuestion[] | null> {
   const { userText, hasHistory } = args;
-  if (!userText.trim() || userText.trim().length < 40) return null;
+  const trimmed = userText.trim();
+  // Skip clarify aggressively — it's the single biggest source of latency before
+  // the first token streams. Only run for genuinely long / open-ended prompts.
+  if (trimmed.length < 160) return null;
+  // Skip when the user already asks a direct question or gives a clear write/code instruction.
+  const lower = trimmed.toLowerCase();
+  const quickSkipPrefixes = [
+    "écris", "ecris", "rédige", "redige", "compose", "traduis", "résume", "resume",
+    "explique", "définis", "definis", "donne-moi", "donne moi", "fais", "calcule",
+    "code", "corrige", "améliore", "ameliore", "réécris", "reecris",
+    "write", "draft", "compose", "translate", "summarize", "explain", "define",
+    "give me", "make", "fix", "improve", "rewrite", "list", "show",
+  ];
+  if (trimmed.endsWith("?") || trimmed.includes("?\n")) return null;
+  if (quickSkipPrefixes.some((p) => lower.startsWith(p))) return null;
 
   const prompt = `You are a clarification gatekeeper. Your DEFAULT answer is ALWAYS {"needs_clarification": false}.
 Only return true in rare cases where an answer CANNOT be reasonably attempted without knowing one specific missing piece of information that would fundamentally change the output.
