@@ -1821,10 +1821,10 @@ export default function Chat() {
         reason={upgradeReason ?? "daily-limit"}
       />
 
-      <div className="flex-1 flex min-w-0 relative" style={{ backgroundColor: "#F8F8F8" }}>
+      <div className="flex-1 flex min-w-0 relative bg-sidebar">
       <main
-        className="flex-1 flex flex-col min-w-0 relative"
-        style={{ paddingTop: 10, paddingRight: 10, paddingBottom: 10, paddingLeft: 0, backgroundColor: "#F8F8F8", ...(exploreOpen ? { borderTopRightRadius: 15, borderBottomRightRadius: 15, overflow: "hidden" } : {}) }}
+        className="flex-1 flex flex-col min-w-0 relative bg-sidebar"
+        style={{ paddingTop: 10, paddingRight: 10, paddingBottom: 10, paddingLeft: 0, ...(exploreOpen ? { borderTopRightRadius: 15, borderBottomRightRadius: 15, overflow: "hidden" } : {}) }}
         onDragEnter={(e) => {
           if (!Array.from(e.dataTransfer?.types ?? []).includes("Files")) return;
           e.preventDefault();

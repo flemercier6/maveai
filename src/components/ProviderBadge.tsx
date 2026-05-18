@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 export function ProviderBadge({ provider, model }: { provider: Provider; model?: string }) {
   const badge = (
-    <div className="inline-flex items-center h-6 gap-1.5 rounded-full bg-[#f8f8f8] px-2 text-[11px] font-medium text-muted-foreground">
+    <div className="inline-flex items-center h-6 gap-1.5 rounded-full bg-muted px-2 text-[11px] font-medium text-muted-foreground">
       <ProviderLogo provider={provider} className="w-4 h-4" />
       <span>{PROVIDER_LABEL[provider]}</span>
     </div>
