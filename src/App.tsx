@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
-import SharedChat from "./pages/SharedChat.tsx";
+
 import { AuthPopover } from "@/components/AuthPopover";
 
 
@@ -20,7 +20,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/c/:id" element={<Index />} />
-          <Route path="/s/:token" element={<SharedChat />} />
+          
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

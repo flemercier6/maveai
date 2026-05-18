@@ -42,7 +42,7 @@ import { useAiPreferences } from "@/hooks/useAiPreferences";
 import { isModeDisabled, isModelBlacklisted, pickAllowedModel, type ModeId } from "@/lib/aiPreferences";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useSwipe } from "@/hooks/useSwipe";
-import { ShareMenu } from "@/components/ShareMenu";
+
 import { ConversationActionsMenu } from "@/components/ConversationActionsMenu";
 
 type StoredBranch = {
@@ -1823,7 +1823,7 @@ export default function Chat() {
             </span>
           )}
           <div className="ml-auto flex items-center gap-1">
-            {!ephemeral && activeId && <ShareMenu conversationId={activeId} />}
+            
             {!ephemeral && activeId && (() => {
               const conv = conversations.find((c) => c.id === activeId);
               if (!conv) return null;
