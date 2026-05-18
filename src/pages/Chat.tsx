@@ -2300,6 +2300,21 @@ export default function Chat() {
                       Page
                     </button>
                   )}
+                  {webRequested && (
+                    <button
+                      type="button"
+                      onClick={() => setWebRequested(false)}
+                      aria-label="Remove Web search"
+                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[#E6F1FF] transition-colors text-base"
+                      style={{ color: "#0062FF" }}
+                    >
+                      <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                        <Globe className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
+                        <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
+                      </span>
+                      Web search
+                    </button>
+                  )}
                   {googleService && (
                     <button
                       type="button"
