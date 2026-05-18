@@ -788,6 +788,11 @@ function ChatMessageImpl({
                   </span>
                 ) : " "}
               </div>
+              {!isUser && !streaming && sources && sources.length > 0 && (
+                <div className="mt-2">
+                  <SourceTag indices={sources.map((_, i) => i + 1)} sources={sources} />
+                </div>
+              )}
             </>
           );
         })()}
