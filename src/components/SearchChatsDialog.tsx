@@ -62,9 +62,13 @@ export function SearchChatsDialog({ open, onOpenChange, conversations, onSelect 
     }
     setLoading(true);
     debounceRef.current = window.setTimeout(async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) { setMessageHits([]); setLoading(false); return; }
       const { data } = await supabase
         .from("messages")
         .select("id, conversation_id, content")
+        .eq("user_id", uid)
         .ilike("content", `%${q}%`)
         .order("created_at", { ascending: false })
         .limit(20);
