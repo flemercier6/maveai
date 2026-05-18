@@ -18,7 +18,6 @@ import type { RequestMeta } from "@/lib/requestMeta";
 import { useSmoothText } from "@/hooks/useSmoothText";
 import { useDeveloperMode } from "@/hooks/useDeveloperMode";
 import { RequestBreakdown } from "./RequestBreakdown";
-import { MemoryInsights } from "./MemoryInsights";
 import { openLightbox } from "./ChatLightbox";
 
 type ToolStatus = "running" | "done" | "failed";
@@ -851,7 +850,6 @@ function ChatMessageImpl({
             )}
           </div>
         )}
-        {!streaming && (meta || memory) && <MemoryInsights meta={meta} memory={memory} />}
         {!streaming && devMode && meta && <RequestBreakdown meta={meta} />}
         {/* Slack-thread style explorations list, shown under the assistant response */}
         {!streaming && allBranches.length > 0 && (
