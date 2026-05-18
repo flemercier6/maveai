@@ -24,55 +24,6 @@ export function buildSlashItems(): SlashItem[] {
       description: "Pick the best model for me",
       slug: "auto",
     },
-    {
-      provider: "write",
-      model: "",
-      label: "Note",
-      description: "Open an editable canvas for drafting",
-      slug: "note",
-    },
-    {
-      provider: "explore",
-      model: "",
-      label: "Explore",
-      description: "Open a side exploration for this request",
-      slug: "explore",
-    },
-    {
-      provider: "page",
-      model: "",
-      label: "Page",
-      description: "Generate a structured one-pager dashboard",
-      slug: "page",
-    },
-    {
-      provider: "gmail",
-      model: "",
-      label: "Gmail",
-      description: "Search, read, draft or send emails",
-      slug: "gmail",
-    },
-    {
-      provider: "calendar",
-      model: "",
-      label: "Calendar",
-      description: "List or create events on your agenda",
-      slug: "calendar",
-    },
-    {
-      provider: "drive",
-      model: "",
-      label: "Drive",
-      description: "Browse files in your Google Drive",
-      slug: "drive",
-    },
-    {
-      provider: "voyager",
-      model: "",
-      label: "Voyager CRM",
-      description: "Query or update your Voyager CRM",
-      slug: "voyager",
-    },
   ];
   for (const p of PROVIDERS) {
     for (const m of MODELS[p.id]) {
