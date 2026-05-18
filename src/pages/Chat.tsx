@@ -2139,7 +2139,7 @@ export default function Chat() {
                     notifyComposerBlur("main");
                     setTimeout(() => setSlash(null), 100);
                   }}
-                  placeholder="Send a message..."
+                  placeholder="Send a message or type / for commands..."
                   rows={1}
                   className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
                 />
