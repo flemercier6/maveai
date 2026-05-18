@@ -370,25 +370,14 @@ function buildMdComponents(sources: Source[] | undefined, isAssistant: boolean) 
     return children;
   };
 
-  // Wrap a block-level element: strip inline markers and append one grouped tag at the end.
+  // Wrap a block-level element: strip inline [source:N] markers (sources are shown once at the end).
   const renderBlock = (Tag: keyof JSX.IntrinsicElements, children: ReactNode, props: any) => {
     if (!sources?.length) {
       return <Tag {...props}>{children}</Tag>;
     }
     const collected = new Set<number>();
     const stripped = stripChildren(children, collected);
-    const indices = Array.from(collected).sort((a, b) => a - b);
-    return (
-      <Tag {...props}>
-        {stripped}
-        {indices.length > 0 && (
-          <>
-            {" "}
-            <SourceTag indices={indices} sources={sources} />
-          </>
-        )}
-      </Tag>
-    );
+    return <Tag {...props}>{stripped}</Tag>;
   };
 
   return {
@@ -799,6 +788,11 @@ function ChatMessageImpl({
                   </span>
                 ) : " "}
               </div>
+              {!isUser && !streaming && sources && sources.length > 0 && (
+                <div className="mt-2">
+                  <SourceTag indices={sources.map((_, i) => i + 1)} sources={sources} />
+                </div>
+              )}
             </>
           );
         })()}
