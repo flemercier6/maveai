@@ -155,7 +155,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
         onClick={() => setCollapsed((c) => !c)}
         className="w-full flex items-center gap-2 px-3 py-2 border-b border-border bg-[hsl(var(--dropdown-hover))] hover:opacity-90 transition-opacity text-left"
       >
-        <Icon className="w-4 h-4 text-foreground/70" />
+        <GoogleServiceLogo service={service} className="w-4 h-4" />
         <span className="font-medium text-foreground text-base flex-1 truncate">
           {title}
           {collapsed && isEmail && params.subject ? (
