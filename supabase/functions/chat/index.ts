@@ -2175,14 +2175,18 @@ Deno.serve(async (req) => {
               let decision: VoyagerRouterDecision = { resource: "none" };
               if (googleKeyForVoyager) {
                 const r = await fetch(
-                  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleKeyForVoyager}`,
+                  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleKeyForVoyager}`,
                   {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       contents: [{ role: "user", parts: [{ text: lastUserText.slice(0, 4000) }] }],
                       systemInstruction: { role: "user", parts: [{ text: sys }] },
-                      generationConfig: { temperature: 0, responseMimeType: "application/json" },
+                      generationConfig: {
+                        temperature: 0,
+                        responseMimeType: "application/json",
+                        thinkingConfig: { thinkingBudget: 0 },
+                      },
                     }),
                   },
                 );
