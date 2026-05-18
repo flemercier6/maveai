@@ -1974,8 +1974,8 @@ Deno.serve(async (req) => {
             });
             if (clarify && clarify.length) {
               controller.enqueue(enc({ type: "clarify", questions: clarify }));
-              // Give the title generation a moment to land before closing.
-              await new Promise((r) => setTimeout(r, 1200));
+              // Tiny yield so the title event (fired in parallel) can flush if it's ready.
+              await new Promise((r) => setTimeout(r, 50));
               controller.enqueue(enc({ type: "done" }));
               controller.close();
               return;
