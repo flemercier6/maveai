@@ -186,7 +186,7 @@ function ThinkingTrace({
           {steps.map((s) => (
             <li
               key={s.index}
-              className="text-[13px] text-muted-foreground leading-snug animate-in fade-in slide-in-from-left-1 duration-300"
+              className="text-[15px] text-foreground leading-snug animate-in fade-in slide-in-from-left-1 duration-300"
             >
               {s.text}
             </li>
@@ -588,7 +588,7 @@ function AgentStepCard({ step }: { step: AgentStep }) {
       </div>
       {/* Narration as plain text below, no box */}
       {step.narration && (
-        <p className="mt-2 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+        <p className="mt-2 text-[15px] text-foreground leading-relaxed whitespace-pre-wrap">
           {step.narration}
           {!step.narrationDone && (
             <span className="inline-block w-1 h-3 ml-0.5 bg-muted-foreground/60 animate-pulse align-middle" />
