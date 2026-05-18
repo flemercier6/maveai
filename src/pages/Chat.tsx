@@ -234,7 +234,7 @@ export default function Chat() {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       const newUid = session?.user?.id ?? null;
       const prevUid = lastUserIdRef.current;
-      if (event === "SIGNED_IN" && newUid && prevUid && prevUid !== newUid) {
+      if (event === "SIGNED_IN" && newUid && (!prevUid || prevUid !== newUid)) {
         if (typeof window !== "undefined") {
           window.sessionStorage.setItem("fresh-signin", "1");
           writePersistedActiveId(null);
