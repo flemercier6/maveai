@@ -2179,27 +2179,23 @@ export default function Chat() {
                         <Paperclip className="w-4 h-4 mr-2" />
                         Attach files or images
                       </DropdownMenuItem>
-                      {(!aiPrefs.disabledModes.includes("note") ||
-                        !aiPrefs.disabledModes.includes("explore") ||
-                        !aiPrefs.disabledModes.includes("page")) && <DropdownMenuSeparator />}
-                      {!aiPrefs.disabledModes.includes("note") && (
-                        <DropdownMenuItem onClick={() => setWriteRequested(true)}>
-                          <FileText className="w-4 h-4 mr-2" />
-                          Create in a note
-                        </DropdownMenuItem>
-                      )}
-                      {!aiPrefs.disabledModes.includes("explore") && (
-                        <DropdownMenuItem onClick={() => setExploreRequested(true)}>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Explore an idea
-                        </DropdownMenuItem>
-                      )}
-                      {!aiPrefs.disabledModes.includes("page") && (
-                        <DropdownMenuItem onClick={() => setPageRequested(true)}>
-                          <LayoutDashboard className="w-4 h-4 mr-2" />
-                          Create a page
-                        </DropdownMenuItem>
-                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setGoogleService("gmail")}>
+                        <GoogleServiceLogo service="gmail" className="w-4 h-4 mr-2" />
+                        {GOOGLE_SERVICE_LABEL.gmail}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setGoogleService("calendar")}>
+                        <GoogleServiceLogo service="calendar" className="w-4 h-4 mr-2" />
+                        {GOOGLE_SERVICE_LABEL.calendar}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setGoogleService("drive")}>
+                        <GoogleServiceLogo service="drive" className="w-4 h-4 mr-2" />
+                        {GOOGLE_SERVICE_LABEL.drive}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setVoyagerService(true)}>
+                        <VoyagerLogo className="w-4 h-4 mr-2" />
+                        {VOYAGER_LABEL}
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   {!aiPrefs.disabledModes.includes("note") && !writeRequested && (
