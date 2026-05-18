@@ -97,7 +97,7 @@ function MemoryBadge({ added, updated }: { added: number; updated: number }) {
         ? `Added to memory${added > 1 ? ` (${added})` : ""}`
         : `Memory updated${updated > 1 ? ` (${updated})` : ""}`;
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-[#f8f8f8] px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+    <div className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f8f8] px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
       <Brain className="w-3.5 h-3.5" />
       <span>{label}</span>
     </div>
@@ -131,7 +131,7 @@ function ToolBadge({ tool, label }: ToolUse) {
   // Truncate long URLs/queries
   const shortLabel = label.length > 60 ? label.slice(0, 57) + "…" : label;
   return (
-    <div className="inline-flex items-center h-6 gap-1.5 rounded-full border border-border bg-[#f8f8f8] px-2.5 text-[11px] font-medium text-muted-foreground max-w-full">
+    <div className="inline-flex items-center h-6 gap-1.5 rounded-full bg-[#f8f8f8] px-2.5 text-[11px] font-medium text-muted-foreground max-w-full">
       <Icon className="w-3.5 h-3.5 shrink-0" />
       <span className="truncate text-base">{label ? `${text}: ${shortLabel}` : text}</span>
     </div>
@@ -578,7 +578,7 @@ function AgentStepCard({ step }: { step: AgentStep }) {
   return (
     <div className="mb-4">
       {/* Tag aligned left: icon + type + subject inline */}
-      <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-[#f8f8f8] px-2.5 py-1 text-[11px] font-medium text-foreground max-w-full">
+      <div className="inline-flex items-center gap-1.5 rounded-full bg-[#f8f8f8] px-2.5 py-1 text-[11px] font-medium text-foreground max-w-full">
         {step.kind === "search"
           ? <WebSearchIcon className={isRunning ? "animate-pulse shrink-0" : "shrink-0"} />
           : <Icon className={`w-3.5 h-3.5 shrink-0 ${isRunning ? "animate-pulse" : ""}`} />
@@ -689,7 +689,7 @@ function ChatMessageImpl({
       }[modeId];
       const Icon = cfg.Icon;
       return (
-        <div className="inline-flex items-center h-6 gap-1.5 rounded-full border border-border bg-[#f8f8f8] px-2.5 text-[11px] font-medium text-muted-foreground">
+        <div className="inline-flex items-center h-6 gap-1.5 rounded-full bg-[#f8f8f8] px-2.5 text-[11px] font-medium text-muted-foreground">
           <Icon className="w-3.5 h-3.5 shrink-0" />
           <span>{cfg.label}</span>
         </div>
