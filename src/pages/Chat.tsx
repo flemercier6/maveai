@@ -2321,7 +2321,12 @@ export default function Chat() {
                       style={{ color: "#0062FF" }}
                     >
                       <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
-                        <Globe className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }}>
+                          <path d="M8.00004 14.6666C11.6819 14.6666 14.6667 11.6819 14.6667 7.99998C14.6667 4.31808 11.6819 1.33331 8.00004 1.33331C4.31814 1.33331 1.33337 4.31808 1.33337 7.99998C1.33337 11.6819 4.31814 14.6666 8.00004 14.6666Z" stroke="currentColor" strokeWidth="1.2"/>
+                          <path d="M5.33337 7.99998C5.33337 12 8.00004 14.6666 8.00004 14.6666C8.00004 14.6666 10.6667 12 10.6667 7.99998C10.6667 3.99998 8.00004 1.33331 8.00004 1.33331C8.00004 1.33331 5.33337 3.99998 5.33337 7.99998Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+                          <path d="M14 10H2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M14 6H2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
                         <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
                       </span>
                       Web search
