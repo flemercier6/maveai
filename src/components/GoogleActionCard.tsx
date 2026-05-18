@@ -179,6 +179,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
         </div>
       )}
 
+      {!collapsed && (
       <div className="flex items-center justify-end gap-2 px-3 py-2 bg-background">
         <button
           type="button"
