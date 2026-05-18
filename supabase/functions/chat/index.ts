@@ -612,8 +612,8 @@ async function linkupSearch(
 
 // ---------- Agentic multi-step plan ----------
 // For complex queries, we ask a small/cheap model to draft an ordered plan of
-// 3–6 steps, where each step is either an "analyze" (think out loud), a
-// "search" (linkup web search) or a "scrape" (firecrawl URL). Between every
+// 2–4 steps, where each step is either an "analyze" (pure reasoning, no tool),
+// a "search" (linkup web search) or a "scrape" (firecrawl URL). Between every
 // action we stream a short narrative "ok I just did X, now I'm moving to Y"
 // directly into the assistant message via `delta` events, so the user sees
 // the agent thinking in real time, inline.
@@ -648,7 +648,7 @@ async function decideAgenticPlan(args: {
 
   const prompt = `You are a planner for an agentic AI assistant.
 
-Decide whether the user's message is COMPLEX enough to warrant a multi-step research process (analyze → web searches → narration → final answer).
+Decide whether the user's message is COMPLEX enough to warrant a multi-step research process.
 
 Mark it COMPLEX only if at least one of these is true:
 - The answer requires combining facts about TWO OR MORE distinct concepts/entities/aspects.
@@ -658,15 +658,23 @@ Mark it COMPLEX only if at least one of these is true:
 
 Mark it SIMPLE for: chitchat, single-fact lookup, code, math, rewriting, translation, opinion, simple how-to, quick definitions.
 
-If COMPLEX, draft an ordered plan of 3 to 6 steps. Each step is one of:
+If COMPLEX, draft an ordered plan of 2 to 4 steps. Each step is one of:
 ${allowed}
 
 Rules for steps:
-- Use 1 to 3 web searches MAX, each focused on a DIFFERENT sub-question or concept.
-- Optionally start with one "analyze" step to break the question down.
-- Optionally end with one "analyze" step right before the final answer to consolidate.
+- KEEP PLANS SHORT. Prefer 2 steps over 3; prefer 3 over 4.
+- "analyze" steps are pure reasoning — no web tool is called. Use them to break down a problem or consolidate findings.
+- Web searches: use 0, 1, or at most 2 total.
+  - 0 searches: when the question only needs reasoning/synthesis, not fresh web data.
+  - 1 search: sufficient for most research questions — PREFER THIS.
+  - 2 searches: ONLY when you need two truly DIFFERENT angles that one query cannot cover (e.g., one about concept A, one about concept B). NEVER search twice for the same or overlapping topic.
 - Search queries must be short (≤ 12 words) and in the user's language.
 - Every "intent" must be CONCRETE and tied to the user's question, not generic.
+
+Good plan examples:
+- Simple research (most cases): [{"kind":"search","query":"...","intent":"find key facts"}, {"kind":"analyze","intent":"synthesize findings into answer"}]
+- Reasoning only (no fresh data needed): [{"kind":"analyze","intent":"break down the problem"}, {"kind":"analyze","intent":"draw conclusions"}]
+- Two-angle research (rare): [{"kind":"search","query":"angle A","intent":"..."}, {"kind":"search","query":"angle B","intent":"..."}, {"kind":"analyze","intent":"compare both angles"}]
 
 Reply ONLY with strict JSON:
 {"complex": true|false, "goal": "<one short sentence describing what the user wants>", "steps": [...]}
