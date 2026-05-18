@@ -2564,8 +2564,10 @@ Deno.serve(async (req) => {
                   };
                   controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "done" }));
                   controller.enqueue(enc({ type: "sources", sources: webContext.sources }));
+                  collectedAgentSteps.push({ index: 0, kind: "scrape", label: decision.url, intent: decision.url, status: "done", foundCount: 1 });
                 } else {
                   controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "failed" }));
+                  collectedAgentSteps.push({ index: 0, kind: "scrape", label: decision.url, intent: decision.url, status: "failed" });
                 }
               } else if (decision.action === "search" && linkupKey) {
                 controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "running" }));
@@ -2580,8 +2582,10 @@ Deno.serve(async (req) => {
                   };
                   controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "done" }));
                   controller.enqueue(enc({ type: "sources", sources: res.sources }));
+                  collectedAgentSteps.push({ index: 0, kind: "search", label: decision.query, intent: decision.query, status: "done", foundCount: res.sources.length });
                 } else {
                   controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "failed" }));
+                  collectedAgentSteps.push({ index: 0, kind: "search", label: decision.query, intent: decision.query, status: "failed" });
                 }
               }
               controller.enqueue(enc({ type: "phase", phase: "generating" }));
@@ -2827,6 +2831,14 @@ Deno.serve(async (req) => {
           }
 
           // Persist assistant message (skip entirely in ephemeral/branch mode)
+          // Re-inject agent_steps and thinking_steps now that all phases are done,
+          // since metaPayload was constructed before the thinking/streaming phases.
+          if (collectedAgentSteps.length) {
+            (metaPayload as any).agent_steps = collectedAgentSteps;
+          }
+          if (collectedThinkingSteps.length) {
+            (metaPayload as any).thinking_steps = collectedThinkingSteps;
+          }
           let insertedMsg: { id: string } | null = null;
           if (!ephemeral) {
             const { data } = await supabase
