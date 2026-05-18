@@ -1821,9 +1821,9 @@ export default function Chat() {
         reason={upgradeReason ?? "daily-limit"}
       />
 
-      <div className="flex-1 flex min-w-0 relative bg-sidebar">
+      <div className="flex-1 flex min-w-0 relative bg-surface">
       <main
-        className="flex-1 flex flex-col min-w-0 relative bg-sidebar"
+        className="flex-1 flex flex-col min-w-0 relative bg-surface"
         style={{ paddingTop: 10, paddingRight: 10, paddingBottom: 10, paddingLeft: 0, ...(exploreOpen ? { borderTopRightRadius: 15, borderBottomRightRadius: 15, overflow: "hidden" } : {}) }}
         onDragEnter={(e) => {
           if (!Array.from(e.dataTransfer?.types ?? []).includes("Files")) return;
