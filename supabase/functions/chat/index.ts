@@ -1708,6 +1708,10 @@ Deno.serve(async (req) => {
     const agenticSources: WebSource[] = [];
     const agenticImages: WebImage[] = [];
     const agenticContextBlocks: string[] = [];
+    // Collected for persistence so steps survive conversation reload.
+    const collectedAgentSteps: Array<{ index: number; kind: string; label: string; intent: string; status: string; foundCount?: number; narration?: string }> = [];
+    const perStepNarration: Map<number, string> = new Map();
+    const collectedThinkingSteps: Array<{ index: number; text: string }> = [];
 
     // ---------- Google router (Gemini Flash) ----------
     // Decides if the last user message wants a Google action.
@@ -2384,6 +2388,7 @@ Deno.serve(async (req) => {
                     isFinal: opts.isFinal,
                   })) {
                     agenticNarration += chunk;
+                    perStepNarration.set(stepIdx, (perStepNarration.get(stepIdx) ?? "") + chunk);
                     controller.enqueue(enc({
                       type: "agent_narration",
                       index: stepIdx,
@@ -2512,6 +2517,20 @@ Deno.serve(async (req) => {
                   },
                   nextStep,
                   isFinal: isLastAction,
+                });
+              }
+
+              // Collect finalized agent steps for persistence.
+              for (let i = 0; i < actionableSteps.length; i++) {
+                const s = actionableSteps[i];
+                const label = s.kind === "search" ? s.query : s.kind === "scrape" ? s.url : s.intent;
+                collectedAgentSteps.push({
+                  index: i,
+                  kind: s.kind,
+                  label,
+                  intent: s.intent,
+                  status: "done",
+                  narration: perStepNarration.get(i),
                 });
               }
 
@@ -2726,6 +2745,8 @@ Deno.serve(async (req) => {
               : null,
             approxTotalInputTokens: metaTotalTokens,
             sources: webContext?.sources ?? [],
+            ...(collectedAgentSteps.length ? { agent_steps: collectedAgentSteps } : {}),
+            ...(collectedThinkingSteps.length ? { thinking_steps: collectedThinkingSteps } : {}),
           };
           controller.enqueue(enc({ type: "meta", ...metaPayload }));
 
@@ -2762,6 +2783,7 @@ Deno.serve(async (req) => {
                   const text = (m ? m[1] : line).trim();
                   if (!text) continue;
                   stepIndex += 1;
+                  collectedThinkingSteps.push({ index: stepIndex, text });
                   controller.enqueue(enc({ type: "thinking", action: "step", index: stepIndex, text }));
                 }
                 buf = tail;

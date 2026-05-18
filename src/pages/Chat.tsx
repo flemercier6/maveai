@@ -379,6 +379,24 @@ export default function Chat() {
                   .filter((s) => s && typeof s.url === "string")
                   .map((s) => ({ title: String(s.title ?? s.url), url: String(s.url) }))
               : [];
+            const persistedAgentSteps = Array.isArray((m.meta as any)?.agent_steps)
+              ? ((m.meta as any).agent_steps as any[]).map((s, i) => ({
+                  index: s.index ?? i,
+                  kind: s.kind as "search" | "scrape" | "analyze",
+                  label: String(s.label ?? ""),
+                  intent: String(s.intent ?? ""),
+                  status: "done" as const,
+                  foundCount: typeof s.foundCount === "number" ? s.foundCount : undefined,
+                  narration: typeof s.narration === "string" ? s.narration : undefined,
+                  narrationDone: true,
+                }))
+              : undefined;
+            const persistedThinkingSteps = Array.isArray((m.meta as any)?.thinking_steps)
+              ? ((m.meta as any).thinking_steps as any[]).map((s) => ({
+                  index: s.index as number,
+                  text: String(s.text ?? ""),
+                }))
+              : undefined;
             const persistedVoyager = (m.meta as any)?.voyager_action;
             const voyagerAction: VoyagerAction | undefined =
               persistedVoyager && ["contacts", "companies", "deals"].includes(persistedVoyager.resource) &&
@@ -418,6 +436,8 @@ export default function Chat() {
               ...(persistedSources.length ? { sources: persistedSources } : {}),
               ...(voyagerAction ? { voyagerAction } : {}),
               ...(googleAction ? { googleAction } : {}),
+              ...(persistedAgentSteps ? { agentSteps: persistedAgentSteps } : {}),
+              ...(persistedThinkingSteps ? { thinking: persistedThinkingSteps, thinkingDone: true } : {}),
             };
           }
           // Parse legacy "📎 Image: name" / "📎 File: name" trailing lines into attachment chips.
