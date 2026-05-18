@@ -485,26 +485,42 @@ If no date is known, use [unknown] instead.
                   <Upload className="w-4 h-4 mr-1" /> Import from another AI
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Import memory from another AI</DialogTitle>
                   <DialogDescription>
-                    Paste here the memory exported from ChatGPT, Claude, Gemini, etc. Accepted formats: one
-                    memory per line, bullet/numbered list, or JSON (array of strings or of objects
-                    {" "}
-                    <code>{`{content, kind}`}</code>).
+                    Step 1 — Copy the prompt below and send it to ChatGPT, Claude, Gemini, etc.
+                    Step 2 — Paste their full response (including the code block) in the area below.
                   </DialogDescription>
                 </DialogHeader>
-                <Textarea
-                  value={importText}
-                  onChange={(e) => setImportText(e.target.value)}
-                  placeholder={`- I work as a full-stack developer\n- I prefer TypeScript and React\n- I live in Paris`}
-                  rows={10}
-                  className="font-mono text-xs"
-                />
-                <p className="text-muted-foreground text-sm">
-                  {parseImport(importText).length} memor{parseImport(importText).length === 1 ? "y" : "ies"} detected.
-                </p>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Prompt to send to the other AI</span>
+                    <Button variant="outline" size="sm" onClick={copyPrompt}>
+                      {promptCopied ? <Check className="w-3.5 h-3.5 mr-1" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
+                      {promptCopied ? "Copied" : "Copy prompt"}
+                    </Button>
+                  </div>
+                  <div className="rounded-[8px] border border-border bg-[hsl(var(--dropdown-hover))] p-3 text-xs whitespace-pre-wrap font-mono max-h-48 overflow-y-auto">
+                    {IMPORT_PROMPT}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-sm font-medium">Paste the AI's response here</span>
+                  <Textarea
+                    value={importText}
+                    onChange={(e) => setImportText(e.target.value)}
+                    placeholder={`\`\`\`\n## Instructions\n[2024-03-12] - Always answer in French.\n\n## Identity\n[unknown] - Lives in Paris.\n\n## Preferences\n[2024-05-01] - Prefers concise explanations.\n\`\`\``}
+                    rows={10}
+                    className="font-mono text-xs"
+                  />
+                  <p className="text-muted-foreground text-sm">
+                    {parseImport(importText).length} memor{parseImport(importText).length === 1 ? "y" : "ies"} detected.
+                  </p>
+                </div>
+
                 <DialogFooter>
                   <Button variant="ghost" onClick={() => setImportOpen(false)}>
                     Cancel
