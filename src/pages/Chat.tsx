@@ -132,15 +132,11 @@ export default function Chat() {
   useEffect(() => {
     if (routeConvId && routeConvId !== activeId) {
       setActiveIdRaw(routeConvId);
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("chat-active-id", routeConvId);
-      }
+      writePersistedActiveId(routeConvId);
     } else if (!routeConvId && activeId && window.location.pathname === "/") {
       // User navigated to root → clear active
       setActiveIdRaw(null);
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem("chat-active-id");
-      }
+      writePersistedActiveId(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeConvId]);
