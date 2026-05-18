@@ -274,10 +274,11 @@ export default function Chat() {
   useEffect(() => {
     setClarify(null);
     if (!activeId) { setMessages([]); return; }
+    if (!user) { setMessages([]); return; }
     const conv = conversations.find((c) => c.id === activeId);
     const convProvider = (conv?.provider as Provider) ?? "openai";
     const convModel = conv?.model;
-    supabase.from("messages").select("*").eq("conversation_id", activeId).eq("user_id", user!.id).order("created_at")
+    supabase.from("messages").select("*").eq("conversation_id", activeId).eq("user_id", user.id).order("created_at")
       .then(({ data }) => {
         // Re-parse persisted assistant text to recover canvas blocks & titles.
         const parseStored = (raw: string): { body: string; canvas?: string; canvasTitle?: string } => {
