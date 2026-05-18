@@ -224,9 +224,26 @@ export function MemoryTab() {
     }
   };
 
+  const CATEGORY_TO_KIND: Record<string, string> = {
+    instructions: "instruction",
+    instruction: "instruction",
+    identity: "identity",
+    career: "career",
+    projects: "project",
+    project: "project",
+    preferences: "preference",
+    preference: "preference",
+  };
+
+  const stripCodeFences = (s: string): string => {
+    const m = s.match(/```(?:\w+)?\n?([\s\S]*?)```/);
+    return m ? m[1] : s;
+  };
+
   const parseImport = (raw: string): { content: string; kind: string }[] => {
-    const text = raw.trim();
+    const text = stripCodeFences(raw.trim());
     if (!text) return [];
+    // Try JSON first
     try {
       const json = JSON.parse(text);
       if (Array.isArray(json)) {
@@ -243,17 +260,78 @@ export function MemoryTab() {
     } catch {
       // not JSON
     }
-    return text
-      .split(/\r?\n+/)
-      .map((l) =>
-        l
-          .replace(/^\s*[-*•·]\s+/, "")
-          .replace(/^\s*\d+[.)]\s+/, "")
-          .replace(/^\s*#+\s+/, "")
-          .trim(),
-      )
-      .filter((l) => l.length > 2)
-      .map((content) => ({ content, kind: "fact" }));
+
+    const lines = text.split(/\r?\n/);
+    const out: { content: string; kind: string }[] = [];
+    let currentKind = "fact";
+    const headerRe = /^\s*(?:#+\s*)?(?:\d+[.)]\s*)?\*{0,2}\s*(instructions?|identity|career|projects?|preferences?)\s*\*{0,2}\s*:?\s*$/i;
+    const dateLineRe = /^\s*[-*•·]?\s*\[(?:\d{4}-\d{2}-\d{2}|unknown)\]\s*[-–—:]?\s*(.+)$/i;
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      const h = line.match(headerRe);
+      if (h) {
+        currentKind = CATEGORY_TO_KIND[h[1].toLowerCase()] ?? "fact";
+        continue;
+      }
+      const d = line.match(dateLineRe);
+      if (d) {
+        const content = d[1].trim();
+        if (content.length > 1) out.push({ content, kind: currentKind });
+        continue;
+      }
+      const cleaned = line
+        .replace(/^\s*[-*•·]\s+/, "")
+        .replace(/^\s*\d+[.)]\s+/, "")
+        .replace(/^\s*#+\s+/, "")
+        .replace(/^\*+|\*+$/g, "")
+        .trim();
+      if (cleaned.length > 2 && !/^[-=_]{3,}$/.test(cleaned)) {
+        out.push({ content: cleaned, kind: currentKind });
+      }
+    }
+    return out;
+  };
+
+  const IMPORT_PROMPT = `Export all of my stored memories and any context you've learned about me from past conversations. Preserve my words verbatim where possible, especially for instructions and preferences.
+
+## Categories (output in this order):
+
+1. **Instructions**: Rules I've explicitly asked you to follow going forward — tone, format, style, "always do X", "never do Y", and corrections to your behavior. Only include rules from stored memories, not from conversations.
+
+2. **Identity**: Name, age, location, education, family, relationships, languages, and personal interests.
+
+3. **Career**: Current and past roles, companies, and general skill areas.
+
+4. **Projects**: Projects I meaningfully built or committed to. Ideally ONE entry per project. Include what it does, current status, and any key decisions. Use the project name or a short descriptor as the first words of the entry.
+
+5. **Preferences**: Opinions, tastes, and working-style preferences that apply broadly.
+
+## Format:
+
+Use section headers for each category. Within each category, list one entry per line, sorted by oldest date first. Format each line as:
+
+[YYYY-MM-DD] - Entry content here.
+
+If no date is known, use [unknown] instead.
+
+## Output:
+
+- Wrap the entire export in a single code block for easy copying.
+
+- After the code block, state whether this is the complete set or if more remain.`;
+
+  const [promptCopied, setPromptCopied] = useState(false);
+  const copyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(IMPORT_PROMPT);
+      setPromptCopied(true);
+      toast.success("Prompt copied");
+      setTimeout(() => setPromptCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
   };
 
   const importMemories = async () => {
