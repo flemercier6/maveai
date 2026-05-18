@@ -225,7 +225,7 @@ export default function Chat() {
   // Load conversations
   useEffect(() => {
     if (!user) return;
-    supabase.from("conversations").select("*").order("updated_at", { ascending: false })
+    supabase.from("conversations").select("*").eq("user_id", user.id).order("updated_at", { ascending: false })
       .then(({ data }) => {
         const list = (data ?? []) as Conversation[];
         setConversations(list);
@@ -277,7 +277,7 @@ export default function Chat() {
     const conv = conversations.find((c) => c.id === activeId);
     const convProvider = (conv?.provider as Provider) ?? "openai";
     const convModel = conv?.model;
-    supabase.from("messages").select("*").eq("conversation_id", activeId).order("created_at")
+    supabase.from("messages").select("*").eq("conversation_id", activeId).eq("user_id", user!.id).order("created_at")
       .then(({ data }) => {
         // Re-parse persisted assistant text to recover canvas blocks & titles.
         const parseStored = (raw: string): { body: string; canvas?: string; canvasTitle?: string } => {
