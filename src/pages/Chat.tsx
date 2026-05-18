@@ -2019,6 +2019,27 @@ export default function Chat() {
                               arr[i] = { ...arr[i], googleAction: next };
                               return arr;
                             });
+                            // Persist updated draft/state so it survives reloads & tab switches.
+                            const mid = m.id;
+                            if (mid) {
+                              const prevMeta = (m.meta ?? {}) as Record<string, unknown>;
+                              const nextMeta = {
+                                ...prevMeta,
+                                google_action: {
+                                  mode: "proposal",
+                                  action: next.action,
+                                  params: next.params,
+                                  state: next.state,
+                                },
+                              };
+                              supabase
+                                .from("messages")
+                                .update({ meta: nextMeta })
+                                .eq("id", mid)
+                                .then(({ error }) => {
+                                  if (error) console.error("persist google_action update failed", error);
+                                });
+                            }
                           }}
                         />
                       )}
