@@ -2168,7 +2168,7 @@ export default function Chat() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
+                        className="h-9 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
                         aria-label="Add attachment"
                       >
                         <Plus className="w-4 h-4" />
@@ -2210,7 +2210,7 @@ export default function Chat() {
                       onClick={() => setWriteRequested(true)}
                       aria-label="Activate Note"
                       title="Create in a note"
-                      className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
+                      className="h-9 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
                     >
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M7.66663 3.33331C9.55223 3.33331 10.495 3.33331 11.0808 3.9191C11.6666 4.50489 11.6666 5.44769 11.6666 7.33331C11.6666 12.6666 14.3333 12.6666 14.3333 12.6666H4.82571C4.60707 12.6666 4.49775 12.6666 4.24986 12.6021C4.00197 12.5375 3.96254 12.5155 3.88368 12.4714C3.12363 12.0468 1.66663 10.7828 1.66663 7.33331C1.66663 5.44769 1.66663 4.50489 2.25241 3.9191C2.8382 3.33331 3.78101 3.33331 5.66663 3.33331" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -2227,7 +2227,7 @@ export default function Chat() {
                       onClick={() => setPageRequested(true)}
                       aria-label="Activate Page"
                       title="Create a page"
-                      className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
+                      className="h-9 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
                     >
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M2 8C2 5.17157 2 3.75736 2.87868 2.87868C3.75736 2 5.17157 2 8 2C10.8284 2 12.2427 2 13.1213 2.87868C14 3.75736 14 5.17157 14 8C14 10.8284 14 12.2427 13.1213 13.1213C12.2427 14 10.8284 14 8 14C5.17157 14 3.75736 14 2.87868 13.1213C2 12.2427 2 10.8284 2 8Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -2246,7 +2246,7 @@ export default function Chat() {
                       onClick={() => setWebRequested(true)}
                       aria-label="Activate Web search"
                       title="Web search"
-                      className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
+                      className="h-9 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
                     >
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M8.00004 14.6666C11.6819 14.6666 14.6667 11.6819 14.6667 7.99998C14.6667 4.31808 11.6819 1.33331 8.00004 1.33331C4.31814 1.33331 1.33337 4.31808 1.33337 7.99998C1.33337 11.6819 4.31814 14.6666 8.00004 14.6666Z" stroke="currentColor" strokeWidth="1.2"/>
