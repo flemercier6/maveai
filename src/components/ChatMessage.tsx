@@ -556,8 +556,19 @@ function ThreadEntry({ branch, onClick }: { branch: MessageBranch; onClick: () =
   );
 }
 
+function WebSearchIcon({ className }: { className?: string }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className={className}>
+      <path d="M8.00004 14.6666C11.6819 14.6666 14.6667 11.6819 14.6667 7.99998C14.6667 4.31808 11.6819 1.33331 8.00004 1.33331C4.31814 1.33331 1.33337 4.31808 1.33337 7.99998C1.33337 11.6819 4.31814 14.6666 8.00004 14.6666Z" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M5.33337 7.99998C5.33337 12 8.00004 14.6666 8.00004 14.6666C8.00004 14.6666 10.6667 12 10.6667 7.99998C10.6667 3.99998 8.00004 1.33331 8.00004 1.33331C8.00004 1.33331 5.33337 3.99998 5.33337 7.99998Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+      <path d="M14 10H2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M14 6H2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
 function AgentStepCard({ step }: { step: AgentStep }) {
-  const Icon = step.kind === "search" ? Search : step.kind === "scrape" ? Globe : Sparkles;
+  const Icon = step.kind === "scrape" ? Globe : Sparkles;
   const tag = step.kind === "search" ? "Web search" : step.kind === "scrape" ? "Read page" : "Analyze";
   const isRunning = step.status === "running";
   const isFailed = step.status === "failed";
@@ -568,7 +579,10 @@ function AgentStepCard({ step }: { step: AgentStep }) {
     <div className="mb-4">
       {/* Tag aligned left: icon + type + subject inline */}
       <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-foreground max-w-full">
-        <Icon className={`w-3.5 h-3.5 shrink-0 ${isRunning ? "animate-pulse" : ""}`} />
+        {step.kind === "search"
+          ? <WebSearchIcon className={isRunning ? "animate-pulse shrink-0" : "shrink-0"} />
+          : <Icon className={`w-3.5 h-3.5 shrink-0 ${isRunning ? "animate-pulse" : ""}`} />
+        }
         <span className="text-muted-foreground shrink-0">{tag}</span>
         {subject && (
           <>
