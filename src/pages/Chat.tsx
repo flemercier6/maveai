@@ -2034,7 +2034,7 @@ export default function Chat() {
                               };
                               supabase
                                 .from("messages")
-                                .update({ meta: nextMeta })
+                                .update({ meta: nextMeta as any })
                                 .eq("id", mid)
                                 .then(({ error }) => {
                                   if (error) console.error("persist google_action update failed", error);
