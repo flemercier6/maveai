@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Mail, Calendar, Send, FileText, X, Check, Loader2, ChevronDown } from "lucide-react";
+import { Send, FileText, X, Check, Loader2, ChevronDown } from "lucide-react";
+import { GoogleServiceLogo } from "@/components/GoogleServiceLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -38,7 +39,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
 
   const isEmail = action.action === "gmail.draft" || action.action === "gmail.send";
   const isEvent = action.action === "calendar.create";
-  const Icon = isEmail ? Mail : Calendar;
+  const service: "gmail" | "calendar" = isEmail ? "gmail" : "calendar";
 
   const title =
     action.action === "gmail.draft"
@@ -154,7 +155,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
         onClick={() => setCollapsed((c) => !c)}
         className="w-full flex items-center gap-2 px-3 py-2 border-b border-border bg-[hsl(var(--dropdown-hover))] hover:opacity-90 transition-opacity text-left"
       >
-        <Icon className="w-4 h-4 text-foreground/70" />
+        <GoogleServiceLogo service={service} className="w-4 h-4" />
         <span className="font-medium text-foreground text-base flex-1 truncate">
           {title}
           {collapsed && isEmail && params.subject ? (
