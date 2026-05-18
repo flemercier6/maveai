@@ -164,6 +164,8 @@ export default function Chat() {
   const [exploreRequested, setExploreRequested] = useState(false);
   // User explicitly invoked /page — next send generates a structured one-pager.
   const [pageRequested, setPageRequested] = useState(false);
+  // User explicitly toggled Web search for the next message.
+  const [webRequested, setWebRequested] = useState(false);
   // User explicitly invoked /gmail, /calendar or /drive — next send is scoped to that Google service.
   const [googleService, setGoogleService] = useState<GoogleService | null>(null);
   // User explicitly invoked /voyager — next send is scoped to Voyager CRM.
