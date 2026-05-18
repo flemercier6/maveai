@@ -1452,10 +1452,6 @@ Deno.serve(async (req) => {
       content:
         "Style: airy markdown — short paragraphs, headings, bullets, dividers. Use tables for comparisons. Emojis sparingly. Reply in the user's language.\n" +
         lengthInstruction + "\n" +
-        "Diagrams: use SPARINGLY. Only emit a ```flow block when the question genuinely involves a multi-step process, system architecture, decision tree, state machine, or an abstract/hard-to-explain concept where a visual schema materially aids understanding beyond what prose, lists or tables can convey. " +
-        "DO NOT use diagrams for: simple factual questions, definitions, short how-tos, comparisons (use a table), lists of items, code explanations, opinions, or anything a short paragraph already answers clearly. When in doubt, do NOT emit a diagram. " +
-        "Format when used: fenced ```flow block containing JSON: { title?, direction?: 'TB'|'LR'|'RL'|'BT', nodes: [{id,label,kind?: 'default'|'input'|'output'|'decision'|'success'|'warning'|'danger'|'muted'}], edges: [{source,target,label?,animated?,dashed?}] }. " +
-        "Short slug ids, ≤6-word labels, no positions, 4–12 nodes. Not Mermaid.\n" +
         "Charts: use when numeric data, trends, comparisons, distributions or proportions would be clearer as a visual than as prose or a small table (e.g. evolution over time, market share, survey results, benchmark scores, before/after). " +
         "DO NOT use charts for: a single number, vague qualitative info, or when you'd have to invent data you don't actually know. When in doubt, do NOT emit a chart. " +
         "Format when used: fenced ```chart block containing JSON: { type: 'bar'|'line'|'area'|'pie', title?: string, xKey?: string (default 'name'), series?: [{key:string,label?:string,color?:string}], data: [{ [xKey]: string|number, [seriesKey]: number, ... }], stacked?: boolean, unit?: string }. " +
