@@ -2216,6 +2216,25 @@ export default function Chat() {
                       </svg>
                     </Button>
                   )}
+                  {!aiPrefs.disabledModes.includes("page") && !pageRequested && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setPageRequested(true)}
+                      aria-label="Activate Page"
+                      title="Create a page"
+                      className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M2 8C2 5.17157 2 3.75736 2.87868 2.87868C3.75736 2 5.17157 2 8 2C10.8284 2 12.2427 2 13.1213 2.87868C14 3.75736 14 5.17157 14 8C14 10.8284 14 12.2427 13.1213 13.1213C12.2427 14 10.8284 14 8 14C5.17157 14 3.75736 14 2.87868 13.1213C2 12.2427 2 10.8284 2 8Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M2.33337 5.33331H13.6667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M8.66663 8H11.3333" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M8.66663 10.6667H9.99996" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M6 5.33331V14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </Button>
+                  )}
                   {writeRequested && (
                     <button
                       type="button"
