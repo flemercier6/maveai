@@ -879,7 +879,10 @@ ${userText.slice(0, 2000)}`;
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" },
+            generationConfig: {
+              responseMimeType: "application/json",
+              thinkingConfig: { thinkingBudget: 0 },
+            },
           }),
         },
       );
