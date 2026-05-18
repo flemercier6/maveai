@@ -85,17 +85,41 @@ export default function Chat() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // Persist the active conversation id with a freshness timestamp so it survives
+  // tab switches / reloads, but expires after ~2 days of inactivity.
+  const ACTIVE_ID_KEY = "chat-active-id";
+  const ACTIVE_ID_TS_KEY = "chat-active-id-ts";
+  const ACTIVE_ID_TTL_MS = 2 * 24 * 60 * 60 * 1000; // 2 days
+  const readPersistedActiveId = (): string | null => {
+    if (typeof window === "undefined") return null;
+    const id = window.localStorage.getItem(ACTIVE_ID_KEY);
+    if (!id) return null;
+    const tsRaw = window.localStorage.getItem(ACTIVE_ID_TS_KEY);
+    const ts = tsRaw ? Number(tsRaw) : 0;
+    if (!ts || Date.now() - ts > ACTIVE_ID_TTL_MS) {
+      window.localStorage.removeItem(ACTIVE_ID_KEY);
+      window.localStorage.removeItem(ACTIVE_ID_TS_KEY);
+      return null;
+    }
+    return id;
+  };
+  const writePersistedActiveId = (id: string | null) => {
+    if (typeof window === "undefined") return;
+    if (id) {
+      window.localStorage.setItem(ACTIVE_ID_KEY, id);
+      window.localStorage.setItem(ACTIVE_ID_TS_KEY, String(Date.now()));
+    } else {
+      window.localStorage.removeItem(ACTIVE_ID_KEY);
+      window.localStorage.removeItem(ACTIVE_ID_TS_KEY);
+    }
+  };
   const [activeId, setActiveIdRaw] = useState<string | null>(() => {
     if (routeConvId) return routeConvId;
-    if (typeof window === "undefined") return null;
-    return window.localStorage.getItem("chat-active-id");
+    return readPersistedActiveId();
   });
   const setActiveId = (id: string | null) => {
     setActiveIdRaw(id);
-    if (typeof window !== "undefined") {
-      if (id) window.localStorage.setItem("chat-active-id", id);
-      else window.localStorage.removeItem("chat-active-id");
-    }
+    writePersistedActiveId(id);
     // Keep URL in sync with the active conversation
     if (typeof window !== "undefined") {
       const target = id ? `/c/${id}` : "/";
@@ -108,15 +132,11 @@ export default function Chat() {
   useEffect(() => {
     if (routeConvId && routeConvId !== activeId) {
       setActiveIdRaw(routeConvId);
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("chat-active-id", routeConvId);
-      }
+      writePersistedActiveId(routeConvId);
     } else if (!routeConvId && activeId && window.location.pathname === "/") {
       // User navigated to root → clear active
       setActiveIdRaw(null);
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem("chat-active-id");
-      }
+      writePersistedActiveId(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeConvId]);
@@ -205,18 +225,23 @@ export default function Chat() {
   // Anonymous users are allowed — they use the app in free mode without
   // cloud persistence. The AuthPopover lets them sign in at any time.
 
-  // Clear active conversation on a fresh sign-in so users land on a new chat.
+  // Clear active conversation only when a DIFFERENT user signs in. Supabase fires
+  // SIGNED_IN on every tab refocus / token refresh — we must not wipe state then.
+  const lastUserIdRef = useRef<string | null>(null);
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN") {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      const newUid = session?.user?.id ?? null;
+      const prevUid = lastUserIdRef.current;
+      if (event === "SIGNED_IN" && newUid && prevUid && prevUid !== newUid) {
         if (typeof window !== "undefined") {
           window.sessionStorage.setItem("fresh-signin", "1");
-          window.localStorage.removeItem("chat-active-id");
+          writePersistedActiveId(null);
         }
         setActiveIdRaw(null);
         setMessages([]);
         navigate("/", { replace: true });
       }
+      lastUserIdRef.current = newUid;
     });
     return () => sub.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
