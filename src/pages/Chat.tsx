@@ -2161,6 +2161,7 @@ export default function Chat() {
               )}
               <div className="flex items-center justify-between gap-[15px] px-2 pb-2">
                 <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-0">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -2255,6 +2256,7 @@ export default function Chat() {
                       </svg>
                     </Button>
                   )}
+                  </div>
                   {writeRequested && (
                     <button
                       type="button"
