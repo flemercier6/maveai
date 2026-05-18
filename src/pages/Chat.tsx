@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2, Sparkles, Upload, Menu, LayoutDashboard } from "lucide-react";
+import { ArrowRight, Plus, Square, Paperclip, X, FileText, Loader2, Sparkles, Upload, Menu, LayoutDashboard, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 import { loadAttachment, type Attachment } from "@/lib/attachments";
@@ -164,6 +164,8 @@ export default function Chat() {
   const [exploreRequested, setExploreRequested] = useState(false);
   // User explicitly invoked /page — next send generates a structured one-pager.
   const [pageRequested, setPageRequested] = useState(false);
+  // User explicitly toggled Web search for the next message.
+  const [webRequested, setWebRequested] = useState(false);
   // User explicitly invoked /gmail, /calendar or /drive — next send is scoped to that Google service.
   const [googleService, setGoogleService] = useState<GoogleService | null>(null);
   // User explicitly invoked /voyager — next send is scoped to Voyager CRM.
@@ -2235,6 +2237,24 @@ export default function Chat() {
                       </svg>
                     </Button>
                   )}
+                  {!aiPrefs.disabledModes.includes("web") && !webRequested && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setWebRequested(true)}
+                      aria-label="Activate Web search"
+                      title="Web search"
+                      className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M8.00004 14.6666C11.6819 14.6666 14.6667 11.6819 14.6667 7.99998C14.6667 4.31808 11.6819 1.33331 8.00004 1.33331C4.31814 1.33331 1.33337 4.31808 1.33337 7.99998C1.33337 11.6819 4.31814 14.6666 8.00004 14.6666Z" stroke="currentColor" strokeWidth="1.2"/>
+                        <path d="M5.33337 7.99998C5.33337 12 8.00004 14.6666 8.00004 14.6666C8.00004 14.6666 10.6667 12 10.6667 7.99998C10.6667 3.99998 8.00004 1.33331 8.00004 1.33331C8.00004 1.33331 5.33337 3.99998 5.33337 7.99998Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+                        <path d="M14 10H2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M14 6H2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </Button>
+                  )}
                   {writeRequested && (
                     <button
                       type="button"
@@ -2278,6 +2298,21 @@ export default function Chat() {
                         <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
                       </span>
                       Page
+                    </button>
+                  )}
+                  {webRequested && (
+                    <button
+                      type="button"
+                      onClick={() => setWebRequested(false)}
+                      aria-label="Remove Web search"
+                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[#E6F1FF] transition-colors text-base"
+                      style={{ color: "#0062FF" }}
+                    >
+                      <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                        <Globe className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "#0062FF" }} />
+                        <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#0062FF" }} />
+                      </span>
+                      Web search
                     </button>
                   )}
                   {googleService && (
