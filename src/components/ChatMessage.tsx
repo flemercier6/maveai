@@ -8,7 +8,6 @@ import { VoyagerLogo, VOYAGER_LABEL } from "./VoyagerLogo";
 
 import { ChartBlock } from "./ChartBlock";
 
-import { CanvasBlock } from "./CanvasBlock";
 import { MapBlock } from "./MapBlock";
 import { PageCard } from "./PageCard";
 import type { PageSpec } from "./PageRenderer";
@@ -67,12 +66,6 @@ type Props = {
   thinkingMs?: number;
   thinkingDone?: boolean;
   agentSteps?: AgentStep[];
-  canvas?: string;
-  canvasTitle?: string;
-  canvasVersion?: number;
-  canvasCollapsed?: boolean;
-  onCanvasChange?: (next: string) => void;
-  onSendCanvasByEmail?: () => void;
   onRetry?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
@@ -640,12 +633,6 @@ function ChatMessageImpl({
   thinkingMs,
   thinkingDone,
   agentSteps,
-  canvas,
-  canvasTitle,
-  canvasVersion,
-  canvasCollapsed,
-  onCanvasChange,
-  onSendCanvasByEmail,
   onRetry,
   onDelete,
   onEdit,
@@ -809,17 +796,6 @@ function ChatMessageImpl({
             </>
           );
         })()}
-        {typeof canvas === "string" && (
-          <CanvasBlock
-            content={canvas}
-            title={canvasTitle}
-            version={canvasVersion}
-            collapsed={canvasCollapsed}
-            streaming={streaming}
-            onChange={onCanvasChange}
-            onSendByEmail={onSendCanvasByEmail}
-          />
-        )}
         {page && onOpenPage && <PageCard page={page} onOpen={onOpenPage} />}
         {googleActionSlot}
         {!streaming && content && (
@@ -886,12 +862,6 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.phase === next.phase &&
   prev.sources === next.sources &&
   prev.meta === next.meta &&
-  prev.canvas === next.canvas &&
-  prev.canvasTitle === next.canvasTitle &&
-  prev.canvasVersion === next.canvasVersion &&
-  prev.canvasCollapsed === next.canvasCollapsed &&
-  prev.onCanvasChange === next.onCanvasChange &&
-  prev.onSendCanvasByEmail === next.onSendCanvasByEmail &&
   prev.onRetry === next.onRetry &&
   prev.onDelete === next.onDelete &&
   prev.onEdit === next.onEdit &&

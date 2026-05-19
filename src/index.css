@@ -252,5 +252,21 @@
   }
   .font-display { font-family: 'Instrument Serif', 'Fraunces', Georgia, serif; }
   .font-grotesk { font-family: 'Space Grotesk', 'Inter', sans-serif; }
+
+  /* Shimmer overlay shown on NotePanel content area while streaming */
+  .note-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--foreground) / 0.05) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: note-shimmer 1.4s linear infinite;
+  }
+  @keyframes note-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
 }
 

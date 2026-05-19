@@ -45,6 +45,7 @@ import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useSwipe } from "@/hooks/useSwipe";
 
 import { ConversationActionsMenu } from "@/components/ConversationActionsMenu";
+import { NotePanel } from "@/components/NotePanel";
 
 type StoredBranch = {
   id: string;
@@ -174,6 +175,11 @@ export default function Chat() {
   // Side panel showing a generated PageSpec.
   const [pageOpen, setPageOpen] = useState(false);
   const [activePage, setActivePage] = useState<PageSpec | null>(null);
+  // Note side panel (replaces inline CanvasBlock).
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteContent, setNoteContent] = useState("");
+  const [noteTitle, setNoteTitle] = useState("");
+  const [noteStreaming, setNoteStreaming] = useState(false);
   // Title generation animation: convId -> { target, shown }. "pending" = not yet received.
   const [titleAnim, setTitleAnim] = useState<Record<string, { target: string | null; shown: string }>>({});
   const titleTimerRef = useRef<Record<string, number>>({});
@@ -301,6 +307,9 @@ export default function Chat() {
   // Load messages when active changes
   useEffect(() => {
     setClarify(null);
+    setNoteContent("");
+    setNoteTitle("");
+    setNoteOpen(false);
     if (!activeId) { setMessages([]); return; }
     if (!user) { setMessages([]); return; }
     const conv = conversations.find((c) => c.id === activeId);
@@ -335,7 +344,9 @@ export default function Chat() {
           return { body, canvas, canvasTitle: title };
         };
         let canvasCounter = 0;
-        setMessages(((data ?? []) as any[]).map((m) => {
+        let lastCanvasContent = "";
+        let lastCanvasTitle = "";
+        const parsedMsgs = ((data ?? []) as any[]).map((m) => {
           const msgModel = m.model ?? convModel;
           const msgProvider = m.role === "assistant"
             ? (msgModel && msgModel !== "auto" ? providerForModel(msgModel) : convProvider)
@@ -374,7 +385,11 @@ export default function Chat() {
             }
             const parsed = parseStored(m.content);
             const hasCanvas = typeof parsed.canvas === "string";
-            if (hasCanvas) canvasCounter += 1;
+            if (hasCanvas) {
+              canvasCounter += 1;
+              lastCanvasContent = parsed.canvas!;
+              lastCanvasTitle = parsed.canvasTitle ?? "";
+            }
             const persistedSources = Array.isArray((m.meta as any)?.sources)
               ? ((m.meta as any).sources as any[])
                   .filter((s) => s && typeof s.url === "string")
@@ -432,7 +447,7 @@ export default function Chat() {
               content: parsed.body,
               provider: msgProvider,
               model: msgModel,
-              ...(hasCanvas ? { canvas: parsed.canvas, canvasTitle: parsed.canvasTitle, canvasVersion: canvasCounter } : {}),
+              // canvas goes to NotePanel, not to Msg
               ...(meta ? { meta } : {}),
               ...(persistedSources.length ? { sources: persistedSources } : {}),
               ...(voyagerAction ? { voyagerAction } : {}),
@@ -462,7 +477,12 @@ export default function Chat() {
             model: m.role === "assistant" ? msgModel : undefined,
             ...(userAtts.length ? { attachments: userAtts } : {}),
           };
-        }));
+        });
+        setMessages(parsedMsgs);
+        if (lastCanvasContent) {
+          setNoteContent(lastCanvasContent);
+          setNoteTitle(lastCanvasTitle);
+        }
       });
     if (conv) {
       setProvider(conv.provider as Provider);
@@ -934,11 +954,8 @@ export default function Chat() {
     // ---- Writing canvas mode ----
     // Enabled when the user typed "/write" or the message looks like a drafting task,
     // OR when the most recent assistant reply already contains a canvas (follow-up edits).
-    const lastAssistantWithCanvas = [...messages].reverse().find(
-      (m) => m.role === "assistant" && typeof m.canvas === "string" && m.canvas.length > 0,
-    );
-    const writingMode = !googleService && !voyagerService && (writeRequested || looksLikeWritingRequest(text) || !!lastAssistantWithCanvas);
-    const previousCanvas = lastAssistantWithCanvas?.canvas ?? null;
+    const writingMode = !googleService && !voyagerService && (writeRequested || looksLikeWritingRequest(text) || noteContent !== "");
+    const previousCanvas = noteContent || null;
     if (writeRequested) setWriteRequested(false);
 
     // Resolve Auto → concrete provider/model for this turn (Auto preference is preserved)
@@ -1006,6 +1023,11 @@ export default function Chat() {
     const sentVoyagerService = voyagerService;
     setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel, googleService: sentGoogleService ?? undefined, voyagerService: sentVoyagerService || undefined }]);
     setStreaming(true);
+    if (writingMode) {
+      setNoteOpen(true);
+      setNoteStreaming(true);
+      setNoteContent("");
+    }
     if (googleService) setGoogleService(null);
     if (voyagerService) setVoyagerService(false);
 
@@ -1083,11 +1105,6 @@ export default function Chat() {
       let buf = "";
       let acc = "";
 
-      // Count previous canvases in the conversation (for V1/V2 tags).
-      const prevCanvasCount = messages.filter(
-        (m) => m.role === "assistant" && typeof m.canvas === "string" && m.canvas.length > 0,
-      ).length;
-
       // Parse streaming text for writing mode.
       // Expected format:
       //   CANVAS_EDIT: yes|no\n
@@ -1143,6 +1160,10 @@ export default function Chat() {
           ? splitCanvas(snapshot)
           : { body: snapshot, canvas: null as string | null, title: null as string | null, editMode: null as "yes" | "no" | null };
         const { body, canvas, title } = parsed;
+        if (writingMode && canvas !== null) {
+          setNoteContent(canvas);
+          if (title) setNoteTitle(title);
+        }
         setMessages((prev) => {
           const next = prev.slice();
           const current = next[next.length - 1];
@@ -1152,13 +1173,6 @@ export default function Chat() {
             content: body,
             provider: sendProvider,
             model: sendModel,
-            ...(canvas !== null
-              ? {
-                  canvas,
-                  canvasTitle: title ?? current.canvasTitle,
-                  canvasVersion: current.canvasVersion ?? prevCanvasCount + 1,
-                }
-              : {}),
           };
           return next;
         });
@@ -1446,6 +1460,10 @@ export default function Chat() {
           ? splitCanvas(acc)
           : { body: acc, canvas: null as string | null, title: null as string | null, editMode: null as "yes" | "no" | null };
         const { body, canvas, title } = parsed;
+        if (writingMode && canvas !== null) {
+          setNoteContent(canvas);
+          if (title) setNoteTitle(title);
+        }
         setMessages((prev) => {
           const next = prev.slice();
           const current = next[next.length - 1];
@@ -1455,13 +1473,6 @@ export default function Chat() {
             content: body,
             provider: sendProvider,
             model: sendModel,
-            ...(canvas !== null
-              ? {
-                  canvas,
-                  canvasTitle: title ?? current.canvasTitle,
-                  canvasVersion: current.canvasVersion ?? prevCanvasCount + 1,
-                }
-              : {}),
           };
           return next;
         });
@@ -1501,6 +1512,7 @@ export default function Chat() {
     } finally {
       abortRef.current = null;
       setStreaming(false);
+      setNoteStreaming(false);
       setSending(false);
       if (isFree) void plan.refresh();
     }
@@ -1947,16 +1959,6 @@ export default function Chat() {
           ) : (
             <div className="pt-8 pb-4 px-6 md:px-10">
               {(() => {
-                // Find the index of the most recent assistant message that has a canvas,
-                // so older canvases can be collapsed/greyed with their V{n} tag.
-                let latestCanvasIdx = -1;
-                for (let i = messages.length - 1; i >= 0; i--) {
-                  const m = messages[i];
-                  if (m.role === "assistant" && typeof m.canvas === "string" && m.canvas.length > 0) {
-                    latestCanvasIdx = i;
-                    break;
-                  }
-                }
                 return messages.map((m, i) => (
                 <div key={m.id ?? i}>
                 <ChatMessage
@@ -1976,20 +1978,9 @@ export default function Chat() {
                   thinkingMs={m.thinkingMs}
                   thinkingDone={m.thinkingDone}
                   agentSteps={m.agentSteps}
-                  canvas={m.canvas}
-                  canvasTitle={m.canvasTitle}
                   attachments={m.attachments}
                   page={m.page}
                   onOpenPage={m.page ? () => { setActivePage(m.page!); setPageOpen(true); } : undefined}
-                  canvasVersion={m.canvasVersion}
-                  canvasCollapsed={typeof m.canvas === "string" && latestCanvasIdx >= 0 && i !== latestCanvasIdx}
-                  onCanvasChange={m.role === "assistant" && typeof m.canvas === "string" && i === latestCanvasIdx ? (next) => {
-                    setMessages((prev) => {
-                      const arr = prev.slice();
-                      arr[i] = { ...arr[i], canvas: next };
-                      return arr;
-                    });
-                  } : undefined}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
                   onRetry={m.role === "assistant" ? () => handleRetryAssistant(i) : undefined}
                   onDelete={m.role === "assistant" ? () => handleDeleteAssistant(i) : undefined}
@@ -2013,23 +2004,6 @@ export default function Chat() {
                         el.setSelectionRange(el.value.length, el.value.length);
                       }
                     }, 0);
-                  } : undefined}
-                  onSendCanvasByEmail={m.role === "assistant" && typeof m.canvas === "string" && m.canvas.trim().length > 0 ? () => {
-                    setMessages((prev) => {
-                      const arr = prev.slice();
-                      const cur = arr[i];
-                      const ga: GoogleAction = {
-                        action: "gmail.draft",
-                        params: {
-                          to: "",
-                          subject: cur.canvasTitle ?? "",
-                          body: cur.canvas ?? "",
-                        },
-                        state: "pending",
-                      };
-                      arr[i] = { ...cur, googleAction: ga };
-                      return arr;
-                    });
                   } : undefined}
                   googleActionSlot={m.role === "assistant" && (m.googleAction || m.voyagerAction) ? (
                     <div className="mt-2">
@@ -2439,7 +2413,7 @@ export default function Chat() {
 
       {/* Right-hand exploration side panel */}
       {/* Floating button to reopen the last generated page */}
-      {activePage && !pageOpen && (
+      {activePage && !pageOpen && !noteOpen && (
         <button
           type="button"
           onClick={() => setPageOpen(true)}
@@ -2451,11 +2425,39 @@ export default function Chat() {
         </button>
       )}
 
+      {/* Floating button to reopen the note panel */}
+      {noteContent && !noteOpen && (
+        <button
+          type="button"
+          onClick={() => setNoteOpen(true)}
+          aria-label="Reopen note"
+          className="fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 rounded-full bg-foreground text-background pl-3 pr-4 py-2.5 text-xs font-medium shadow-lg hover:opacity-90 transition-opacity"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0" aria-hidden="true">
+            <path d="M7.66663 3.33331C9.55223 3.33331 10.495 3.33331 11.0808 3.9191C11.6666 4.50489 11.6666 5.44769 11.6666 7.33331C11.6666 12.6666 14.3333 12.6666 14.3333 12.6666H4.82571C4.60707 12.6666 4.49775 12.6666 4.24986 12.6021C4.00197 12.5375 3.96254 12.5155 3.88368 12.4714C3.12363 12.0468 1.66663 10.7828 1.66663 7.33331C1.66663 5.44769 1.66663 4.50489 2.25241 3.9191C2.8382 3.33331 3.78101 3.33331 5.66663 3.33331" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M1.66663 6.66669V10.6667C1.66663 12.5523 1.66663 13.4951 2.25241 14.0809C2.8382 14.6667 3.78101 14.6667 5.66663 14.6667H7.71736C9.60296 14.6667 10.5458 14.6667 11.1316 14.0809C11.4582 13.7543 11.6027 13.3168 11.6666 12.6667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M7.66663 2.33331V4.33331C7.66663 4.64394 7.66663 4.79925 7.61589 4.92177C7.54823 5.08512 7.41843 5.21491 7.25509 5.28257C7.13256 5.33331 6.97723 5.33331 6.66663 5.33331C6.356 5.33331 6.20069 5.33331 6.07817 5.28257C5.91482 5.21491 5.78503 5.08512 5.71737 4.92177C5.66663 4.79925 5.66663 4.64394 5.66663 4.33331V2.33331C5.66663 2.02269 5.66663 1.86737 5.71737 1.74486C5.78503 1.58151 5.91482 1.45172 6.07817 1.38406C6.20069 1.33331 6.356 1.33331 6.66663 1.33331C6.97723 1.33331 7.13256 1.33331 7.25509 1.38406C7.41843 1.45172 7.54823 1.58151 7.61589 1.74486C7.66663 1.86737 7.66663 2.02269 7.66663 2.33331Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span className="max-w-[180px] truncate">{noteTitle || "Note"}</span>
+        </button>
+      )}
+
       {/* Right-hand generated-page side panel */}
       <PagePanel
         open={pageOpen}
         page={activePage}
         onClose={() => setPageOpen(false)}
+      />
+
+      {/* Note side panel */}
+      <NotePanel
+        open={noteOpen}
+        content={noteContent}
+        title={noteTitle}
+        streaming={noteStreaming}
+        onClose={() => setNoteOpen(false)}
+        onChange={setNoteContent}
+        onTitleChange={setNoteTitle}
       />
 
       {/* Global lightbox for chat images */}
