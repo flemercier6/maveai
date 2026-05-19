@@ -104,16 +104,18 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
 
         {/* Content area */}
         <div className="relative flex-1 overflow-y-auto">
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => onChange(e.target.value)}
-            readOnly={streaming}
-            placeholder="Your note will appear here…"
-            className="w-full min-h-full p-6 text-[15px] leading-[1.85] bg-transparent resize-none outline-none text-foreground font-[inherit]"
-          />
-          {streaming && (
-            <div className="absolute inset-0 pointer-events-none note-shimmer" />
+          {streaming ? (
+            <div className="w-full min-h-full p-6 text-[15px] leading-[1.85] font-[inherit] whitespace-pre-wrap break-words text-shimmer">
+              {content || " "}
+            </div>
+          ) : (
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Your note will appear here…"
+              className="w-full min-h-full p-6 text-[15px] leading-[1.85] bg-transparent resize-none outline-none text-foreground font-[inherit]"
+            />
           )}
         </div>
       </div>

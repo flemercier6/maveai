@@ -1,5 +1,5 @@
 import { Children, cloneElement, isValidElement, memo, useState, type ReactNode } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles, Map as MapIcon, ChevronDown, ChevronRight } from "lucide-react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles, Map as MapIcon, ChevronDown, ChevronRight, NotebookPen } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
@@ -76,6 +76,8 @@ type Props = {
   attachments?: MessageAttachmentPreview[];
   page?: PageSpec;
   onOpenPage?: () => void;
+  hasNote?: boolean;
+  onOpenNote?: () => void;
   googleActionSlot?: React.ReactNode;
 };
 
@@ -643,6 +645,8 @@ function ChatMessageImpl({
   attachments,
   page,
   onOpenPage,
+  hasNote,
+  onOpenNote,
   googleActionSlot,
 }: Props) {
   const isUser = role === "user";
@@ -824,6 +828,17 @@ function ChatMessageImpl({
                 Explore
               </button>
             )}
+            {hasNote && onOpenNote && (
+              <button
+                type="button"
+                onClick={onOpenNote}
+                aria-label="Open note"
+                className="ml-1 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border border-border bg-card text-[11px] font-medium text-foreground text-sm hover:text-foreground hover:bg-dropdown-hover transition-colors"
+              >
+                <NotebookPen className="w-3.5 h-3.5" />
+                Open Note
+              </button>
+            )}
           </div>
         )}
         {!streaming && devMode && meta && <RequestBreakdown meta={meta} />}
@@ -872,6 +887,8 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.attachments === next.attachments &&
   prev.page === next.page &&
   prev.onOpenPage === next.onOpenPage &&
+  prev.hasNote === next.hasNote &&
+  prev.onOpenNote === next.onOpenNote &&
   prev.googleActionSlot === next.googleActionSlot &&
   prev.thinking === next.thinking &&
   prev.thinkingMs === next.thinkingMs &&
