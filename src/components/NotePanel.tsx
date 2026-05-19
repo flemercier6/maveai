@@ -26,11 +26,27 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
   });
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Snapshot of content at the moment streaming starts, used to show
+  // old lines below the current write position during editing.
+  const prevContentRef = useRef<string>("");
+  const streamingActiveRef = useRef<boolean>(false);
 
   useEffect(() => {
     try { localStorage.setItem("note-panel-width", String(width)); } catch { /* ignore */ }
     onWidthChange?.(width);
   }, [width]);
+
+  // Capture the pre-edit snapshot exactly when streaming begins.
+  useEffect(() => {
+    if (streaming && !streamingActiveRef.current) {
+      prevContentRef.current = content;
+      streamingActiveRef.current = true;
+    }
+    if (!streaming) {
+      streamingActiveRef.current = false;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streaming]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -59,6 +75,36 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
+  };
+
+  // Build the line-by-line streaming view:
+  // - completed new lines (already written by AI) — normal text
+  // - current line being written                  — shimmer
+  // - old lines not yet reached                   — faded
+  const renderStreaming = () => {
+    const newLines = content.split("\n");
+    const oldLines = prevContentRef.current ? prevContentRef.current.split("\n") : [];
+    const completedLines = newLines.slice(0, -1);
+    const currentLine = newLines[newLines.length - 1] ?? "";
+    const remainingOldLines = oldLines.slice(newLines.length);
+
+    return (
+      <div className="w-full min-h-full p-6 text-[15px] leading-[1.85] font-[inherit]">
+        {completedLines.map((line, i) => (
+          <div key={i} className="whitespace-pre-wrap text-foreground" style={{ minHeight: "1.85em" }}>
+            {line || " "}
+          </div>
+        ))}
+        <div className="whitespace-pre-wrap" style={{ minHeight: "1.85em" }}>
+          <span className="text-shimmer">{currentLine || " "}</span>
+        </div>
+        {remainingOldLines.map((line, i) => (
+          <div key={`r${i}`} className="whitespace-pre-wrap text-muted-foreground opacity-50" style={{ minHeight: "1.85em" }}>
+            {line || " "}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -104,11 +150,7 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
 
         {/* Content area */}
         <div className="relative flex-1 overflow-y-auto">
-          {streaming ? (
-            <div className="w-full min-h-full p-6 text-[15px] leading-[1.85] font-[inherit] whitespace-pre-wrap break-words text-shimmer">
-              {content || " "}
-            </div>
-          ) : (
+          {streaming ? renderStreaming() : (
             <textarea
               ref={textareaRef}
               value={content}
