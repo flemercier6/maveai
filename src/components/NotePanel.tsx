@@ -31,7 +31,7 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     } catch { return DEFAULT_WIDTH; }
   });
 
-  const [previewMode, setPreviewMode] = useState(false);
+  const [previewMode, setPreviewMode] = useState(true);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
