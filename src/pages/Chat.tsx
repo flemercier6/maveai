@@ -1847,7 +1847,7 @@ export default function Chat() {
       >
       <main
         className="flex-1 flex flex-col min-w-0 relative bg-sidebar"
-        style={{ paddingTop: 10, paddingRight: 10, paddingBottom: 10, paddingLeft: 0, ...(exploreOpen ? { borderTopRightRadius: 15, borderBottomRightRadius: 15, overflow: "hidden" } : {}) }}
+        style={{ paddingTop: 10, paddingRight: noteOpen ? 0 : 10, paddingBottom: 10, paddingLeft: 0, ...(exploreOpen ? { borderTopRightRadius: 15, borderBottomRightRadius: 15, overflow: "hidden" } : {}) }}
         onDragEnter={(e) => {
           if (!Array.from(e.dataTransfer?.types ?? []).includes("Files")) return;
           e.preventDefault();
