@@ -2471,6 +2471,9 @@ export default function Chat() {
         onChange={setNoteContent}
         onTitleChange={setNoteTitle}
         onWidthChange={setNoteWidth}
+        onAskChange={(selection, request) => {
+          void send(`For the selected text "${selection}": ${request}`);
+        }}
       />
 
       {/* Global lightbox for chat images */}
