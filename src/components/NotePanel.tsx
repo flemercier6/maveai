@@ -34,6 +34,7 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
   const [previewMode, setPreviewMode] = useState(true);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const askInputRef = useRef<HTMLInputElement>(null);
 
@@ -89,6 +90,71 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     return () => document.removeEventListener("mousedown", onDown);
   }, [selInfo]);
 
+  // Document-level selection capture — works for both the textarea (edit mode)
+  // and the rendered markdown preview (uses window.getSelection).
+  useEffect(() => {
+    if (!open || streaming) return;
+
+    const capture = (mouseEvent: MouseEvent | null) => {
+      // Don't fire when clicking inside the toolbar itself
+      if (mouseEvent && barRef.current?.contains(mouseEvent.target as Node)) return;
+
+      // Edit mode: textarea selection
+      const ta = textareaRef.current;
+      if (ta) {
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        if (start !== end) {
+          const x = mouseEvent?.clientX ?? ta.getBoundingClientRect().left + 120;
+          const y = mouseEvent?.clientY ?? ta.getBoundingClientRect().top + 40;
+          setSelInfo({ text: ta.value.slice(start, end), start, end, x, y });
+          setAskMode(false);
+          setAskValue("");
+          return;
+        }
+      }
+
+      // Preview mode: document selection inside the rendered markdown
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
+
+      const text = sel.toString().trim();
+      if (!text) return;
+
+      const preview = previewRef.current;
+      if (!preview) return;
+      if (!preview.contains(sel.anchorNode) || !preview.contains(sel.focusNode)) return;
+
+      const rect = sel.getRangeAt(0).getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) return;
+
+      setSelInfo({
+        text,
+        start: -1,
+        end: -1,
+        x: mouseEvent ? mouseEvent.clientX : rect.left + rect.width / 2,
+        y: rect.top,
+      });
+      setAskMode(false);
+      setAskValue("");
+    };
+
+    // Defer to next tick so the browser finalizes the selection first
+    const onMouseUp = (e: MouseEvent) => setTimeout(() => capture(e), 0);
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.shiftKey || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a")) {
+        setTimeout(() => capture(null), 0);
+      }
+    };
+
+    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("keyup", onKeyUp);
+    return () => {
+      document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("keyup", onKeyUp);
+    };
+  }, [open, streaming, previewMode]);
+
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
     setCopied(true);
@@ -111,32 +177,21 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     window.addEventListener("mouseup", onUp);
   };
 
-  const readSelection = (el: HTMLTextAreaElement, x: number, y: number) => {
-    const { selectionStart: start, selectionEnd: end } = el;
-    if (start !== end) {
-      setSelInfo({ text: el.value.slice(start, end), start, end, x, y });
-      setAskMode(false);
-      setAskValue("");
-    } else {
-      setSelInfo(null);
-      setAskMode(false);
-    }
-  };
-
-  const handleMouseUp = (e: React.MouseEvent<HTMLTextAreaElement>) =>
-    readSelection(e.currentTarget, e.clientX, e.clientY);
-
-  const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    const el = e.currentTarget;
-    const rect = el.getBoundingClientRect();
-    readSelection(el, rect.left + rect.width / 2, rect.top + 40);
-  };
-
   const applyFormat = (marker: string) => {
     if (!selInfo) return;
     const { start, end, text } = selInfo;
-    onChange(content.slice(0, start) + marker + text + marker + content.slice(end));
+    if (start >= 0) {
+      // Edit mode: precise range from textarea
+      onChange(content.slice(0, start) + marker + text + marker + content.slice(end));
+    } else {
+      // Preview mode: find first occurrence of the rendered text in source
+      const idx = content.indexOf(text);
+      if (idx >= 0) {
+        onChange(content.slice(0, idx) + marker + text + marker + content.slice(idx + text.length));
+      }
+    }
     setSelInfo(null);
+    window.getSelection()?.removeAllRanges();
   };
 
   const handleAskSubmit = () => {
@@ -253,7 +308,7 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
         {/* Content area */}
         <div className="relative flex-1 overflow-y-auto">
           {streaming ? renderStreaming() : previewMode ? (
-            <div className="chat-prose p-6 text-[15px]">
+            <div ref={previewRef} className="chat-prose p-6 text-[15px]">
               {content
                 ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
                 : <span className="text-muted-foreground">Your note will appear here…</span>
@@ -264,8 +319,6 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
               ref={textareaRef}
               value={content}
               onChange={(e) => onChange(e.target.value)}
-              onMouseUp={handleMouseUp}
-              onKeyUp={handleKeyUp}
               placeholder="Your note will appear here…"
               className="w-full min-h-full p-6 text-[15px] leading-[1.85] bg-transparent resize-none outline-none text-foreground font-[inherit]"
             />
