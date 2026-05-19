@@ -65,7 +65,7 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     <div
       style={{ width }}
       className={cn(
-        "fixed top-0 right-0 bottom-0 z-40 bg-sidebar p-[10px]",
+        "fixed top-0 right-0 bottom-0 z-40 bg-sidebar pt-[10px] pr-[10px] pb-[10px] pl-0",
         "transition-transform duration-300 ease-in-out",
         open ? "translate-x-0" : "translate-x-full",
       )}
