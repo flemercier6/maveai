@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Copy, Check, ArrowRight } from "lucide-react";
+import { X, Copy, Check, ArrowRight, Pencil, Eye } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -28,6 +30,8 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
       return saved ? Math.max(MIN_WIDTH, parseInt(saved)) : DEFAULT_WIDTH;
     } catch { return DEFAULT_WIDTH; }
   });
+
+  const [previewMode, setPreviewMode] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
@@ -145,24 +149,52 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
 
   // Line-by-line streaming view.
   const renderStreaming = () => {
+    const prev = prevContentRef.current;
+
+    // No new content received yet — show pre-edit content dimmed while AI "prepares".
+    if (content === prev) {
+      return (
+        <div
+          className="w-full min-h-full p-6 text-[15px] leading-[1.85] font-[inherit] whitespace-pre-wrap text-foreground"
+          style={{ opacity: 0.45, transition: "opacity 0.4s ease" }}
+        >
+          {prev || " "}
+        </div>
+      );
+    }
+
     const newLines = content.split("\n");
-    const oldLines = prevContentRef.current ? prevContentRef.current.split("\n") : [];
+    const oldLines = prev ? prev.split("\n") : [];
     const completedLines = newLines.slice(0, -1);
     const currentLine = newLines[newLines.length - 1] ?? "";
     const remainingOldLines = oldLines.slice(newLines.length);
 
     return (
       <div className="w-full min-h-full p-6 text-[15px] leading-[1.85] font-[inherit]">
+        {/* Completed lines: stable keys so note-line-in only plays when a line first appears */}
         {completedLines.map((line, i) => (
-          <div key={i} className="whitespace-pre-wrap text-foreground" style={{ minHeight: "1.85em" }}>
+          <div key={i} className="note-line-in whitespace-pre-wrap text-foreground" style={{ minHeight: "1.85em" }}>
             {line || " "}
           </div>
         ))}
+
+        {/* Current line being written: slow shimmer on the text itself */}
         <div className="whitespace-pre-wrap" style={{ minHeight: "1.85em" }}>
-          <span className="text-shimmer">{currentLine || " "}</span>
+          <span className="note-line-shimmer">{currentLine || " "}</span>
         </div>
+
+        {/* Old lines not yet reached: gradient fade with distance */}
         {remainingOldLines.map((line, i) => (
-          <div key={`r${i}`} className="whitespace-pre-wrap text-muted-foreground opacity-50" style={{ minHeight: "1.85em" }}>
+          <div
+            key={`r${i}`}
+            className="whitespace-pre-wrap"
+            style={{
+              minHeight: "1.85em",
+              opacity: Math.max(0.08, 0.5 - i * 0.09),
+              transition: "opacity 0.5s ease",
+              color: "hsl(var(--foreground))",
+            }}
+          >
             {line || " "}
           </div>
         ))}
@@ -203,6 +235,13 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
             className="flex-1 text-[14px] font-medium bg-transparent outline-none text-foreground placeholder:text-muted-foreground min-w-0"
           />
           <button
+            onClick={() => setPreviewMode((p) => !p)}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors shrink-0"
+            aria-label={previewMode ? "Edit" : "Preview"}
+          >
+            {previewMode ? <Pencil className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+          <button
             onClick={handleCopy}
             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors shrink-0"
             aria-label="Copy"
@@ -213,7 +252,14 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
 
         {/* Content area */}
         <div className="relative flex-1 overflow-y-auto">
-          {streaming ? renderStreaming() : (
+          {streaming ? renderStreaming() : previewMode ? (
+            <div className="chat-prose p-6 text-[15px]">
+              {content
+                ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+                : <span className="text-muted-foreground">Your note will appear here…</span>
+              }
+            </div>
+          ) : (
             <textarea
               ref={textareaRef}
               value={content}

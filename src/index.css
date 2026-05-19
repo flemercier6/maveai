@@ -268,5 +268,30 @@
     0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
   }
+
+  /* Per-line shimmer for the current line being written in NotePanel */
+  .note-line-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted-foreground) / 0.4) 0%,
+      hsl(var(--foreground)) 50%,
+      hsl(var(--muted-foreground) / 0.4) 100%
+    );
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: text-shimmer 2.4s ease-in-out infinite;
+  }
+
+  /* Completed line fade-in — only plays when the element first mounts */
+  @keyframes note-line-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .note-line-in {
+    animation: note-line-in 0.4s ease-out forwards;
+  }
 }
 
