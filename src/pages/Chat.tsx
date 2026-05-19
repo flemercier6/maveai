@@ -320,27 +320,30 @@ export default function Chat() {
         // Re-parse persisted assistant text to recover canvas blocks & titles.
         const parseStored = (raw: string): { body: string; canvas?: string; canvasTitle?: string } => {
           let rest = raw ?? "";
-          const editMatch = rest.match(/^\s*CANVAS_EDIT:\s*(yes|no)\s*\n?/i);
+          // Strip CANVAS_EDIT / CANVAS_TITLE markers wherever they appear.
+          const editMatch = rest.match(/(^|\n)\s*CANVAS_EDIT:\s*(yes|no)\s*(\n|$)/i);
           let editMode: "yes" | "no" | null = null;
           if (editMatch) {
-            editMode = editMatch[1].toLowerCase() as "yes" | "no";
-            rest = rest.slice(editMatch[0].length);
+            editMode = editMatch[2].toLowerCase() as "yes" | "no";
+            rest = rest.slice(0, editMatch.index!) + rest.slice(editMatch.index! + editMatch[0].length);
           }
           let title: string | undefined;
-          const titleMatch = rest.match(/^\s*CANVAS_TITLE:\s*([^\n]+?)[ \t]*\n/i);
+          const titleMatch = rest.match(/(^|\n)\s*CANVAS_TITLE:\s*([^\n]+?)[ \t]*(\n|$)/i);
           if (titleMatch) {
-            title = titleMatch[1].trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 60);
-            rest = rest.slice(titleMatch[0].length);
+            title = titleMatch[2].trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 60);
+            rest = rest.slice(0, titleMatch.index!) + rest.slice(titleMatch.index! + titleMatch[0].length);
           }
-          if (editMode === "no") return { body: rest };
           const open = rest.indexOf("```canvas");
-          if (open < 0) return { body: rest };
+          if (open < 0) {
+            if (editMode === "yes") return { body: rest.trim(), canvas: "", canvasTitle: title };
+            return { body: rest.trim() };
+          }
           const afterOpen = rest.indexOf("\n", open);
-          if (afterOpen < 0) return { body: rest };
+          if (afterOpen < 0) return { body: rest.slice(0, open).trim(), canvas: "", canvasTitle: title };
           const close = rest.indexOf("```", afterOpen + 1);
-          if (close < 0) return { body: rest };
+          if (close < 0) return { body: rest.slice(0, open).trim(), canvas: rest.slice(afterOpen + 1), canvasTitle: title };
           const canvas = rest.slice(afterOpen + 1, close).replace(/\n+$/, "");
-          const body = rest.slice(0, open) + rest.slice(close + 3);
+          const body = (rest.slice(0, open) + rest.slice(close + 3)).trim();
           return { body, canvas, canvasTitle: title };
         };
         let canvasCounter = 0;
@@ -1106,47 +1109,44 @@ export default function Chat() {
       let acc = "";
 
       // Parse streaming text for writing mode.
-      // Expected format:
-      //   CANVAS_EDIT: yes|no\n
-      //   [if yes] CANVAS_TITLE: <title>\n
-      //   <commentary>
-      //   ```canvas\n...\n```
-      // When CANVAS_EDIT is "no" we bypass canvas rendering entirely.
+      // Strips CANVAS_EDIT/CANVAS_TITLE markers (wherever they appear) and any
+      // ```canvas ... ``` fenced block from the body. Returns the extracted
+      // canvas content separately so it can stream into the NotePanel instead
+      // of rendering as a markdown code block inside the chat bubble.
       const splitCanvas = (raw: string): { body: string; canvas: string | null; title: string | null; editMode: "yes" | "no" | null } => {
         let rest = raw;
         let editMode: "yes" | "no" | null = null;
         let title: string | null = null;
 
-        const editMatch = rest.match(/^\s*CANVAS_EDIT:\s*(yes|no)\s*\n?/i);
+        // CANVAS_EDIT may appear anywhere on its own line — strip it.
+        const editMatch = rest.match(/(^|\n)\s*CANVAS_EDIT:\s*(yes|no)\s*(\n|$)/i);
         if (editMatch) {
-          editMode = editMatch[1].toLowerCase() as "yes" | "no";
-          rest = rest.slice(editMatch[0].length);
+          editMode = editMatch[2].toLowerCase() as "yes" | "no";
+          rest = rest.slice(0, editMatch.index!) + rest.slice(editMatch.index! + editMatch[0].length);
         }
-        // Require the newline to be present — otherwise during streaming the
-        // lazy quantifier would capture only the first character of the title.
-        const titleMatch = rest.match(/^\s*CANVAS_TITLE:\s*([^\n]+?)[ \t]*\n/i);
+        // CANVAS_TITLE same: strip wherever it appears on its own line.
+        const titleMatch = rest.match(/(^|\n)\s*CANVAS_TITLE:\s*([^\n]+?)[ \t]*(\n|$)/i);
         if (titleMatch) {
-          title = titleMatch[1].trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 60);
-          rest = rest.slice(titleMatch[0].length);
+          title = titleMatch[2].trim().replace(/^["'`]+|["'`]+$/g, "").slice(0, 60);
+          rest = rest.slice(0, titleMatch.index!) + rest.slice(titleMatch.index! + titleMatch[0].length);
         }
 
-        // If the model explicitly said "no", everything that follows is plain chat.
-        if (editMode === "no") {
-          return { body: rest, canvas: null, title: null, editMode };
-        }
-
+        // Always look for ```canvas fence — strip it from body, return content.
         const open = rest.indexOf("```canvas");
-        if (open < 0) return { body: rest, canvas: editMode === "yes" ? "" : null, title, editMode };
+        if (open < 0) {
+          // No fence yet; if we already saw CANVAS_EDIT: yes treat canvas as empty (incoming).
+          return { body: rest.trimStart(), canvas: editMode === "yes" ? "" : null, title, editMode };
+        }
         const afterOpen = rest.indexOf("\n", open);
         if (afterOpen < 0) {
-          return { body: rest.slice(0, open), canvas: "", title, editMode };
+          return { body: rest.slice(0, open).trimStart(), canvas: "", title, editMode };
         }
         const close = rest.indexOf("```", afterOpen + 1);
         if (close < 0) {
-          return { body: rest.slice(0, open), canvas: rest.slice(afterOpen + 1), title, editMode };
+          return { body: rest.slice(0, open).trimStart(), canvas: rest.slice(afterOpen + 1), title, editMode };
         }
         const canvas = rest.slice(afterOpen + 1, close).replace(/\n+$/, "");
-        const body = rest.slice(0, open) + rest.slice(close + 3);
+        const body = (rest.slice(0, open) + rest.slice(close + 3)).trim();
         return { body, canvas, title, editMode };
       };
 
@@ -1156,11 +1156,13 @@ export default function Chat() {
       const flush = () => {
         pending = false;
         const snapshot = acc;
-        const parsed = writingMode
-          ? splitCanvas(snapshot)
-          : { body: snapshot, canvas: null as string | null, title: null as string | null, editMode: null as "yes" | "no" | null };
+        // Always extract any canvas fence — even outside writingMode — so it
+        // never leaks into the chat as a markdown code block.
+        const parsed = splitCanvas(snapshot);
         const { body, canvas, title } = parsed;
-        if (writingMode && canvas !== null) {
+        if (canvas !== null) {
+          if (!noteOpen) setNoteOpen(true);
+          if (!noteStreaming) setNoteStreaming(true);
           setNoteContent(canvas);
           if (title) setNoteTitle(title);
         }
@@ -1456,11 +1458,10 @@ export default function Chat() {
       // Final flush to make sure we render the very last delta
       if (pending || acc) {
         pending = false;
-        const parsed = writingMode
-          ? splitCanvas(acc)
-          : { body: acc, canvas: null as string | null, title: null as string | null, editMode: null as "yes" | "no" | null };
+        const parsed = splitCanvas(acc);
         const { body, canvas, title } = parsed;
-        if (writingMode && canvas !== null) {
+        if (canvas !== null) {
+          if (!noteOpen) setNoteOpen(true);
           setNoteContent(canvas);
           if (title) setNoteTitle(title);
         }
