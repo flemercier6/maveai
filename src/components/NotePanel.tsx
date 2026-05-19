@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Copy, Check, ArrowRight, Pencil, Eye } from "lucide-react";
+import { X, Copy, Check, ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
@@ -31,7 +31,9 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     } catch { return DEFAULT_WIDTH; }
   });
 
-  const [previewMode, setPreviewMode] = useState(true);
+  // editing=false → rendered markdown preview; editing=true → editable textarea.
+  // The state flips automatically on click / blur — there's no user-visible toggle.
+  const [editing, setEditing] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -153,7 +155,7 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
       document.removeEventListener("mouseup", onMouseUp);
       document.removeEventListener("keyup", onKeyUp);
     };
-  }, [open, streaming, previewMode]);
+  }, [open, streaming, editing]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
@@ -290,13 +292,6 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
             className="flex-1 text-[14px] font-medium bg-transparent outline-none text-foreground placeholder:text-muted-foreground min-w-0"
           />
           <button
-            onClick={() => setPreviewMode((p) => !p)}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors shrink-0"
-            aria-label={previewMode ? "Edit" : "Preview"}
-          >
-            {previewMode ? <Pencil className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-          <button
             onClick={handleCopy}
             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors shrink-0"
             aria-label="Copy"
@@ -305,23 +300,40 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
           </button>
         </div>
 
-        {/* Content area */}
+        {/* Content area — preview by default; click anywhere to edit. */}
         <div className="relative flex-1 overflow-y-auto">
-          {streaming ? renderStreaming() : previewMode ? (
-            <div ref={previewRef} className="chat-prose p-6 text-[15px]">
+          {streaming ? renderStreaming() : editing ? (
+            <textarea
+              ref={textareaRef}
+              autoFocus
+              value={content}
+              onChange={(e) => onChange(e.target.value)}
+              onBlur={(e) => {
+                // Don't exit if blur was caused by clicking the toolbar
+                if (barRef.current?.contains(e.relatedTarget as Node)) return;
+                setEditing(false);
+              }}
+              placeholder="Your note will appear here…"
+              className="w-full min-h-full p-6 text-[15px] leading-[1.85] bg-transparent resize-none outline-none text-foreground font-[inherit]"
+            />
+          ) : (
+            <div
+              ref={previewRef}
+              onClick={(e) => {
+                // Don't flip to edit if the click is part of a real selection drag
+                const sel = window.getSelection();
+                if (sel && !sel.isCollapsed && sel.toString().trim()) return;
+                // Don't flip on clicks targeting the toolbar
+                if (barRef.current?.contains(e.target as Node)) return;
+                setEditing(true);
+              }}
+              className="chat-prose p-6 text-[15px] cursor-text"
+            >
               {content
                 ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
                 : <span className="text-muted-foreground">Your note will appear here…</span>
               }
             </div>
-          ) : (
-            <textarea
-              ref={textareaRef}
-              value={content}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder="Your note will appear here…"
-              className="w-full min-h-full p-6 text-[15px] leading-[1.85] bg-transparent resize-none outline-none text-foreground font-[inherit]"
-            />
           )}
         </div>
       </div>
