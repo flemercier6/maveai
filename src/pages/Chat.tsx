@@ -180,6 +180,10 @@ export default function Chat() {
   const [noteContent, setNoteContent] = useState("");
   const [noteTitle, setNoteTitle] = useState("");
   const [noteStreaming, setNoteStreaming] = useState(false);
+  const [noteWidth, setNoteWidth] = useState(() => {
+    try { const s = localStorage.getItem("note-panel-width"); return s ? Math.max(380, parseInt(s)) : 520; }
+    catch { return 520; }
+  });
   // Title generation animation: convId -> { target, shown }. "pending" = not yet received.
   const [titleAnim, setTitleAnim] = useState<Record<string, { target: string | null; shown: string }>>({});
   const titleTimerRef = useRef<Record<string, number>>({});
@@ -1835,7 +1839,10 @@ export default function Chat() {
         reason={upgradeReason ?? "daily-limit"}
       />
 
-      <div className="flex-1 flex min-w-0 relative bg-sidebar">
+      <div
+        className="flex-1 flex min-w-0 relative bg-sidebar"
+        style={{ transition: "padding-right 300ms ease-in-out", paddingRight: noteOpen ? noteWidth : 0 }}
+      >
       <main
         className="flex-1 flex flex-col min-w-0 relative bg-sidebar"
         style={{ paddingTop: 10, paddingRight: 10, paddingBottom: 10, paddingLeft: 0, ...(exploreOpen ? { borderTopRightRadius: 15, borderBottomRightRadius: 15, overflow: "hidden" } : {}) }}
@@ -2459,6 +2466,7 @@ export default function Chat() {
         onClose={() => setNoteOpen(false)}
         onChange={setNoteContent}
         onTitleChange={setNoteTitle}
+        onWidthChange={setNoteWidth}
       />
 
       {/* Global lightbox for chat images */}

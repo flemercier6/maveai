@@ -10,12 +10,13 @@ type Props = {
   onClose: () => void;
   onChange: (content: string) => void;
   onTitleChange: (title: string) => void;
+  onWidthChange?: (w: number) => void;
 };
 
 const MIN_WIDTH = 380;
 const DEFAULT_WIDTH = 520;
 
-export function NotePanel({ open, content, title, streaming, onClose, onChange, onTitleChange }: Props) {
+export function NotePanel({ open, content, title, streaming, onClose, onChange, onTitleChange, onWidthChange }: Props) {
   const [copied, setCopied] = useState(false);
   const [width, setWidth] = useState(() => {
     try {
@@ -28,6 +29,7 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
 
   useEffect(() => {
     try { localStorage.setItem("note-panel-width", String(width)); } catch { /* ignore */ }
+    onWidthChange?.(width);
   }, [width]);
 
   useEffect(() => {
@@ -60,17 +62,13 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
   };
 
   return (
-    <>
-      {open && (
-        <div className="fixed inset-0 z-40 bg-black/5" onClick={onClose} />
+    <div
+      style={{ width }}
+      className={cn(
+        "fixed top-0 right-0 bottom-0 z-40 flex flex-col bg-card border-l border-border shadow-lg transition-transform duration-300 ease-in-out",
+        open ? "translate-x-0" : "translate-x-full",
       )}
-      <div
-        style={{ width }}
-        className={cn(
-          "fixed top-0 right-0 bottom-0 z-50 flex flex-col bg-card border-l border-border shadow-2xl transition-transform duration-300 ease-in-out",
-          open ? "translate-x-0" : "translate-x-full",
-        )}
-      >
+    >
         {/* Drag-to-resize handle */}
         <div
           onMouseDown={startResize}
@@ -115,7 +113,6 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
             <div className="absolute inset-0 pointer-events-none note-shimmer" />
           )}
         </div>
-      </div>
-    </>
+    </div>
   );
 }
