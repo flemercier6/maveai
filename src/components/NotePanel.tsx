@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Copy, Check, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -226,16 +227,16 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
         </div>
       </div>
 
-      {/* Floating selection toolbar */}
-      {selInfo && !streaming && (
+      {/* Floating selection toolbar — portaled to body to escape the CSS transform context */}
+      {selInfo && !streaming && createPortal(
         <div
           ref={barRef}
           style={{
             position: "fixed",
-            left: Math.min(selInfo.x, window.innerWidth - (askMode ? 280 : 190)),
+            left: Math.min(Math.max(selInfo.x, askMode ? 140 : 95), window.innerWidth - (askMode ? 140 : 95)),
             top: Math.max(8, selInfo.y - 52),
             transform: "translateX(-50%)",
-            zIndex: 100,
+            zIndex: 9999,
           }}
           className="flex items-center gap-0.5 rounded-[10px] bg-card border border-border shadow-md px-1.5 py-1"
         >
@@ -288,7 +289,8 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
               </button>
             </>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
