@@ -65,18 +65,28 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     <div
       style={{ width }}
       className={cn(
-        "fixed top-0 right-0 bottom-0 z-40 flex flex-col bg-card border-l border-border shadow-lg transition-transform duration-300 ease-in-out",
+        "fixed top-0 right-0 bottom-0 z-40 bg-sidebar p-[10px]",
+        "transition-transform duration-300 ease-in-out",
         open ? "translate-x-0" : "translate-x-full",
       )}
     >
-        {/* Drag-to-resize handle */}
-        <div
-          onMouseDown={startResize}
-          className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/20 transition-colors"
-        />
+      {/* Drag-to-resize handle */}
+      <div
+        onMouseDown={startResize}
+        className="absolute left-0 top-0 bottom-0 w-[10px] cursor-col-resize"
+      />
 
+      {/* Inner panel */}
+      <div className="flex flex-col h-full rounded-[12px] overflow-hidden bg-sidebar">
         {/* Header */}
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-border shrink-0">
+        <div className="flex items-center gap-2 px-4 py-3 shrink-0">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors shrink-0"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
           <input
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
@@ -89,13 +99,6 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
             aria-label="Copy"
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-          </button>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors shrink-0"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -113,6 +116,7 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
             <div className="absolute inset-0 pointer-events-none note-shimmer" />
           )}
         </div>
+      </div>
     </div>
   );
 }
