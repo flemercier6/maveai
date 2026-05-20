@@ -113,12 +113,12 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
             maxHeight: "70vh",
             overflowY: "auto",
           }}
-          className="w-[400px] max-w-[calc(100vw-32px)] rounded-xl bg-foreground text-background shadow-xl text-xs"
+          className="w-[420px] max-w-[calc(100vw-32px)] rounded-xl bg-foreground text-background shadow-xl text-sm"
         >
           {/* Header */}
           <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/10">
             <span className="font-semibold text-sm">Developer breakdown</span>
-            <span className="tabular-nums text-white/60 text-xs">
+            <span className="tabular-nums text-white/60 text-sm">
               {meta.model} · {meta.provider}
             </span>
           </div>
@@ -127,7 +127,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
             {/* Input segments */}
             {segments.length > 0 && (
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-white/40 mb-2">Input</div>
+                <div className="text-xs uppercase tracking-wider text-white/40 mb-2">Input</div>
                 <div className="space-y-1">
                   {segments.map((s, i) => (
                     <div key={i} className="flex items-start justify-between gap-3">
@@ -151,7 +151,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
             {/* Output */}
             {cost && (
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-white/40 mb-2">Output</div>
+                <div className="text-xs uppercase tracking-wider text-white/40 mb-2">Output</div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-white/70">Generated tokens</span>
                   <div className="flex items-center gap-3 tabular-nums">
