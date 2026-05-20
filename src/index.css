@@ -47,7 +47,7 @@
     --input: 0 0% 88%;
     --ring: 0 0% 0%;
 
-    --bubble-user: 0 0% 97%;            /* #F8F8F8 */
+    --bubble-user: 40 18% 97%;            /* #F8F7F5 */
     --bubble-user-fg: 222 14% 12%;
     --bubble-assistant: 0 0% 100%;
     --bubble-assistant-fg: 222 14% 12%;
@@ -55,7 +55,7 @@
     --tooltip: 0 0% 0%;
     --tooltip-foreground: 0 0% 100%;
 
-    --dropdown-hover: 0 0% 97%;       /* #F8F8F8 — hover bg for dropdown items */
+    --dropdown-hover: 40 18% 97%;       /* #F8F7F5 — hover bg for dropdown items */
 
     --link: 217 100% 50%;             /* #0062FF — clickable URLs */
     --switch-on: 217 100% 50%;        /* #0062FF — switches when checked */
@@ -68,7 +68,7 @@
     --shadow-sm: 0 1px 2px 0 hsl(220 13% 10% / 0.05);
     --shadow-md: 0 4px 16px -2px hsl(220 13% 10% / 0.08);
 
-    --sidebar-background: 0 0% 97%;  /* #F8F8F8 */
+    --sidebar-background: 40 18% 97%;  /* #F8F7F5 */
     --sidebar-foreground: 222 14% 18%;
     --sidebar-primary: 0 0% 0%;
     --sidebar-primary-foreground: 0 0% 100%;
