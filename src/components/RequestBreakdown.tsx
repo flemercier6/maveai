@@ -92,7 +92,7 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
         ref={btnRef}
         type="button"
         onClick={() => (open ? setOpen(false) : openDropdown())}
-        className="ml-auto inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-foreground text-background text-xs font-medium hover:opacity-80 transition-opacity shrink-0"
+        className="ml-auto inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 transition-opacity shrink-0"
       >
         <Sparkles className="w-3 h-3 shrink-0" />
         <span className="tabular-nums">
