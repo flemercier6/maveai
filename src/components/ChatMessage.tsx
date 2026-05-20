@@ -674,7 +674,7 @@ function ChatMessageImpl({
     const ModeTag = modeId ? (() => {
       if (modeId === "note") {
         return (
-          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[var(--blue-tag-bg)] text-xs" style={{ color: "var(--blue-tag-fg)" }}>
+          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[var(--blue-tag-bg)] text-sm" style={{ color: "var(--blue-tag-fg)" }}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-3.5 h-3.5 shrink-0">
               <path d="M7.66663 3.33331C9.55223 3.33331 10.495 3.33331 11.0808 3.9191C11.6666 4.50489 11.6666 5.44769 11.6666 7.33331C11.6666 12.6666 14.3333 12.6666 14.3333 12.6666H4.82571C4.60707 12.6666 4.49775 12.6666 4.24986 12.6021C4.00197 12.5375 3.96254 12.5155 3.88368 12.4714C3.12363 12.0468 1.66663 10.7828 1.66663 7.33331C1.66663 5.44769 1.66663 4.50489 2.25241 3.9191C2.8382 3.33331 3.78101 3.33331 5.66663 3.33331" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M1.66663 6.66669V10.6667C1.66663 12.5523 1.66663 13.4951 2.25241 14.0809C2.8382 14.6667 3.78101 14.6667 5.66663 14.6667H7.71736C9.60296 14.6667 10.5458 14.6667 11.1316 14.0809C11.4582 13.7543 11.6027 13.3168 11.6666 12.6667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
