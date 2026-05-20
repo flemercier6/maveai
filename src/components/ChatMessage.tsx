@@ -1,5 +1,6 @@
 import { Children, cloneElement, isValidElement, memo, useState, type ReactNode } from "react";
 import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles, Map as MapIcon, ChevronDown, ChevronRight, NotebookPen } from "lucide-react";
+import noteIcon from "@/assets/note.svg";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
@@ -673,14 +674,14 @@ function ChatMessageImpl({
     const rest = modeMatch ? content.slice(modeMatch[0].length) : content;
     const ModeTag = modeId ? (() => {
       const cfg = {
-        note: { label: "Note", Icon: NotebookPen },
-        page: { label: "Page", Icon: FileText },
-        explore: { label: "Explore", Icon: Sparkles },
+        note: { label: "Note", Icon: null as null | typeof FileText, img: noteIcon },
+        page: { label: "Page", Icon: FileText, img: null as string | null },
+        explore: { label: "Explore", Icon: Sparkles, img: null as string | null },
       }[modeId];
       const Icon = cfg.Icon;
       return (
         <div className="inline-flex items-center h-6 gap-1.5 rounded-full bg-muted px-2.5 text-[11px] font-medium text-muted-foreground">
-          <Icon className="w-3.5 h-3.5 shrink-0" />
+          {cfg.img ? <img src={cfg.img} alt="" className="w-3.5 h-3.5 shrink-0" /> : Icon ? <Icon className="w-3.5 h-3.5 shrink-0" /> : null}
           <span>{cfg.label}</span>
         </div>
       );
