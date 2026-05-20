@@ -38,6 +38,22 @@ export type MetaCost = {
   multiplier: number;
 };
 
+/**
+ * Per-model usage entry. When a request goes through a multi-model pipeline
+ * (e.g. an Anthropic planner + an OpenAI content writer), each model
+ * contributes one ModelUsage. The aggregate is also reflected in `cost`.
+ */
+export type ModelUsage = {
+  provider: string;
+  model: string;
+  /** Functional role in the pipeline (e.g. "planner", "content"). */
+  role: string;
+  inputTokens: number;
+  outputTokens: number;
+  inputCostUsd: number;
+  outputCostUsd: number;
+};
+
 export type RequestMeta = {
   provider: string;
   model: string;
@@ -48,4 +64,6 @@ export type RequestMeta = {
   webContext: MetaWebContext | null;
   approxTotalInputTokens: number;
   cost?: MetaCost;
+  /** Set when the request used more than one model in a pipeline. */
+  models?: ModelUsage[];
 };

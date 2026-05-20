@@ -1,5 +1,13 @@
-// Generate a structured one-pager (JSON schema) via Lovable AI tool calling.
-// Returns: { page: PageSpec, summary: string }
+// Multi-model one-pager generation.
+//
+// Pipeline (when skipClarify=false):
+//   Phase 1 — Planner (anthropic/claude-sonnet-4-6): reasons about the request
+//     and either asks 1–2 clarifying questions OR produces a structural plan.
+//   Phase 2 — Content writer (openai/gpt-5-mini): fills in concrete content
+//     for each block following the plan, returns final PageSpec via tool call.
+//
+// Aggregated usage is reported per-model in meta.models, with the totals also
+// summed into meta.cost so existing UI keeps working.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -8,26 +16,109 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are an expert at structuring information into clear, scannable one-pager dashboards.
+const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-When the user asks a question or makes a request, do not respond in plain prose. Instead, design a structured one-pager that answers their request using the available block types.
+// Models used in the pipeline. We pick a strong-reasoning model for the
+// planning step and a cheap/fast model for the bulk content step.
+const PLANNER_MODEL_DEFAULT = "claude-sonnet-4-6";
+const CONTENT_MODEL_DEFAULT = "gpt-5-mini";
 
-Guidelines:
-- Pick a clear, descriptive title.
-- Add a short subtitle giving context (one line).
-- Group content into 1–4 tabs only when it genuinely helps. For simpler answers, use a single tab.
-- Inside each tab, mix block types that suit the content: headings, paragraphs, KPI grids, checklists, tables, charts, callouts, or bullet lists.
-- Be concrete: real numbers, real items. No filler. No "lorem ipsum".
-- Keep prose tight — one or two sentences per paragraph block.
-- For charts, only use them when comparing values makes sense, and provide realistic data.
-- Always also produce a 1–2 sentence "summary" describing the page (shown in the chat above the page card).
-`;
+// Public list prices (USD per 1M tokens). Keep aligned with src/lib/pricing.ts.
+const PRICES: Record<string, { input: number; output: number }> = {
+  "gpt-5.5": { input: 2.5, output: 10 },
+  "gpt-5-mini": { input: 0.25, output: 2 },
+  "gpt-4o-mini": { input: 0.15, output: 0.6 },
+  "claude-opus-4-7": { input: 15, output: 75 },
+  "claude-sonnet-4-6": { input: 3, output: 15 },
+  "gemini-2.5-pro": { input: 1.25, output: 10 },
+  "gemini-3.5-flash": { input: 0.3, output: 2.5 },
+  "mistral-large-latest": { input: 2, output: 6 },
+  "mistral-small-latest": { input: 0.2, output: 0.6 },
+};
 
-const TOOL = {
+function providerOf(modelBare: string): "openai" | "anthropic" | "google" | "mistral" {
+  if (modelBare.startsWith("gemini")) return "google";
+  if (modelBare.startsWith("claude")) return "anthropic";
+  if (modelBare.startsWith("mistral")) return "mistral";
+  return "openai";
+}
+function gatewayId(modelBare: string): string {
+  const p = modelBare.startsWith("gemini") ? "google"
+    : modelBare.startsWith("claude") ? "anthropic"
+    : modelBare.startsWith("mistral") ? "mistralai"
+    : "openai";
+  return `${p}/${modelBare}`;
+}
+
+function pickAllowed(modelBare: string, blacklisted: Set<string>, fallbacks: string[]): string {
+  if (!blacklisted.has(modelBare)) return modelBare;
+  for (const m of fallbacks) if (!blacklisted.has(m)) return m;
+  return modelBare;
+}
+
+const approxTokens = (s: string) => Math.ceil((s?.length ?? 0) / 4);
+
+// ---------- Phase 1 schema ----------
+const PLANNER_SYSTEM_BASE = `You are the planning brain for a one-pager dashboard generator.
+
+Your job has TWO branches. Choose exactly one.
+
+BRANCH A — Ask 1–2 clarifying questions (only if truly needed):
+  Use this only when the user's request is genuinely ambiguous AND a question
+  would unblock a materially different answer. Never clarify for short,
+  conversational, factual, or already-detailed requests.
+
+BRANCH B — Produce a structural plan:
+  Decide title, short subtitle, 1–4 tab(s), and the ordered list of blocks for
+  each tab. For each block, provide a single-line "brief" telling the content
+  writer what to put there. The content writer is a separate, cheaper model —
+  briefs must be concrete and actionable.
+
+  Available block kinds: "heading", "paragraph", "callout", "kpis",
+  "checklist", "bullets", "table", "chart".
+
+You MUST output a single JSON object with this exact shape:
+{
+  "needsClarify": boolean,
+  "questions"?: [
+    {
+      "header": "2-3 word tag",
+      "question": "one clear question ending with ?",
+      "multi": false,
+      "options": [{"label": "1-5 words"}, {"label": "..."}]
+    }
+  ],
+  "plan"?: {
+    "title": "string",
+    "subtitle": "string (one line)",
+    "tabs": [
+      {
+        "label": "tab name",
+        "blocks": [
+          {"kind": "heading|paragraph|callout|kpis|checklist|bullets|table|chart", "brief": "one-line direction"}
+        ]
+      }
+    ]
+  }
+}
+
+Rules:
+- If needsClarify=true: include "questions" (1–2 items, 2–4 options each, options ≤24 chars), omit "plan".
+- If needsClarify=false: include "plan", omit "questions".
+- Reply with the language of the user's message.
+- Output ONLY the JSON object — no prose, no code fences.`;
+
+const PLANNER_SYSTEM_FORCE_PLAN = `${PLANNER_SYSTEM_BASE}
+
+IMPORTANT: The user has already answered clarifying questions. ALWAYS choose
+BRANCH B — never ask further questions. Set needsClarify=false.`;
+
+// ---------- Phase 2 tool (final renderer) ----------
+const RENDER_TOOL = {
   type: "function",
   function: {
     name: "render_one_pager",
-    description: "Return a structured one-pager dashboard.",
+    description: "Return a structured one-pager dashboard, following the plan.",
     parameters: {
       type: "object",
       properties: {
@@ -55,29 +146,13 @@ const TOOL = {
                       properties: {
                         kind: {
                           type: "string",
-                          enum: [
-                            "heading",
-                            "paragraph",
-                            "callout",
-                            "kpis",
-                            "checklist",
-                            "bullets",
-                            "table",
-                            "chart",
-                          ],
-                          description: "Block type discriminator.",
+                          enum: ["heading", "paragraph", "callout", "kpis", "checklist", "bullets", "table", "chart"],
                         },
-                        // heading
                         text: { type: "string" },
                         level: { type: "number", enum: [2, 3] },
-                        // callout
-                        tone: {
-                          type: "string",
-                          enum: ["info", "success", "warning", "danger"],
-                        },
+                        tone: { type: "string", enum: ["info", "success", "warning", "danger"] },
                         title: { type: "string" },
                         body: { type: "string" },
-                        // kpis
                         items: {
                           type: "array",
                           items: {
@@ -86,24 +161,14 @@ const TOOL = {
                               label: { type: "string" },
                               value: { type: "string" },
                               hint: { type: "string" },
-                              // checklist items also use { label, checked }
                               checked: { type: "boolean" },
                             },
                           },
                         },
-                        // bullets
                         bullets: { type: "array", items: { type: "string" } },
-                        // table
                         columns: { type: "array", items: { type: "string" } },
-                        rows: {
-                          type: "array",
-                          items: { type: "array", items: { type: "string" } },
-                        },
-                        // chart
-                        chartType: {
-                          type: "string",
-                          enum: ["bar", "line", "pie"],
-                        },
+                        rows: { type: "array", items: { type: "array", items: { type: "string" } } },
+                        chartType: { type: "string", enum: ["bar", "line", "pie"] },
                         data: {
                           type: "array",
                           items: {
@@ -132,100 +197,202 @@ const TOOL = {
   },
 };
 
+type Usage = { input_tokens?: number; output_tokens?: number; prompt_tokens?: number; completion_tokens?: number };
+
+function readUsage(u: Usage | undefined) {
+  const inputTokens = Number(u?.input_tokens ?? u?.prompt_tokens ?? 0);
+  const outputTokens = Number(u?.output_tokens ?? u?.completion_tokens ?? 0);
+  return { inputTokens, outputTokens };
+}
+
+function modelCost(modelBare: string, inputTokens: number, outputTokens: number) {
+  const p = PRICES[modelBare] ?? { input: 0, output: 0 };
+  return {
+    inputCostUsd: (inputTokens / 1_000_000) * p.input,
+    outputCostUsd: (outputTokens / 1_000_000) * p.output,
+  };
+}
+
 serve(async (req) => {
-  if (req.method === "OPTIONS")
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, history, aiPrefs } = await req.json();
+    const { prompt, history, aiPrefs, skipClarify } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY)
+    if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "LOVABLE_API_KEY missing" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
 
-    // Apply blacklist fallback: if gpt-5-mini is blacklisted, swap to a similar
-    // small model the user still allows.
     const blacklisted = new Set<string>(aiPrefs?.blacklistedModels ?? []);
     const favorites: string[] = aiPrefs?.favoriteModels ?? [];
-    const PAGE_FALLBACKS = [
-      ...favorites,
-      "gpt-5-mini", "gemini-3.5-flash", "gpt-4o-mini", "gemini-2.5-pro", "gpt-5.5",
-    ];
-    let pageModelBare = "gpt-5-mini";
-    if (blacklisted.has(pageModelBare)) {
-      const replacement = PAGE_FALLBACKS.find((m) => !blacklisted.has(m));
-      if (replacement) pageModelBare = replacement;
-    }
-    // Map bare id → AI gateway prefixed id.
-    const PROVIDER_FOR_PAGE = pageModelBare.startsWith("gemini") ? "google"
-      : pageModelBare.startsWith("claude") ? "anthropic"
-      : pageModelBare.startsWith("mistral") ? "mistralai"
-      : "openai";
-    const pageModelGateway = `${PROVIDER_FOR_PAGE}/${pageModelBare}`;
 
-    const messages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      ...(Array.isArray(history) ? history : []),
+    // Pick planner + content models, honouring blacklist with sensible fallbacks.
+    const plannerFallbacks = [
+      ...favorites,
+      "claude-sonnet-4-6", "gemini-2.5-pro", "gpt-5.5", "gpt-5-mini",
+    ];
+    const contentFallbacks = [
+      ...favorites,
+      "gpt-5-mini", "gemini-3.5-flash", "gpt-4o-mini", "gemini-2.5-pro",
+    ];
+    const plannerBare = pickAllowed(PLANNER_MODEL_DEFAULT, blacklisted, plannerFallbacks);
+    const contentBare = pickAllowed(CONTENT_MODEL_DEFAULT, blacklisted, contentFallbacks);
+
+    const hist = Array.isArray(history) ? history : [];
+
+    // ---------- Phase 1: planner / clarify decider ----------
+    const plannerSystem = skipClarify ? PLANNER_SYSTEM_FORCE_PLAN : PLANNER_SYSTEM_BASE;
+    const plannerMessages = [
+      { role: "system", content: plannerSystem },
+      ...hist,
       { role: "user", content: String(prompt ?? "") },
     ];
 
-    const resp = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: pageModelGateway,
-          messages,
-          tools: [TOOL],
-          tool_choice: {
-            type: "function",
-            function: { name: "render_one_pager" },
-          },
-        }),
-      },
-    );
+    const plannerResp = await fetch(GATEWAY_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: gatewayId(plannerBare),
+        messages: plannerMessages,
+        response_format: { type: "json_object" },
+      }),
+    });
 
-    if (!resp.ok) {
-      const t = await resp.text();
-      console.error("AI gateway error:", resp.status, t);
-      if (resp.status === 429)
-        return new Response(
-          JSON.stringify({ error: "Rate limit reached, please retry shortly." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      if (resp.status === 402)
-        return new Response(
-          JSON.stringify({ error: "Credits exhausted." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500,
+    if (!plannerResp.ok) {
+      const t = await plannerResp.text();
+      console.error("planner gateway error:", plannerResp.status, t);
+      if (plannerResp.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit reached, please retry shortly." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (plannerResp.status === 402) {
+        return new Response(JSON.stringify({ error: "Credits exhausted." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "AI gateway error (planner)" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const plannerData = await plannerResp.json();
+    const plannerRaw: string = plannerData?.choices?.[0]?.message?.content ?? "";
+    const plannerUsage = readUsage(plannerData?.usage);
+    const plannerCost = modelCost(plannerBare, plannerUsage.inputTokens, plannerUsage.outputTokens);
+
+    let planObj: { needsClarify?: boolean; questions?: unknown[]; plan?: Record<string, unknown> } = {};
+    try {
+      const cleaned = plannerRaw.replace(/```json|```/g, "").trim();
+      planObj = JSON.parse(cleaned);
+    } catch {
+      planObj = {};
+    }
+
+    // If the planner asked for clarification, return that now — no Phase 2.
+    if (!skipClarify && planObj?.needsClarify && Array.isArray(planObj.questions) && planObj.questions.length > 0) {
+      const meta = {
+        provider: providerOf(plannerBare),
+        model: plannerBare,
+        systems: [{ label: "/page planner", content: plannerSystem, approxTokens: approxTokens(plannerSystem) }],
+        history: hist.map((m: { role: string; content: string }) => ({
+          role: m.role, content: m.content ?? "", approxTokens: approxTokens(m.content ?? ""), attachments: [],
+        })).concat([{
+          role: "user", content: String(prompt ?? ""), approxTokens: approxTokens(String(prompt ?? "")), attachments: [],
+        }]),
+        memoryKeywords: [],
+        memoryMatches: [],
+        webContext: null,
+        approxTotalInputTokens: approxTokens(plannerSystem) + hist.reduce((s: number, m: { content?: string }) => s + approxTokens(m.content ?? ""), 0) + approxTokens(String(prompt ?? "")),
+        cost: {
+          inputTokens: plannerUsage.inputTokens,
+          outputTokens: plannerUsage.outputTokens,
+          inputCostUsd: plannerCost.inputCostUsd,
+          outputCostUsd: plannerCost.outputCostUsd,
+        },
+        models: [{
+          provider: providerOf(plannerBare),
+          model: plannerBare,
+          role: "planner",
+          inputTokens: plannerUsage.inputTokens,
+          outputTokens: plannerUsage.outputTokens,
+          inputCostUsd: plannerCost.inputCostUsd,
+          outputCostUsd: plannerCost.outputCostUsd,
+        }],
+      };
+      return new Response(JSON.stringify({ type: "clarify", questions: planObj.questions, meta }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const data = await resp.json();
-    const call = data?.choices?.[0]?.message?.tool_calls?.[0];
-    const argsRaw = call?.function?.arguments;
-    if (!argsRaw)
-      return new Response(JSON.stringify({ error: "No structured output" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // ---------- Phase 2: content writer ----------
+    const plan = planObj?.plan ?? null;
+    const contentSystem = `You are a content writer filling in a pre-planned one-pager. A reasoning model has already designed the structure (title, subtitle, tabs, ordered blocks with briefs). Your job is to fill in concrete, real content for each block, exactly following the plan.
+
+Rules:
+- Use the same title, subtitle, tabs and block ordering as the plan.
+- For each block, generate content based on its "brief" and "kind". Be concrete and accurate.
+- Real numbers, real items, no filler.
+- Reply with the language of the user's original message.
+
+Plan (authoritative structure to follow):
+${plan ? JSON.stringify(plan) : "(no plan available — derive a sensible structure yourself)"}
+
+Always also produce a 1–2 sentence "summary" describing the page (shown in the chat above the page card).
+Return the result by calling the render_one_pager tool.`;
+
+    const contentMessages = [
+      { role: "system", content: contentSystem },
+      ...hist,
+      { role: "user", content: String(prompt ?? "") },
+    ];
+
+    const contentResp = await fetch(GATEWAY_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: gatewayId(contentBare),
+        messages: contentMessages,
+        tools: [RENDER_TOOL],
+        tool_choice: { type: "function", function: { name: "render_one_pager" } },
+      }),
+    });
+
+    if (!contentResp.ok) {
+      const t = await contentResp.text();
+      console.error("content gateway error:", contentResp.status, t);
+      if (contentResp.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit reached, please retry shortly." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (contentResp.status === 402) {
+        return new Response(JSON.stringify({ error: "Credits exhausted." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "AI gateway error (content)" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const contentData = await contentResp.json();
+    const call = contentData?.choices?.[0]?.message?.tool_calls?.[0];
+    const argsRaw = call?.function?.arguments;
+    if (!argsRaw) {
+      return new Response(JSON.stringify({ error: "No structured output" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     let parsed: unknown;
     try {
       parsed = typeof argsRaw === "string" ? JSON.parse(argsRaw) : argsRaw;
     } catch {
       return new Response(JSON.stringify({ error: "Invalid JSON from model" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -243,72 +410,77 @@ serve(async (req) => {
       }
     } catch (_) { /* ignore */ }
 
-    // ---------- Build developer breakdown meta ----------
-    const approxTokens = (s: string) => Math.ceil((s?.length ?? 0) / 4);
-    const PROVIDER = PROVIDER_FOR_PAGE;
-    const MODEL = pageModelGateway;
-    const metaSystems = [
-      { label: "/page system prompt", content: SYSTEM_PROMPT, approxTokens: approxTokens(SYSTEM_PROMPT) },
-    ];
-    const metaHistory = [
-      ...(Array.isArray(history) ? history : []).map((m: { role: string; content: string }) => ({
-        role: m.role,
-        content: m.content ?? "",
-        approxTokens: approxTokens(m.content ?? ""),
-        attachments: [],
-      })),
+    // ---------- Aggregate usage across both models ----------
+    const contentUsage = readUsage(contentData?.usage);
+    const contentCost = modelCost(contentBare, contentUsage.inputTokens, contentUsage.outputTokens);
+
+    const models = [
       {
-        role: "user",
-        content: String(prompt ?? ""),
-        approxTokens: approxTokens(String(prompt ?? "")),
-        attachments: [],
+        provider: providerOf(plannerBare),
+        model: plannerBare,
+        role: "planner",
+        inputTokens: plannerUsage.inputTokens,
+        outputTokens: plannerUsage.outputTokens,
+        inputCostUsd: plannerCost.inputCostUsd,
+        outputCostUsd: plannerCost.outputCostUsd,
+      },
+      {
+        provider: providerOf(contentBare),
+        model: contentBare,
+        role: "content",
+        inputTokens: contentUsage.inputTokens,
+        outputTokens: contentUsage.outputTokens,
+        inputCostUsd: contentCost.inputCostUsd,
+        outputCostUsd: contentCost.outputCostUsd,
       },
     ];
-    const approxTotalInputTokens = [...metaSystems, ...metaHistory]
-      .reduce((s, x) => s + (x.approxTokens ?? 0), 0);
 
-    // Pull real usage if the gateway returned it; pricing for gpt-5-mini.
-    const usage = (data?.usage ?? {}) as {
-      prompt_tokens?: number;
-      completion_tokens?: number;
-      input_tokens?: number;
-      output_tokens?: number;
-    };
-    const inputTokens = Number(usage.input_tokens ?? usage.prompt_tokens ?? 0);
-    const outputTokens = Number(usage.output_tokens ?? usage.completion_tokens ?? 0);
-    // gpt-5-mini list pricing (USD / 1M tokens).
-    const PRICE_IN = 0.25;
-    const PRICE_OUT = 2.0;
-    const inputCostUsd = (inputTokens / 1_000_000) * PRICE_IN;
-    const outputCostUsd = (outputTokens / 1_000_000) * PRICE_OUT;
+    const totalInput = models.reduce((s, m) => s + m.inputTokens, 0);
+    const totalOutput = models.reduce((s, m) => s + m.outputTokens, 0);
+    const totalInputCostUsd = models.reduce((s, m) => s + m.inputCostUsd, 0);
+    const totalOutputCostUsd = models.reduce((s, m) => s + m.outputCostUsd, 0);
+
+    const metaSystems = [
+      { label: "/page planner", content: plannerSystem, approxTokens: approxTokens(plannerSystem) },
+      { label: "/page content", content: contentSystem, approxTokens: approxTokens(contentSystem) },
+    ];
+    const metaHistory = [
+      ...hist.map((m: { role: string; content: string }) => ({
+        role: m.role, content: m.content ?? "", approxTokens: approxTokens(m.content ?? ""), attachments: [],
+      })),
+      { role: "user", content: String(prompt ?? ""), approxTokens: approxTokens(String(prompt ?? "")), attachments: [] },
+    ];
 
     const meta = {
-      provider: PROVIDER,
-      model: MODEL,
+      // Aggregate "primary" identifier: report the content writer model since
+      // that's the bulk of the work and what shaped the final output.
+      provider: providerOf(contentBare),
+      model: contentBare,
       systems: metaSystems,
       history: metaHistory,
       memoryKeywords: [],
       memoryMatches: [],
       webContext: null,
-      approxTotalInputTokens,
+      approxTotalInputTokens: metaSystems.reduce((s, x) => s + x.approxTokens, 0) + metaHistory.reduce((s, x) => s + x.approxTokens, 0),
       cost: {
-        inputTokens,
-        outputTokens,
-        inputCostUsd,
-        outputCostUsd,
+        inputTokens: totalInput,
+        outputTokens: totalOutput,
+        inputCostUsd: totalInputCostUsd,
+        outputCostUsd: totalOutputCostUsd,
       },
+      models,
     };
 
-    const out = (parsed && typeof parsed === "object") ? { ...(parsed as Record<string, unknown>), meta } : { meta };
+    const out = (parsed && typeof parsed === "object")
+      ? { ...(parsed as Record<string, unknown>), meta }
+      : { meta };
     return new Response(JSON.stringify(out), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("generate-page error:", e);
     return new Response(
-      JSON.stringify({
-        error: e instanceof Error ? e.message : "Unknown error",
-      }),
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

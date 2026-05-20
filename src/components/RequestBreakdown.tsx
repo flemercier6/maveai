@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Sparkles } from "lucide-react";
 import type { RequestMeta } from "@/lib/requestMeta";
-import { USD_TO_EUR } from "@/lib/pricing";
+import { USD_TO_EUR, billingMultiplier } from "@/lib/pricing";
+import { ProviderLogo } from "@/components/ProviderLogo";
+import type { Provider } from "@/lib/models";
 
 const fmtTok = (n: number) => {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -92,9 +94,23 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
         ref={btnRef}
         type="button"
         onClick={() => (open ? setOpen(false) : openDropdown())}
-        className="ml-auto inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 transition-opacity shrink-0"
+        className="ml-auto inline-flex items-center gap-1.5 h-7 pl-1 pr-2.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-80 transition-opacity shrink-0"
       >
-        <Sparkles className="w-3 h-3 shrink-0" />
+        {meta.models && meta.models.length > 1 ? (
+          <span className="inline-flex items-center -space-x-1.5 shrink-0">
+            {meta.models.map((m, i) => (
+              <ProviderLogo
+                key={`${m.provider}-${i}`}
+                provider={m.provider as Provider}
+                className="h-5 w-5 ring-2 ring-foreground bg-foreground"
+              />
+            ))}
+          </span>
+        ) : (
+          <span className="inline-flex items-center pl-1.5">
+            <Sparkles className="w-3 h-3 shrink-0" />
+          </span>
+        )}
         <span className="tabular-nums">
           {fmtTok(totalTokens)} tok
           {cost ? ` · ${fmtEur(totalBilled)}` : ""}
@@ -119,11 +135,39 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
           <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/10">
             <span className="font-semibold text-sm">Developer breakdown</span>
             <span className="tabular-nums text-white/60 text-sm">
-              {meta.model} · {meta.provider}
+              {meta.models && meta.models.length > 1
+                ? `${meta.models.length} models`
+                : `${meta.model} · ${meta.provider}`}
             </span>
           </div>
 
           <div className="px-4 py-3 space-y-4">
+            {/* Pipeline (multi-model) */}
+            {meta.models && meta.models.length > 1 && (
+              <div>
+                <div className="text-xs uppercase tracking-wider text-white/40 mb-2">Pipeline</div>
+                <div className="space-y-1.5">
+                  {meta.models.map((m, i) => {
+                    const modelMult = billingMultiplier(m.model);
+                    const billed = (m.inputCostUsd + m.outputCostUsd) * modelMult;
+                    return (
+                      <div key={i} className="flex items-center justify-between gap-3">
+                        <span className="flex items-center gap-2 min-w-0">
+                          <ProviderLogo provider={m.provider as Provider} className="h-4 w-4 shrink-0 bg-white" />
+                          <span className="text-white/70 truncate">{m.model}</span>
+                          <span className="text-white/40 text-xs shrink-0">· {m.role}</span>
+                        </span>
+                        <div className="flex items-center gap-3 tabular-nums shrink-0">
+                          <span className="text-white/50">{fmtTok(m.inputTokens + m.outputTokens)} tok</span>
+                          <span className="font-medium">{fmtEur(billed)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Input segments */}
             {segments.length > 0 && (
               <div>

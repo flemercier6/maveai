@@ -873,7 +873,9 @@ export default function Chat() {
         toast.info("Type something to generate a page.");
         return;
       }
-      setPageRequested(false);
+      // Note: we keep `pageRequested` set so that, if the planner returns
+      // clarifying questions, the user's follow-up answer re-enters this branch.
+      // We only clear it on the success/error paths of the actual generation.
       setSending(true);
       setClarify(null);
       lastSentRef.current = text;
@@ -918,7 +920,7 @@ export default function Chat() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${session?.access_token}`,
             },
-            body: JSON.stringify({ prompt: text, history, aiPrefs }),
+            body: JSON.stringify({ prompt: text, history, aiPrefs, skipClarify: opts?.skipClarify === true }),
           },
         );
         if (!resp.ok) {
@@ -927,15 +929,35 @@ export default function Chat() {
           try { const j = JSON.parse(t); if (j?.error) errMsg = j.error; } catch {}
           throw new Error(errMsg);
         }
-        const json = await resp.json() as { page: PageSpec; summary: string; meta?: RequestMeta };
-        const page: PageSpec = { ...json.page, theme: json.page.theme ?? randomPageTheme() };
-        const summary = json.summary || "Page generated.";
+        const json = await resp.json() as
+          | { type: "clarify"; questions: ClarifyQuestion[]; meta?: RequestMeta }
+          | { page: PageSpec; summary: string; meta?: RequestMeta };
+
+        // Planner asked for clarification — drop the assistant placeholder
+        // and show the ClarifyCard. Keep `pageRequested` so that the follow-up
+        // send re-enters this branch (with skipClarify=true).
+        if ("type" in json && json.type === "clarify" && Array.isArray(json.questions) && json.questions.length > 0) {
+          setMessages((prev) => {
+            if (prev.length && prev[prev.length - 1].role === "assistant" && !prev[prev.length - 1].content) {
+              return prev.slice(0, -1);
+            }
+            return prev;
+          });
+          setClarify(json.questions);
+          setStreaming(false);
+          setSending(false);
+          return;
+        }
+
+        const pageJson = json as { page: PageSpec; summary: string; meta?: RequestMeta };
+        const page: PageSpec = { ...pageJson.page, theme: pageJson.page.theme ?? randomPageTheme() };
+        const summary = pageJson.summary || "Page generated.";
         // Apply local billing multiplier on top of provider cost.
-        const meta: RequestMeta | undefined = json.meta
+        const meta: RequestMeta | undefined = pageJson.meta
           ? {
-              ...json.meta,
-              cost: json.meta.cost
-                ? { ...json.meta.cost, multiplier: billingMultiplier(json.meta.model ?? model) }
+              ...pageJson.meta,
+              cost: pageJson.meta.cost
+                ? { ...pageJson.meta.cost, multiplier: billingMultiplier(pageJson.meta.model ?? model) }
                 : undefined,
             }
           : undefined;
@@ -945,7 +967,7 @@ export default function Chat() {
         if (!ephemeral && convId) {
           const { data: aData } = await supabase.from("messages").insert({
             conversation_id: convId, user_id: user!.id, role: "assistant", content: persisted, model,
-            ...(json.meta ? { meta: json.meta } : {}),
+            ...(pageJson.meta ? { meta: pageJson.meta } : {}),
           }).select().single();
           assistantId = aData?.id;
         }
@@ -959,10 +981,12 @@ export default function Chat() {
         });
         setActivePage(page);
         setPageOpen(true);
+        setPageRequested(false);
       } catch (e) {
         console.error(e);
         toast.error(e instanceof Error ? e.message : "Failed to generate page");
         setMessages((prev) => prev.slice(0, -1));
+        setPageRequested(false);
       } finally {
         setStreaming(false);
         setSending(false);
@@ -2104,7 +2128,15 @@ export default function Chat() {
             {clarify && (
               <ClarifyCard
                 questions={clarify}
-                onSkip={() => setClarify(null)}
+                onSkip={() => {
+                  setClarify(null);
+                  // For page mode, dismissing clarify means "skip questions,
+                  // generate anyway" — re-submit the original prompt with
+                  // skipClarify=true so the planner goes straight to the plan.
+                  if (pageRequested && lastSentRef.current) {
+                    void send(lastSentRef.current, lastAttachmentsRef.current ?? [], { skipClarify: true });
+                  }
+                }}
                 onSubmit={(combined) => {
                   setClarify(null);
                   void send(combined, [], { skipClarify: true });
