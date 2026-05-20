@@ -673,7 +673,7 @@ function ChatMessageImpl({
     const rest = modeMatch ? content.slice(modeMatch[0].length) : content;
     const ModeTag = modeId ? (() => {
       const cfg = {
-        note: { label: "Note", Icon: Pencil },
+        note: { label: "Note", Icon: NotebookPen },
         page: { label: "Page", Icon: FileText },
         explore: { label: "Explore", Icon: Sparkles },
       }[modeId];

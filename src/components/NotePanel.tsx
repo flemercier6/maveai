@@ -4,6 +4,7 @@ import { X, Copy, Check, ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type Props = {
   open: boolean;
@@ -23,6 +24,7 @@ const MIN_WIDTH = 380;
 const DEFAULT_WIDTH = 520;
 
 export function NotePanel({ open, content, title, streaming, onClose, onChange, onTitleChange, onWidthChange, onAskChange }: Props) {
+  const isMobile = useIsMobile();
   const [copied, setCopied] = useState(false);
   const [width, setWidth] = useState(() => {
     try {
@@ -30,6 +32,18 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
       return saved ? Math.max(MIN_WIDTH, parseInt(saved)) : DEFAULT_WIDTH;
     } catch { return DEFAULT_WIDTH; }
   });
+  // Track viewport width so the panel stays full-width on mobile through
+  // orientation changes / URL-bar show-hide on iOS.
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth : 0,
+  );
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  // On mobile we ignore the saved/resizable width and take the full viewport.
+  const effectiveWidth = isMobile ? viewportWidth : width;
 
   // editing=false → rendered markdown preview; editing=true → editable textarea.
   // The state flips automatically on click / blur — there's no user-visible toggle.
@@ -51,8 +65,12 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
 
   useEffect(() => {
     try { localStorage.setItem("note-panel-width", String(width)); } catch { /* ignore */ }
-    onWidthChange?.(width);
   }, [width]);
+
+  // Report the rendered width so the parent can shrink the main chat to match.
+  useEffect(() => {
+    onWidthChange?.(effectiveWidth);
+  }, [effectiveWidth, onWidthChange]);
 
   // Capture pre-edit snapshot when streaming begins.
   useEffect(() => {
@@ -78,18 +96,23 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     el.style.height = el.scrollHeight + "px";
   }, [content]);
 
-  // Dismiss toolbar on click outside.
+  // Dismiss toolbar on click / tap outside.
   useEffect(() => {
     if (!selInfo) return;
-    const onDown = (e: MouseEvent) => {
-      if (!barRef.current?.contains(e.target as Node)) {
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      const target = (e.target as Node) ?? null;
+      if (!barRef.current?.contains(target)) {
         setSelInfo(null);
         setAskMode(false);
         setAskValue("");
       }
     };
     document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+    };
   }, [selInfo]);
 
   // Document-level selection capture — works for both the textarea (edit mode)
@@ -143,6 +166,15 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
 
     // Defer to next tick so the browser finalizes the selection first
     const onMouseUp = (e: MouseEvent) => setTimeout(() => capture(e), 0);
+    const onTouchEnd = (e: TouchEvent) => {
+      // Use the released touch point for positioning
+      const t = e.changedTouches[0];
+      const synthetic = t
+        ? ({ clientX: t.clientX, clientY: t.clientY, target: e.target } as MouseEvent)
+        : null;
+      // iOS Safari needs a slightly longer delay to settle the selection handles
+      setTimeout(() => capture(synthetic), 60);
+    };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.shiftKey || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a")) {
         setTimeout(() => capture(null), 0);
@@ -150,9 +182,11 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     };
 
     document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("touchend", onTouchEnd);
     document.addEventListener("keyup", onKeyUp);
     return () => {
       document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("touchend", onTouchEnd);
       document.removeEventListener("keyup", onKeyUp);
     };
   }, [open, streaming, editing]);
@@ -261,29 +295,38 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
 
   return (
     <div
-      style={{ width }}
+      style={{ width: effectiveWidth, maxWidth: "100vw" }}
       className={cn(
-        "fixed top-0 right-0 bottom-0 z-40 bg-sidebar pt-[10px] pr-[10px] pb-[10px] pl-0",
+        "fixed top-0 right-0 bottom-0 z-40 bg-sidebar",
+        isMobile ? "p-0" : "pt-[10px] pr-[10px] pb-[10px] pl-0",
         "transition-transform duration-300 ease-in-out",
         open ? "translate-x-0" : "translate-x-full",
       )}
     >
-      {/* Drag-to-resize handle */}
-      <div
-        onMouseDown={startResize}
-        className="absolute left-0 top-0 bottom-0 w-[10px] cursor-col-resize"
-      />
+      {/* Drag-to-resize handle — desktop only */}
+      {!isMobile && (
+        <div
+          onMouseDown={startResize}
+          className="absolute left-0 top-0 bottom-0 w-[10px] cursor-col-resize"
+        />
+      )}
 
       {/* Inner panel */}
-      <div className="flex flex-col h-full rounded-[12px] overflow-hidden bg-sidebar">
+      <div className={cn(
+        "flex flex-col h-full overflow-hidden bg-sidebar",
+        isMobile ? "rounded-none" : "rounded-[12px]",
+      )}>
         {/* Header */}
-        <div className="flex items-center gap-2 px-4 py-3 shrink-0">
+        <div className={cn("flex items-center gap-2 shrink-0", isMobile ? "px-3 py-2.5" : "px-4 py-3")}>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors shrink-0"
+            className={cn(
+              "rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors shrink-0",
+              isMobile ? "p-2" : "p-1.5",
+            )}
             aria-label="Close"
           >
-            <X className="w-4 h-4" />
+            <X className={isMobile ? "w-5 h-5" : "w-4 h-4"} />
           </button>
           <input
             value={title}
@@ -293,10 +336,13 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
           />
           <button
             onClick={handleCopy}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors shrink-0"
+            className={cn(
+              "rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors shrink-0",
+              isMobile ? "p-2" : "p-1.5",
+            )}
             aria-label="Copy"
           >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {copied ? <Check className={isMobile ? "w-5 h-5" : "w-4 h-4"} /> : <Copy className={isMobile ? "w-5 h-5" : "w-4 h-4"} />}
           </button>
         </div>
 
@@ -314,7 +360,10 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
                 setEditing(false);
               }}
               placeholder="Your note will appear here…"
-              className="w-full min-h-full p-6 text-[15px] leading-[1.85] bg-transparent resize-none outline-none text-foreground font-[inherit]"
+              className={cn(
+                "w-full min-h-full text-[15px] leading-[1.85] bg-transparent resize-none outline-none text-foreground font-[inherit]",
+                isMobile ? "p-4" : "p-6",
+              )}
             />
           ) : (
             <div
@@ -327,7 +376,10 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
                 if (barRef.current?.contains(e.target as Node)) return;
                 setEditing(true);
               }}
-              className="chat-prose p-6 text-[15px] cursor-text"
+              className={cn(
+                "chat-prose text-[15px] cursor-text",
+                isMobile ? "p-4" : "p-6",
+              )}
             >
               {content
                 ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
