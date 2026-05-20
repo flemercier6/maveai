@@ -1,5 +1,6 @@
 import { Children, cloneElement, isValidElement, memo, useState, type ReactNode } from "react";
 import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles, Map as MapIcon, ChevronDown, ChevronRight, NotebookPen } from "lucide-react";
+import noteIcon from "@/assets/note.svg";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
