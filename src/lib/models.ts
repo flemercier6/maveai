@@ -120,6 +120,6 @@ export function routeAuto(message: string): { provider: Provider; model: string 
     return { provider: "openai", model: "gpt-5.5" };
   }
 
-  // 6. Default — Gemini 2.5 Flash (cheapest capable model)
-  return { provider: "google", model: "gemini-2.5-flash" };
+  // 6. Default — Gemini 3.5 Flash (cheapest capable model)
+  return { provider: "google", model: "gemini-3.5-flash" };
 }
