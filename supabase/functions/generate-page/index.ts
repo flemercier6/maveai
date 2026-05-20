@@ -151,7 +151,7 @@ serve(async (req) => {
     const favorites: string[] = aiPrefs?.favoriteModels ?? [];
     const PAGE_FALLBACKS = [
       ...favorites,
-      "gpt-5-mini", "gemini-2.5-flash", "gpt-4o-mini", "gemini-2.5-pro", "gpt-5.5",
+      "gpt-5-mini", "gemini-3.5-flash", "gpt-4o-mini", "gemini-2.5-pro", "gpt-5.5",
     ];
     let pageModelBare = "gpt-5-mini";
     if (blacklisted.has(pageModelBare)) {
