@@ -1970,8 +1970,17 @@ Deno.serve(async (req) => {
           }
 
           // ---------- Clarifying questions (asked BEFORE running anything else) ----------
-          if (!ephemeral && !skipClarify && !writingMode && lastUserText) {
-            const userTurns = messages.filter((m) => m.role === "user").length;
+          // Fast local pre-filter: skip the API call entirely for the vast majority
+          // of messages where clarification is clearly unneeded. This avoids 300-500 ms
+          // of network latency on every turn.
+          const userTurns = messages.filter((m) => m.role === "user").length;
+          const fastNoClarify =
+            userTurns > 1 ||                      // follow-up: model already instructed to almost never clarify
+            lastUserText.length < 120 ||           // short message: clarify rarely useful
+            lastUserText.trim().endsWith("?") ||   // already phrased as a question
+            /^(what|how|why|who|when|where|which|tell|explain|describe|list|give|show|find|define|translate|write|create|make|build|fix|help|can |could |please )/i.test(lastUserText.trim());
+
+          if (!ephemeral && !skipClarify && !writingMode && lastUserText && !fastNoClarify) {
             controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
             const clarify = await decideClarify({
               googleKey: Deno.env.get("GOOGLE_API_KEY"),
@@ -2349,10 +2358,21 @@ Deno.serve(async (req) => {
           // Run web tool detection + fetch (notify client of progress)
           const googleKeyForAgent = Deno.env.get("GOOGLE_API_KEY");
           if (!webDisabled && !googleService && !voyagerService && (firecrawlKey || linkupKey) && lastUserText) {
-            controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
+            // Fast local pre-filter: skip the agentic plan API call for obviously
+            // simple queries. The call costs ~300-600 ms; most short or conversational
+            // messages will never trigger a multi-step plan anyway.
+            const fastNoAgentic =
+              writingMode ||
+              lastUserText.length < 80 ||
+              /^(write|create|make|build|code|fix|debug|translate|convert|summarize|rewrite|check|review|format|correct|improve)/i.test(lastUserText.trim()) ||
+              lastUserText.trim().endsWith("?");
+
+            if (!fastNoAgentic) {
+              controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
+            }
 
             // First, try the agentic multi-step plan for COMPLEX queries.
-            const plan = !writingMode
+            const plan = !fastNoAgentic
               ? await decideAgenticPlan({
                 googleKey: googleKeyForAgent,
                 userText: lastUserText,
