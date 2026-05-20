@@ -850,9 +850,9 @@ function ChatMessageImpl({
                 Open Note
               </button>
             )}
+            {devMode && meta && <RequestBreakdown meta={meta} />}
           </div>
         )}
-        {!streaming && devMode && meta && <RequestBreakdown meta={meta} />}
         {/* Slack-thread style explorations list, shown under the assistant response */}
         {!streaming && allBranches.length > 0 && (
           <div className="mt-3 border-l-2 border-border pl-3 flex flex-col gap-0.5">
