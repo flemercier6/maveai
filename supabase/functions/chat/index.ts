@@ -49,7 +49,7 @@ const MODEL_PRICES: Record<string, Price> = {
   // Google
   "gemini-2.5-pro": { input: 1.25, output: 10 },
   "gemini-3.5-flash": { input: 0.3, output: 2.5 },
-  "gemini-3.5-flash-lite": { input: 0.1, output: 0.4 },
+  "gemini-2.5-flash-lite": { input: 0.1, output: 0.4 },
   // Mistral
   "mistral-large-latest": { input: 2, output: 6 },
   "mistral-small-latest": { input: 0.2, output: 0.6 },
@@ -61,7 +61,7 @@ function priceFor(model: string): Price {
   if (m.includes("opus")) return MODEL_PRICES["claude-opus-4-7"];
   if (m.includes("sonnet")) return MODEL_PRICES["claude-sonnet-4-6"];
   if (m.includes("haiku")) return MODEL_PRICES["claude-3-5-haiku-latest"];
-  if (m.includes("flash-lite")) return MODEL_PRICES["gemini-3.5-flash-lite"];
+  if (m.includes("flash-lite")) return MODEL_PRICES["gemini-2.5-flash-lite"];
   if (m.includes("flash")) return MODEL_PRICES["gemini-3.5-flash"];
   if (m.includes("gemini")) return MODEL_PRICES["gemini-2.5-pro"];
   if (m.startsWith("mistral-large")) return MODEL_PRICES["mistral-large-latest"];
@@ -473,7 +473,7 @@ ${userText.slice(0, 1500)}`;
   try {
     if (args.googleKey) {
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${args.googleKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${args.googleKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -879,7 +879,7 @@ ${userText.slice(0, 2000)}`;
   try {
     if (args.googleKey) {
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${args.googleKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${args.googleKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -963,7 +963,7 @@ ${userText.slice(0, 1500)}`;
   if (args.googleKey) {
     attempts.push(async () => {
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${args.googleKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${args.googleKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1112,7 +1112,7 @@ ${assistantText.slice(0, 2000)}`;
   try {
     if (args.googleKey) {
       const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${args.googleKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${args.googleKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1831,7 +1831,7 @@ Deno.serve(async (req) => {
           thinkingConfig: { thinkingBudget: 0 },
         },
       };
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${googleApiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleApiKey}`;
       const r = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2181,7 +2181,7 @@ Deno.serve(async (req) => {
               let decision: VoyagerRouterDecision = { resource: "none" };
               if (googleKeyForVoyager) {
                 const r = await fetch(
-                  `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${googleKeyForVoyager}`,
+                  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleKeyForVoyager}`,
                   {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
