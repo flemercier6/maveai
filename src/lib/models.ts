@@ -17,7 +17,8 @@ export const MODELS: Record<Provider, ModelOption[]> = {
   ],
   anthropic: [
     { id: "claude-opus-4-7", label: "Opus 4.7", description: "Anthropic's most capable model" },
-    { id: "claude-sonnet-4-6", label: "Sonnet 4.6", description: "Anthropic's fastest model" },
+    { id: "claude-sonnet-4-6", label: "Sonnet 4.6", description: "Anthropic's balanced model" },
+    { id: "claude-haiku-4-5", label: "Haiku 4.5", description: "Anthropic's fastest model" },
   ],
   google: [
     { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", description: "Google's most capable model" },

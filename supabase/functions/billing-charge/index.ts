@@ -16,13 +16,18 @@ const PRICES: Record<string, { input: number; output: number }> = {
   "gpt-4o-mini": { input: 0.15, output: 0.6 },
   "claude-opus-4-7": { input: 15, output: 75 },
   "claude-sonnet-4-6": { input: 3, output: 15 },
+  "claude-haiku-4-5": { input: 1, output: 5 },
   "gemini-2.5-pro": { input: 1.25, output: 10 },
   "gemini-3.5-flash": { input: 0.3, output: 2.5 },
   "mistral-large-latest": { input: 2, output: 6 },
   "mistral-small-latest": { input: 0.2, output: 0.6 },
 };
 const REFERENCE_BLENDED = 2.0;
+const MULTIPLIER_OVERRIDES: Record<string, number> = {
+  "claude-haiku-4-5": 12,
+};
 function multiplier(model: string): number {
+  if (model in MULTIPLIER_OVERRIDES) return MULTIPLIER_OVERRIDES[model];
   const p = PRICES[model];
   if (!p) return 3;
   const blended = p.input * 0.75 + p.output * 0.25;

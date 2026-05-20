@@ -45,6 +45,7 @@ const MODEL_PRICES: Record<string, Price> = {
   // Anthropic
   "claude-opus-4-7": { input: 15, output: 75 },
   "claude-sonnet-4-6": { input: 3, output: 15 },
+  "claude-haiku-4-5": { input: 1, output: 5 },
   "claude-3-5-haiku-latest": { input: 0.8, output: 4 },
   // Google
   "gemini-2.5-pro": { input: 1.25, output: 10 },
@@ -60,6 +61,7 @@ function priceFor(model: string): Price {
   const m = model.toLowerCase();
   if (m.includes("opus")) return MODEL_PRICES["claude-opus-4-7"];
   if (m.includes("sonnet")) return MODEL_PRICES["claude-sonnet-4-6"];
+  if (m.includes("haiku-4")) return MODEL_PRICES["claude-haiku-4-5"];
   if (m.includes("haiku")) return MODEL_PRICES["claude-3-5-haiku-latest"];
   if (m.includes("flash-lite")) return MODEL_PRICES["gemini-2.5-flash-lite"];
   if (m.includes("flash")) return MODEL_PRICES["gemini-3.5-flash"];

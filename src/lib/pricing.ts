@@ -23,6 +23,7 @@ const PRICES: Record<string, ProviderPrice> = {
   // Anthropic
   "claude-opus-4-7": { input: 15, output: 75 },
   "claude-sonnet-4-6": { input: 3, output: 15 },
+  "claude-haiku-4-5": { input: 1, output: 5 },
   // Google
   "gemini-2.5-pro": { input: 1.25, output: 10 },
   "gemini-3.5-flash": { input: 0.3, output: 2.5 },
@@ -40,6 +41,13 @@ const MIN_MULTIPLIER = 1.5;
 const MAX_MULTIPLIER = 6;
 const FALLBACK_MULTIPLIER = 3;
 
+// Per-model markup overrides that bypass the formula and clamp.
+// Use for models we want to bill at a fixed multiplier regardless of their
+// blended provider price (e.g. very cheap models we want to price as premium).
+const MULTIPLIER_OVERRIDES: Record<string, number> = {
+  "claude-haiku-4-5": 12,
+};
+
 /** Blended cost in $/M tokens, weighted 75% input / 25% output. */
 function blendedPrice(p: ProviderPrice): number {
   return p.input * 0.75 + p.output * 0.25;
@@ -50,6 +58,7 @@ function blendedPrice(p: ProviderPrice): number {
  * the user. Cheap models get a higher markup, expensive models a lower one.
  */
 export function billingMultiplier(modelId: string): number {
+  if (modelId in MULTIPLIER_OVERRIDES) return MULTIPLIER_OVERRIDES[modelId];
   const price = PRICES[modelId];
   if (!price) return FALLBACK_MULTIPLIER;
   const blended = blendedPrice(price);
