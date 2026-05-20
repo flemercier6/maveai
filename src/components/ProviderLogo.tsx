@@ -6,25 +6,25 @@ import mistralLogo from "@/assets/mistral-logo.jpg";
 
 function OpenAILogo({ className }: { className?: string }) {
   return (
-    <img src={openaiLogo} alt="OpenAI" className={`${className ?? ""} object-contain rounded-[4px] block dark:invert`} />
+    <img src={openaiLogo} alt="OpenAI" className={`${className ?? ""} object-contain rounded-full block dark:invert`} />
   );
 }
 
 function AnthropicLogo({ className }: { className?: string }) {
   return (
-    <img src={claudeLogo} alt="Claude" className={`${className ?? ""} object-contain rounded-[4px] block`} />
+    <img src={claudeLogo} alt="Claude" className={`${className ?? ""} object-contain rounded-full block`} />
   );
 }
 
 function GoogleLogo({ className }: { className?: string }) {
   return (
-    <img src={geminiLogo} alt="Gemini" className={`${className ?? ""} object-contain rounded-[4px] block`} />
+    <img src={geminiLogo} alt="Gemini" className={`${className ?? ""} object-contain rounded-full block`} />
   );
 }
 
 function MistralLogo({ className }: { className?: string }) {
   return (
-    <img src={mistralLogo} alt="Mistral" className={`${className ?? ""} object-contain rounded-[4px] block`} />
+    <img src={mistralLogo} alt="Mistral" className={`${className ?? ""} object-contain rounded-full block`} />
   );
 }
 

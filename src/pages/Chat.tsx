@@ -184,6 +184,10 @@ export default function Chat() {
     try { const s = localStorage.getItem("note-panel-width"); return s ? Math.max(380, parseInt(s)) : 520; }
     catch { return 520; }
   });
+  const [pageWidth, setPageWidth] = useState(() => {
+    try { const s = localStorage.getItem("page-panel-width"); return s ? Math.max(520, parseInt(s)) : Math.min(Math.round(window.innerWidth * 0.68), 1200); }
+    catch { return 900; }
+  });
   // Title generation animation: convId -> { target, shown }. "pending" = not yet received.
   const [titleAnim, setTitleAnim] = useState<Record<string, { target: string | null; shown: string }>>({});
   const titleTimerRef = useRef<Record<string, number>>({});
@@ -1833,6 +1837,7 @@ export default function Chat() {
         onLockedFeature={(reason) => setUpgradeReason(reason)}
         mobileOpen={sidebarMobileOpen}
         onMobileOpenChange={setSidebarMobileOpen}
+        forceCollapsed={pageOpen}
       />
 
       <UpgradeDialog
@@ -1843,11 +1848,11 @@ export default function Chat() {
 
       <div
         className="flex-1 flex min-w-0 relative bg-sidebar"
-        style={{ transition: "padding-right 300ms ease-in-out", paddingRight: noteOpen ? noteWidth : 0 }}
+        style={{ transition: "padding-right 300ms ease-in-out", paddingRight: pageOpen ? pageWidth : noteOpen ? noteWidth : 0 }}
       >
       <main
         className="flex-1 flex flex-col min-w-0 relative bg-sidebar"
-        style={{ paddingTop: 10, paddingRight: noteOpen ? 0 : 10, paddingBottom: 10, paddingLeft: 0, ...(exploreOpen ? { borderTopRightRadius: 15, borderBottomRightRadius: 15, overflow: "hidden" } : {}) }}
+        style={{ paddingTop: 10, paddingRight: (noteOpen || pageOpen) ? 0 : 10, paddingBottom: 10, paddingLeft: 0, ...(exploreOpen ? { borderTopRightRadius: 15, borderBottomRightRadius: 15, overflow: "hidden" } : {}) }}
         onDragEnter={(e) => {
           if (!Array.from(e.dataTransfer?.types ?? []).includes("Files")) return;
           e.preventDefault();
@@ -2425,7 +2430,7 @@ export default function Chat() {
 
       {/* Right-hand exploration side panel */}
       {/* Floating button to reopen the last generated page */}
-      {activePage && !pageOpen && !noteOpen && (
+      {activePage && !pageOpen && (
         <button
           type="button"
           onClick={() => setPageOpen(true)}
@@ -2457,6 +2462,7 @@ export default function Chat() {
         open={pageOpen}
         page={activePage}
         onClose={() => setPageOpen(false)}
+        onWidthChange={setPageWidth}
       />
 
       {/* Note side panel */}

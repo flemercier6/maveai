@@ -84,6 +84,8 @@ type Props = {
   mobileOpen?: boolean;
   /** Called when the mobile drawer should open/close (e.g. backdrop tap, item select). */
   onMobileOpenChange?: (open: boolean) => void;
+  /** When true, force the sidebar into collapsed (icon-only) mode without changing the stored pref. */
+  forceCollapsed?: boolean;
 };
 
 const MIN_WIDTH = 200;
@@ -96,7 +98,7 @@ const COLLAPSED_ICON_BUTTON_CLASS = "flex h-10 w-10 min-w-10 shrink-0 items-cent
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
-export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEphemeral, onDeleted, onMoveToFolder, userEmail, userName, userAvatarUrl, onProfileUpdated, titleAnim, branchesByConv, activeBranchId, onOpenBranch, isFree, onLockedFeature, mobileOpen = false, onMobileOpenChange }: Props) {
+export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEphemeral, onDeleted, onMoveToFolder, userEmail, userName, userAvatarUrl, onProfileUpdated, titleAnim, branchesByConv, activeBranchId, onOpenBranch, isFree, onLockedFeature, mobileOpen = false, onMobileOpenChange, forceCollapsed = false }: Props) {
   const { plan } = usePlan();
   const planLabel = plan === "free" ? "Free" : plan === "plus" ? "Plus" : plan.charAt(0).toUpperCase() + plan.slice(1);
   const [hovered, setHovered] = useState<string | null>(null);
@@ -128,7 +130,8 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
       return next;
     });
   };
-  const effectiveWidth = collapsed ? COLLAPSED_WIDTH : width;
+  const isCollapsed = forceCollapsed || collapsed;
+  const effectiveWidth = isCollapsed ? COLLAPSED_WIDTH : width;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsInitialSection, setSettingsInitialSection] = useState<
@@ -286,31 +289,31 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         <div
           className={cn(
             "px-[10px] pt-1 flex items-center",
-            collapsed ? "justify-center" : "justify-between",
+            isCollapsed ? "justify-center" : "justify-between",
           )}
-          style={{ marginBottom: collapsed ? 16 : 40 }}
+          style={{ marginBottom: isCollapsed ? 16 : 40 }}
         >
-          {!collapsed && <img src={maveLogo} alt="Mave" className="h-4 w-auto" />}
+          {!isCollapsed && <img src={maveLogo} alt="Mave" className="h-4 w-auto" />}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
                 onClick={toggleCollapsed}
-                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                 className={cn(
-                  collapsed
+                  isCollapsed
                     ? COLLAPSED_ICON_BUTTON_CLASS
                     : "flex items-center justify-center w-9 h-9 rounded-md text-sidebar-foreground hover:bg-sidebar-accent",
                 )}
               >
-                {collapsed ? (
+                {isCollapsed ? (
                   <PanelLeftOpen className="w-4 h-4 opacity-70" />
                 ) : (
                   <PanelLeftClose className="w-4 h-4 opacity-70" />
                 )}
               </button>
             </TooltipTrigger>
-            <TooltipContent>{collapsed ? "Expand sidebar" : "Collapse sidebar"}</TooltipContent>
+            <TooltipContent>{isCollapsed ? "Expand sidebar" : "Collapse sidebar"}</TooltipContent>
           </Tooltip>
         </div>
         {collapsed ? (
@@ -421,7 +424,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
         )}
       </div>
 
-      <ScrollArea className={cn("flex-1", collapsed && "hidden")}>
+      <ScrollArea className={cn("flex-1", isCollapsed && "hidden")}>
         <div className="p-2 space-y-2">
           {(() => {
             // Inline renderer for one conversation row (used in folders & Recent)
@@ -788,7 +791,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           })()}
         </div>
       </ScrollArea>
-      {collapsed && <div className="flex-1" />}
+      {isCollapsed && <div className="flex-1" />}
 
       <div className="p-2">
         {userEmail ? (
@@ -797,7 +800,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
               <button
                 className={cn(
                   "w-full flex items-center rounded-[6px] md:rounded-md bg-background hover:bg-sidebar-accent text-sidebar-foreground",
-                  collapsed
+                  isCollapsed
                     ? "justify-center p-1"
                     : "gap-3 md:gap-2 px-2 py-2.5 md:py-1.5",
                 )}
@@ -809,7 +812,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     (userName?.[0] ?? userEmail?.[0] ?? "?")
                   )}
                 </div>
-                {!collapsed && (
+                {!isCollapsed && (
                   <>
                     <div className="flex-1 min-w-0 text-left">
                       <div className="font-semibold truncate text-base">
@@ -839,19 +842,19 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
             onClick={() => window.dispatchEvent(new CustomEvent("open-auth-popover"))}
             className={cn(
               "w-full rounded-[6px] md:rounded-md bg-sidebar text-sidebar-foreground font-semibold hover:bg-sidebar-accent transition-colors text-base",
-              collapsed
+              isCollapsed
                 ? "flex items-center justify-center p-2"
                 : "flex items-center gap-2.5 px-3 py-2.5 md:py-2 text-left",
             )}
           >
             <LogIn className="w-4 h-4 shrink-0" />
-            {!collapsed && <span>Sign in / Create account</span>}
+            {!isCollapsed && <span>Sign in / Create account</span>}
           </button>
         )}
       </div>
 
       {/* Resize handle — hidden when collapsed */}
-      {!collapsed && (
+      {!isCollapsed && (
         <div
           onMouseDown={(e) => { e.preventDefault(); setResizing(true); }}
           onDoubleClick={() => { setWidth(DEFAULT_WIDTH); localStorage.setItem(STORAGE_KEY, String(DEFAULT_WIDTH)); }}

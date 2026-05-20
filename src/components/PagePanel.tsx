@@ -1,5 +1,6 @@
-// Right-side overlay panel that renders a generated PageSpec.
-// • Distinct visual identity: warm paper surface, grain, display serif
+// Right-side panel that renders a generated PageSpec.
+// Sits beside the main chat (no overlay/backdrop) — the chat container shrinks via paddingRight.
+// • Distinct visual identity per-theme (warm paper, midnight, minimal, forest, slate)
 // • Resizable width via a left-edge drag handle (persists in localStorage)
 import { X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -10,24 +11,24 @@ type Props = {
   open: boolean;
   page: PageSpec | null;
   onClose: () => void;
+  onWidthChange?: (width: number) => void;
 };
 
 const STORAGE_KEY = "page-panel-width";
-const MIN_W = 480;
-const MAX_W_RATIO = 0.95; // up to 95vw
+const MIN_W = 520;
 
-export function PagePanel({ open, page, onClose }: Props) {
+export function PagePanel({ open, page, onClose, onWidthChange }: Props) {
   const [width, setWidth] = useState<number>(() => {
-    if (typeof window === "undefined") return 720;
+    if (typeof window === "undefined") return 900;
     const stored = Number(window.localStorage.getItem(STORAGE_KEY));
     if (Number.isFinite(stored) && stored >= MIN_W) return stored;
-    return Math.min(Math.max(window.innerWidth * 0.6, MIN_W), 1100);
+    return Math.min(Math.round(window.innerWidth * 0.68), 1200);
   });
   const [dragging, setDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
 
   const clamp = useCallback((w: number) => {
-    const max = Math.max(MIN_W, window.innerWidth * MAX_W_RATIO);
+    const max = Math.max(MIN_W, window.innerWidth * 0.92);
     return Math.min(Math.max(w, MIN_W), max);
   }, []);
 
@@ -39,7 +40,6 @@ export function PagePanel({ open, page, onClose }: Props) {
   };
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current) return;
-    // Dragging left increases width (panel grows toward the left edge).
     const delta = dragRef.current.startX - e.clientX;
     setWidth(clamp(dragRef.current.startW + delta));
   };
@@ -51,14 +51,12 @@ export function PagePanel({ open, page, onClose }: Props) {
     try { window.localStorage.setItem(STORAGE_KEY, String(width)); } catch { /* ignore */ }
   };
 
-  // Keep within viewport on resize.
   useEffect(() => {
     const onResize = () => setWidth((w) => clamp(w));
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [clamp]);
 
-  // Disable text selection while dragging.
   useEffect(() => {
     if (!dragging) return;
     const prev = document.body.style.userSelect;
@@ -70,69 +68,93 @@ export function PagePanel({ open, page, onClose }: Props) {
     };
   }, [dragging]);
 
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className={cn(
-          "fixed inset-0 z-40 bg-[#1B1A17]/40 backdrop-blur-[2px] transition-opacity",
-          open ? "opacity-100" : "opacity-0 pointer-events-none",
-        )}
-        onClick={onClose}
-        aria-hidden
-      />
-      {/* Panel */}
-      <aside
-        className={cn(
-          "fixed top-0 right-0 z-50 h-full page-surface overflow-hidden",
-          open && "shadow-[-24px_0_60px_-20px_rgba(27,26,23,0.35)]",
-          dragging ? "transition-none" : "transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          open ? "translate-x-0" : "translate-x-full",
-        )}
-        style={{ width: `${width}px`, maxWidth: "95vw" }}
-        role="dialog"
-        aria-label="Generated page"
-      >
-        {/* Resize handle (left edge) */}
-        <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize page panel"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          className={cn(
-            "absolute left-0 top-0 bottom-0 w-1.5 -translate-x-1/2 z-10 cursor-col-resize group",
-          )}
-        >
-          <div
-            className={cn(
-              "absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-[#1B1A17]/15 transition-colors",
-              "group-hover:bg-[#E85A2F] group-hover:w-[2px]",
-              dragging && "bg-[#E85A2F] w-[2px]",
-            )}
-          />
-          {/* Pill grip */}
-          <div
-            className={cn(
-              "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-10 w-1 rounded-full bg-[#1B1A17]/30 transition-all",
-              "group-hover:bg-[#E85A2F] group-hover:h-14",
-              dragging && "bg-[#E85A2F] h-14",
-            )}
-          />
-        </div>
+  useEffect(() => {
+    onWidthChange?.(width);
+  }, [width, onWidthChange]);
 
-        <div className="page-grain" />
-        {/* Header bar */}
-        <div className="relative flex items-center justify-between px-7 h-14 border-b border-[#1B1A17]/15">
+  // Determine theme for header colors
+  const theme = page?.theme ?? "paper";
+  const headerBorder =
+    theme === "midnight" ? "border-white/10" :
+    theme === "minimal"  ? "border-gray-200" :
+    theme === "forest"   ? "border-white/10" :
+    theme === "slate"    ? "border-slate-200" :
+    "border-[#1B1A17]/15";
+  const headerText =
+    theme === "midnight" ? "text-white/50" :
+    theme === "forest"   ? "text-white/50" :
+    "text-[#1B1A17]/55";
+  const closeBtn =
+    theme === "midnight" ? "text-white/60 hover:bg-white/10" :
+    theme === "forest"   ? "text-white/60 hover:bg-white/10" :
+    "text-[#1B1A17]/60 hover:bg-[#1B1A17]/8";
+  const dot1 =
+    theme === "midnight" ? "bg-[#64FFDA]" :
+    theme === "minimal"  ? "bg-gray-800" :
+    theme === "forest"   ? "bg-[#7ECBA1]" :
+    theme === "slate"    ? "bg-[#4F46E5]" :
+    "bg-[#E85A2F]";
+  const dot2 =
+    theme === "midnight" ? "bg-[#4A9FD4]" :
+    theme === "minimal"  ? "bg-gray-400" :
+    theme === "forest"   ? "bg-[#4A9FD4]" :
+    theme === "slate"    ? "bg-[#7C3AED]" :
+    "bg-[#B48441]";
+  const dot3 =
+    theme === "midnight" ? "bg-[#A78BFA]" :
+    theme === "minimal"  ? "bg-gray-200" :
+    theme === "forest"   ? "bg-[#A78BFA]" :
+    theme === "slate"    ? "bg-[#EC4899]" :
+    "bg-[#2E4057]";
+
+  return (
+    <div
+      style={{ width, maxWidth: "100vw" }}
+      className={cn(
+        "fixed top-0 right-0 bottom-0 z-40",
+        "bg-sidebar",
+        "pt-[10px] pr-[10px] pb-[10px] pl-0",
+        dragging ? "transition-none" : "transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+        open ? "translate-x-0" : "translate-x-full",
+      )}
+    >
+      {/* Resize handle */}
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize page panel"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        className="absolute left-0 top-0 bottom-0 w-[10px] cursor-col-resize z-10"
+      />
+
+      {/* Inner panel */}
+      <div className="relative flex flex-col h-full overflow-hidden rounded-[12px] page-grain-wrapper">
+        {page && <div className="page-grain absolute inset-0 rounded-[12px] pointer-events-none" />}
+
+        {/* Dynamic background per theme */}
+        <div
+          className={cn(
+            "absolute inset-0 rounded-[12px]",
+            theme === "midnight" ? "bg-[#0F1624]" :
+            theme === "minimal"  ? "bg-white" :
+            theme === "forest"   ? "bg-[#0D1F1A]" :
+            theme === "slate"    ? "bg-[#F4F6F8]" :
+            "page-surface",
+          )}
+        />
+
+        {/* Header */}
+        <div className={cn("relative flex items-center justify-between px-6 h-14 border-b shrink-0", headerBorder)}>
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#E85A2F]" />
-              <span className="h-2 w-2 rounded-full bg-[#B48441]" />
-              <span className="h-2 w-2 rounded-full bg-[#2E4057]" />
+              <span className={cn("h-2 w-2 rounded-full", dot1)} />
+              <span className={cn("h-2 w-2 rounded-full", dot2)} />
+              <span className={cn("h-2 w-2 rounded-full", dot3)} />
             </div>
-            <div className="font-grotesk text-[10px] uppercase tracking-[0.28em] text-[#1B1A17]/55 truncate">
+            <div className={cn("font-grotesk text-[10px] uppercase tracking-[0.28em] truncate", headerText)}>
               {page?.title ?? "Page"}
             </div>
           </div>
@@ -140,19 +162,21 @@ export function PagePanel({ open, page, onClose }: Props) {
             type="button"
             onClick={onClose}
             aria-label="Close page"
-            className="h-8 w-8 inline-flex items-center justify-center rounded-full text-[#1B1A17]/70 hover:bg-[#1B1A17]/8 transition-colors"
+            className={cn("h-8 w-8 inline-flex items-center justify-center rounded-full transition-colors", closeBtn)}
           >
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="relative h-[calc(100%-3.5rem)] overflow-y-auto">
+
+        {/* Content */}
+        <div className="relative flex-1 overflow-y-auto">
           {page ? (
             <PageRenderer page={page} />
           ) : (
             <div className="p-10 font-display text-2xl text-[#1B1A17]/50 italic">No page yet.</div>
           )}
         </div>
-      </aside>
-    </>
+      </div>
+    </div>
   );
 }

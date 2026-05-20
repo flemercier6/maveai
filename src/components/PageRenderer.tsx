@@ -4,8 +4,7 @@
 // • Display: Instrument Serif (italic-friendly)
 // • UI mono: Space Grotesk for eyebrows / labels
 // • Magazine-style layout with column rules and oversized numerals
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { createContext, useContext, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import {
@@ -51,42 +50,171 @@ export type PageBlock =
 
 export type PageTab = { label: string; blocks: PageBlock[] };
 
+export type PageTheme = "paper" | "midnight" | "minimal" | "forest" | "slate";
+
 export type PageSpec = {
   title: string;
   subtitle?: string;
   tabs: PageTab[];
+  theme?: PageTheme;
 };
 
-// Distinct palette — vermillion accent, deep ink, brass
-const VERMILLION = "#E85A2F";
-const INK = "#1B1A17";
-const BRASS = "#B48441";
-const TEAL = "#2E4057";
-const SOFT = "#6B655A";
-
-const CHART_PALETTE = [VERMILLION, TEAL, BRASS, "#5A6B5C", "#7A4A2B", "#A89684", "#9B2C2C"];
-
-const calloutStyles: Record<string, { bar: string; bg: string; fg: string; chip: string }> = {
-  info:    { bar: "bg-[#2E4057]",   bg: "bg-[#2E4057]/[0.06]", fg: "text-[#1B1A17]",  chip: "bg-[#2E4057] text-[#F2EEE5]" },
-  success: { bar: "bg-[#5A6B5C]",   bg: "bg-[#5A6B5C]/[0.10]", fg: "text-[#2E3A2F]",  chip: "bg-[#5A6B5C] text-[#F2EEE5]" },
-  warning: { bar: "bg-[#E85A2F]",   bg: "bg-[#E85A2F]/[0.08]", fg: "text-[#7A2A0E]",  chip: "bg-[#E85A2F] text-[#F2EEE5]" },
-  danger:  { bar: "bg-[#9B2C2C]",   bg: "bg-[#9B2C2C]/[0.08]", fg: "text-[#7A1F1F]",  chip: "bg-[#9B2C2C] text-[#F2EEE5]" },
+type ThemeTokens = {
+  displayFont: string;    // Tailwind font class
+  uiFont: string;
+  text: string;           // primary text color (hex)
+  textMuted: string;
+  accent: string;         // primary accent (hex)
+  accent2: string;
+  surface: string;        // card/inset background
+  border: string;
+  chartPalette: string[];
+  kpiBg: string;
+  callout: Record<string, { bar: string; bg: string; fg: string; chip: string }>;
+  tabActive: string;
+  footerDot2: string;
+  footerDot3: string;
+  masthead: string;
+  bulletLine: string;
 };
+
+const THEMES: Record<string, ThemeTokens> = {
+  paper: {
+    displayFont: "font-display",
+    uiFont: "font-grotesk",
+    text: "#1B1A17",
+    textMuted: "#6B655A",
+    accent: "#E85A2F",
+    accent2: "#B48441",
+    surface: "#F8F4EB",
+    border: "rgba(27,26,23,0.15)",
+    chartPalette: ["#E85A2F", "#2E4057", "#B48441", "#5A6B5C", "#7A4A2B", "#A89684", "#9B2C2C"],
+    kpiBg: "#F8F4EB",
+    callout: {
+      info:    { bar: "bg-[#2E4057]",   bg: "bg-[#2E4057]/[0.06]", fg: "text-[#1B1A17]",  chip: "bg-[#2E4057] text-[#F2EEE5]" },
+      success: { bar: "bg-[#5A6B5C]",   bg: "bg-[#5A6B5C]/[0.10]", fg: "text-[#2E3A2F]",  chip: "bg-[#5A6B5C] text-[#F2EEE5]" },
+      warning: { bar: "bg-[#E85A2F]",   bg: "bg-[#E85A2F]/[0.08]", fg: "text-[#7A2A0E]",  chip: "bg-[#E85A2F] text-[#F2EEE5]" },
+      danger:  { bar: "bg-[#9B2C2C]",   bg: "bg-[#9B2C2C]/[0.08]", fg: "text-[#7A1F1F]",  chip: "bg-[#9B2C2C] text-[#F2EEE5]" },
+    },
+    tabActive: "#E85A2F",
+    footerDot2: "#B48441",
+    footerDot3: "#2E4057",
+    masthead: "rgba(27,26,23,0.65)",
+    bulletLine: "#E85A2F",
+  },
+  midnight: {
+    displayFont: "font-[Fraunces,Georgia,serif]",
+    uiFont: "font-grotesk",
+    text: "#E8EDF5",
+    textMuted: "#8B98B0",
+    accent: "#64FFDA",
+    accent2: "#A78BFA",
+    surface: "#1A2235",
+    border: "rgba(255,255,255,0.1)",
+    chartPalette: ["#64FFDA", "#A78BFA", "#4A9FD4", "#F59E0B", "#F472B6", "#34D399", "#FB7185"],
+    kpiBg: "#1A2235",
+    callout: {
+      info:    { bar: "bg-[#4A9FD4]",   bg: "bg-[#4A9FD4]/[0.12]", fg: "text-[#E8EDF5]",  chip: "bg-[#4A9FD4] text-[#0F1624]" },
+      success: { bar: "bg-[#64FFDA]",   bg: "bg-[#64FFDA]/[0.10]", fg: "text-[#E8EDF5]",  chip: "bg-[#64FFDA] text-[#0F1624]" },
+      warning: { bar: "bg-[#F59E0B]",   bg: "bg-[#F59E0B]/[0.10]", fg: "text-[#E8EDF5]",  chip: "bg-[#F59E0B] text-[#0F1624]" },
+      danger:  { bar: "bg-[#FB7185]",   bg: "bg-[#FB7185]/[0.10]", fg: "text-[#E8EDF5]",  chip: "bg-[#FB7185] text-[#0F1624]" },
+    },
+    tabActive: "#64FFDA",
+    footerDot2: "#A78BFA",
+    footerDot3: "#4A9FD4",
+    masthead: "rgba(232,237,245,0.45)",
+    bulletLine: "#64FFDA",
+  },
+  minimal: {
+    displayFont: "font-sans",
+    uiFont: "font-sans",
+    text: "#111111",
+    textMuted: "#6B7280",
+    accent: "#111111",
+    accent2: "#6B7280",
+    surface: "#F9FAFB",
+    border: "rgba(0,0,0,0.1)",
+    chartPalette: ["#111111", "#6B7280", "#D1D5DB", "#374151", "#9CA3AF", "#4B5563", "#1F2937"],
+    kpiBg: "#F9FAFB",
+    callout: {
+      info:    { bar: "bg-gray-800",    bg: "bg-gray-100",          fg: "text-gray-800",    chip: "bg-gray-800 text-white" },
+      success: { bar: "bg-green-700",   bg: "bg-green-50",          fg: "text-green-900",   chip: "bg-green-700 text-white" },
+      warning: { bar: "bg-amber-500",   bg: "bg-amber-50",          fg: "text-amber-900",   chip: "bg-amber-500 text-white" },
+      danger:  { bar: "bg-red-600",     bg: "bg-red-50",            fg: "text-red-900",     chip: "bg-red-600 text-white" },
+    },
+    tabActive: "#111111",
+    footerDot2: "#6B7280",
+    footerDot3: "#D1D5DB",
+    masthead: "#6B7280",
+    bulletLine: "#111111",
+  },
+  forest: {
+    displayFont: "font-[Fraunces,Georgia,serif]",
+    uiFont: "font-grotesk",
+    text: "#E8F5EE",
+    textMuted: "#7DAF92",
+    accent: "#7ECBA1",
+    accent2: "#A78BFA",
+    surface: "#132318",
+    border: "rgba(255,255,255,0.1)",
+    chartPalette: ["#7ECBA1", "#A78BFA", "#4A9FD4", "#F59E0B", "#F472B6", "#34D399", "#FB7185"],
+    kpiBg: "#132318",
+    callout: {
+      info:    { bar: "bg-[#4A9FD4]",   bg: "bg-[#4A9FD4]/[0.12]", fg: "text-[#E8F5EE]",  chip: "bg-[#4A9FD4] text-[#0D1F1A]" },
+      success: { bar: "bg-[#7ECBA1]",   bg: "bg-[#7ECBA1]/[0.12]", fg: "text-[#E8F5EE]",  chip: "bg-[#7ECBA1] text-[#0D1F1A]" },
+      warning: { bar: "bg-[#F59E0B]",   bg: "bg-[#F59E0B]/[0.10]", fg: "text-[#E8F5EE]",  chip: "bg-[#F59E0B] text-[#0D1F1A]" },
+      danger:  { bar: "bg-[#FB7185]",   bg: "bg-[#FB7185]/[0.10]", fg: "text-[#E8F5EE]",  chip: "bg-[#FB7185] text-[#0D1F1A]" },
+    },
+    tabActive: "#7ECBA1",
+    footerDot2: "#A78BFA",
+    footerDot3: "#4A9FD4",
+    masthead: "rgba(232,245,238,0.45)",
+    bulletLine: "#7ECBA1",
+  },
+  slate: {
+    displayFont: "font-grotesk",
+    uiFont: "font-grotesk",
+    text: "#1E293B",
+    textMuted: "#64748B",
+    accent: "#4F46E5",
+    accent2: "#7C3AED",
+    surface: "#EEF2FF",
+    border: "rgba(30,41,59,0.12)",
+    chartPalette: ["#4F46E5", "#7C3AED", "#EC4899", "#0EA5E9", "#10B981", "#F59E0B", "#EF4444"],
+    kpiBg: "#EEF2FF",
+    callout: {
+      info:    { bar: "bg-[#0EA5E9]",   bg: "bg-[#0EA5E9]/[0.08]", fg: "text-[#1E293B]",  chip: "bg-[#0EA5E9] text-white" },
+      success: { bar: "bg-[#10B981]",   bg: "bg-[#10B981]/[0.08]", fg: "text-[#1E293B]",  chip: "bg-[#10B981] text-white" },
+      warning: { bar: "bg-[#F59E0B]",   bg: "bg-[#F59E0B]/[0.08]", fg: "text-[#1E293B]",  chip: "bg-[#F59E0B] text-white" },
+      danger:  { bar: "bg-[#EF4444]",   bg: "bg-[#EF4444]/[0.08]", fg: "text-[#1E293B]",  chip: "bg-[#EF4444] text-white" },
+    },
+    tabActive: "#4F46E5",
+    footerDot2: "#7C3AED",
+    footerDot3: "#EC4899",
+    masthead: "#64748B",
+    bulletLine: "#4F46E5",
+  },
+};
+
+const ThemeCtx = createContext<ThemeTokens>(THEMES.paper);
+const useTheme = () => useContext(ThemeCtx);
 
 function Eyebrow({ children, className }: { children: React.ReactNode; className?: string }) {
+  const t = useTheme();
   return (
-    <div className={cn("font-grotesk text-[10px] uppercase tracking-[0.24em] text-[#6B655A] font-medium", className)}>
+    <div className={cn("text-[10px] uppercase tracking-[0.24em] font-medium", t.uiFont, className)} style={{ color: t.textMuted }}>
       {children}
     </div>
   );
 }
 
 function Checklist({ items }: { items: { label: string; checked?: boolean }[] }) {
+  const t = useTheme();
   const [state, setState] = useState<boolean[]>(() => items.map((it) => !!it.checked));
   const toggle = (i: number) =>
     setState((prev) => prev.map((v, idx) => (idx === i ? !v : v)));
   return (
-    <ul className="space-y-3 border-l-2 border-[#E85A2F]/30 pl-5">
+    <ul className="space-y-3 pl-5" style={{ borderLeft: `2px solid ${t.accent}4D` }}>
       {items.map((it, i) => {
         const checked = state[i];
         return (
@@ -95,15 +223,21 @@ function Checklist({ items }: { items: { label: string; checked?: boolean }[] })
               id={`pc-${i}-${it.label.slice(0, 16)}`}
               checked={checked}
               onCheckedChange={() => toggle(i)}
-              className="mt-[4px] border-[#1B1A17]/40 data-[state=checked]:bg-[#E85A2F] data-[state=checked]:border-[#E85A2F]"
+              className="mt-[4px]"
+              style={{
+                borderColor: `${t.text}66`,
+                ...(checked ? { backgroundColor: t.accent, borderColor: t.accent } : {}),
+              }}
               aria-label={it.label}
             />
             <label
               htmlFor={`pc-${i}-${it.label.slice(0, 16)}`}
               className={cn(
-                "font-display text-[17px] leading-relaxed cursor-pointer select-none transition-colors",
-                checked ? "text-[#6B655A] line-through italic" : "text-[#1B1A17]",
+                "text-[17px] leading-relaxed cursor-pointer select-none transition-colors",
+                t.displayFont,
+                checked ? "line-through italic" : "",
               )}
+              style={{ color: checked ? t.textMuted : t.text }}
             >
               {it.label}
             </label>
@@ -115,22 +249,24 @@ function Checklist({ items }: { items: { label: string; checked?: boolean }[] })
 }
 
 function Block({ block, index }: { block: PageBlock; index: number }) {
+  const t = useTheme();
+
   switch (block.type) {
     case "heading": {
       if (block.level === 3) {
         return (
-          <h3 className="font-display text-[22px] font-normal italic tracking-tight text-[#1B1A17] mt-8 mb-1">
+          <h3 className={cn("text-[22px] font-normal italic tracking-tight mt-8 mb-1", t.displayFont)} style={{ color: t.text }}>
             {block.text}
           </h3>
         );
       }
       return (
         <div className="mt-12 mb-4">
-          <div className="flex items-baseline gap-4 border-b border-[#1B1A17]/20 pb-3">
-            <span className="font-grotesk text-[11px] tabular-nums text-[#E85A2F] font-semibold tracking-wider">
+          <div className="flex items-baseline gap-4 pb-3" style={{ borderBottom: `1px solid ${t.border}` }}>
+            <span className={cn("text-[11px] tabular-nums font-semibold tracking-wider", t.uiFont)} style={{ color: t.accent }}>
               §{String(index + 1).padStart(2, "0")}
             </span>
-            <h2 className="font-display text-[32px] leading-[1.05] font-normal tracking-tight text-[#1B1A17]">
+            <h2 className={cn("text-[32px] leading-[1.05] font-normal tracking-tight", t.displayFont)} style={{ color: t.text }}>
               {block.text}
             </h2>
           </div>
@@ -140,25 +276,25 @@ function Block({ block, index }: { block: PageBlock; index: number }) {
 
     case "paragraph":
       return (
-        <p className="font-display text-[19px] leading-[1.55] text-[#1B1A17]/90 max-w-[62ch] first-letter:font-normal">
+        <p className={cn("text-[19px] leading-[1.55] max-w-[62ch]", t.displayFont)} style={{ color: `${t.text}E6` }}>
           {block.text}
         </p>
       );
 
     case "callout": {
       const tone = block.tone ?? "info";
-      const s = calloutStyles[tone];
+      const s = t.callout[tone];
       return (
         <div className={cn("relative pl-5 pr-4 py-4 rounded-r-md", s.bg)}>
           <div className={cn("absolute left-0 top-0 bottom-0 w-[3px]", s.bar)} />
           {block.title && (
             <div className="mb-1.5">
-              <span className={cn("inline-block font-grotesk text-[9px] uppercase tracking-[0.22em] px-1.5 py-0.5 rounded-sm font-semibold", s.chip)}>
+              <span className={cn("inline-block text-[9px] uppercase tracking-[0.22em] px-1.5 py-0.5 rounded-sm font-semibold", s.chip, t.uiFont)}>
                 {block.title}
               </span>
             </div>
           )}
-          <div className={cn("font-display text-[16px] leading-[1.55]", s.fg)}>
+          <div className={cn("text-[16px] leading-[1.55]", s.fg, t.displayFont)}>
             {block.body}
           </div>
         </div>
@@ -167,19 +303,19 @@ function Block({ block, index }: { block: PageBlock; index: number }) {
 
     case "kpis":
       return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px bg-[#1B1A17]/15 rounded-md overflow-hidden border border-[#1B1A17]/15">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px rounded-md overflow-hidden" style={{ backgroundColor: t.border, border: `1px solid ${t.border}` }}>
           {block.items.map((it, i) => (
-            <div key={i} className="bg-[#F8F4EB] px-5 py-5 relative">
+            <div key={i} className="px-5 py-5 relative" style={{ backgroundColor: t.kpiBg }}>
               <Eyebrow>{it.label}</Eyebrow>
-              <div className="mt-3 font-display text-[40px] leading-[0.95] font-normal text-[#1B1A17] tabular-nums">
+              <div className={cn("mt-3 text-[40px] leading-[0.95] font-normal tabular-nums", t.displayFont)} style={{ color: t.text }}>
                 {it.value}
               </div>
               {it.hint && (
-                <div className="mt-2 font-grotesk text-[11px] text-[#6B655A] leading-snug">
+                <div className={cn("mt-2 text-[11px] leading-snug", t.uiFont)} style={{ color: t.textMuted }}>
                   {it.hint}
                 </div>
               )}
-              <span className="absolute top-3 right-3 h-1 w-1 rounded-full bg-[#E85A2F]" />
+              <span className="absolute top-3 right-3 h-1 w-1 rounded-full" style={{ backgroundColor: t.accent }} />
             </div>
           ))}
         </div>
@@ -192,8 +328,8 @@ function Block({ block, index }: { block: PageBlock; index: number }) {
       return (
         <ul className="space-y-2">
           {block.bullets.map((b, i) => (
-            <li key={i} className="flex items-start gap-4 font-display text-[17px] leading-[1.55] text-[#1B1A17]/90">
-              <span className="mt-[12px] inline-block h-[2px] w-4 bg-[#E85A2F] flex-shrink-0" />
+            <li key={i} className={cn("flex items-start gap-4 text-[17px] leading-[1.55]", t.displayFont)} style={{ color: `${t.text}E6` }}>
+              <span className="mt-[12px] inline-block h-[2px] w-4 flex-shrink-0" style={{ backgroundColor: t.bulletLine }} />
               <span>{b}</span>
             </li>
           ))}
@@ -202,14 +338,15 @@ function Block({ block, index }: { block: PageBlock; index: number }) {
 
     case "table":
       return (
-        <div className="overflow-hidden border-y-2 border-[#1B1A17]/80">
+        <div className="overflow-hidden" style={{ borderTop: `2px solid ${t.text}CC`, borderBottom: `2px solid ${t.text}CC` }}>
           <table className="w-full text-[14px]">
             <thead>
-              <tr className="border-b border-[#1B1A17]/30 bg-[#1B1A17]/[0.04]">
+              <tr style={{ borderBottom: `1px solid ${t.border}`, backgroundColor: `${t.text}0A` }}>
                 {block.columns.map((c, i) => (
                   <th
                     key={i}
-                    className="text-left px-4 py-3 font-grotesk text-[10px] uppercase tracking-[0.2em] text-[#1B1A17]/70 font-semibold"
+                    className={cn("text-left px-4 py-3 text-[10px] uppercase tracking-[0.2em] font-semibold", t.uiFont)}
+                    style={{ color: `${t.text}B3` }}
                   >
                     {c}
                   </th>
@@ -218,16 +355,12 @@ function Block({ block, index }: { block: PageBlock; index: number }) {
             </thead>
             <tbody>
               {block.rows.map((r, i) => (
-                <tr key={i} className="border-b border-[#1B1A17]/12 last:border-b-0 hover:bg-[#E85A2F]/[0.04] transition-colors">
+                <tr key={i} className="last:border-b-0 transition-colors" style={{ borderBottom: `1px solid ${t.border}` }}>
                   {r.map((cell, j) => (
                     <td
                       key={j}
-                      className={cn(
-                        "px-4 py-3 align-top",
-                        j === 0
-                          ? "font-display text-[16px] text-[#1B1A17]"
-                          : "font-grotesk text-[13px] text-[#1B1A17]/85",
-                      )}
+                      className={cn("px-4 py-3 align-top", j === 0 ? cn("text-[16px]", t.displayFont) : cn("text-[13px]", t.uiFont))}
+                      style={{ color: j === 0 ? t.text : `${t.text}D9` }}
                     >
                       {cell}
                     </td>
@@ -241,13 +374,14 @@ function Block({ block, index }: { block: PageBlock; index: number }) {
 
     case "chart": {
       const data = block.data ?? [];
+      const tooltipStyle = { background: t.text, border: "none", borderRadius: 6, fontSize: 12, color: t.surface, fontFamily: "Space Grotesk" };
       return (
-        <figure className="border border-[#1B1A17]/15 rounded-md bg-[#F8F4EB] p-6 relative overflow-hidden">
-          <span className="absolute top-0 left-0 h-1 w-16 bg-[#E85A2F]" />
+        <figure className="rounded-md p-6 relative overflow-hidden" style={{ border: `1px solid ${t.border}`, backgroundColor: t.surface }}>
+          <span className="absolute top-0 left-0 h-1 w-16" style={{ backgroundColor: t.accent }} />
           {block.title && (
             <figcaption className="mb-5">
               <Eyebrow>Figure {String(index + 1).padStart(2, "0")}</Eyebrow>
-              <div className="mt-1 font-display text-[20px] italic text-[#1B1A17]">
+              <div className={cn("mt-1 text-[20px] italic", t.displayFont)} style={{ color: t.text }}>
                 {block.title}
               </div>
             </figcaption>
@@ -256,26 +390,26 @@ function Block({ block, index }: { block: PageBlock; index: number }) {
             <ResponsiveContainer width="100%" height="100%">
               {block.chartType === "line" ? (
                 <LineChart data={data} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="2 4" stroke="#1B1A17" strokeOpacity={0.15} vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: SOFT, fontFamily: "Space Grotesk" }} axisLine={{ stroke: INK, strokeOpacity: 0.4 }} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: SOFT, fontFamily: "Space Grotesk" }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: INK, border: "none", borderRadius: 4, fontSize: 12, color: "#F2EEE5", fontFamily: "Space Grotesk" }} labelStyle={{ color: "#F2EEE5" }} cursor={{ stroke: VERMILLION, strokeWidth: 1, strokeDasharray: "2 2" }} />
-                  <Line type="monotone" dataKey="value" stroke={VERMILLION} strokeWidth={2} dot={{ r: 4, fill: VERMILLION, strokeWidth: 0 }} activeDot={{ r: 6, fill: INK, strokeWidth: 2, stroke: VERMILLION }} />
+                  <CartesianGrid strokeDasharray="2 4" stroke={t.text} strokeOpacity={0.12} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: t.textMuted, fontFamily: "Space Grotesk" }} axisLine={{ stroke: t.text, strokeOpacity: 0.3 }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: t.textMuted, fontFamily: "Space Grotesk" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: t.surface }} cursor={{ stroke: t.accent, strokeWidth: 1, strokeDasharray: "2 2" }} />
+                  <Line type="monotone" dataKey="value" stroke={t.accent} strokeWidth={2} dot={{ r: 4, fill: t.accent, strokeWidth: 0 }} activeDot={{ r: 6, fill: t.text, strokeWidth: 2, stroke: t.accent }} />
                 </LineChart>
               ) : block.chartType === "pie" ? (
                 <PieChart>
-                  <Tooltip contentStyle={{ background: INK, border: "none", borderRadius: 4, fontSize: 12, color: "#F2EEE5", fontFamily: "Space Grotesk" }} />
-                  <Pie data={data} dataKey="value" nameKey="name" outerRadius={100} innerRadius={56} paddingAngle={2} stroke="#F8F4EB" strokeWidth={3}>
-                    {data.map((_, i) => (<Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />))}
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Pie data={data} dataKey="value" nameKey="name" outerRadius={100} innerRadius={56} paddingAngle={2} stroke={t.surface} strokeWidth={3}>
+                    {data.map((_, i) => (<Cell key={i} fill={t.chartPalette[i % t.chartPalette.length]} />))}
                   </Pie>
                 </PieChart>
               ) : (
                 <BarChart data={data} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="2 4" stroke="#1B1A17" strokeOpacity={0.15} vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: SOFT, fontFamily: "Space Grotesk" }} axisLine={{ stroke: INK, strokeOpacity: 0.4 }} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: SOFT, fontFamily: "Space Grotesk" }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: INK, border: "none", borderRadius: 4, fontSize: 12, color: "#F2EEE5", fontFamily: "Space Grotesk" }} cursor={{ fill: "rgba(232,90,47,0.08)" }} />
-                  <Bar dataKey="value" fill={VERMILLION} radius={[3, 3, 0, 0]} maxBarSize={56} />
+                  <CartesianGrid strokeDasharray="2 4" stroke={t.text} strokeOpacity={0.12} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: t.textMuted, fontFamily: "Space Grotesk" }} axisLine={{ stroke: t.text, strokeOpacity: 0.3 }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: t.textMuted, fontFamily: "Space Grotesk" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={tooltipStyle} cursor={{ fill: `${t.accent}14` }} />
+                  <Bar dataKey="value" fill={t.accent} radius={[3, 3, 0, 0]} maxBarSize={56} />
                 </BarChart>
               )}
             </ResponsiveContainer>
@@ -301,7 +435,34 @@ function BlockList({ blocks }: { blocks: PageBlock[] }) {
   );
 }
 
+function PageTabs({ tabs }: { tabs: PageTab[] }) {
+  const theme = useTheme();
+  const [active, setActive] = useState(0);
+  return (
+    <div className="w-full">
+      <div className="flex gap-7 mb-10" style={{ borderBottom: `1px solid ${theme.border}` }}>
+        {tabs.map((tab, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => setActive(i)}
+            className={cn("pb-3 pt-0 -mb-px text-[11px] uppercase tracking-[0.22em] font-semibold transition-colors", theme.uiFont)}
+            style={{
+              color: i === active ? theme.tabActive : `${theme.text}8C`,
+              borderBottom: i === active ? `2px solid ${theme.tabActive}` : "2px solid transparent",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <BlockList blocks={tabs[active].blocks} />
+    </div>
+  );
+}
+
 export function PageRenderer({ page }: { page: PageSpec }) {
+  const theme = THEMES[page.theme ?? "paper"] ?? THEMES.paper;
   const tabs = page.tabs?.length ? page.tabs : [{ label: "Overview", blocks: [] }];
   const today = new Date().toLocaleDateString("en-GB", {
     day: "2-digit",
@@ -310,71 +471,51 @@ export function PageRenderer({ page }: { page: PageSpec }) {
   }).toUpperCase();
 
   return (
-    <article className="max-w-[820px] mx-auto px-10 py-12 pb-20">
-      {/* Editorial masthead */}
-      <header className="mb-12">
-        <div className="flex items-center justify-between mb-8 pb-3 border-b border-[#1B1A17]/30">
-          <div className="font-grotesk text-[10px] uppercase tracking-[0.32em] text-[#1B1A17]/65 font-semibold">
-            The Brief · Vol. 01
+    <ThemeCtx.Provider value={theme}>
+      <article className="max-w-[820px] mx-auto px-10 py-12 pb-20">
+        {/* Editorial masthead */}
+        <header className="mb-12">
+          <div className="flex items-center justify-between mb-8 pb-3" style={{ borderBottom: `1px solid ${theme.border}` }}>
+            <div className={cn("text-[10px] uppercase tracking-[0.32em] font-semibold", theme.uiFont)} style={{ color: theme.masthead }}>
+              The Brief · Vol. 01
+            </div>
+            <div className={cn("text-[10px] uppercase tracking-[0.32em] tabular-nums font-semibold", theme.uiFont)} style={{ color: theme.masthead }}>
+              {today}
+            </div>
           </div>
-          <div className="font-grotesk text-[10px] uppercase tracking-[0.32em] text-[#1B1A17]/65 tabular-nums font-semibold">
-            {today}
+          <div className="flex items-start gap-4">
+            <span className="mt-3 inline-block h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: theme.accent }} />
+            <div className="flex-1 min-w-0">
+              <h1 className={cn("text-[56px] sm:text-[64px] leading-[0.98] font-normal tracking-[-0.015em]", theme.displayFont)} style={{ color: theme.text }}>
+                {page.title}
+              </h1>
+              {page.subtitle && (
+                <p className={cn("mt-4 italic text-[22px] leading-[1.4] max-w-[58ch]", theme.displayFont)} style={{ color: `${theme.text}A6` }}>
+                  {page.subtitle}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="flex items-start gap-4">
-          <span className="mt-3 inline-block h-3 w-3 rounded-full bg-[#E85A2F] flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <h1 className="font-display text-[56px] sm:text-[64px] leading-[0.98] font-normal tracking-[-0.015em] text-[#1B1A17]">
-              {page.title}
-            </h1>
-            {page.subtitle && (
-              <p className="mt-4 font-display italic text-[22px] leading-[1.4] text-[#1B1A17]/65 max-w-[58ch]">
-                {page.subtitle}
-              </p>
-            )}
-          </div>
-        </div>
-      </header>
+        </header>
 
-      {tabs.length === 1 ? (
-        <BlockList blocks={tabs[0].blocks} />
-      ) : (
-        <Tabs defaultValue="0" className="w-full">
-          <TabsList className="bg-transparent p-0 h-auto gap-7 border-b border-[#1B1A17]/25 rounded-none w-full justify-start mb-10">
-            {tabs.map((t, i) => (
-              <TabsTrigger
-                key={i}
-                value={String(i)}
-                className={cn(
-                  "rounded-none bg-transparent px-0 pb-3 pt-0 -mb-px",
-                  "font-grotesk text-[11px] uppercase tracking-[0.22em] text-[#1B1A17]/55 font-semibold",
-                  "data-[state=active]:bg-transparent data-[state=active]:shadow-none",
-                  "data-[state=active]:text-[#1B1A17] data-[state=active]:border-b-2 data-[state=active]:border-[#E85A2F]",
-                )}
-              >
-                {t.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {tabs.map((t, i) => (
-            <TabsContent key={i} value={String(i)} className="mt-0">
-              <BlockList blocks={t.blocks} />
-            </TabsContent>
-          ))}
-        </Tabs>
-      )}
+        {tabs.length === 1 ? (
+          <BlockList blocks={tabs[0].blocks} />
+        ) : (
+          <PageTabs tabs={tabs} />
+        )}
 
-      {/* Footer mark */}
-      <footer className="mt-20 pt-6 border-t border-[#1B1A17]/30 flex items-center justify-between">
-        <div className="font-grotesk text-[10px] uppercase tracking-[0.32em] text-[#1B1A17]/55 font-semibold">
-          — Fin —
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#E85A2F]" />
-          <span className="h-1.5 w-1.5 rounded-full bg-[#B48441]" />
-          <span className="h-1.5 w-1.5 rounded-full bg-[#2E4057]" />
-        </div>
-      </footer>
-    </article>
+        {/* Footer mark */}
+        <footer className="mt-20 pt-6 flex items-center justify-between" style={{ borderTop: `1px solid ${theme.border}` }}>
+          <div className={cn("text-[10px] uppercase tracking-[0.32em] font-semibold", theme.uiFont)} style={{ color: theme.textMuted }}>
+            — Fin —
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.accent }} />
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.footerDot2 }} />
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.footerDot3 }} />
+          </div>
+        </footer>
+      </article>
+    </ThemeCtx.Provider>
   );
 }
