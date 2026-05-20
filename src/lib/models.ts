@@ -21,7 +21,7 @@ export const MODELS: Record<Provider, ModelOption[]> = {
   ],
   google: [
     { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", description: "Google's most capable model" },
-    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", description: "Google's fastest model" },
+    { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash", description: "Google's latest fast model" },
   ],
   mistral: [
     { id: "mistral-large-latest", label: "Mistral Large", description: "Mistral's latest flagship model" },
