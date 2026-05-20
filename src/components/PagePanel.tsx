@@ -88,24 +88,6 @@ export function PagePanel({ open, page, onClose, onWidthChange }: Props) {
     theme === "midnight" ? "text-white/60 hover:bg-white/10" :
     theme === "forest"   ? "text-white/60 hover:bg-white/10" :
     "text-[#1B1A17]/60 hover:bg-[#1B1A17]/8";
-  const dot1 =
-    theme === "midnight" ? "bg-[#64FFDA]" :
-    theme === "minimal"  ? "bg-gray-800" :
-    theme === "forest"   ? "bg-[#7ECBA1]" :
-    theme === "slate"    ? "bg-[#4F46E5]" :
-    "bg-[#E85A2F]";
-  const dot2 =
-    theme === "midnight" ? "bg-[#4A9FD4]" :
-    theme === "minimal"  ? "bg-gray-400" :
-    theme === "forest"   ? "bg-[#4A9FD4]" :
-    theme === "slate"    ? "bg-[#7C3AED]" :
-    "bg-[#B48441]";
-  const dot3 =
-    theme === "midnight" ? "bg-[#A78BFA]" :
-    theme === "minimal"  ? "bg-gray-200" :
-    theme === "forest"   ? "bg-[#A78BFA]" :
-    theme === "slate"    ? "bg-[#EC4899]" :
-    "bg-[#2E4057]";
 
   return (
     <div
@@ -147,25 +129,18 @@ export function PagePanel({ open, page, onClose, onWidthChange }: Props) {
         />
 
         {/* Header */}
-        <div className={cn("relative flex items-center justify-between px-6 h-14 border-b shrink-0", headerBorder)}>
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className={cn("h-2 w-2 rounded-full", dot1)} />
-              <span className={cn("h-2 w-2 rounded-full", dot2)} />
-              <span className={cn("h-2 w-2 rounded-full", dot3)} />
-            </div>
-            <div className={cn("font-grotesk text-[10px] uppercase tracking-[0.28em] truncate", headerText)}>
-              {page?.title ?? "Page"}
-            </div>
-          </div>
+        <div className={cn("relative flex items-center gap-3 px-4 h-14 border-b shrink-0", headerBorder)}>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close page"
-            className={cn("h-8 w-8 inline-flex items-center justify-center rounded-full transition-colors", closeBtn)}
+            className={cn("h-8 w-8 shrink-0 inline-flex items-center justify-center rounded-full transition-colors", closeBtn)}
           >
             <X className="w-4 h-4" />
           </button>
+          <div className={cn("font-grotesk text-[10px] uppercase tracking-[0.28em] truncate", headerText)}>
+            {page?.title ?? "Page"}
+          </div>
         </div>
 
         {/* Content */}

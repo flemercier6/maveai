@@ -72,8 +72,6 @@ type ThemeTokens = {
   kpiBg: string;
   callout: Record<string, { bar: string; bg: string; fg: string; chip: string }>;
   tabActive: string;
-  footerDot2: string;
-  footerDot3: string;
   masthead: string;
   bulletLine: string;
 };
@@ -97,8 +95,6 @@ const THEMES: Record<string, ThemeTokens> = {
       danger:  { bar: "bg-[#9B2C2C]",   bg: "bg-[#9B2C2C]/[0.08]", fg: "text-[#7A1F1F]",  chip: "bg-[#9B2C2C] text-[#F2EEE5]" },
     },
     tabActive: "#E85A2F",
-    footerDot2: "#B48441",
-    footerDot3: "#2E4057",
     masthead: "rgba(27,26,23,0.65)",
     bulletLine: "#E85A2F",
   },
@@ -120,8 +116,6 @@ const THEMES: Record<string, ThemeTokens> = {
       danger:  { bar: "bg-[#FB7185]",   bg: "bg-[#FB7185]/[0.10]", fg: "text-[#E8EDF5]",  chip: "bg-[#FB7185] text-[#0F1624]" },
     },
     tabActive: "#64FFDA",
-    footerDot2: "#A78BFA",
-    footerDot3: "#4A9FD4",
     masthead: "rgba(232,237,245,0.45)",
     bulletLine: "#64FFDA",
   },
@@ -143,8 +137,6 @@ const THEMES: Record<string, ThemeTokens> = {
       danger:  { bar: "bg-red-600",     bg: "bg-red-50",            fg: "text-red-900",     chip: "bg-red-600 text-white" },
     },
     tabActive: "#111111",
-    footerDot2: "#6B7280",
-    footerDot3: "#D1D5DB",
     masthead: "#6B7280",
     bulletLine: "#111111",
   },
@@ -166,8 +158,6 @@ const THEMES: Record<string, ThemeTokens> = {
       danger:  { bar: "bg-[#FB7185]",   bg: "bg-[#FB7185]/[0.10]", fg: "text-[#E8F5EE]",  chip: "bg-[#FB7185] text-[#0D1F1A]" },
     },
     tabActive: "#7ECBA1",
-    footerDot2: "#A78BFA",
-    footerDot3: "#4A9FD4",
     masthead: "rgba(232,245,238,0.45)",
     bulletLine: "#7ECBA1",
   },
@@ -189,8 +179,6 @@ const THEMES: Record<string, ThemeTokens> = {
       danger:  { bar: "bg-[#EF4444]",   bg: "bg-[#EF4444]/[0.08]", fg: "text-[#1E293B]",  chip: "bg-[#EF4444] text-white" },
     },
     tabActive: "#4F46E5",
-    footerDot2: "#7C3AED",
-    footerDot3: "#EC4899",
     masthead: "#64748B",
     bulletLine: "#4F46E5",
   },
@@ -504,17 +492,6 @@ export function PageRenderer({ page }: { page: PageSpec }) {
           <PageTabs tabs={tabs} />
         )}
 
-        {/* Footer mark */}
-        <footer className="mt-20 pt-6 flex items-center justify-between" style={{ borderTop: `1px solid ${theme.border}` }}>
-          <div className={cn("text-[10px] uppercase tracking-[0.32em] font-semibold", theme.uiFont)} style={{ color: theme.textMuted }}>
-            — Fin —
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.accent }} />
-            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.footerDot2 }} />
-            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: theme.footerDot3 }} />
-          </div>
-        </footer>
       </article>
     </ThemeCtx.Provider>
   );
