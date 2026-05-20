@@ -80,6 +80,21 @@ type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
+const PAGE_THEMES = ["paper", "midnight", "minimal", "forest", "slate"] as const;
+type PageThemeId = (typeof PAGE_THEMES)[number];
+
+function randomPageTheme(): PageThemeId {
+  return PAGE_THEMES[Math.floor(Math.random() * PAGE_THEMES.length)];
+}
+
+function deterministicPageTheme(seed: string): PageThemeId {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+  }
+  return PAGE_THEMES[Math.abs(h) % PAGE_THEMES.length];
+}
+
 export default function Chat() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -382,7 +397,8 @@ export default function Chat() {
             if (pageMatch) {
               try {
                 const summary = pageMatch[1].trim();
-                const page = JSON.parse(pageMatch[2]) as PageSpec;
+                const parsed = JSON.parse(pageMatch[2]) as PageSpec;
+                const page: PageSpec = { ...parsed, theme: parsed.theme ?? deterministicPageTheme(parsed.title) };
                 return {
                   id: m.id,
                   role: m.role,
@@ -912,7 +928,7 @@ export default function Chat() {
           throw new Error(errMsg);
         }
         const json = await resp.json() as { page: PageSpec; summary: string; meta?: RequestMeta };
-        const page = json.page;
+        const page: PageSpec = { ...json.page, theme: json.page.theme ?? randomPageTheme() };
         const summary = json.summary || "Page generated.";
         // Apply local billing multiplier on top of provider cost.
         const meta: RequestMeta | undefined = json.meta
