@@ -113,7 +113,7 @@ export function PagePanel({ open, page, onClose, onWidthChange }: Props) {
       className={cn(
         "fixed top-0 right-0 bottom-0 z-40",
         "bg-sidebar",
-        "pt-[10px] pr-[10px] pb-[10px] pl-0",
+        "p-[10px]",
         dragging ? "transition-none" : "transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
         open ? "translate-x-0" : "translate-x-full",
       )}

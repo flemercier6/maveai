@@ -684,10 +684,23 @@ function ChatMessageImpl({
           </div>
         );
       }
+      if (modeId === "page") {
+        return (
+          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[var(--blue-tag-bg)] text-sm" style={{ color: "var(--blue-tag-fg)" }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-3.5 h-3.5 shrink-0">
+              <path d="M2 8C2 5.17157 2 3.75736 2.87868 2.87868C3.75736 2 5.17157 2 8 2C10.8284 2 12.2427 2 13.1213 2.87868C14 3.75736 14 5.17157 14 8C14 10.8284 14 12.2427 13.1213 13.1213C12.2427 14 10.8284 14 8 14C5.17157 14 3.75736 14 2.87868 13.1213C2 12.2427 2 10.8284 2 8Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2.33337 5.33331H13.6667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M8.66663 8H11.3333" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M8.66663 10.6667H9.99996" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M6 5.33331V14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Page
+          </div>
+        );
+      }
       const cfg = {
-        page: { label: "Page", Icon: FileText },
         explore: { label: "Explore", Icon: Sparkles },
-      }[modeId as "page" | "explore"];
+      }[modeId as "explore"];
       const Icon = cfg.Icon;
       return (
         <div className="inline-flex items-center h-6 gap-1.5 rounded-full bg-muted px-2.5 text-[11px] font-medium text-muted-foreground">
