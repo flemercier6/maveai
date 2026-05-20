@@ -61,11 +61,11 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
   const totalBilled = inputCostBilled + outputCostBilled;
   const totalTokens = (cost?.inputTokens ?? 0) + (cost?.outputTokens ?? 0);
 
-  // Position dropdown above the tag button
+  // Position dropdown below the tag button, right-aligned
   const openDropdown = () => {
     if (!btnRef.current) return;
     const rect = btnRef.current.getBoundingClientRect();
-    setPos({ top: rect.top, left: rect.left + rect.width / 2 });
+    setPos({ top: rect.bottom + 8, left: rect.right });
     setOpen(true);
   };
 
@@ -106,9 +106,9 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
           ref={dropRef}
           style={{
             position: "fixed",
-            bottom: `calc(100vh - ${pos.top}px + 8px)`,
+            top: pos.top,
             left: pos.left,
-            transform: "translateX(-50%)",
+            transform: "translateX(-100%)",
             zIndex: 9999,
             maxHeight: "70vh",
             overflowY: "auto",
