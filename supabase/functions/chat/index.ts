@@ -48,7 +48,7 @@ const MODEL_PRICES: Record<string, Price> = {
   "claude-3-5-haiku-latest": { input: 0.8, output: 4 },
   // Google
   "gemini-2.5-pro": { input: 1.25, output: 10 },
-  "gemini-2.5-flash": { input: 0.3, output: 2.5 },
+  "gemini-3.5-flash": { input: 0.3, output: 2.5 },
   "gemini-2.5-flash-lite": { input: 0.1, output: 0.4 },
   // Mistral
   "mistral-large-latest": { input: 2, output: 6 },
@@ -62,7 +62,7 @@ function priceFor(model: string): Price {
   if (m.includes("sonnet")) return MODEL_PRICES["claude-sonnet-4-6"];
   if (m.includes("haiku")) return MODEL_PRICES["claude-3-5-haiku-latest"];
   if (m.includes("flash-lite")) return MODEL_PRICES["gemini-2.5-flash-lite"];
-  if (m.includes("flash")) return MODEL_PRICES["gemini-2.5-flash"];
+  if (m.includes("flash")) return MODEL_PRICES["gemini-3.5-flash"];
   if (m.includes("gemini")) return MODEL_PRICES["gemini-2.5-pro"];
   if (m.startsWith("mistral-large")) return MODEL_PRICES["mistral-large-latest"];
   if (m.startsWith("mistral")) return MODEL_PRICES["mistral-small-latest"];
@@ -353,7 +353,7 @@ async function* streamPlannerSteps(
     ? `User message:\n"""${userText}"""\n\nContext:\n${contextHints}\n\nWrite the steps now.`
     : `User message:\n"""${userText}"""\n\nWrite the steps now.`;
   const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${googleKey}`;
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse&key=${googleKey}`;
   const r = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -686,7 +686,7 @@ User message:
 
   try {
     const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${googleKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -764,7 +764,7 @@ async function* streamAgenticNarration(
   }
   const prompt = `User goal: ${args.goal || args.userText.slice(0, 120)}\nUser's original message (for language detection):\n"""${args.userText.slice(0, 400)}"""\n\nTask: ${task}`;
   const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${googleKey}`;
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse&key=${googleKey}`;
   const r = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1273,7 +1273,7 @@ Deno.serve(async (req) => {
     if (blacklisted.has(model)) {
       const fallbackOrder = [
         ...favorites,
-        "gemini-2.5-flash", "gpt-5.5", "gpt-4o-mini", "gemini-2.5-pro",
+        "gemini-3.5-flash", "gpt-5.5", "gpt-4o-mini", "gemini-2.5-pro",
         "claude-sonnet-4-6", "claude-opus-4-7",
         "mistral-large-latest", "mistral-small-latest",
       ];
@@ -1901,7 +1901,7 @@ Deno.serve(async (req) => {
           responseMimeType: "application/json",
         },
       };
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${googleApiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${googleApiKey}`;
       const r = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
