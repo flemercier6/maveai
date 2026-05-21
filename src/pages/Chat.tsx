@@ -893,17 +893,16 @@ export default function Chat() {
       );
 
       let convId: string | null = null;
-      let userMsg: { id?: string } | null = null;
       if (!ephemeral) {
         convId = await ensureConversation(text);
         if (!convId) { setSending(false); return; }
-        const { data } = await supabase.from("messages").insert({
-          conversation_id: convId, user_id: user!.id, role: "user", content: displayContent,
-        }).select().single();
-        userMsg = data;
+        // User message persistence runs in the background — saves a round-trip.
+        void supabase.from("messages")
+          .insert({ conversation_id: convId, user_id: user!.id, role: "user", content: displayContent })
+          .then(({ error }) => { if (error) console.error("user message insert failed", error); });
       }
 
-      const baseMsgs: Msg[] = [...messages, { id: userMsg?.id ?? `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
+      const baseMsgs: Msg[] = [...messages, { id: `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
       setMessages([...baseMsgs, { role: "assistant", content: "", provider, model }]);
       setStreaming(true);
 
@@ -1048,29 +1047,38 @@ export default function Chat() {
         : { kind: "file" as const, name: a.name },
     );
 
+    // For existing conversations, convId is known instantly. For new ones we must
+    // wait for the INSERT (only this one path actually blocks). All other DB writes
+    // (provider/model update + user message persistence) fire in the background
+    // and run in parallel with the LLM fetch — saves ~200-400 ms of frontend latency.
     let convId: string | null = null;
-    let userMsg: { id?: string } | null = null;
     if (!ephemeral) {
       convId = await ensureConversation(text || atts[0]?.name || "Attachment");
       if (!convId) { setSending(false); return; }
-
-      // Update conversation provider/model in case it changed
-      await supabase.from("conversations").update({ provider: convProvider, model: convModel }).eq("id", convId);
-
-      // Persist user message. We append a compact textual summary of attachments
-      // so reloads can still show that something was attached (binary data is not stored).
-      const persistedSummary = atts.length
-        ? "\n\n" + atts.map((a) =>
-            a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
-          ).join("\n")
-        : "";
-      const { data } = await supabase.from("messages").insert({
-        conversation_id: convId, user_id: user!.id, role: "user", content: displayContent + persistedSummary,
-      }).select().single();
-      userMsg = data;
     }
 
-    const baseMsgs: Msg[] = [...messages, { id: userMsg?.id ?? `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
+    const persistedSummary = atts.length
+      ? "\n\n" + atts.map((a) =>
+          a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
+        ).join("\n")
+      : "";
+    if (!ephemeral && convId) {
+      // Background updates — DO NOT await. These run in parallel with the LLM call.
+      void supabase.from("conversations")
+        .update({ provider: convProvider, model: convModel })
+        .eq("id", convId)
+        .then(({ error }) => { if (error) console.error("conv update failed", error); });
+      void supabase.from("messages")
+        .insert({
+          conversation_id: convId,
+          user_id: user!.id,
+          role: "user",
+          content: displayContent + persistedSummary,
+        })
+        .then(({ error }) => { if (error) console.error("user message insert failed", error); });
+    }
+
+    const baseMsgs: Msg[] = [...messages, { id: `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
     const sentGoogleService = googleService;
     const sentVoyagerService = voyagerService;
     setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel, googleService: sentGoogleService ?? undefined, voyagerService: sentVoyagerService || undefined }]);

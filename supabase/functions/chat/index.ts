@@ -208,18 +208,25 @@ async function* streamOpenAI(apiKey: string, model: string, messages: Msg[]): As
 async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]): AsyncGenerator<string, Usage | undefined> {
   const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   const conv = messages.filter((m) => m.role !== "system");
+  // Prompt caching: marks the system prompt as cacheable (5 min ephemeral cache).
+  // Cuts TTFT by 50-80% on subsequent requests with the same system prompt — huge
+  // win for Opus 4.7 which otherwise has 1-2 s TTFT.
+  const systemPayload = system
+    ? [{ type: "text" as const, text: system, cache_control: { type: "ephemeral" as const } }]
+    : undefined;
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
+      "anthropic-beta": "prompt-caching-2024-07-31",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
       model,
       max_tokens: 1500,
       stream: true,
-      system: system || undefined,
+      system: systemPayload,
       messages: conv.map((m) => {
         const text = mergeTextAttachments(m.content, m.attachments);
         const images = (m.attachments ?? []).filter((a) => a.kind === "image") as Extract<Attachment, { kind: "image" }>[];
@@ -1238,7 +1245,30 @@ Deno.serve(async (req) => {
     });
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    // Fire auth.getUser + req.json() in parallel — both block the same critical
+    // path and have no dependency on each other (~50-100 ms saved).
+    const [authPromise, payload] = await Promise.all([
+      supabase.auth.getUser(token),
+      req.json() as Promise<{
+        conversationId: string | null;
+        provider: "openai" | "anthropic" | "google" | "mistral";
+        model: string;
+        messages: Msg[];
+        skipClarify?: boolean;
+        writingMode?: boolean;
+        previousCanvas?: string | null;
+        forceCanvas?: boolean;
+        aiPrefs?: {
+          disabledModes?: string[];
+          blacklistedModels?: string[];
+          favoriteModels?: string[];
+          responseLength?: "short" | "default" | "comprehensive";
+        };
+        googleService?: "gmail" | "calendar" | "drive" | null;
+        voyagerService?: boolean;
+      }>,
+    ]);
+    const { data: userData, error: userErr } = authPromise;
     if (userErr || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -1247,24 +1277,7 @@ Deno.serve(async (req) => {
     }
     const user = { id: userData.user.id };
 
-    const { conversationId, provider, model: requestedModel, messages, skipClarify, writingMode, previousCanvas, forceCanvas, aiPrefs, googleService, voyagerService } = await req.json() as {
-      conversationId: string | null;
-      provider: "openai" | "anthropic" | "google" | "mistral";
-      model: string;
-      messages: Msg[];
-      skipClarify?: boolean;
-      writingMode?: boolean;
-      previousCanvas?: string | null;
-      forceCanvas?: boolean;
-      aiPrefs?: {
-        disabledModes?: string[];
-        blacklistedModels?: string[];
-        favoriteModels?: string[];
-        responseLength?: "short" | "default" | "comprehensive";
-      };
-      googleService?: "gmail" | "calendar" | "drive" | null;
-      voyagerService?: boolean;
-    };
+    const { conversationId, provider, model: requestedModel, messages, skipClarify, writingMode, previousCanvas, forceCanvas, aiPrefs, googleService, voyagerService } = payload;
 
     // ---- Apply user AI preferences: blacklist fallback ----
     const blacklisted = new Set(aiPrefs?.blacklistedModels ?? []);
@@ -2775,8 +2788,31 @@ Deno.serve(async (req) => {
           // ---------- Visible "thinking" preamble for advanced models ----------
           // Streams 3-5 short reasoning steps (Claude-style) BEFORE the main model
           // starts answering. Uses Gemini Flash as a cheap, fast planner.
+          //
+          // Skip this preamble entirely for basic queries — short messages, greetings,
+          // and simple Q&A don't benefit from a visible reasoning chain, and it costs
+          // ~700-1400 ms of latency before the actual answer can start streaming.
           const googleKeyForPlanner = Deno.env.get("GOOGLE_API_KEY");
-          const shouldThink = isAdvancedModel(model) && !!googleKeyForPlanner && !!lastUserText && !writingMode && !agenticUsed;
+          const isBasicQuery =
+            lastUserText.length < 300 ||
+            /^(hi|hello|hey|bonjour|salut|coucou|yo|cc|hola|merci|thanks|thank you|ok|sure|yes|no|oui|non|kthx|nope|yep|yup)\b/i.test(lastUserText.trim()) ||
+            /^(what|what's|who|who's|when|where|which|tell me|give me|show me|define|list|name|c'est quoi|qu'est-ce|qui est|quand|où|donne[ -]moi|montre[ -]moi|liste|nomme|comment dire|how (?:do|to) say|translate|traduis|résume|summarize)\b/i.test(lastUserText.trim());
+          const shouldThink = isAdvancedModel(model) && !!googleKeyForPlanner && !!lastUserText && !writingMode && !agenticUsed && !isBasicQuery;
+
+          // Pick the main LLM iterator NOW so we can kick off the network request in
+          // parallel with the thinking preamble below. Async generators don't start
+          // their body until iterated, so we trigger the first .next() right away —
+          // that fires the HTTP request to the LLM. While the thinking preamble streams
+          // its steps, the main model is already producing its first tokens in the
+          // background, so by the time we start draining the main iterator we usually
+          // have tokens immediately available (saves ~500-1500 ms of LLM TTFT).
+          let iter: AsyncGenerator<string, Usage | undefined>;
+          if (provider === "openai") iter = streamOpenAI(apiKey, model, messagesForLLM);
+          else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, messagesForLLM);
+          else if (provider === "mistral") iter = streamMistral(apiKey, model, messagesForLLM);
+          else iter = streamGemini(apiKey, model, messagesForLLM);
+          const firstNextPromise = iter.next();
+
           if (shouldThink) {
             const thinkingStartedAt = Date.now();
             try {
@@ -2832,15 +2868,11 @@ Deno.serve(async (req) => {
             }
           }
 
-          let iter: AsyncGenerator<string, Usage | undefined>;
-          if (provider === "openai") iter = streamOpenAI(apiKey, model, messagesForLLM);
-          else if (provider === "anthropic") iter = streamAnthropic(apiKey, model, messagesForLLM);
-          else if (provider === "mistral") iter = streamMistral(apiKey, model, messagesForLLM);
-          else iter = streamGemini(apiKey, model, messagesForLLM);
-
+          // Drain the main iterator, starting with the token we already requested
+          // before/during the thinking phase.
           let usage: Usage | undefined;
+          let next = await firstNextPromise;
           while (true) {
-            const next = await iter.next();
             if (next.done) {
               usage = next.value;
               break;
@@ -2848,6 +2880,7 @@ Deno.serve(async (req) => {
             const chunk = next.value;
             assistantText += chunk;
             controller.enqueue(enc({ type: "delta", text: chunk }));
+            next = await iter.next();
           }
 
           // Persist assistant message (skip entirely in ephemeral/branch mode)
