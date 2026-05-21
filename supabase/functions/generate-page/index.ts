@@ -27,7 +27,7 @@ const CONTENT_MODEL_DEFAULT = "gpt-5-mini";
 const PRICES: Record<string, { input: number; output: number }> = {
   "gpt-5.5": { input: 2.5, output: 10 },
   "gpt-5-mini": { input: 0.25, output: 2 },
-  "gpt-5-nano": { input: 0.15, output: 0.6 },
+  "gpt-5-nano": { input: 0.05, output: 0.4 },
   "claude-opus-4-7": { input: 15, output: 75 },
   "claude-sonnet-4-6": { input: 3, output: 15 },
   "claude-haiku-4-5": { input: 1, output: 5 },
