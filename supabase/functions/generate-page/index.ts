@@ -27,7 +27,7 @@ const CONTENT_MODEL_DEFAULT = "gpt-5-mini";
 const PRICES: Record<string, { input: number; output: number }> = {
   "gpt-5.5": { input: 2.5, output: 10 },
   "gpt-5-mini": { input: 0.25, output: 2 },
-  "gpt-4o-mini": { input: 0.15, output: 0.6 },
+  "gpt-5-nano": { input: 0.05, output: 0.4 },
   "claude-opus-4-7": { input: 15, output: 75 },
   "claude-sonnet-4-6": { input: 3, output: 15 },
   "claude-haiku-4-5": { input: 1, output: 5 },
@@ -236,7 +236,7 @@ serve(async (req) => {
     ];
     const contentFallbacks = [
       ...favorites,
-      "gpt-5-mini", "gemini-3.5-flash", "gpt-4o-mini", "gemini-2.5-pro",
+      "gpt-5-mini", "gemini-3.5-flash", "gpt-5-nano", "gemini-2.5-pro",
     ];
     const plannerBare = pickAllowed(PLANNER_MODEL_DEFAULT, blacklisted, plannerFallbacks);
     const contentBare = pickAllowed(CONTENT_MODEL_DEFAULT, blacklisted, contentFallbacks);

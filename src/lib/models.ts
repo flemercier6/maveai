@@ -13,7 +13,7 @@ export type ModelOption = { id: string; label: string; description: string };
 export const MODELS: Record<Provider, ModelOption[]> = {
   openai: [
     { id: "gpt-5.5", label: "GPT 5.5", description: "OpenAI's latest model" },
-    { id: "gpt-4o-mini", label: "GPT-4o mini", description: "OpenAI's fastest model" },
+    { id: "gpt-5-nano", label: "GPT-5 Nano", description: "OpenAI's fastest model" },
   ],
   anthropic: [
     { id: "claude-opus-4-7", label: "Opus 4.7", description: "Anthropic's most capable model" },
@@ -69,7 +69,7 @@ export function providerForModel(modelId: string): Provider {
  *
  * Cost-aware policy (cheapest → most expensive):
  *   1. Gemini 2.5 Flash       — ~$0.30/M in   (default & conversational)
- *   2. GPT-4o mini            — ~$0.15/M in   (short creative / rewrites)
+ *   2. GPT-5 Nano            — ~$0.15/M in   (short creative / rewrites)
  *   3. Gemini 2.5 Pro         — ~$1.25/M in   (multimodal, structured, Google)
  *   4. GPT 5.5                — ~$2.50/M in   (creative / generative)
  *   5. Claude Sonnet 4.6      — ~$3.00/M in   (only when reasoning needed)
@@ -111,9 +111,9 @@ export function routeAuto(message: string): { provider: Provider; model: string 
     return { provider: "google", model: "gemini-2.5-pro" };
   }
 
-  // 4. GPT-4o mini — short creative / quick rewrites (very cheap)
+  // 4. GPT-5 Nano — short creative / quick rewrites (very cheap)
   if (shortCreative && wordCount <= 60) {
-    return { provider: "openai", model: "gpt-4o-mini" };
+    return { provider: "openai", model: "gpt-5-nano" };
   }
 
   // 5. GPT 5.5 — creative / generative work where prose quality matters

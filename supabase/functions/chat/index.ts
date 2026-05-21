@@ -57,7 +57,7 @@ const MODEL_PRICES: Record<string, Price> = {
   // OpenAI
   "gpt-5.5": { input: 2.5, output: 10 },
   "gpt-4o": { input: 2.5, output: 10 },
-  "gpt-4o-mini": { input: 0.15, output: 0.6 },
+  "gpt-5-nano": { input: 0.05, output: 0.4 },
   // Anthropic
   "claude-opus-4-7": { input: 15, output: 75 },
   "claude-sonnet-4-6": { input: 3, output: 15 },
@@ -107,7 +107,7 @@ function priceFor(model: string): Price {
   if (m.includes("gemini")) return MODEL_PRICES["gemini-2.5-pro"];
   if (m.startsWith("mistral-large")) return MODEL_PRICES["mistral-large-latest"];
   if (m.startsWith("mistral")) return MODEL_PRICES["mistral-small-latest"];
-  if (m.includes("mini")) return MODEL_PRICES["gpt-4o-mini"];
+  if (m.includes("mini")) return MODEL_PRICES["gpt-5-nano"];
   if (m.includes("gpt")) return MODEL_PRICES["gpt-5.5"];
   return { input: 0, output: 0 };
 }
@@ -1036,7 +1036,7 @@ ${userText.slice(0, 1500)}`;
         method: "POST",
         headers: { Authorization: `Bearer ${args.openaiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "gpt-5-nano",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.2,
           max_tokens: 32,
@@ -1329,7 +1329,7 @@ Deno.serve(async (req) => {
     if (blacklisted.has(model)) {
       const fallbackOrder = [
         ...favorites,
-        "gemini-3.5-flash", "gpt-5.5", "gpt-4o-mini", "gemini-2.5-pro",
+        "gemini-3.5-flash", "gpt-5.5", "gpt-5-nano", "gemini-2.5-pro",
         "claude-sonnet-4-6", "claude-opus-4-7",
         "mistral-large-latest", "mistral-small-latest",
       ];
