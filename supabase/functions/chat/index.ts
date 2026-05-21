@@ -77,6 +77,23 @@ const MODEL_PRICES: Record<string, Price> = {
 // top of model token cost so the user pays for the web tool when it's used.
 // (Deep depth would be $0.05/search — we only use standard, see linkupSearch.)
 const LINKUP_SEARCH_COST_USD = 0.006;
+
+// Web search is always billed at the floor multiplier (the same as the most
+// expensive models). We achieve that by pre-scaling the raw Linkup cost so
+// that after the downstream pipeline multiplies total_cost_usd by the model
+// multiplier, the effective markup on the web-search portion lands exactly
+// on WEB_SEARCH_MULTIPLIER.
+const WEB_SEARCH_MULTIPLIER = 1.5;
+
+// Mirror of src/lib/pricing.ts billingMultiplier(). Keep in sync.
+function modelBillingMultiplier(model: string): number {
+  const p = priceFor(model);
+  const blended = p.input * 0.75 + p.output * 0.25;
+  if (blended <= 0) return 3;
+  const raw = (2.0 / blended) * 3;
+  const clamped = Math.min(6, Math.max(1.5, raw));
+  return Math.round(clamped * 10) / 10;
+}
 function priceFor(model: string): Price {
   if (MODEL_PRICES[model]) return MODEL_PRICES[model];
   // Fuzzy fallbacks for variants/aliases
