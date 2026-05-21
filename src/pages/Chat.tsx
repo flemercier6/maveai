@@ -761,10 +761,11 @@ export default function Chat() {
 
   const ensureConversation = async (_firstUserContent: string): Promise<string | null> => {
     if (activeId) return activeId;
+    if (!user) return null;
     // Use a placeholder; the AI-generated title will arrive via the SSE "title" event.
     const title = "New conversation";
     const { data, error } = await supabase.from("conversations").insert({
-      user_id: user!.id, title, provider, model,
+      user_id: user.id, title, provider, model,
     }).select().single();
     if (error || !data) { toast.error(error?.message ?? "Error"); return null; }
     setConversations((prev) => [data as Conversation, ...prev]);
@@ -910,12 +911,12 @@ export default function Chat() {
       );
 
       let convId: string | null = null;
-      if (!ephemeral) {
+      if (!ephemeral && user) {
         convId = await ensureConversation(text);
         if (!convId) { setSending(false); return; }
         // User message persistence runs in the background — saves a round-trip.
         void supabase.from("messages")
-          .insert({ conversation_id: convId, user_id: user!.id, role: "user", content: displayContent })
+          .insert({ conversation_id: convId, user_id: user.id, role: "user", content: displayContent })
           .then(({ error }) => { if (error) console.error("user message insert failed", error); });
       }
 
@@ -980,9 +981,9 @@ export default function Chat() {
         // Persist as: summary\n\n```page\n{json}\n```
         const persisted = `${summary}\n\n\`\`\`page\n${JSON.stringify(page)}\n\`\`\``;
         let assistantId: string | undefined;
-        if (!ephemeral && convId) {
+        if (!ephemeral && user && convId) {
           const { data: aData } = await supabase.from("messages").insert({
-            conversation_id: convId, user_id: user!.id, role: "assistant", content: persisted, model,
+            conversation_id: convId, user_id: user.id, role: "assistant", content: persisted, model,
             ...(pageJson.meta ? { meta: pageJson.meta } : {}),
           }).select().single();
           assistantId = aData?.id;
@@ -1069,7 +1070,7 @@ export default function Chat() {
     // (provider/model update + user message persistence) fire in the background
     // and run in parallel with the LLM fetch — saves ~200-400 ms of frontend latency.
     let convId: string | null = null;
-    if (!ephemeral) {
+    if (!ephemeral && user) {
       convId = await ensureConversation(text || atts[0]?.name || "Attachment");
       if (!convId) { setSending(false); return; }
     }
@@ -1079,7 +1080,7 @@ export default function Chat() {
           a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
         ).join("\n")
       : "";
-    if (!ephemeral && convId) {
+    if (!ephemeral && user && convId) {
       // Background updates — DO NOT await. These run in parallel with the LLM call.
       void supabase.from("conversations")
         .update({ provider: convProvider, model: convModel })
@@ -1088,7 +1089,7 @@ export default function Chat() {
       void supabase.from("messages")
         .insert({
           conversation_id: convId,
-          user_id: user!.id,
+          user_id: user.id,
           role: "user",
           content: displayContent + persistedSummary,
         })
