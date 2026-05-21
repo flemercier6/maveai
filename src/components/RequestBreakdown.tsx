@@ -180,7 +180,10 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
                   {segments.map((s, i) => (
                     <div key={i} className="flex items-start justify-between gap-3">
                       <span className="text-white/70 leading-snug">{s.label}</span>
-                      <span className="tabular-nums text-white/50 whitespace-nowrap">{fmtTok(s.tokens)} tok</span>
+                      <div className="flex items-center gap-3 tabular-nums shrink-0">
+                        <span className="text-white/50">{fmtTok(s.tokens)} tok</span>
+                        <span className="font-medium">{fmtEur(s.costUsd)}</span>
+                      </div>
                     </div>
                   ))}
                   {cost && (
