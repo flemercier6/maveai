@@ -3074,9 +3074,9 @@ Deno.serve(async (req) => {
                       output_tokens: usage?.output_tokens ?? 0,
                       input_cost_usd: inputCost,
                       output_cost_usd: outputCost,
-                      // total_cost_usd includes Linkup passthrough so the billing
-                      // pipeline (markup × FX) bills the web search to the user.
-                      total_cost_usd: inputCost + outputCost + webSearchCost,
+                      // total_cost_usd includes the pre-scaled Linkup cost so the
+                      // pipeline (modelMult × FX) lands web search at WEB_SEARCH_MULTIPLIER.
+                      total_cost_usd: inputCost + outputCost + webSearchCostBilled,
                     }).then(({ error }) => { if (error) console.error("[usage] insert error:", error); })
                   : Promise.resolve(),
               ]);
