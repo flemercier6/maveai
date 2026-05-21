@@ -1983,29 +1983,103 @@ Deno.serve(async (req) => {
               .catch((e) => console.error("title gen failed", e));
           }
 
-          // ---------- Clarifying questions (asked BEFORE running anything else) ----------
-          // Fast local pre-filter: skip the API call entirely for the vast majority
-          // of messages where clarification is clearly unneeded. This avoids 300-500 ms
-          // of network latency on every turn.
+          // ============================================================
+          // PARALLEL CLASSIFIER LAUNCH (Step 4 of latency optimization).
+          // Previously: Clarify → Google → Voyager ran SEQUENTIALLY, so the
+          // total pre-LLM wait was the SUM of all 3 classifier latencies
+          // (often 1-2s when several gates open). They now fire in parallel
+          // here; each downstream block just awaits its pre-launched promise,
+          // so total ≈ max() instead of sum(). Fast-filters still gate which
+          // ones actually hit the network — a no-op message stays free.
+          // ============================================================
           const userTurns = messages.filter((m) => m.role === "user").length;
           const fastNoClarify =
-            userTurns > 1 ||                      // follow-up: model already instructed to almost never clarify
-            lastUserText.length < 120 ||           // short message: clarify rarely useful
-            lastUserText.trim().endsWith("?") ||   // already phrased as a question
+            userTurns > 1 ||
+            lastUserText.length < 120 ||
+            lastUserText.trim().endsWith("?") ||
             /^(what|how|why|who|when|where|which|tell|explain|describe|list|give|show|find|define|translate|write|create|make|build|fix|help|can |could |please )/i.test(lastUserText.trim());
 
-          if (!ephemeral && !skipClarify && !writingMode && lastUserText && !fastNoClarify) {
+          const googleApiKey = Deno.env.get("GOOGLE_API_KEY");
+          const fastNoGoogle = (() => {
+            if (googleService) return false; // explicit /gmail or /calendar invocation
+            const t = lastUserText.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+            return !/\b(gmail|e-?mail|mail|courriel|inbox|brouillon|draft|envoie|envoyer|send|reponds|reply|write to|ecris a|redige|compose|prepare|calendar|calendrier|agenda|meeting|reunion|rendez-?vous|rdv|event|evenement|slot|creneau|drive|document|doc|sheet|spreadsheet|tableur|google )\b/.test(t);
+          })();
+
+          const forcedVoyagerDecision = pendingVoyagerWriteFromHistory();
+          const fastNoVoyager = (() => {
+            if (voyagerService || forcedVoyagerDecision) return false;
+            const t = lastUserText.toLowerCase();
+            return !/\b(crm|voyager|contact|contacts|company|companies|deal|deals|client|prospect|lead|opportunit|entreprise|societe|pipeline|account|customer|fiche|interlocuteur)\b/.test(t);
+          })();
+
+          const willClarify = !ephemeral && !skipClarify && !writingMode && !!lastUserText && !fastNoClarify;
+          const willGoogle = googleConnected && !!googleApiKey && !writingMode && !!lastUserText && !fastNoGoogle;
+          const willVoyager = voyagerEnabled && !!lastUserText && !fastNoVoyager && (!writingMode || !!forcedVoyagerDecision);
+
+          const clarifyPromise: Promise<ClarifyQuestion[] | null> = willClarify
+            ? decideClarify({
+                googleKey: googleApiKey,
+                openaiKey: Deno.env.get("OPENAI_API_KEY"),
+                anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+                userText: lastUserText,
+                hasHistory: userTurns > 1,
+              }).catch((e) => { console.warn("clarify promise failed", e); return null; })
+            : Promise.resolve(null);
+
+          const googleDecisionPromise: Promise<GoogleRouterDecision> = willGoogle
+            ? classifyGoogleIntent(
+                googleApiKey!,
+                lastUserText,
+                trimmedHistory.map((m) => ({ role: m.role, content: m.content ?? "" })),
+              ).catch((e) => { console.warn("google classify promise failed", e); return { action: "none" } as GoogleRouterDecision; })
+            : Promise.resolve({ action: "none" } as GoogleRouterDecision);
+
+          const voyagerDecisionPromise: Promise<VoyagerRouterDecision> = (() => {
+            if (!willVoyager || !googleApiKey) return Promise.resolve({ resource: "none" } as VoyagerRouterDecision);
+            const sys =
+              `You decide how to call the Voyager CRM API on behalf of the user. ` +
+              `Today: ${new Date().toISOString()}.\n\n` +
+              `Available resources: contacts, companies, deals.\n` +
+              `Methods:\n` +
+              `- GET (list or get one) — query params like { limit?: number, search?: string }, optional id for single fetch\n` +
+              `- POST (create) — payload with the new entity fields\n` +
+              `- PATCH (update) — id required + payload with fields to change\n` +
+              `- DELETE — id required\n\n` +
+              `Rules:\n` +
+              `- Reply with a single JSON object: {"resource":"contacts|companies|deals","method":"GET|POST|PATCH|DELETE","id"?:string,"query"?:object,"payload"?:object}\n` +
+              `- If the request is unclear or unrelated to the CRM, return {"resource":"none"}.\n` +
+              `- For "liste/affiche/cherche/montre" → GET. For "ajoute/crée/nouveau" → POST. For "modifie/met à jour" → PATCH. For "supprime/efface" → DELETE.\n` +
+              `- Default GET limit to 20 unless user specifies.`;
+            return fetchWithTimeout(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleApiKey}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [{ role: "user", parts: [{ text: lastUserText.slice(0, 4000) }] }],
+                  systemInstruction: { role: "user", parts: [{ text: sys }] },
+                  generationConfig: {
+                    temperature: 0,
+                    responseMimeType: "application/json",
+                    thinkingConfig: { thinkingBudget: 0 },
+                  },
+                }),
+              },
+              800,
+            ).then(async (r) => {
+              const d = await r.json();
+              const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{"resource":"none"}';
+              try { return JSON.parse(text) as VoyagerRouterDecision; } catch { return { resource: "none" } as VoyagerRouterDecision; }
+            }).catch((e) => { console.warn("voyager classify promise failed", e); return { resource: "none" } as VoyagerRouterDecision; });
+          })();
+
+          // ---------- Clarifying questions ----------
+          if (willClarify) {
             controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
-            const clarify = await decideClarify({
-              googleKey: Deno.env.get("GOOGLE_API_KEY"),
-              openaiKey: Deno.env.get("OPENAI_API_KEY"),
-              anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
-              userText: lastUserText,
-              hasHistory: userTurns > 1,
-            });
+            const clarify = await clarifyPromise;
             if (clarify && clarify.length) {
               controller.enqueue(enc({ type: "clarify", questions: clarify }));
-              // Tiny yield so the title event (fired in parallel) can flush if it's ready.
               await new Promise((r) => setTimeout(r, 50));
               controller.enqueue(enc({ type: "done" }));
               controller.close();
@@ -2014,22 +2088,9 @@ Deno.serve(async (req) => {
           }
 
           // ---------- Google integration router ----------
-          // Run AFTER clarify, BEFORE web tools.
-          // Fast local pre-filter: the AI gateway call costs ~200-500ms — only
-          // pay for it when the message plausibly mentions a Google service.
-          const googleApiKey = Deno.env.get("GOOGLE_API_KEY");
-          const fastNoGoogle = (() => {
-            if (googleService) return false; // explicit /gmail or /calendar invocation: always classify
-            const t = lastUserText.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-            return !/\b(gmail|e-?mail|mail|courriel|inbox|brouillon|draft|envoie|envoyer|send|reponds|reply|write to|ecris a|redige|compose|prepare|calendar|calendrier|agenda|meeting|reunion|rendez-?vous|rdv|event|evenement|slot|creneau|drive|document|doc|sheet|spreadsheet|tableur|google )\b/.test(t);
-          })();
-          if (googleConnected && googleApiKey && !writingMode && lastUserText && !fastNoGoogle) {
+          if (willGoogle) {
             try {
-              let decision = await classifyGoogleIntent(
-                googleApiKey,
-                lastUserText,
-                trimmedHistory.map((m) => ({ role: m.role, content: m.content ?? "" })),
-              );
+              let decision = await googleDecisionPromise;
               if (decision.action === "none") {
                 decision = fallbackGoogleIntent(lastUserText) ?? decision;
               }
@@ -2191,60 +2252,10 @@ Deno.serve(async (req) => {
           }
 
           // ---------- Voyager CRM router ----------
-          // Runs for explicit /voyager requests and for CRM intents when Voyager is connected.
-          // Local pre-filter avoids the ~200-500 ms classifier call when the user
-          // is clearly not asking about CRM data.
-          const forcedVoyagerDecision = pendingVoyagerWriteFromHistory();
-          const fastNoVoyager = (() => {
-            if (voyagerService || forcedVoyagerDecision) return false; // explicit invocation
-            const t = lastUserText.toLowerCase();
-            return !/\b(crm|voyager|contact|contacts|company|companies|deal|deals|client|prospect|lead|opportunit|entreprise|societe|pipeline|account|customer|fiche|interlocuteur)\b/.test(t);
-          })();
-          if (voyagerEnabled && lastUserText && !fastNoVoyager && (!writingMode || forcedVoyagerDecision)) {
+          // Decision was pre-launched in parallel above (see voyagerDecisionPromise).
+          if (willVoyager) {
             try {
-              const googleKeyForVoyager = Deno.env.get("GOOGLE_API_KEY");
-              const sys =
-                `You decide how to call the Voyager CRM API on behalf of the user. ` +
-                `Today: ${new Date().toISOString()}.\n\n` +
-                `Available resources: contacts, companies, deals.\n` +
-                `Methods:\n` +
-                `- GET (list or get one) — query params like { limit?: number, search?: string }, optional id for single fetch\n` +
-                `- POST (create) — payload with the new entity fields\n` +
-                `- PATCH (update) — id required + payload with fields to change\n` +
-                `- DELETE — id required\n\n` +
-                `Rules:\n` +
-                `- Reply with a single JSON object: {"resource":"contacts|companies|deals","method":"GET|POST|PATCH|DELETE","id"?:string,"query"?:object,"payload"?:object}\n` +
-                `- If the request is unclear or unrelated to the CRM, return {"resource":"none"}.\n` +
-                `- For "liste/affiche/cherche/montre" → GET. For "ajoute/crée/nouveau" → POST. For "modifie/met à jour" → PATCH. For "supprime/efface" → DELETE.\n` +
-                `- Default GET limit to 20 unless user specifies.`;
-              let decision: VoyagerRouterDecision = { resource: "none" };
-              if (googleKeyForVoyager) {
-                try {
-                  const r = await fetchWithTimeout(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleKeyForVoyager}`,
-                    {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        contents: [{ role: "user", parts: [{ text: lastUserText.slice(0, 4000) }] }],
-                        systemInstruction: { role: "user", parts: [{ text: sys }] },
-                        generationConfig: {
-                          temperature: 0,
-                          responseMimeType: "application/json",
-                          thinkingConfig: { thinkingBudget: 0 },
-                        },
-                      }),
-                    },
-                    800,
-                  );
-                  const d = await r.json();
-                  const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{"resource":"none"}';
-                  try { decision = JSON.parse(text); } catch { /* keep none */ }
-                } catch (e) {
-                  // Timeout/network → keep "none" and let local fallbackVoyagerIntent decide.
-                  console.warn("voyager router classify timed out, falling back", e instanceof Error ? e.message : e);
-                }
-              }
+              let decision: VoyagerRouterDecision = await voyagerDecisionPromise;
               const fallbackDecision = forcedVoyagerDecision ?? fallbackVoyagerIntent(lastUserText);
               if (fallbackDecision && fallbackDecision.method && ["POST", "PATCH", "DELETE"].includes(fallbackDecision.method)) {
                 decision = fallbackDecision;
