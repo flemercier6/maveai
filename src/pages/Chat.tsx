@@ -340,10 +340,18 @@ export default function Chat() {
     setNoteOpen(false);
     if (!activeId) { setMessages([]); return; }
     if (!user) { setMessages([]); return; }
+    // Skip the DB reload for conversations we just created locally — the user
+    // already has optimistic messages in state and the DB row is still being
+    // inserted in the background. Reloading here would wipe the UI (blank screen).
+    if (freshConvIdsRef.current.has(activeId)) {
+      freshConvIdsRef.current.delete(activeId);
+      return;
+    }
     const conv = conversations.find((c) => c.id === activeId);
     const convProvider = (conv?.provider as Provider) ?? "openai";
     const convModel = conv?.model;
     supabase.from("messages").select("*").eq("conversation_id", activeId).eq("user_id", user.id).order("created_at")
+
       .then(({ data }) => {
         // Re-parse persisted assistant text to recover canvas blocks & titles.
         const parseStored = (raw: string): { body: string; canvas?: string; canvasTitle?: string } => {
