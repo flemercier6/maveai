@@ -237,6 +237,11 @@ export default function Chat() {
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Conversations just created locally via ensureConversation. The "load messages"
+  // effect must skip these once, otherwise the empty/in-flight DB fetch races with
+  // the optimistic setMessages([...user, assistant]) and wipes the UI → blank screen.
+  const freshConvIdsRef = useRef<Set<string>>(new Set());
+
   const lastSentRef = useRef<string>("");
   const lastAttachmentsRef = useRef<Attachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -335,10 +340,18 @@ export default function Chat() {
     setNoteOpen(false);
     if (!activeId) { setMessages([]); return; }
     if (!user) { setMessages([]); return; }
+    // Skip the DB reload for conversations we just created locally — the user
+    // already has optimistic messages in state and the DB row is still being
+    // inserted in the background. Reloading here would wipe the UI (blank screen).
+    if (freshConvIdsRef.current.has(activeId)) {
+      freshConvIdsRef.current.delete(activeId);
+      return;
+    }
     const conv = conversations.find((c) => c.id === activeId);
     const convProvider = (conv?.provider as Provider) ?? "openai";
     const convModel = conv?.model;
     supabase.from("messages").select("*").eq("conversation_id", activeId).eq("user_id", user.id).order("created_at")
+
       .then(({ data }) => {
         // Re-parse persisted assistant text to recover canvas blocks & titles.
         const parseStored = (raw: string): { body: string; canvas?: string; canvasTitle?: string } => {
@@ -755,11 +768,15 @@ export default function Chat() {
     }).select().single();
     if (error || !data) { toast.error(error?.message ?? "Error"); return null; }
     setConversations((prev) => [data as Conversation, ...prev]);
+    // Mark BEFORE setActiveId so the load-messages effect sees the flag synchronously
+    // and skips the empty DB fetch that would otherwise wipe the optimistic UI.
+    freshConvIdsRef.current.add(data.id);
     setActiveId(data.id);
     // Mark this conversation as awaiting an AI-generated title (sidebar will show a shimmer).
     setTitleAnim((prev) => ({ ...prev, [data.id]: { target: null, shown: "" } }));
     return data.id;
   };
+
 
   // Animate the AI-generated title character-by-character into the sidebar.
   const startTitleAnimation = (convId: string, target: string) => {
