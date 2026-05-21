@@ -669,7 +669,12 @@ type AgenticStep =
   | { kind: "analyze"; intent: string }
   | { kind: "search"; query: string; intent: string }
   | { kind: "scrape"; url: string; intent: string }
-  | { kind: "memory"; query: string; intent: string };
+  | { kind: "memory"; query: string; intent: string }
+  | { kind: "plan"; intent: string }
+  | { kind: "hypothesis"; intent: string }
+  | { kind: "challenge"; intent: string }
+  | { kind: "compare"; intent: string }
+  | { kind: "synthesize"; intent: string };
 
 type AgenticPlan = {
   complex: boolean;
@@ -692,29 +697,47 @@ async function decideReflexionPlan(args: {
   const { userText, googleKey, maxSteps } = args;
   if (!googleKey || !userText.trim()) return empty;
 
-  const allowed = [
-    args.hasMemory ? `{"kind":"memory","query":"<short phrase to search the user's memory>","intent":"what we want to recall (≤10 words)"}` : null,
-    args.hasWebSearch ? `{"kind":"search","query":"<short web query>","intent":"what we want to learn (≤10 words)"}` : null,
-    args.hasScrape ? `{"kind":"scrape","url":"https://...","intent":"why we read this page (≤10 words)"}` : null,
-    `{"kind":"analyze","intent":"what we are reasoning about (≤10 words)"}`,
+  const minSteps = Math.min(3, maxSteps);
+
+  const dataKinds = [
+    args.hasMemory ? `{"kind":"memory","query":"<short phrase>","intent":"what to recall from the user's memory (≤12 words)"}` : null,
+    args.hasWebSearch ? `{"kind":"search","query":"<short web query ≤12 words>","intent":"what fact to verify (≤12 words)"}` : null,
+    args.hasScrape ? `{"kind":"scrape","url":"https://...","intent":"why read this specific URL (≤12 words)"}` : null,
   ].filter(Boolean).join("\n");
 
-  const prompt = `You are the planner of a multi-step ReAct reasoning loop (Reflexion mode).
-The user EXPLICITLY asked for a multi-step reasoning process. Always return at least 2 steps.
+  const prompt = `You are the planner of a deep Reflexion reasoning loop. The user EXPLICITLY wants a multi-step reasoning process with genuine intellectual depth — not just search + answer.
 
-Available step kinds:
-${allowed}
+Design a reasoning journey that surfaces the AI's thinking clearly. Use these step kinds:
 
-Constraints:
-- Total steps: between 2 and ${maxSteps}.
-- "analyze" steps are pure reasoning (no tool). Use them to break a problem down or consolidate findings.
-- "memory" steps query the user's personal memory store (facts, preferences, past projects). Use one when the answer depends on user-specific context.
-- "search" steps perform a web search. Keep queries short (≤12 words), in the user's language.
-- "scrape" steps fetch the content of a specific URL. Only use if the user mentioned a URL.
-- Order matters: start by gathering context (memory/search), then analyze/synthesize.
-- Each "intent" must be CONCRETE and tied to the user's actual question.
+REASONING STEPS (no tool call — the AI reasons out loud):
+{"kind":"plan","intent":"What angles you'll explore and your initial hypothesis (specific to this question)"}
+{"kind":"hypothesis","intent":"Your working assumption before gathering evidence"}
+{"kind":"challenge","intent":"Which assumption or finding you're questioning and why"}
+{"kind":"compare","intent":"What two perspectives or conclusions you're weighing"}
+{"kind":"synthesize","intent":"What threads you're pulling together into a conclusion"}
+{"kind":"analyze","intent":"What specific aspect you're reasoning through"}
 
-Reply ONLY with strict JSON:
+DATA GATHERING STEPS (call a tool):
+${dataKinds || '(no data tools available — use reasoning steps only)'}
+
+RULES:
+1. ALWAYS start with {"kind":"plan",...} — it shows the user your approach upfront.
+2. Use "hypothesis" before searching when you have a prior expectation to test.
+3. After gathering data: ALWAYS include at least one of challenge/compare/synthesize to show the reasoning.
+4. For conflicting evidence: use "compare" to weigh perspectives explicitly.
+5. For assumptions that might be wrong: use "challenge" to question them.
+6. End with "synthesize" when multiple angles were explored (medium/high effort).
+7. Intents MUST be SPECIFIC to the user's actual question — reference the real topic.
+8. Total steps: ${minSteps} to ${maxSteps}. NEVER fewer than ${minSteps}.
+9. Search queries: in the user's language, ≤12 words, concrete and targeted.
+10. DO NOT end with a plain "analyze" step — use "synthesize" instead for the final reasoning.
+
+Good plan examples:
+- Low effort (3 steps): [plan, search, challenge]
+- Medium effort (5 steps): [plan, hypothesis, search, challenge, synthesize]
+- High effort (7+ steps): [plan, hypothesis, memory, search, search(2nd angle), challenge, compare, synthesize]
+
+Reply ONLY with strict JSON — no prose, no markdown:
 {"goal":"<one short sentence in the user's language>","steps":[...]}
 
 User message:
@@ -728,7 +751,7 @@ User message:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: "application/json", temperature: 0.3 },
+          generationConfig: { responseMimeType: "application/json", temperature: 0.4 },
         }),
       },
     );
@@ -746,12 +769,14 @@ User message:
     }
     const parsed = JSON.parse(cleaned);
     const rawSteps: any[] = Array.isArray(parsed.steps) ? parsed.steps : [];
+    const REASONING_KINDS = new Set(["plan", "hypothesis", "challenge", "compare", "synthesize", "analyze"]);
     const steps: AgenticStep[] = [];
     for (const s of rawSteps) {
       if (steps.length >= maxSteps) break;
-      const intent = (s?.intent ?? "").toString().slice(0, 120).trim();
-      if (s?.kind === "analyze" && intent) {
-        steps.push({ kind: "analyze", intent });
+      const intent = (s?.intent ?? "").toString().slice(0, 140).trim();
+      if (!intent) continue;
+      if (REASONING_KINDS.has(s?.kind)) {
+        steps.push({ kind: s.kind as AgenticStep["kind"], intent } as AgenticStep);
       } else if (s?.kind === "search" && args.hasWebSearch && typeof s.query === "string" && s.query.trim()) {
         steps.push({ kind: "search", query: s.query.trim().slice(0, 120), intent });
       } else if (s?.kind === "scrape" && args.hasScrape && typeof s.url === "string" && /^https?:\/\//.test(s.url)) {
@@ -761,14 +786,14 @@ User message:
       }
     }
     if (steps.length < 2) {
-      // Force a minimal plan: one analyze step + one final analyze.
       return {
         complex: true,
         goal: (parsed.goal ?? userText.slice(0, 100)).toString().slice(0, 200),
         steps: [
-          { kind: "analyze", intent: "break down the user's question" },
-          { kind: "analyze", intent: "synthesize a complete answer" },
-        ],
+          { kind: "plan", intent: "outline the approach and key angles to explore" },
+          ...(args.hasWebSearch ? [{ kind: "search" as const, query: userText.slice(0, 80), intent: "gather relevant facts" }] : []),
+          { kind: "synthesize", intent: "weigh the findings and form a conclusion" },
+        ].slice(0, maxSteps),
       };
     }
     return {
@@ -879,50 +904,110 @@ User message:
   }
 }
 
-// Stream a short narrative transition for an agentic step, using Gemini Flash.
-// The output is fed straight into the assistant message via `delta` events so
-// the user sees the agent talking through its process inline.
+// Stream narration for an agentic step, using Gemini Flash.
+// Two modes:
+//   - "reasoning" steps (plan/hypothesis/challenge/compare/synthesize): the narration IS the
+//     content of the step — 2-4 sentences of actual substantive reasoning.
+//   - "transition" steps (search/memory/scrape completed): short 1-2 sentence narration
+//     of what was found + what comes next.
+const REFLEXION_REASONING_KINDS = new Set(["plan", "hypothesis", "challenge", "compare", "synthesize"]);
+
 async function* streamAgenticNarration(
   googleKey: string,
   args: {
-    userLang: string; // hint at the user's language
+    userLang: string;
     userText: string;
     goal: string;
     phase: "intro" | "between" | "outro";
     justDid?: { kind: "search" | "scrape" | "memory"; label: string; foundCount: number; intent: string };
+    currentStep?: AgenticStep;
     nextStep?: AgenticStep;
     isFinal?: boolean;
+    observations?: string[];
   },
 ): AsyncGenerator<string> {
-  const sys =
-    `You are an AI assistant THINKING OUT LOUD in front of the user, in the user's language. ` +
-    `Write 1 to 2 SHORT sentences (max ~35 words total) that narrate what you just did and ` +
-    `what you are about to do. First person, present tense, casual but precise. No headings, ` +
-    `no markdown, no bullet lists, no quotes around your output. Do not start with "Sure" or ` +
-    `"Okay" repeatedly — vary your phrasing. Match the user's language exactly.`;
-  let task = "";
-  if (args.phase === "intro") {
-    task = `The user just asked something that requires research. Write a short opener acknowledging the goal and saying you'll start by ${describeStep(args.nextStep!)}.`;
+  const isReasoningStep = args.currentStep && REFLEXION_REASONING_KINDS.has(args.currentStep.kind);
+
+  let sys: string;
+  let task: string;
+  let maxTokens: number;
+
+  if (isReasoningStep && args.currentStep) {
+    // Reasoning step: the narration IS the visible reasoning content.
+    // It should perform actual intellectual work, not just announce what will happen.
+    const kind = args.currentStep.kind;
+    const intent = args.currentStep.intent;
+    const obsBlock = (args.observations ?? []).length > 0
+      ? `\n\nContext gathered so far:\n${(args.observations ?? []).map((o, i) => `${i + 1}. ${o}`).join("\n")}`
+      : "";
+    const reasoningGuide: Record<string, string> = {
+      plan:
+        `Describe your approach to this question. Mention the key angles you'll explore, what you already suspect, and why a careful multi-step analysis is warranted. Be concrete about the specific topic.`,
+      hypothesis:
+        `State your working hypothesis before gathering evidence. What do you currently expect the answer to be? What prior knowledge or reasoning leads you there? Acknowledge what could make you wrong.`,
+      challenge:
+        `Question your current understanding. Identify the weakest assumption in what you've found or reasoned so far. Name a specific counterargument or gap. What would need to be true for your current thinking to be wrong?`,
+      compare:
+        `Name the two (or more) competing perspectives and walk through the key dimensions. Where do they agree? Where do they diverge and why? Make a preliminary judgment about which evidence is stronger.`,
+      synthesize:
+        `Weave the key threads together. What does the combined evidence point to? Name any remaining tensions or uncertainties. State your emerging conclusion and what it's based on.`,
+    };
+    sys =
+      `You are an AI reasoning out loud in front of the user, in the user's language. ` +
+      `This is a deep reasoning step — you are NOT announcing a transition, you are DOING actual intellectual work. ` +
+      `Write 2-4 sentences (70-120 words). First person, present tense, flowing prose. ` +
+      `No headings, no markdown, no bullets, no quotes. Write in the user's exact language.`;
+    task =
+      `Reasoning step type: "${kind}"\nStep intent: "${intent}"${obsBlock}\n\n` +
+      `${reasoningGuide[kind] ?? `Reason through: ${intent}`}\n\n` +
+      `Be SPECIFIC to the user's actual question. DO NOT say "I will now do X" — ACTUALLY DO the reasoning.`;
+    maxTokens = 300;
+  } else if (args.phase === "intro") {
+    sys =
+      `You are an AI assistant THINKING OUT LOUD in front of the user, in the user's language. ` +
+      `Write 1 to 2 SHORT sentences (max ~35 words total). First person, present tense, casual but precise. ` +
+      `No headings, no markdown, no bullets. Match the user's language exactly.`;
+    task = `The user asked a question that requires research. Write a short opener saying you'll start by ${describeStep(args.nextStep!)}.`;
+    maxTokens = 120;
   } else if (args.phase === "between") {
-    const did = args.justDid!;
-    const verb = did.kind === "search"
-      ? `searched the web for "${did.label}"`
-      : did.kind === "scrape"
-        ? `read the page ${did.label}`
-        : `looked through your memory for "${did.label}"`;
-    const found = did.foundCount > 0
-      ? (did.kind === "memory"
-          ? `found ${did.foundCount} relevant ${did.foundCount > 1 ? "memories" : "memory"}`
-          : `found ${did.foundCount} relevant source${did.foundCount > 1 ? "s" : ""}`)
-      : `didn't find much useful`;
-    if (args.isFinal) {
-      task = `You just ${verb} (${found}, intent was: ${did.intent}). Now wrap up the research phase: say in 1 sentence what you understood from this last step, and that you now have enough to answer.`;
+    sys =
+      `You are an AI assistant THINKING OUT LOUD in front of the user, in the user's language. ` +
+      `Write 1 to 3 SHORT sentences (max ~60 words total). First person, present tense, casual but precise. ` +
+      `No headings, no markdown, no bullets. Match the user's language exactly.`;
+    if (args.justDid) {
+      const did = args.justDid;
+      const verb = did.kind === "search"
+        ? `searched the web for "${did.label}"`
+        : did.kind === "scrape"
+          ? `read the page ${did.label}`
+          : `looked through your memory for "${did.label}"`;
+      const found = did.foundCount > 0
+        ? (did.kind === "memory"
+            ? `found ${did.foundCount} relevant ${did.foundCount > 1 ? "memories" : "memory"}`
+            : `found ${did.foundCount} relevant source${did.foundCount > 1 ? "s" : ""}`)
+        : `didn't find much`;
+      const obsNote = (args.observations ?? []).length > 1
+        ? ` (previous findings: ${(args.observations ?? []).slice(0, -1).join("; ")})`
+        : "";
+      if (args.isFinal) {
+        task = `You just ${verb} (${found}, intent: ${did.intent})${obsNote}. Say in 1-2 sentences what you understood from this step and that you now have enough to answer.`;
+      } else {
+        task = `You just ${verb} (${found}, intent: ${did.intent})${obsNote}. Briefly say what you learned or confirmed, then announce the next step: ${describeStep(args.nextStep!)}.`;
+      }
     } else {
-      task = `You just ${verb} (${found}, intent was: ${did.intent}). Now say briefly what you learned and announce the next step: ${describeStep(args.nextStep!)}.`;
+      task = args.isFinal
+        ? `You have finished the research steps. Say in 1 sentence that you now have everything needed to write a thorough answer.`
+        : `Briefly announce you're moving to the next step: ${args.nextStep ? describeStep(args.nextStep) : "the final answer"}.`;
     }
+    maxTokens = 180;
   } else {
+    sys =
+      `You are an AI assistant THINKING OUT LOUD in front of the user, in the user's language. ` +
+      `Write 1 SHORT sentence. Match the user's language.`;
     task = `Wrap up: say you have gathered enough and are now writing the final answer.`;
+    maxTokens = 80;
   }
+
   const prompt = `User goal: ${args.goal || args.userText.slice(0, 120)}\nUser's original message (for language detection):\n"""${args.userText.slice(0, 400)}"""\n\nTask: ${task}`;
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse&key=${googleKey}`;
@@ -932,7 +1017,7 @@ async function* streamAgenticNarration(
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       systemInstruction: { parts: [{ text: sys }] },
-      generationConfig: { temperature: 0.7, maxOutputTokens: 600 },
+      generationConfig: { temperature: isReasoningStep ? 0.8 : 0.7, maxOutputTokens: maxTokens },
     }),
   });
   if (!r.ok || !r.body) {
@@ -951,9 +1036,14 @@ async function* streamAgenticNarration(
 }
 
 function describeStep(s: AgenticStep): string {
-  if (s.kind === "search") return `searching the web for "${s.query}" (${s.intent})`;
-  if (s.kind === "scrape") return `reading the page ${s.url} (${s.intent})`;
-  if (s.kind === "memory") return `looking through your memory for "${s.query}" (${s.intent})`;
+  if (s.kind === "search") return `searching the web for "${s.query}"`;
+  if (s.kind === "scrape") return `reading the page ${s.url}`;
+  if (s.kind === "memory") return `looking through your memory for "${s.query}"`;
+  if (s.kind === "plan") return `outlining the exploration plan`;
+  if (s.kind === "hypothesis") return `forming a working hypothesis`;
+  if (s.kind === "challenge") return `questioning current conclusions`;
+  if (s.kind === "compare") return `comparing and weighing perspectives`;
+  if (s.kind === "synthesize") return `synthesizing the findings`;
   return `analyzing: ${s.intent}`;
 }
 
@@ -2610,28 +2700,28 @@ Deno.serve(async (req) => {
                 : { complex: false, goal: "", steps: [] as AgenticStep[] };
 
             // Reflexion is user-opt-in: ALWAYS run a multi-step loop, even if
-            // the orchestrator failed or returned nothing. Build a sensible
-            // fallback plan that scales with effort.
+            // the orchestrator failed or returned nothing.
             if (reflexionEnabled && (!plan.complex || plan.steps.length < 2)) {
               console.warn("[reflexion] planner returned empty, using fallback plan");
               const fallbackSteps: AgenticStep[] = [
-                { kind: "analyze", intent: "break down the question and identify key factors" },
+                { kind: "plan", intent: "outline the approach and what angles to explore" },
               ];
               if (linkupKey) {
                 fallbackSteps.push({
                   kind: "search",
                   query: lastUserText.slice(0, 100),
-                  intent: "gather relevant facts and references",
+                  intent: "gather relevant evidence from the web",
                 });
               }
               if (allFetchedMemRows.length > 0) {
                 fallbackSteps.push({
                   kind: "memory",
                   query: lastUserText.slice(0, 100),
-                  intent: "recall relevant user context",
+                  intent: "recall relevant personal context",
                 });
               }
-              fallbackSteps.push({ kind: "analyze", intent: "synthesize a complete, structured answer" });
+              fallbackSteps.push({ kind: "challenge", intent: "question the assumptions in the evidence found" });
+              fallbackSteps.push({ kind: "synthesize", intent: "weigh findings and form a clear conclusion" });
               plan = {
                 complex: true,
                 goal: lastUserText.slice(0, 120),
@@ -2641,26 +2731,29 @@ Deno.serve(async (req) => {
 
             if (plan.complex && plan.steps.length >= 2 && googleKeyForAgent) {
               // ---------- AGENTIC LOOP ----------
-              // Each step emits structured SSE events (`agent_step` + streaming
-              // `agent_narration` chunks) so the UI can render a dedicated card
-              // per step (badge + tag + live narration), separate from the
-              // final answer which streams later via `delta`.
               agenticUsed = true;
               controller.enqueue(enc({ type: "phase", phase: "generating" }));
 
-              // Filter out a trailing "analyze" step (redundant with the final answer).
+              // For Reflexion: keep reasoning kinds at the end (they're meaningful, not redundant).
+              // Only filter trailing plain "analyze" steps (which duplicate the final answer).
               const actionableSteps = plan.steps.filter((s, i, arr) => {
                 if (s.kind !== "analyze") return true;
                 return i !== arr.length - 1;
               });
+
+              // Track observations accumulated across steps so reasoning steps
+              // can reference earlier findings for genuine chain-of-thought.
+              const stepObservations: string[] = [];
 
               const streamNarrationForStep = async (
                 stepIdx: number,
                 phase: "intro" | "between",
                 opts: {
                   justDid?: { kind: "search" | "scrape" | "memory"; label: string; foundCount: number; intent: string };
+                  currentStep?: AgenticStep;
                   nextStep?: AgenticStep;
                   isFinal?: boolean;
+                  observations?: string[];
                 },
               ) => {
                 try {
@@ -2670,8 +2763,10 @@ Deno.serve(async (req) => {
                     goal: plan.goal,
                     phase,
                     justDid: opts.justDid,
+                    currentStep: opts.currentStep,
                     nextStep: opts.nextStep,
                     isFinal: opts.isFinal,
+                    observations: opts.observations,
                   })) {
                     agenticNarration += chunk;
                     perStepNarration.set(stepIdx, (perStepNarration.get(stepIdx) ?? "") + chunk);
@@ -2696,12 +2791,16 @@ Deno.serve(async (req) => {
                 }
               };
 
+              const DATA_TOOL_KINDS = new Set(["search", "scrape", "memory"]);
+
               for (let i = 0; i < actionableSteps.length; i++) {
                 const step = actionableSteps[i];
                 const isLastAction = i === actionableSteps.length - 1;
                 const nextStep = actionableSteps[i + 1];
+                const isDataStep = DATA_TOOL_KINDS.has(step.kind);
+                const isReasoningStep = REFLEXION_REASONING_KINDS.has(step.kind);
 
-                // 1. Announce this step with a structured card (kind + label + intent).
+                // 1. Announce this step with a structured card.
                 const stepLabel =
                   step.kind === "search" ? step.query :
                   step.kind === "scrape" ? step.url :
@@ -2713,7 +2812,7 @@ Deno.serve(async (req) => {
                   kind: step.kind,
                   label: stepLabel,
                   intent: step.intent,
-                  status: "running",
+                  status: isDataStep ? "running" : "done",
                 }));
 
                 // 2. Run the actual tool (if any).
@@ -2732,6 +2831,7 @@ Deno.serve(async (req) => {
                     agenticContextBlocks.push(
                       `## Step ${i + 1} — Web search: "${step.query}"\nIntent: ${step.intent}\n\n${res.content}`,
                     );
+                    stepObservations.push(`web search "${step.query}": found ${foundCount} sources covering ${step.intent}`);
                     controller.enqueue(enc({
                       type: "agent_step",
                       index: i,
@@ -2743,6 +2843,7 @@ Deno.serve(async (req) => {
                     }));
                     controller.enqueue(enc({ type: "sources", sources: agenticSources }));
                   } else {
+                    stepObservations.push(`web search "${step.query}": no results found`);
                     controller.enqueue(enc({
                       type: "agent_step",
                       index: i,
@@ -2762,6 +2863,7 @@ Deno.serve(async (req) => {
                     agenticContextBlocks.push(
                       `## Step ${i + 1} — Page read: ${step.url}\nIntent: ${step.intent}\n\n${md}`,
                     );
+                    stepObservations.push(`read page ${step.url}: content retrieved for ${step.intent}`);
                     controller.enqueue(enc({
                       type: "agent_step",
                       index: i,
@@ -2773,6 +2875,7 @@ Deno.serve(async (req) => {
                     }));
                     controller.enqueue(enc({ type: "sources", sources: agenticSources }));
                   } else {
+                    stepObservations.push(`read page ${step.url}: failed to retrieve`);
                     controller.enqueue(enc({
                       type: "agent_step",
                       index: i,
@@ -2783,7 +2886,6 @@ Deno.serve(async (req) => {
                     }));
                   }
                 } else if (step.kind === "memory") {
-                  // Memory step: keyword-match against pre-fetched user memories.
                   const qKw = new Set(extractKeywords(step.query, 12));
                   type Scored = { content: string; kind: string; score: number };
                   const matches: Scored[] = [];
@@ -2800,6 +2902,9 @@ Deno.serve(async (req) => {
                       `## Step ${i + 1} — Memory recall: "${step.query}"\nIntent: ${step.intent}\n\n` +
                       top.map((m) => `- (${m.kind}) ${m.content}`).join("\n"),
                     );
+                    stepObservations.push(`memory recall "${step.query}": found ${foundCount} relevant ${foundCount > 1 ? "memories" : "memory"}`);
+                  } else {
+                    stepObservations.push(`memory recall "${step.query}": no relevant memories`);
                   }
                   controller.enqueue(enc({
                     type: "agent_step",
@@ -2811,28 +2916,25 @@ Deno.serve(async (req) => {
                     foundCount,
                   }));
                 } else {
-                  // analyze step: no tool, mark done immediately.
-                  controller.enqueue(enc({
-                    type: "agent_step",
-                    index: i,
-                    kind: "analyze",
-                    label: step.intent,
-                    intent: step.intent,
-                    status: "done",
-                  }));
+                  // Reasoning step (plan/hypothesis/challenge/compare/synthesize/analyze): no tool call.
+                  // The narration will perform the actual reasoning for this step.
+                  stepObservations.push(`${step.kind} step: ${step.intent}`);
                 }
 
-                // 3. Stream the narration for THIS step (what we just learned + transition).
+                // 3. Stream narration: for reasoning steps, this IS the content; for
+                //    data steps, it's a transition narrating findings and what comes next.
                 const narrationPhase: "intro" | "between" = i === 0 ? "intro" : "between";
                 await streamNarrationForStep(i, narrationPhase, {
-                  justDid: step.kind === "analyze" ? undefined : {
-                    kind: step.kind,
+                  justDid: isDataStep ? {
+                    kind: step.kind as "search" | "scrape" | "memory",
                     label: stepLabel,
                     foundCount,
                     intent: step.intent,
-                  },
+                  } : undefined,
+                  currentStep: isReasoningStep ? step : undefined,
                   nextStep,
                   isFinal: isLastAction,
+                  observations: stepObservations.slice(),
                 });
               }
 
@@ -2966,26 +3068,35 @@ Deno.serve(async (req) => {
             messagesForLLM = [webSystem, ...finalMessages];
           }
 
-          // When the agentic loop ran, tell the main model that the narration is
-          // already streamed — it should write ONLY the final answer and start
-          // with a clear separator so the user sees the shift from "thinking" to
-          // "answering".
+          // When the agentic loop ran, tell the main model what was done so it can
+          // write a final answer that builds on the reasoning steps already shown.
           if (agenticUsed && agenticNarration.trim()) {
+            const isReflexionFinal = reflexionEnabled;
             const agentSystem: Msg = {
               role: "system",
-              content:
-                `IMPORTANT — AGENTIC CONTEXT:\n` +
-                `You are operating inside a multi-step agentic flow. Before this turn, a narration ` +
-                `has ALREADY been streamed to the user describing your research process step-by-step ` +
-                `(what you searched, what you read, what you learned). The web context provided to ` +
-                `you above is the result of that research.\n\n` +
-                `Your job NOW is to write ONLY the final answer to the user's original question.\n\n` +
-                `RULES:\n` +
-                `- Do NOT repeat the narration or describe your process again ("I searched...", "I found...", "Now let me...").\n` +
-                `- Start your reply directly with the substantive answer. Do NOT add a "## Answer" heading — the narration cards above already mark the visual separation.\n` +
-                `- Use the web context above as your primary source and cite with [source:N] markers.\n` +
-                `- Be CONCISE. The narration above already covered context — the final answer should be a tight synthesis (target ≤ 300 words, hard cap ~500). Skip restating what was searched, skip filler intros and closings. Lead with the answer.\n\n` +
-                `User's original goal: ${lastUserText.slice(0, 300)}`,
+              content: isReflexionFinal
+                ? `REFLEXION MODE — FINAL SYNTHESIS:\n` +
+                  `You have just completed a multi-step reasoning process. The steps (plan, hypothesis, ` +
+                  `evidence gathering, challenge, comparison, synthesis) have already been shown to the user ` +
+                  `as visible reasoning cards. The web/memory context above is the evidence gathered.\n\n` +
+                  `Your final answer MUST:\n` +
+                  `1. Deliver a clear, well-reasoned conclusion — not just a summary of steps.\n` +
+                  `2. Acknowledge tensions or competing perspectives that came up during reasoning.\n` +
+                  `3. State your confidence level where relevant ("the evidence strongly suggests...", "it's less clear whether...").\n` +
+                  `4. Be substantive: ${responseLength === "short" ? "150-250" : responseLength === "comprehensive" ? "400-700" : "250-400"} words.\n` +
+                  `5. NOT say "I searched...", "I found...", "In step 3..." — the user already saw those cards.\n` +
+                  `6. Start directly with the answer. No intro like "Based on my research..."\n` +
+                  `7. Use [source:N] markers when citing web results.\n\n` +
+                  `User's original question: ${lastUserText.slice(0, 400)}`
+                : `IMPORTANT — AGENTIC CONTEXT:\n` +
+                  `Before this turn, a narration has ALREADY been streamed describing the research process ` +
+                  `step-by-step. The web context above is the result of that research.\n\n` +
+                  `RULES:\n` +
+                  `- Do NOT repeat the narration or describe your process ("I searched...", "I found...", "Now let me...").\n` +
+                  `- Start directly with the substantive answer. No "## Answer" heading.\n` +
+                  `- Use the web context and cite with [source:N] markers.\n` +
+                  `- Be CONCISE (target ≤ 300 words). Lead with the answer.\n\n` +
+                  `User's original goal: ${lastUserText.slice(0, 300)}`,
             };
             messagesForLLM = [agentSystem, ...messagesForLLM];
           }

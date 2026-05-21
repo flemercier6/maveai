@@ -1,5 +1,5 @@
 import { Children, cloneElement, isValidElement, memo, useState, type ReactNode } from "react";
-import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles, Map as MapIcon, ChevronDown, ChevronRight, NotebookPen } from "lucide-react";
+import { Brain, Copy, Check, RotateCcw, Trash2, Globe, Search, ExternalLink, ArrowUpRight, Pencil, FileText, Sparkles, Map as MapIcon, ChevronDown, ChevronRight, NotebookPen, Lightbulb, AlertCircle, Scale, Layers, Compass } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ProviderBadge } from "./ProviderBadge";
@@ -26,7 +26,7 @@ type Source = { title: string; url: string };
 export type ThinkingStep = { index: number; text: string };
 export type AgentStep = {
   index: number;
-  kind: "search" | "scrape" | "analyze";
+  kind: "search" | "scrape" | "analyze" | "memory" | "plan" | "hypothesis" | "challenge" | "compare" | "synthesize" | "gmail" | "calendar" | "drive" | "voyager" | "read_url";
   label: string;
   intent: string;
   status: ToolStatus;
@@ -571,6 +571,11 @@ function ReflexionStepIcon({ kind, running }: { kind: AgentStep["kind"]; running
   if (kind === "calendar") return <GoogleServiceLogo service="calendar" className={cls} />;
   if (kind === "drive") return <GoogleServiceLogo service="drive" className={cls} />;
   if (kind === "voyager") return <VoyagerLogo className={cls} />;
+  if (kind === "plan") return <Compass className={cls} />;
+  if (kind === "hypothesis") return <Lightbulb className={cls} />;
+  if (kind === "challenge") return <AlertCircle className={cls} />;
+  if (kind === "compare") return <Scale className={cls} />;
+  if (kind === "synthesize") return <Layers className={cls} />;
   return <Sparkles className={cls} />;
 }
 
@@ -579,11 +584,16 @@ function reflexionStepTag(kind: AgentStep["kind"]): string {
     case "search": return "Web Search";
     case "scrape":
     case "read_url": return "Read";
-    case "memory": return "Remind";
+    case "memory": return "Memory";
     case "gmail": return "Gmail";
     case "calendar": return "Calendar";
     case "drive": return "Drive";
     case "voyager": return "Voyager";
+    case "plan": return "Plan";
+    case "hypothesis": return "Hypothesis";
+    case "challenge": return "Challenge";
+    case "compare": return "Compare";
+    case "synthesize": return "Synthesize";
     case "analyze":
     default: return "Analyze";
   }
