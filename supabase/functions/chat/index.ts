@@ -2973,6 +2973,10 @@ Deno.serve(async (req) => {
           // ---------- Compute cost up-front so it can be included in the insert ----------
           let inputCost = 0;
           let outputCost = 0;
+          // Passthrough Linkup cost: $0.006 × successful searches (standard depth).
+          // Bundled into total_cost_usd so the billing pipeline (markup × FX) applies
+          // uniformly. Tracked separately for analytics via webSearchCount.
+          const webSearchCost = webSearchCount * LINKUP_SEARCH_COST_USD;
           if (usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) {
             const price = priceFor(model);
             inputCost = (usage.input_tokens / 1_000_000) * price.input;
@@ -2983,17 +2987,22 @@ Deno.serve(async (req) => {
               output_tokens: usage.output_tokens,
               input_cost_usd: inputCost,
               output_cost_usd: outputCost,
-              cost_usd: inputCost + outputCost,
+              web_search_count: webSearchCount,
+              web_search_cost_usd: webSearchCost,
+              cost_usd: inputCost + outputCost + webSearchCost,
             }));
             (metaPayload as any).cost = {
               inputTokens: usage.input_tokens,
               outputTokens: usage.output_tokens,
               inputCostUsd: inputCost,
               outputCostUsd: outputCost,
+              webSearchCount,
+              webSearchCostUsd: webSearchCost,
             };
           } else if (!ephemeral) {
             console.warn("[usage] skipped — no usage data returned by provider");
           }
+
 
           // ---------- Emit `done` IMMEDIATELY ----------
           // Everything below (DB writes + memory extraction) runs AFTER the
