@@ -761,10 +761,11 @@ export default function Chat() {
 
   const ensureConversation = async (_firstUserContent: string): Promise<string | null> => {
     if (activeId) return activeId;
+    if (!user) return null;
     // Use a placeholder; the AI-generated title will arrive via the SSE "title" event.
     const title = "New conversation";
     const { data, error } = await supabase.from("conversations").insert({
-      user_id: user!.id, title, provider, model,
+      user_id: user.id, title, provider, model,
     }).select().single();
     if (error || !data) { toast.error(error?.message ?? "Error"); return null; }
     setConversations((prev) => [data as Conversation, ...prev]);
