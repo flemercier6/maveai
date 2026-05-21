@@ -60,8 +60,12 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
 
   const outputCostBilled = (cost?.outputCostUsd ?? 0) * mult;
   const inputCostBilled = (cost?.inputCostUsd ?? 0) * mult;
-  const totalBilled = inputCostBilled + outputCostBilled;
+  const webSearchCount = cost?.webSearchCount ?? 0;
+  const webSearchRawUsd = cost?.webSearchCostUsd ?? 0;
+  const webSearchBilled = webSearchRawUsd * WEB_SEARCH_MULTIPLIER;
+  const totalBilled = inputCostBilled + outputCostBilled + webSearchBilled;
   const totalTokens = (cost?.inputTokens ?? 0) + (cost?.outputTokens ?? 0);
+
 
   // Position dropdown below the tag button, right-aligned
   const openDropdown = () => {
