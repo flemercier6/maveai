@@ -25,6 +25,22 @@ function splitDataUrl(dataUrl: string): { mediaType: string; base64: string } {
   return { mediaType: m[1], base64: m[2] };
 }
 
+// Fetch with hard timeout — used to cap classifier calls so a slow/503 upstream
+// (Gemini Flash Lite occasionally takes 5–10s on 503) cannot block the user's response.
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 // Inline text-only attachments (PDF text, .md, etc.) directly into the textual content.
 function mergeTextAttachments(content: string, atts: Attachment[] | undefined): string {
   if (!atts?.length) return content;
