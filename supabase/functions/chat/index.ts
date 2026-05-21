@@ -3042,18 +3042,20 @@ Deno.serve(async (req) => {
                   .update({ updated_at: new Date().toISOString() })
                   .eq("id", conversationId)
                   .then(({ error }) => { if (error) console.error("conv update failed", error); }),
-                usage && (usage.input_tokens > 0 || usage.output_tokens > 0)
+                (usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) || webSearchCount > 0
                   ? supabase.from("usage_events").insert({
                       user_id: user.id,
                       conversation_id: conversationId,
                       message_id: insertedMsgId,
                       provider,
                       model,
-                      input_tokens: usage.input_tokens,
-                      output_tokens: usage.output_tokens,
+                      input_tokens: usage?.input_tokens ?? 0,
+                      output_tokens: usage?.output_tokens ?? 0,
                       input_cost_usd: inputCost,
                       output_cost_usd: outputCost,
-                      total_cost_usd: inputCost + outputCost,
+                      // total_cost_usd includes Linkup passthrough so the billing
+                      // pipeline (markup × FX) bills the web search to the user.
+                      total_cost_usd: inputCost + outputCost + webSearchCost,
                     }).then(({ error }) => { if (error) console.error("[usage] insert error:", error); })
                   : Promise.resolve(),
               ]);
