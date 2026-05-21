@@ -599,38 +599,68 @@ function reflexionStepTag(kind: AgentStep["kind"]): string {
   }
 }
 
-function AgentStepCard({ step }: { step: AgentStep }) {
+function StepSourcesInline({ count, sources }: { count: number; sources?: Source[] }) {
+  if (count <= 0) return null;
+  const items = (sources ?? []).slice(0, Math.min(3, count));
+  return (
+    <span className="inline-flex items-center gap-1 ml-0.5 shrink-0">
+      {items.length > 0 && (
+        <span className="inline-flex items-center">
+          {items.map((src, i) => {
+            const fav = faviconUrl(src.url);
+            return (
+              <span
+                key={i}
+                className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-muted overflow-hidden ring-1 ring-background ${i > 0 ? "-ml-1" : ""}`}
+                style={{ zIndex: items.length - i }}
+              >
+                {fav ? (
+                  <img
+                    src={fav}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  />
+                ) : null}
+              </span>
+            );
+          })}
+        </span>
+      )}
+      <span className="text-[11px] whitespace-nowrap" style={{ color: "#B7B7B7" }}>
+        {count} source{count > 1 ? "s" : ""}
+      </span>
+    </span>
+  );
+}
+
+function AgentStepCard({ step, sources }: { step: AgentStep; sources?: Source[] }) {
   const isRunning = step.status === "running";
   const isFailed = step.status === "failed";
   const tag = reflexionStepTag(step.kind);
-  // Tag = subject of the step (search query, URL, or analyze intent)
   const subject = step.label || step.intent;
   const shortSubject = subject.length > 80 ? subject.slice(0, 77) + "…" : subject;
   return (
-    <div className="mb-4">
-      {/* Tag aligned left: icon + type + subject inline */}
-      <div className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-foreground max-w-full">
+    <div className="mb-3">
+      {/* Flat row: no background, no pill. Icon + label in #888, separator, detail in #B7B7B7 */}
+      <div className="flex items-center gap-1.5 text-[12px] font-medium min-w-0" style={{ color: "#888888" }}>
         <ReflexionStepIcon kind={step.kind} running={isRunning} />
-        <span className="text-muted-foreground shrink-0">{tag}</span>
+        <span className="shrink-0">{tag}</span>
         {subject && (
           <>
-            <span className="text-muted-foreground/50">·</span>
-            <span className="truncate text-base" title={subject}>{shortSubject}</span>
+            <span className="shrink-0" style={{ color: "#CCCCCC" }}>·</span>
+            <span className="truncate font-normal" style={{ color: "#B7B7B7" }} title={subject}>{shortSubject}</span>
           </>
         )}
-        {step.status === "done" && step.foundCount !== undefined && step.foundCount > 0 && (
-          <>
-            <span className="text-muted-foreground/50">·</span>
-            <span className="text-muted-foreground whitespace-nowrap shrink-0">
-              {step.foundCount} source{step.foundCount > 1 ? "s" : ""}
-            </span>
-          </>
+        {step.kind === "search" && step.status === "done" && step.foundCount !== undefined && step.foundCount > 0 && (
+          <StepSourcesInline count={step.foundCount} sources={sources} />
         )}
-        {isFailed && <span className="text-destructive ml-1">failed</span>}
+        {isFailed && <span className="text-destructive text-[11px] ml-1 shrink-0">failed</span>}
       </div>
-      {/* Narration as plain text below, no box */}
+      {/* Narration in default foreground color */}
       {step.narration && (
-        <p className="mt-2 text-[15px] text-foreground leading-relaxed whitespace-pre-wrap">
+        <p className="mt-1.5 text-[15px] text-foreground leading-relaxed whitespace-pre-wrap">
           {step.narration}
           {!step.narrationDone && (
             <span className="inline-block w-1 h-3 ml-0.5 bg-muted-foreground/60 animate-pulse align-middle" />
@@ -641,12 +671,12 @@ function AgentStepCard({ step }: { step: AgentStep }) {
   );
 }
 
-function AgentStepsTrace({ steps }: { steps: AgentStep[] }) {
+function AgentStepsTrace({ steps, sources }: { steps: AgentStep[]; sources?: Source[] }) {
   if (!steps.length) return null;
   const sorted = [...steps].sort((a, b) => a.index - b.index);
   return (
     <div className="mb-3">
-      {sorted.map((s) => <AgentStepCard key={s.index} step={s} />)}
+      {sorted.map((s) => <AgentStepCard key={s.index} step={s} sources={sources} />)}
     </div>
   );
 }
@@ -830,7 +860,7 @@ function ChatMessageImpl({
             hasAnswer={!!display}
           />
         )}
-        {agentSteps && agentSteps.length > 0 && <AgentStepsTrace steps={agentSteps} />}
+        {agentSteps && agentSteps.length > 0 && <AgentStepsTrace steps={agentSteps} sources={sources} />}
         {(() => {
           const { images, text } = display ? extractImages(display) : { images: [], text: "" };
           const hasThinking = !!(thinking && thinking.length > 0);
