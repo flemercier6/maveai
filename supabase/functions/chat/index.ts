@@ -2682,6 +2682,7 @@ Deno.serve(async (req) => {
                 controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "running" }));
                 const res = await linkupSearch(linkupKey, decision.query);
                 if (res) {
+                  webSearchCount += 1;
                   webContext = {
                     kind: "search",
                     label: decision.query,
