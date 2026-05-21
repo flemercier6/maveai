@@ -980,9 +980,9 @@ export default function Chat() {
         // Persist as: summary\n\n```page\n{json}\n```
         const persisted = `${summary}\n\n\`\`\`page\n${JSON.stringify(page)}\n\`\`\``;
         let assistantId: string | undefined;
-        if (!ephemeral && convId) {
+        if (!ephemeral && user && convId) {
           const { data: aData } = await supabase.from("messages").insert({
-            conversation_id: convId, user_id: user!.id, role: "assistant", content: persisted, model,
+            conversation_id: convId, user_id: user.id, role: "assistant", content: persisted, model,
             ...(pageJson.meta ? { meta: pageJson.meta } : {}),
           }).select().single();
           assistantId = aData?.id;
