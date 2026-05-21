@@ -2219,25 +2219,31 @@ Deno.serve(async (req) => {
                 `- Default GET limit to 20 unless user specifies.`;
               let decision: VoyagerRouterDecision = { resource: "none" };
               if (googleKeyForVoyager) {
-                const r = await fetch(
-                  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleKeyForVoyager}`,
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      contents: [{ role: "user", parts: [{ text: lastUserText.slice(0, 4000) }] }],
-                      systemInstruction: { role: "user", parts: [{ text: sys }] },
-                      generationConfig: {
-                        temperature: 0,
-                        responseMimeType: "application/json",
-                        thinkingConfig: { thinkingBudget: 0 },
-                      },
-                    }),
-                  },
-                );
-                const d = await r.json();
-                const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{"resource":"none"}';
-                try { decision = JSON.parse(text); } catch { /* keep none */ }
+                try {
+                  const r = await fetchWithTimeout(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleKeyForVoyager}`,
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        contents: [{ role: "user", parts: [{ text: lastUserText.slice(0, 4000) }] }],
+                        systemInstruction: { role: "user", parts: [{ text: sys }] },
+                        generationConfig: {
+                          temperature: 0,
+                          responseMimeType: "application/json",
+                          thinkingConfig: { thinkingBudget: 0 },
+                        },
+                      }),
+                    },
+                    800,
+                  );
+                  const d = await r.json();
+                  const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{"resource":"none"}';
+                  try { decision = JSON.parse(text); } catch { /* keep none */ }
+                } catch (e) {
+                  // Timeout/network → keep "none" and let local fallbackVoyagerIntent decide.
+                  console.warn("voyager router classify timed out, falling back", e instanceof Error ? e.message : e);
+                }
               }
               const fallbackDecision = forcedVoyagerDecision ?? fallbackVoyagerIntent(lastUserText);
               if (fallbackDecision && fallbackDecision.method && ["POST", "PATCH", "DELETE"].includes(fallbackDecision.method)) {
