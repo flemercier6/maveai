@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Sparkles } from "lucide-react";
 import type { RequestMeta } from "@/lib/requestMeta";
-import { USD_TO_EUR, billingMultiplier } from "@/lib/pricing";
+import { USD_TO_EUR, billingMultiplier, WEB_SEARCH_MULTIPLIER } from "@/lib/pricing";
 import { ProviderLogo } from "@/components/ProviderLogo";
 import type { Provider } from "@/lib/models";
 
