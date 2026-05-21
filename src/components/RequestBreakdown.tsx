@@ -36,30 +36,48 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
   const inputPricePerTok = cost && cost.inputTokens > 0 ? cost.inputCostUsd / cost.inputTokens : 0;
   const mult = cost?.multiplier ?? 1;
 
-  const segments: Segment[] = [];
+  const rawSegments: Segment[] = [];
   for (const s of meta.systems ?? []) {
-    segments.push({
+    rawSegments.push({
       label: s.label,
       tokens: s.approxTokens,
-      costUsd: s.approxTokens * inputPricePerTok * mult,
+      costUsd: 0,
       description: s.description,
     });
   }
   if (meta.memoryMatches && meta.memoryMatches.length > 0) {
     const memTokens = meta.memoryMatches.reduce((s, m) => s + Math.ceil(m.content.length / 4), 0);
-    segments.push({ label: `Memory matches (${meta.memoryMatches.length})`, tokens: memTokens, costUsd: memTokens * inputPricePerTok * mult });
+    rawSegments.push({ label: `Memory matches (${meta.memoryMatches.length})`, tokens: memTokens, costUsd: 0 });
   }
   if (meta.webContext) {
-    segments.push({ label: `Web context · ${meta.webContext.label}`, tokens: meta.webContext.approxTokens, costUsd: meta.webContext.approxTokens * inputPricePerTok * mult });
+    rawSegments.push({ label: `Web context · ${meta.webContext.label}`, tokens: meta.webContext.approxTokens, costUsd: 0 });
   }
   const history = meta.history ?? [];
   const histTokens = history.reduce((s, h) => s + h.approxTokens, 0);
   if (histTokens > 0) {
-    segments.push({ label: `Conversation history (${history.length} msgs)`, tokens: histTokens, costUsd: histTokens * inputPricePerTok * mult });
+    rawSegments.push({ label: `Conversation history (${history.length} msgs)`, tokens: histTokens, costUsd: 0 });
   }
 
-  const outputCostBilled = (cost?.outputCostUsd ?? 0) * mult;
+  // Residual = user message + provider overhead (chat template, tool defs, …).
+  // We surface it as its own line so the segments sum matches the billed input tokens.
+  const segmentsTokenSum = rawSegments.reduce((a, s) => a + s.tokens, 0);
+  if (cost && cost.inputTokens > segmentsTokenSum) {
+    rawSegments.push({
+      label: "User message & overhead",
+      tokens: cost.inputTokens - segmentsTokenSum,
+      costUsd: 0,
+    });
+  }
+
+  // Rescale token-derived costs so segment totals exactly match the provider-reported input cost.
+  const totalSegTokens = rawSegments.reduce((a, s) => a + s.tokens, 0);
   const inputCostBilled = (cost?.inputCostUsd ?? 0) * mult;
+  const segments: Segment[] = rawSegments.map((s) => ({
+    ...s,
+    costUsd: totalSegTokens > 0 ? (s.tokens / totalSegTokens) * inputCostBilled : 0,
+  }));
+
+  const outputCostBilled = (cost?.outputCostUsd ?? 0) * mult;
   const webSearchCount = cost?.webSearchCount ?? 0;
   const webSearchRawUsd = cost?.webSearchCostUsd ?? 0;
   const webSearchBilled = webSearchRawUsd * WEB_SEARCH_MULTIPLIER;
