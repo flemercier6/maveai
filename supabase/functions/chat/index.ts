@@ -732,9 +732,18 @@ User message:
         }),
       },
     );
+    if (!r.ok) {
+      const t = await r.text().catch(() => "");
+      console.error("decideReflexionPlan HTTP", r.status, t.slice(0, 300));
+      return empty;
+    }
     const j = await r.json();
     const raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
     const cleaned = raw.replace(/```json|```/g, "").trim();
+    if (!cleaned) {
+      console.error("decideReflexionPlan empty response", JSON.stringify(j).slice(0, 300));
+      return empty;
+    }
     const parsed = JSON.parse(cleaned);
     const rawSteps: any[] = Array.isArray(parsed.steps) ? parsed.steps : [];
     const steps: AgenticStep[] = [];
@@ -2579,7 +2588,7 @@ Deno.serve(async (req) => {
 
             // Reflexion mode → richer plan (memory + search + scrape + analyze,
             // up to N steps based on effort). Otherwise → auto-detected agentic.
-            const plan = reflexionEnabled
+            let plan: AgenticPlan = reflexionEnabled
               ? await decideReflexionPlan({
                 googleKey: googleKeyForAgent,
                 userText: lastUserText,
@@ -2587,6 +2596,9 @@ Deno.serve(async (req) => {
                 hasScrape: !!firecrawlKey,
                 hasMemory: allFetchedMemRows.length > 0,
                 maxSteps: reflexionMaxSteps,
+              }).catch((e) => {
+                console.error("decideReflexionPlan threw", e);
+                return { complex: false, goal: "", steps: [] as AgenticStep[] };
               })
               : !fastNoAgentic
                 ? await decideAgenticPlan({
@@ -2596,6 +2608,36 @@ Deno.serve(async (req) => {
                   hasScrape: !!firecrawlKey,
                 })
                 : { complex: false, goal: "", steps: [] as AgenticStep[] };
+
+            // Reflexion is user-opt-in: ALWAYS run a multi-step loop, even if
+            // the orchestrator failed or returned nothing. Build a sensible
+            // fallback plan that scales with effort.
+            if (reflexionEnabled && (!plan.complex || plan.steps.length < 2)) {
+              console.warn("[reflexion] planner returned empty, using fallback plan");
+              const fallbackSteps: AgenticStep[] = [
+                { kind: "analyze", intent: "break down the question and identify key factors" },
+              ];
+              if (linkupKey) {
+                fallbackSteps.push({
+                  kind: "search",
+                  query: lastUserText.slice(0, 100),
+                  intent: "gather relevant facts and references",
+                });
+              }
+              if (allFetchedMemRows.length > 0) {
+                fallbackSteps.push({
+                  kind: "memory",
+                  query: lastUserText.slice(0, 100),
+                  intent: "recall relevant user context",
+                });
+              }
+              fallbackSteps.push({ kind: "analyze", intent: "synthesize a complete, structured answer" });
+              plan = {
+                complex: true,
+                goal: lastUserText.slice(0, 120),
+                steps: fallbackSteps.slice(0, reflexionMaxSteps),
+              };
+            }
 
             if (plan.complex && plan.steps.length >= 2 && googleKeyForAgent) {
               // ---------- AGENTIC LOOP ----------
