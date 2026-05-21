@@ -217,13 +217,14 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
                   <span className="text-white/70 leading-snug">
                     Linkup ·{" "}
                     <span className="text-white/50">
-                      {webSearchCount} {webSearchCount > 1 ? "recherches" : "recherche"} × ×{WEB_SEARCH_MULTIPLIER}
+                      {webSearchCount} {webSearchCount > 1 ? "recherches" : "recherche"}
                     </span>
                   </span>
                   <span className="tabular-nums font-medium whitespace-nowrap">{fmtEur(webSearchBilled)}</span>
                 </div>
               </div>
             )}
+
 
 
             {/* Total */}
