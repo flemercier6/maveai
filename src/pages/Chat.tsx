@@ -2375,25 +2375,21 @@ export default function Chat() {
                   )}
                   {!aiPrefs.disabledModes.includes("reflexion") && !reflexionRequested && (
                     <DropdownMenu>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              aria-label="Activate Reflexion"
-                              className="h-9 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
-                            >
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path d="M8 2C5.79 2 4 3.79 4 6c0 1.27.59 2.4 1.5 3.13V11c0 .55.45 1 1 1h3c.55 0 1-.45 1-1V9.13C11.41 8.4 12 7.27 12 6c0-2.21-1.79-4-4-4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M6.5 13.5h3M7 14.5h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </Button>
-                          </DropdownMenuTrigger>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">Reflexion</TooltipContent>
-                      </Tooltip>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Activate Reflexion"
+                          title="Reflexion"
+                          className="h-9 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M8 2C5.79 2 4 3.79 4 6c0 1.27.59 2.4 1.5 3.13V11c0 .55.45 1 1 1h3c.55 0 1-.45 1-1V9.13C11.41 8.4 12 7.27 12 6c0-2.21-1.79-4-4-4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M6.5 13.5h3M7 14.5h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </Button>
+                      </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="w-48">
                         <div className="px-2 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">Reasoning effort</div>
                         <DropdownMenuItem onClick={() => { setReflexionEffort("low"); setReflexionRequested(true); }}>
