@@ -36,7 +36,12 @@ export type MetaCost = {
   outputCostUsd: number;
   /** Markup applied for this model (e.g. 3 = ×3). */
   multiplier: number;
+  /** Number of Linkup web searches performed during this turn. */
+  webSearchCount?: number;
+  /** Raw passthrough Linkup cost (USD), before markup. */
+  webSearchCostUsd?: number;
 };
+
 
 /**
  * Per-model usage entry. When a request goes through a multi-model pipeline

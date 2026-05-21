@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Sparkles } from "lucide-react";
 import type { RequestMeta } from "@/lib/requestMeta";
-import { USD_TO_EUR, billingMultiplier } from "@/lib/pricing";
+import { USD_TO_EUR, billingMultiplier, WEB_SEARCH_MULTIPLIER } from "@/lib/pricing";
 import { ProviderLogo } from "@/components/ProviderLogo";
 import type { Provider } from "@/lib/models";
 
@@ -60,8 +60,12 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
 
   const outputCostBilled = (cost?.outputCostUsd ?? 0) * mult;
   const inputCostBilled = (cost?.inputCostUsd ?? 0) * mult;
-  const totalBilled = inputCostBilled + outputCostBilled;
+  const webSearchCount = cost?.webSearchCount ?? 0;
+  const webSearchRawUsd = cost?.webSearchCostUsd ?? 0;
+  const webSearchBilled = webSearchRawUsd * WEB_SEARCH_MULTIPLIER;
+  const totalBilled = inputCostBilled + outputCostBilled + webSearchBilled;
   const totalTokens = (cost?.inputTokens ?? 0) + (cost?.outputTokens ?? 0);
+
 
   // Position dropdown below the tag button, right-aligned
   const openDropdown = () => {
@@ -205,6 +209,22 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
                 </div>
               </div>
             )}
+            {/* Web search (Linkup passthrough) */}
+            {webSearchCount > 0 && (
+              <div>
+                <div className="text-xs uppercase tracking-wider text-white/40 mb-2">Web search</div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-white/70 leading-snug">
+                    Linkup ·{" "}
+                    <span className="text-white/50">
+                      {webSearchCount} {webSearchCount > 1 ? "recherches" : "recherche"} × ×{WEB_SEARCH_MULTIPLIER}
+                    </span>
+                  </span>
+                  <span className="tabular-nums font-medium whitespace-nowrap">{fmtEur(webSearchBilled)}</span>
+                </div>
+              </div>
+            )}
+
 
             {/* Total */}
             {cost && (
