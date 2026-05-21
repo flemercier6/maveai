@@ -44,9 +44,7 @@ const FALLBACK_MULTIPLIER = 3;
 // Per-model markup overrides that bypass the formula and clamp.
 // Use for models we want to bill at a fixed multiplier regardless of their
 // blended provider price (e.g. very cheap models we want to price as premium).
-const MULTIPLIER_OVERRIDES: Record<string, number> = {
-  "claude-haiku-4-5": 12,
-};
+const MULTIPLIER_OVERRIDES: Record<string, number> = {};
 
 /** Blended cost in $/M tokens, weighted 75% input / 25% output. */
 function blendedPrice(p: ProviderPrice): number {
