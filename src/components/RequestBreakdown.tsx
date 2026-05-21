@@ -33,7 +33,6 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
   const [pos, setPos] = useState({ top: 0, left: 0 });
 
   const cost = meta.cost;
-  const inputPricePerTok = cost && cost.inputTokens > 0 ? cost.inputCostUsd / cost.inputTokens : 0;
   const mult = cost?.multiplier ?? 1;
 
   const rawSegments: Segment[] = [];
