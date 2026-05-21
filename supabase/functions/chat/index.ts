@@ -2537,6 +2537,7 @@ Deno.serve(async (req) => {
                 if (step.kind === "search") {
                   const res = await linkupSearch(linkupKey!, step.query);
                   if (res) {
+                    webSearchCount += 1;
                     foundCount = res.sources.length;
                     for (const s of res.sources) {
                       if (!agenticSources.find((x) => x.url === s.url)) agenticSources.push(s);
