@@ -910,12 +910,12 @@ export default function Chat() {
       );
 
       let convId: string | null = null;
-      if (!ephemeral) {
+      if (!ephemeral && user) {
         convId = await ensureConversation(text);
         if (!convId) { setSending(false); return; }
         // User message persistence runs in the background — saves a round-trip.
         void supabase.from("messages")
-          .insert({ conversation_id: convId, user_id: user!.id, role: "user", content: displayContent })
+          .insert({ conversation_id: convId, user_id: user.id, role: "user", content: displayContent })
           .then(({ error }) => { if (error) console.error("user message insert failed", error); });
       }
 
