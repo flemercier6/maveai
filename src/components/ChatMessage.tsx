@@ -599,39 +599,79 @@ function reflexionStepTag(kind: AgentStep["kind"]): string {
   }
 }
 
-function StepSourcesInline({ count, sources }: { count: number; sources?: Source[] }) {
+function StepSourcesTag({ count, sources }: { count: number; sources?: Source[] }) {
   if (count <= 0) return null;
-  const items = (sources ?? []).slice(0, Math.min(3, count));
+  const items = (sources ?? []).slice(0, count);
+  const thumbs = items.slice(0, 3);
   return (
-    <span className="inline-flex items-center gap-1 ml-0.5 shrink-0">
-      {items.length > 0 && (
-        <span className="inline-flex items-center">
-          {items.map((src, i) => {
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 pl-0.5 pr-2 h-5 rounded-full border border-border bg-card text-[10px] font-medium hover:bg-dropdown-hover transition-colors shrink-0"
+          style={{ color: "#B7B7B7" }}
+        >
+          <span className="inline-flex items-center">
+            {thumbs.map((src, i) => {
+              const fav = faviconUrl(src.url);
+              return (
+                <span
+                  key={i}
+                  className={`inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted overflow-hidden ring-1 ring-card ${i > 0 ? "-ml-1.5" : ""}`}
+                  style={{ zIndex: thumbs.length - i }}
+                >
+                  {fav ? (
+                    <img
+                      src={fav}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                    />
+                  ) : null}
+                </span>
+              );
+            })}
+          </span>
+          <span className="whitespace-nowrap">{count} source{count > 1 ? "s" : ""}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-80 p-2">
+        <div className="text-[11px] font-medium text-muted-foreground px-2 py-1">
+          {items.length === 1 ? "Source" : `${items.length} sources`}
+        </div>
+        <ul className="flex flex-col">
+          {items.map((src, n) => {
+            let host = "";
+            try { host = new URL(src.url).hostname.replace(/^www\./, ""); } catch { host = src.url; }
             const fav = faviconUrl(src.url);
             return (
-              <span
-                key={i}
-                className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-muted overflow-hidden ring-1 ring-background ${i > 0 ? "-ml-1" : ""}`}
-                style={{ zIndex: items.length - i }}
-              >
-                {fav ? (
-                  <img
-                    src={fav}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                  />
-                ) : null}
-              </span>
+              <li key={n}>
+                <a
+                  href={src.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-2 px-2 py-1.5 rounded-md hover:bg-dropdown-hover no-underline"
+                >
+                  <span className="mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted overflow-hidden shrink-0">
+                    {fav ? (
+                      <img src={fav} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      <span className="text-[10px] font-medium text-muted-foreground">{n + 1}</span>
+                    )}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] text-foreground line-clamp-2 leading-snug">{src.title}</span>
+                    <span className="block text-[11px] text-muted-foreground truncate">{host}</span>
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-1" />
+                </a>
+              </li>
             );
           })}
-        </span>
-      )}
-      <span className="text-[11px] whitespace-nowrap" style={{ color: "#B7B7B7" }}>
-        {count} source{count > 1 ? "s" : ""}
-      </span>
-    </span>
+        </ul>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -640,32 +680,38 @@ function AgentStepCard({ step, sources }: { step: AgentStep; sources?: Source[] 
   const isFailed = step.status === "failed";
   const tag = reflexionStepTag(step.kind);
   const subject = step.label || step.intent;
-  const shortSubject = subject.length > 80 ? subject.slice(0, 77) + "…" : subject;
+  const shortSubject = subject.length > 72 ? subject.slice(0, 69) + "…" : subject;
   return (
-    <div className="mb-3">
-      {/* Flat row: no background, no pill. Icon + label in #888, separator, detail in #B7B7B7 */}
-      <div className="flex items-center gap-1.5 text-[12px] font-medium min-w-0" style={{ color: "#888888" }}>
-        <ReflexionStepIcon kind={step.kind} running={isRunning} />
+    <div className="mb-4">
+      {/* Flat row: no background, no pill. Left=label #888, right=detail #B7B7B7 */}
+      <div className="flex items-center gap-1.5 text-[12px] font-medium" style={{ color: "#888888" }}>
+        <span className="shrink-0 flex items-center"><ReflexionStepIcon kind={step.kind} running={isRunning} /></span>
         <span className="shrink-0">{tag}</span>
         {subject && (
           <>
             <span className="shrink-0" style={{ color: "#CCCCCC" }}>·</span>
-            <span className="truncate font-normal" style={{ color: "#B7B7B7" }} title={subject}>{shortSubject}</span>
+            <span
+              className="font-normal overflow-hidden text-ellipsis whitespace-nowrap"
+              style={{ color: "#B7B7B7", minWidth: 0 }}
+              title={subject}
+            >
+              {shortSubject}
+            </span>
           </>
         )}
         {step.kind === "search" && step.status === "done" && step.foundCount !== undefined && step.foundCount > 0 && (
-          <StepSourcesInline count={step.foundCount} sources={sources} />
+          <StepSourcesTag count={step.foundCount} sources={sources} />
         )}
         {isFailed && <span className="text-destructive text-[11px] ml-1 shrink-0">failed</span>}
       </div>
-      {/* Narration in default foreground color */}
+      {/* Narration: full-width block, no truncation */}
       {step.narration && (
-        <p className="mt-1.5 text-[15px] text-foreground leading-relaxed whitespace-pre-wrap">
+        <div className="mt-2 text-[15px] text-foreground leading-relaxed">
           {step.narration}
           {!step.narrationDone && (
             <span className="inline-block w-1 h-3 ml-0.5 bg-muted-foreground/60 animate-pulse align-middle" />
           )}
-        </p>
+        </div>
       )}
     </div>
   );
@@ -675,8 +721,10 @@ function AgentStepsTrace({ steps, sources }: { steps: AgentStep[]; sources?: Sou
   if (!steps.length) return null;
   const sorted = [...steps].sort((a, b) => a.index - b.index);
   return (
-    <div className="mb-3">
+    <div className="mb-6">
       {sorted.map((s) => <AgentStepCard key={s.index} step={s} sources={sources} />)}
+      {/* Visual separator between the reasoning steps and the final answer */}
+      <div className="mt-2 border-t border-border" />
     </div>
   );
 }
@@ -864,10 +912,11 @@ function ChatMessageImpl({
         {(() => {
           const { images, text } = display ? extractImages(display) : { images: [], text: "" };
           const hasThinking = !!(thinking && thinking.length > 0);
+          const hasSteps = !!(agentSteps && agentSteps.length > 0);
           return (
             <>
               {images.length > 0 && <ImageStrip images={images} />}
-              <div className="chat-prose break-words">
+              <div className={`chat-prose break-words${hasSteps ? " mt-4" : ""}`}>
                 {display ? (
                   text ? (
                     <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{text}</ReactMarkdown>
