@@ -237,6 +237,11 @@ export default function Chat() {
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Conversations just created locally via ensureConversation. The "load messages"
+  // effect must skip these once, otherwise the empty/in-flight DB fetch races with
+  // the optimistic setMessages([...user, assistant]) and wipes the UI → blank screen.
+  const freshConvIdsRef = useRef<Set<string>>(new Set());
+
   const lastSentRef = useRef<string>("");
   const lastAttachmentsRef = useRef<Attachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
