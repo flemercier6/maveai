@@ -77,6 +77,23 @@ const MODEL_PRICES: Record<string, Price> = {
 // top of model token cost so the user pays for the web tool when it's used.
 // (Deep depth would be $0.05/search — we only use standard, see linkupSearch.)
 const LINKUP_SEARCH_COST_USD = 0.006;
+
+// Web search is always billed at the floor multiplier (the same as the most
+// expensive models). We achieve that by pre-scaling the raw Linkup cost so
+// that after the downstream pipeline multiplies total_cost_usd by the model
+// multiplier, the effective markup on the web-search portion lands exactly
+// on WEB_SEARCH_MULTIPLIER.
+const WEB_SEARCH_MULTIPLIER = 1.5;
+
+// Mirror of src/lib/pricing.ts billingMultiplier(). Keep in sync.
+function modelBillingMultiplier(model: string): number {
+  const p = priceFor(model);
+  const blended = p.input * 0.75 + p.output * 0.25;
+  if (blended <= 0) return 3;
+  const raw = (2.0 / blended) * 3;
+  const clamped = Math.min(6, Math.max(1.5, raw));
+  return Math.round(clamped * 10) / 10;
+}
 function priceFor(model: string): Price {
   if (MODEL_PRICES[model]) return MODEL_PRICES[model];
   // Fuzzy fallbacks for variants/aliases
@@ -2974,9 +2991,13 @@ Deno.serve(async (req) => {
           let inputCost = 0;
           let outputCost = 0;
           // Passthrough Linkup cost: $0.006 × successful searches (standard depth).
-          // Bundled into total_cost_usd so the billing pipeline (markup × FX) applies
-          // uniformly. Tracked separately for analytics via webSearchCount.
-          const webSearchCost = webSearchCount * LINKUP_SEARCH_COST_USD;
+          // Pre-scaled so the downstream markup brings it to WEB_SEARCH_MULTIPLIER
+          // regardless of the model used (cheap models would otherwise inflate it).
+          const rawWebSearchCost = webSearchCount * LINKUP_SEARCH_COST_USD;
+          const modelMult = modelBillingMultiplier(model);
+          const webSearchCostBilled = modelMult > 0
+            ? rawWebSearchCost * (WEB_SEARCH_MULTIPLIER / modelMult)
+            : rawWebSearchCost;
           if (usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) {
             const price = priceFor(model);
             inputCost = (usage.input_tokens / 1_000_000) * price.input;
@@ -2988,8 +3009,8 @@ Deno.serve(async (req) => {
               input_cost_usd: inputCost,
               output_cost_usd: outputCost,
               web_search_count: webSearchCount,
-              web_search_cost_usd: webSearchCost,
-              cost_usd: inputCost + outputCost + webSearchCost,
+              web_search_cost_usd: rawWebSearchCost,
+              cost_usd: inputCost + outputCost + webSearchCostBilled,
             }));
             (metaPayload as any).cost = {
               inputTokens: usage.input_tokens,
@@ -2997,7 +3018,7 @@ Deno.serve(async (req) => {
               inputCostUsd: inputCost,
               outputCostUsd: outputCost,
               webSearchCount,
-              webSearchCostUsd: webSearchCost,
+              webSearchCostUsd: rawWebSearchCost,
             };
           } else if (!ephemeral) {
             console.warn("[usage] skipped — no usage data returned by provider");
@@ -3053,9 +3074,9 @@ Deno.serve(async (req) => {
                       output_tokens: usage?.output_tokens ?? 0,
                       input_cost_usd: inputCost,
                       output_cost_usd: outputCost,
-                      // total_cost_usd includes Linkup passthrough so the billing
-                      // pipeline (markup × FX) bills the web search to the user.
-                      total_cost_usd: inputCost + outputCost + webSearchCost,
+                      // total_cost_usd includes the pre-scaled Linkup cost so the
+                      // pipeline (modelMult × FX) lands web search at WEB_SEARCH_MULTIPLIER.
+                      total_cost_usd: inputCost + outputCost + webSearchCostBilled,
                     }).then(({ error }) => { if (error) console.error("[usage] insert error:", error); })
                   : Promise.resolve(),
               ]);
