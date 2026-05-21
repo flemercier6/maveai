@@ -2252,60 +2252,10 @@ Deno.serve(async (req) => {
           }
 
           // ---------- Voyager CRM router ----------
-          // Runs for explicit /voyager requests and for CRM intents when Voyager is connected.
-          // Local pre-filter avoids the ~200-500 ms classifier call when the user
-          // is clearly not asking about CRM data.
-          const forcedVoyagerDecision = pendingVoyagerWriteFromHistory();
-          const fastNoVoyager = (() => {
-            if (voyagerService || forcedVoyagerDecision) return false; // explicit invocation
-            const t = lastUserText.toLowerCase();
-            return !/\b(crm|voyager|contact|contacts|company|companies|deal|deals|client|prospect|lead|opportunit|entreprise|societe|pipeline|account|customer|fiche|interlocuteur)\b/.test(t);
-          })();
-          if (voyagerEnabled && lastUserText && !fastNoVoyager && (!writingMode || forcedVoyagerDecision)) {
+          // Decision was pre-launched in parallel above (see voyagerDecisionPromise).
+          if (willVoyager) {
             try {
-              const googleKeyForVoyager = Deno.env.get("GOOGLE_API_KEY");
-              const sys =
-                `You decide how to call the Voyager CRM API on behalf of the user. ` +
-                `Today: ${new Date().toISOString()}.\n\n` +
-                `Available resources: contacts, companies, deals.\n` +
-                `Methods:\n` +
-                `- GET (list or get one) — query params like { limit?: number, search?: string }, optional id for single fetch\n` +
-                `- POST (create) — payload with the new entity fields\n` +
-                `- PATCH (update) — id required + payload with fields to change\n` +
-                `- DELETE — id required\n\n` +
-                `Rules:\n` +
-                `- Reply with a single JSON object: {"resource":"contacts|companies|deals","method":"GET|POST|PATCH|DELETE","id"?:string,"query"?:object,"payload"?:object}\n` +
-                `- If the request is unclear or unrelated to the CRM, return {"resource":"none"}.\n` +
-                `- For "liste/affiche/cherche/montre" → GET. For "ajoute/crée/nouveau" → POST. For "modifie/met à jour" → PATCH. For "supprime/efface" → DELETE.\n` +
-                `- Default GET limit to 20 unless user specifies.`;
-              let decision: VoyagerRouterDecision = { resource: "none" };
-              if (googleKeyForVoyager) {
-                try {
-                  const r = await fetchWithTimeout(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleKeyForVoyager}`,
-                    {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        contents: [{ role: "user", parts: [{ text: lastUserText.slice(0, 4000) }] }],
-                        systemInstruction: { role: "user", parts: [{ text: sys }] },
-                        generationConfig: {
-                          temperature: 0,
-                          responseMimeType: "application/json",
-                          thinkingConfig: { thinkingBudget: 0 },
-                        },
-                      }),
-                    },
-                    800,
-                  );
-                  const d = await r.json();
-                  const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{"resource":"none"}';
-                  try { decision = JSON.parse(text); } catch { /* keep none */ }
-                } catch (e) {
-                  // Timeout/network → keep "none" and let local fallbackVoyagerIntent decide.
-                  console.warn("voyager router classify timed out, falling back", e instanceof Error ? e.message : e);
-                }
-              }
+              let decision: VoyagerRouterDecision = await voyagerDecisionPromise;
               const fallbackDecision = forcedVoyagerDecision ?? fallbackVoyagerIntent(lastUserText);
               if (fallbackDecision && fallbackDecision.method && ["POST", "PATCH", "DELETE"].includes(fallbackDecision.method)) {
                 decision = fallbackDecision;
