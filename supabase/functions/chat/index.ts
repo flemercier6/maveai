@@ -939,26 +939,6 @@ ${userText.slice(0, 2000)}`;
     // Timeout or network error → skip clarify silently (safe default).
     console.warn("decideClarify timed out or failed, skipping", e instanceof Error ? e.message : e);
     return null;
-      const j = await r.json();
-      raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
-    } else if (args.openaiKey) {
-      const r = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${args.openaiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "gpt-5-nano",
-          messages: [{ role: "user", content: prompt }],
-          response_format: { type: "json_object" },
-        }),
-      });
-      const j = await r.json();
-      raw = j.choices?.[0]?.message?.content ?? "";
-    } else {
-      return null;
-    }
-  } catch (e) {
-    console.error("decideClarify failed", e);
-    return null;
   }
 
   try {
