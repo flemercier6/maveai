@@ -25,6 +25,22 @@ function splitDataUrl(dataUrl: string): { mediaType: string; base64: string } {
   return { mediaType: m[1], base64: m[2] };
 }
 
+// Fetch with hard timeout — used to cap classifier calls so a slow/503 upstream
+// (Gemini Flash Lite occasionally takes 5–10s on 503) cannot block the user's response.
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 // Inline text-only attachments (PDF text, .md, etc.) directly into the textual content.
 function mergeTextAttachments(content: string, atts: Attachment[] | undefined): string {
   if (!atts?.length) return content;
@@ -887,7 +903,7 @@ ${userText.slice(0, 2000)}`;
   let raw = "";
   try {
     if (args.googleKey) {
-      const r = await fetch(
+      const r = await fetchWithTimeout(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${args.googleKey}`,
         {
           method: "POST",
@@ -900,11 +916,12 @@ ${userText.slice(0, 2000)}`;
             },
           }),
         },
+        800,
       );
       const j = await r.json();
       raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
     } else if (args.openaiKey) {
-      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+      const r = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${args.openaiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -912,14 +929,15 @@ ${userText.slice(0, 2000)}`;
           messages: [{ role: "user", content: prompt }],
           response_format: { type: "json_object" },
         }),
-      });
+      }, 800);
       const j = await r.json();
       raw = j.choices?.[0]?.message?.content ?? "";
     } else {
       return null;
     }
   } catch (e) {
-    console.error("decideClarify failed", e);
+    // Timeout or network error → skip clarify silently (safe default).
+    console.warn("decideClarify timed out or failed, skipping", e instanceof Error ? e.message : e);
     return null;
   }
 
@@ -1823,11 +1841,18 @@ Deno.serve(async (req) => {
         },
       };
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleApiKey}`;
-      const r = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      let r: Response;
+      try {
+        r = await fetchWithTimeout(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }, 800);
+      } catch (e) {
+        // Timeout/network → safe default. Local fallbackGoogleIntent will still run upstream.
+        console.warn("google router classify timed out, falling back to none", e instanceof Error ? e.message : e);
+        return { action: "none" };
+      }
       const d = await r.json();
       if (!r.ok) {
         console.warn("google router classify failed", d);
@@ -2194,25 +2219,31 @@ Deno.serve(async (req) => {
                 `- Default GET limit to 20 unless user specifies.`;
               let decision: VoyagerRouterDecision = { resource: "none" };
               if (googleKeyForVoyager) {
-                const r = await fetch(
-                  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleKeyForVoyager}`,
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      contents: [{ role: "user", parts: [{ text: lastUserText.slice(0, 4000) }] }],
-                      systemInstruction: { role: "user", parts: [{ text: sys }] },
-                      generationConfig: {
-                        temperature: 0,
-                        responseMimeType: "application/json",
-                        thinkingConfig: { thinkingBudget: 0 },
-                      },
-                    }),
-                  },
-                );
-                const d = await r.json();
-                const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{"resource":"none"}';
-                try { decision = JSON.parse(text); } catch { /* keep none */ }
+                try {
+                  const r = await fetchWithTimeout(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleKeyForVoyager}`,
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        contents: [{ role: "user", parts: [{ text: lastUserText.slice(0, 4000) }] }],
+                        systemInstruction: { role: "user", parts: [{ text: sys }] },
+                        generationConfig: {
+                          temperature: 0,
+                          responseMimeType: "application/json",
+                          thinkingConfig: { thinkingBudget: 0 },
+                        },
+                      }),
+                    },
+                    800,
+                  );
+                  const d = await r.json();
+                  const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{"resource":"none"}';
+                  try { decision = JSON.parse(text); } catch { /* keep none */ }
+                } catch (e) {
+                  // Timeout/network → keep "none" and let local fallbackVoyagerIntent decide.
+                  console.warn("voyager router classify timed out, falling back", e instanceof Error ? e.message : e);
+                }
               }
               const fallbackDecision = forcedVoyagerDecision ?? fallbackVoyagerIntent(lastUserText);
               if (fallbackDecision && fallbackDecision.method && ["POST", "PATCH", "DELETE"].includes(fallbackDecision.method)) {
