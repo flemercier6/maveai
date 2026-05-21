@@ -1743,6 +1743,10 @@ Deno.serve(async (req) => {
     // Aggregated sources from the agentic loop (multiple searches/scrapes).
     let agenticUsed = false;
     let agenticNarration = "";
+    // Count of successful Linkup web searches performed for this request.
+    // Used to passthrough-bill the Linkup API cost to the user (it's not free).
+    // Standard depth pricing: $0.006 per search (see LINKUP_SEARCH_COST_USD).
+    let webSearchCount = 0;
     const agenticSources: WebSource[] = [];
     const agenticImages: WebImage[] = [];
     const agenticContextBlocks: string[] = [];
