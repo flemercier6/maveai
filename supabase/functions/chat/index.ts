@@ -961,14 +961,14 @@ async function* streamAgenticNarration(
       `Reasoning step type: "${kind}"\nStep intent: "${intent}"${obsBlock}\n\n` +
       `${reasoningGuide[kind] ?? `Reason through: ${intent}`}\n\n` +
       `Be SPECIFIC to the user's actual question. DO NOT say "I will now do X" — ACTUALLY DO the reasoning.`;
-    maxTokens = 300;
+    maxTokens = 500;
   } else if (args.phase === "intro") {
     sys =
       `You are an AI assistant THINKING OUT LOUD in front of the user, in the user's language. ` +
       `Write 1 to 2 SHORT sentences (max ~35 words total). First person, present tense, casual but precise. ` +
       `No headings, no markdown, no bullets. Match the user's language exactly.`;
     task = `The user asked a question that requires research. Write a short opener saying you'll start by ${describeStep(args.nextStep!)}.`;
-    maxTokens = 120;
+    maxTokens = 300;
   } else if (args.phase === "between") {
     sys =
       `You are an AI assistant THINKING OUT LOUD in front of the user, in the user's language. ` +
@@ -999,13 +999,13 @@ async function* streamAgenticNarration(
         ? `You have finished the research steps. Say in 1 sentence that you now have everything needed to write a thorough answer.`
         : `Briefly announce you're moving to the next step: ${args.nextStep ? describeStep(args.nextStep) : "the final answer"}.`;
     }
-    maxTokens = 180;
+    maxTokens = 350;
   } else {
     sys =
       `You are an AI assistant THINKING OUT LOUD in front of the user, in the user's language. ` +
       `Write 1 SHORT sentence. Match the user's language.`;
     task = `Wrap up: say you have gathered enough and are now writing the final answer.`;
-    maxTokens = 80;
+    maxTokens = 200;
   }
 
   const prompt = `User goal: ${args.goal || args.userText.slice(0, 120)}\nUser's original message (for language detection):\n"""${args.userText.slice(0, 400)}"""\n\nTask: ${task}`;
