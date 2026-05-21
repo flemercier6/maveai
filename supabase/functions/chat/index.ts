@@ -1841,11 +1841,18 @@ Deno.serve(async (req) => {
         },
       };
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${googleApiKey}`;
-      const r = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      let r: Response;
+      try {
+        r = await fetchWithTimeout(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }, 800);
+      } catch (e) {
+        // Timeout/network → safe default. Local fallbackGoogleIntent will still run upstream.
+        console.warn("google router classify timed out, falling back to none", e instanceof Error ? e.message : e);
+        return { action: "none" };
+      }
       const d = await r.json();
       if (!r.ok) {
         console.warn("google router classify failed", d);
