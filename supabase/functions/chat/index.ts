@@ -2090,11 +2090,7 @@ Deno.serve(async (req) => {
           // ---------- Google integration router ----------
           if (willGoogle) {
             try {
-              let decision = await classifyGoogleIntent(
-                googleApiKey,
-                lastUserText,
-                trimmedHistory.map((m) => ({ role: m.role, content: m.content ?? "" })),
-              );
+              let decision = await googleDecisionPromise;
               if (decision.action === "none") {
                 decision = fallbackGoogleIntent(lastUserText) ?? decision;
               }
