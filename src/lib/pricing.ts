@@ -74,6 +74,15 @@ export function billedCost(baseCostUsd: number, modelId: string): number {
   return baseCostUsd * billingMultiplier(modelId);
 }
 
+/**
+ * Fixed markup applied to Linkup web search passthrough cost.
+ * Matches the floor multiplier of the most expensive models (Opus / Sonnet / GPT-5.5),
+ * so web search is uniformly billed regardless of which model the user picked.
+ * Must stay in sync with WEB_SEARCH_MULTIPLIER in supabase/functions/chat/index.ts.
+ */
+export const WEB_SEARCH_MULTIPLIER = 1.5;
+
+
 // Conversion rate USD → EUR. Must stay in sync with
 // supabase/functions/billing-status & billing-charge.
 export const USD_TO_EUR = 0.92;
