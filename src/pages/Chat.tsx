@@ -64,7 +64,7 @@ export type MsgAttachmentPreview = { kind: "image" | "file"; name: string; dataU
 export type ThinkingStep = { index: number; text: string };
 export type AgentStep = {
   index: number;
-  kind: "search" | "scrape" | "analyze";
+  kind: "search" | "scrape" | "analyze" | "memory" | "gmail" | "calendar" | "drive" | "voyager" | "read_url";
   label: string;
   intent: string;
   status: ToolStatus;
@@ -72,11 +72,12 @@ export type AgentStep = {
   narration: string;
   narrationDone?: boolean;
 };
+export type ModelRef = { provider: Provider; model: string };
 import { GoogleActionCard, type GoogleAction } from "@/components/GoogleActionCard";
 import { GoogleServiceLogo, type GoogleService, GOOGLE_SERVICE_LABEL } from "@/components/GoogleServiceLogo";
 import { VoyagerLogo, VOYAGER_LABEL } from "@/components/VoyagerLogo";
 import { VoyagerActionCard, type VoyagerAction } from "@/components/VoyagerActionCard";
-type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean; agentSteps?: AgentStep[]; googleAction?: GoogleAction; googleService?: GoogleService; voyagerAction?: VoyagerAction; voyagerService?: boolean; hasNote?: boolean };
+type Msg = { id?: string; role: "user" | "assistant"; content: string; provider?: Provider; model?: string; memory?: { added: number; updated: number }; tool?: ToolUse; phase?: Phase; sources?: Source[]; meta?: RequestMeta; canvas?: string; canvasTitle?: string; canvasVersion?: number; attachments?: MsgAttachmentPreview[]; page?: PageSpec; thinking?: ThinkingStep[]; thinkingMs?: number; thinkingDone?: boolean; agentSteps?: AgentStep[]; googleAction?: GoogleAction; googleService?: GoogleService; voyagerAction?: VoyagerAction; voyagerService?: boolean; hasNote?: boolean; modelsUsed?: ModelRef[]; reflexion?: boolean };
 
 const FUNC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
@@ -183,6 +184,9 @@ export default function Chat() {
   const [pageRequested, setPageRequested] = useState(false);
   // User explicitly toggled Web search for the next message.
   const [webRequested, setWebRequested] = useState(false);
+  // Reflexion mode (multi-step ReAct loop). Effort controls max iterations.
+  const [reflexionRequested, setReflexionRequested] = useState(false);
+  const [reflexionEffort, setReflexionEffort] = useState<"low" | "medium" | "high">("medium");
   // User explicitly invoked /gmail, /calendar or /drive — next send is scoped to that Google service.
   const [googleService, setGoogleService] = useState<GoogleService | null>(null);
   // User explicitly invoked /voyager — next send is scoped to Voyager CRM.
@@ -1026,6 +1030,10 @@ export default function Chat() {
     const writingMode = !googleService && !voyagerService && (writeRequested || looksLikeWritingRequest(text) || noteContent !== "");
     const previousCanvas = noteContent || null;
     if (writeRequested) setWriteRequested(false);
+    // Snapshot reflexion settings for this turn, then reset for the next message.
+    const reflexionMode = reflexionRequested;
+    const reflexionEffortForTurn = reflexionEffort;
+    if (reflexionRequested) setReflexionRequested(false);
 
     // Resolve Auto → concrete provider/model for this turn (Auto preference is preserved)
     const userPickedAuto = model === AUTO_MODEL_ID;
@@ -1099,7 +1107,7 @@ export default function Chat() {
     const baseMsgs: Msg[] = [...messages, { id: `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
     const sentGoogleService = googleService;
     const sentVoyagerService = voyagerService;
-    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel, googleService: sentGoogleService ?? undefined, voyagerService: sentVoyagerService || undefined }]);
+    setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel, googleService: sentGoogleService ?? undefined, voyagerService: sentVoyagerService || undefined, reflexion: reflexionMode || undefined }]);
     setStreaming(true);
     if (writingMode) {
       setNoteOpen(true);
@@ -1132,6 +1140,8 @@ export default function Chat() {
           previousCanvas,
           googleService: sentGoogleService,
           voyagerService: sentVoyagerService,
+          reflexionMode,
+          reflexionEffort: reflexionEffortForTurn,
           aiPrefs: {
             disabledModes: aiPrefs.disabledModes,
             blacklistedModels: aiPrefs.blacklistedModels,
@@ -1482,6 +1492,18 @@ export default function Chat() {
                   const next = prev.slice();
                   const cur = next[next.length - 1];
                   next[next.length - 1] = { ...cur, thinkingMs: ms, thinkingDone: true };
+                  return next;
+                });
+              }
+            } else if (j.type === "models_used") {
+              const arr = Array.isArray(j.models) ? j.models : [];
+              const models: ModelRef[] = arr
+                .filter((x: any) => x && typeof x.model === "string" && typeof x.provider === "string")
+                .map((x: any) => ({ provider: x.provider as Provider, model: String(x.model) }));
+              if (models.length) {
+                setMessages((prev) => {
+                  const next = prev.slice();
+                  next[next.length - 1] = { ...next[next.length - 1], modelsUsed: models };
                   return next;
                 });
               }
@@ -2059,6 +2081,7 @@ export default function Chat() {
                   thinkingMs={m.thinkingMs}
                   thinkingDone={m.thinkingDone}
                   agentSteps={m.agentSteps}
+                  modelsUsed={m.modelsUsed}
                   attachments={m.attachments}
                   page={m.page}
                   onOpenPage={m.page ? () => { setActivePage(m.page!); setPageOpen(true); } : undefined}
@@ -2350,6 +2373,44 @@ export default function Chat() {
                       <TooltipContent side="top">Web search</TooltipContent>
                     </Tooltip>
                   )}
+                  {!aiPrefs.disabledModes.includes("reflexion") && !reflexionRequested && (
+                    <DropdownMenu>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Activate Reflexion"
+                              className="h-9 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
+                            >
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M8 2C5.79 2 4 3.79 4 6c0 1.27.59 2.4 1.5 3.13V11c0 .55.45 1 1 1h3c.55 0 1-.45 1-1V9.13C11.41 8.4 12 7.27 12 6c0-2.21-1.79-4-4-4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M6.5 13.5h3M7 14.5h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </Button>
+                          </DropdownMenuTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Reflexion</TooltipContent>
+                      </Tooltip>
+                      <DropdownMenuContent align="start" className="w-48">
+                        <div className="px-2 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">Reasoning effort</div>
+                        <DropdownMenuItem onClick={() => { setReflexionEffort("low"); setReflexionRequested(true); }}>
+                          <span className="flex-1">Low</span>
+                          <span className="text-xs text-muted-foreground">3 steps</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setReflexionEffort("medium"); setReflexionRequested(true); }}>
+                          <span className="flex-1">Medium</span>
+                          <span className="text-xs text-muted-foreground">5 steps</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setReflexionEffort("high"); setReflexionRequested(true); }}>
+                          <span className="flex-1">High</span>
+                          <span className="text-xs text-muted-foreground">8 steps</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                   </div>
                   {writeRequested && (
                     <button
@@ -2405,6 +2466,58 @@ export default function Chat() {
                       </span>
                       Page
                     </button>
+                  )}
+                  {reflexionRequested && (
+                    <DropdownMenu>
+                      <div
+                        className="group inline-flex items-center gap-2 rounded-full pl-3 pr-1 py-1 font-medium bg-[var(--blue-tag-bg)] transition-colors text-base"
+                        style={{ color: "var(--blue-tag-fg)" }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setReflexionRequested(false)}
+                          aria-label="Remove Reflexion"
+                          className="inline-flex items-center gap-2"
+                        >
+                          <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "var(--blue-tag-fg)" }}>
+                              <path d="M8 2C5.79 2 4 3.79 4 6c0 1.27.59 2.4 1.5 3.13V11c0 .55.45 1 1 1h3c.55 0 1-.45 1-1V9.13C11.41 8.4 12 7.27 12 6c0-2.21-1.79-4-4-4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M6.5 13.5h3M7 14.5h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--blue-tag-fg)" }} />
+                          </span>
+                          Reflexion
+                        </button>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label="Change effort"
+                            className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs hover:bg-[color:rgb(0_0_0/0.05)] dark:hover:bg-[color:rgb(255_255_255/0.08)]"
+                            style={{ color: "var(--blue-tag-fg)" }}
+                          >
+                            <span className="capitalize">{reflexionEffort}</span>
+                            <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                        </DropdownMenuTrigger>
+                      </div>
+                      <DropdownMenuContent align="start" className="w-48">
+                        <div className="px-2 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">Reasoning effort</div>
+                        <DropdownMenuItem onClick={() => setReflexionEffort("low")}>
+                          <span className="flex-1">Low</span>
+                          <span className="text-xs text-muted-foreground">3 steps</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setReflexionEffort("medium")}>
+                          <span className="flex-1">Medium</span>
+                          <span className="text-xs text-muted-foreground">5 steps</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setReflexionEffort("high")}>
+                          <span className="flex-1">High</span>
+                          <span className="text-xs text-muted-foreground">8 steps</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                   {webRequested && (
                     <button

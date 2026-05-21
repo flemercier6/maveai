@@ -668,7 +668,8 @@ async function linkupSearch(
 type AgenticStep =
   | { kind: "analyze"; intent: string }
   | { kind: "search"; query: string; intent: string }
-  | { kind: "scrape"; url: string; intent: string };
+  | { kind: "scrape"; url: string; intent: string }
+  | { kind: "memory"; query: string; intent: string };
 
 type AgenticPlan = {
   complex: boolean;
@@ -676,6 +677,101 @@ type AgenticPlan = {
   goal: string;
   steps: AgenticStep[];
 };
+
+// Reflexion plan: multi-step ReAct loop driven by user (not auto-detected).
+// Step count is bounded by the user-selected effort: low=3, medium=5, high=8.
+async function decideReflexionPlan(args: {
+  googleKey?: string;
+  userText: string;
+  hasWebSearch: boolean;
+  hasScrape: boolean;
+  hasMemory: boolean;
+  maxSteps: number;
+}): Promise<AgenticPlan> {
+  const empty: AgenticPlan = { complex: false, goal: "", steps: [] };
+  const { userText, googleKey, maxSteps } = args;
+  if (!googleKey || !userText.trim()) return empty;
+
+  const allowed = [
+    args.hasMemory ? `{"kind":"memory","query":"<short phrase to search the user's memory>","intent":"what we want to recall (≤10 words)"}` : null,
+    args.hasWebSearch ? `{"kind":"search","query":"<short web query>","intent":"what we want to learn (≤10 words)"}` : null,
+    args.hasScrape ? `{"kind":"scrape","url":"https://...","intent":"why we read this page (≤10 words)"}` : null,
+    `{"kind":"analyze","intent":"what we are reasoning about (≤10 words)"}`,
+  ].filter(Boolean).join("\n");
+
+  const prompt = `You are the planner of a multi-step ReAct reasoning loop (Reflexion mode).
+The user EXPLICITLY asked for a multi-step reasoning process. Always return at least 2 steps.
+
+Available step kinds:
+${allowed}
+
+Constraints:
+- Total steps: between 2 and ${maxSteps}.
+- "analyze" steps are pure reasoning (no tool). Use them to break a problem down or consolidate findings.
+- "memory" steps query the user's personal memory store (facts, preferences, past projects). Use one when the answer depends on user-specific context.
+- "search" steps perform a web search. Keep queries short (≤12 words), in the user's language.
+- "scrape" steps fetch the content of a specific URL. Only use if the user mentioned a URL.
+- Order matters: start by gathering context (memory/search), then analyze/synthesize.
+- Each "intent" must be CONCRETE and tied to the user's actual question.
+
+Reply ONLY with strict JSON:
+{"goal":"<one short sentence in the user's language>","steps":[...]}
+
+User message:
+"""${userText.slice(0, 2000)}"""`;
+
+  try {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${googleKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.3 },
+        }),
+      },
+    );
+    const j = await r.json();
+    const raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    const rawSteps: any[] = Array.isArray(parsed.steps) ? parsed.steps : [];
+    const steps: AgenticStep[] = [];
+    for (const s of rawSteps) {
+      if (steps.length >= maxSteps) break;
+      const intent = (s?.intent ?? "").toString().slice(0, 120).trim();
+      if (s?.kind === "analyze" && intent) {
+        steps.push({ kind: "analyze", intent });
+      } else if (s?.kind === "search" && args.hasWebSearch && typeof s.query === "string" && s.query.trim()) {
+        steps.push({ kind: "search", query: s.query.trim().slice(0, 120), intent });
+      } else if (s?.kind === "scrape" && args.hasScrape && typeof s.url === "string" && /^https?:\/\//.test(s.url)) {
+        steps.push({ kind: "scrape", url: s.url, intent });
+      } else if (s?.kind === "memory" && args.hasMemory && typeof s.query === "string" && s.query.trim()) {
+        steps.push({ kind: "memory", query: s.query.trim().slice(0, 120), intent });
+      }
+    }
+    if (steps.length < 2) {
+      // Force a minimal plan: one analyze step + one final analyze.
+      return {
+        complex: true,
+        goal: (parsed.goal ?? userText.slice(0, 100)).toString().slice(0, 200),
+        steps: [
+          { kind: "analyze", intent: "break down the user's question" },
+          { kind: "analyze", intent: "synthesize a complete answer" },
+        ],
+      };
+    }
+    return {
+      complex: true,
+      goal: (parsed.goal ?? "").toString().slice(0, 200),
+      steps,
+    };
+  } catch (e) {
+    console.error("decideReflexionPlan failed", e);
+    return empty;
+  }
+}
 
 async function decideAgenticPlan(args: {
   googleKey?: string;
@@ -784,7 +880,7 @@ async function* streamAgenticNarration(
     userText: string;
     goal: string;
     phase: "intro" | "between" | "outro";
-    justDid?: { kind: "search" | "scrape"; label: string; foundCount: number; intent: string };
+    justDid?: { kind: "search" | "scrape" | "memory"; label: string; foundCount: number; intent: string };
     nextStep?: AgenticStep;
     isFinal?: boolean;
   },
@@ -800,8 +896,16 @@ async function* streamAgenticNarration(
     task = `The user just asked something that requires research. Write a short opener acknowledging the goal and saying you'll start by ${describeStep(args.nextStep!)}.`;
   } else if (args.phase === "between") {
     const did = args.justDid!;
-    const verb = did.kind === "search" ? `searched the web for "${did.label}"` : `read the page ${did.label}`;
-    const found = did.foundCount > 0 ? `found ${did.foundCount} relevant source${did.foundCount > 1 ? "s" : ""}` : `didn't find much useful`;
+    const verb = did.kind === "search"
+      ? `searched the web for "${did.label}"`
+      : did.kind === "scrape"
+        ? `read the page ${did.label}`
+        : `looked through your memory for "${did.label}"`;
+    const found = did.foundCount > 0
+      ? (did.kind === "memory"
+          ? `found ${did.foundCount} relevant ${did.foundCount > 1 ? "memories" : "memory"}`
+          : `found ${did.foundCount} relevant source${did.foundCount > 1 ? "s" : ""}`)
+      : `didn't find much useful`;
     if (args.isFinal) {
       task = `You just ${verb} (${found}, intent was: ${did.intent}). Now wrap up the research phase: say in 1 sentence what you understood from this last step, and that you now have enough to answer.`;
     } else {
@@ -840,6 +944,7 @@ async function* streamAgenticNarration(
 function describeStep(s: AgenticStep): string {
   if (s.kind === "search") return `searching the web for "${s.query}" (${s.intent})`;
   if (s.kind === "scrape") return `reading the page ${s.url} (${s.intent})`;
+  if (s.kind === "memory") return `looking through your memory for "${s.query}" (${s.intent})`;
   return `analyzing: ${s.intent}`;
 }
 
@@ -1307,6 +1412,8 @@ Deno.serve(async (req) => {
         };
         googleService?: "gmail" | "calendar" | "drive" | null;
         voyagerService?: boolean;
+        reflexionMode?: boolean;
+        reflexionEffort?: "low" | "medium" | "high";
       }>,
     ]);
     const { data: userData, error: userErr } = authPromise;
@@ -1318,7 +1425,7 @@ Deno.serve(async (req) => {
     }
     const user = { id: userData.user.id };
 
-    const { conversationId, provider, model: requestedModel, messages, skipClarify, writingMode, previousCanvas, forceCanvas, aiPrefs, googleService, voyagerService } = payload;
+    const { conversationId, provider, model: requestedModel, messages, skipClarify, writingMode, previousCanvas, forceCanvas, aiPrefs, googleService, voyagerService, reflexionMode, reflexionEffort } = payload;
 
     // ---- Apply user AI preferences: blacklist fallback ----
     const blacklisted = new Set(aiPrefs?.blacklistedModels ?? []);
@@ -2449,29 +2556,46 @@ Deno.serve(async (req) => {
 
           // Run web tool detection + fetch (notify client of progress)
           const googleKeyForAgent = Deno.env.get("GOOGLE_API_KEY");
-          if (!webDisabled && !googleService && !voyagerService && (firecrawlKey || linkupKey) && lastUserText) {
+          // Reflexion mode forces the multi-step loop even when no web key is
+          // present — it can still query memory + analyze. It also bypasses the
+          // "simple query" pre-filter since the user EXPLICITLY asked for it.
+          const reflexionEnabled = reflexionMode === true && !!googleKeyForAgent;
+          const reflexionMaxSteps = reflexionEffort === "low" ? 3 : reflexionEffort === "high" ? 8 : 5;
+          if (reflexionEnabled || (!webDisabled && !googleService && !voyagerService && (firecrawlKey || linkupKey) && lastUserText)) {
             // Fast local pre-filter: skip the agentic plan API call for obviously
             // simple queries. The call costs ~300-600 ms; most short or conversational
             // messages will never trigger a multi-step plan anyway.
-            const fastNoAgentic =
+            // Reflexion mode disables this short-circuit — user requested it explicitly.
+            const fastNoAgentic = reflexionEnabled ? false : (
               writingMode ||
               lastUserText.length < 80 ||
               /^(write|create|make|build|code|fix|debug|translate|convert|summarize|rewrite|check|review|format|correct|improve)/i.test(lastUserText.trim()) ||
-              lastUserText.trim().endsWith("?");
+              lastUserText.trim().endsWith("?")
+            );
 
             if (!fastNoAgentic) {
               controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
             }
 
-            // First, try the agentic multi-step plan for COMPLEX queries.
-            const plan = !fastNoAgentic
-              ? await decideAgenticPlan({
+            // Reflexion mode → richer plan (memory + search + scrape + analyze,
+            // up to N steps based on effort). Otherwise → auto-detected agentic.
+            const plan = reflexionEnabled
+              ? await decideReflexionPlan({
                 googleKey: googleKeyForAgent,
                 userText: lastUserText,
                 hasWebSearch: !!linkupKey,
                 hasScrape: !!firecrawlKey,
+                hasMemory: allFetchedMemRows.length > 0,
+                maxSteps: reflexionMaxSteps,
               })
-              : { complex: false, goal: "", steps: [] as AgenticStep[] };
+              : !fastNoAgentic
+                ? await decideAgenticPlan({
+                  googleKey: googleKeyForAgent,
+                  userText: lastUserText,
+                  hasWebSearch: !!linkupKey,
+                  hasScrape: !!firecrawlKey,
+                })
+                : { complex: false, goal: "", steps: [] as AgenticStep[] };
 
             if (plan.complex && plan.steps.length >= 2 && googleKeyForAgent) {
               // ---------- AGENTIC LOOP ----------
@@ -2492,7 +2616,7 @@ Deno.serve(async (req) => {
                 stepIdx: number,
                 phase: "intro" | "between",
                 opts: {
-                  justDid?: { kind: "search" | "scrape"; label: string; foundCount: number; intent: string };
+                  justDid?: { kind: "search" | "scrape" | "memory"; label: string; foundCount: number; intent: string };
                   nextStep?: AgenticStep;
                   isFinal?: boolean;
                 },
@@ -2539,6 +2663,7 @@ Deno.serve(async (req) => {
                 const stepLabel =
                   step.kind === "search" ? step.query :
                   step.kind === "scrape" ? step.url :
+                  step.kind === "memory" ? step.query :
                   step.intent;
                 controller.enqueue(enc({
                   type: "agent_step",
@@ -2615,6 +2740,34 @@ Deno.serve(async (req) => {
                       status: "failed",
                     }));
                   }
+                } else if (step.kind === "memory") {
+                  // Memory step: keyword-match against pre-fetched user memories.
+                  const qKw = new Set(extractKeywords(step.query, 12));
+                  type Scored = { content: string; kind: string; score: number };
+                  const matches: Scored[] = [];
+                  for (const m of allFetchedMemRows) {
+                    const kws = (m.keywords && m.keywords.length) ? m.keywords : extractKeywords(m.content, 12);
+                    const score = memoryRelevance(kws, qKw);
+                    if (score > 0) matches.push({ content: m.content, kind: m.kind, score });
+                  }
+                  matches.sort((a, b) => b.score - a.score);
+                  const top = matches.slice(0, 8);
+                  foundCount = top.length;
+                  if (top.length) {
+                    agenticContextBlocks.push(
+                      `## Step ${i + 1} — Memory recall: "${step.query}"\nIntent: ${step.intent}\n\n` +
+                      top.map((m) => `- (${m.kind}) ${m.content}`).join("\n"),
+                    );
+                  }
+                  controller.enqueue(enc({
+                    type: "agent_step",
+                    index: i,
+                    kind: "memory",
+                    label: step.query,
+                    intent: step.intent,
+                    status: "done",
+                    foundCount,
+                  }));
                 } else {
                   // analyze step: no tool, mark done immediately.
                   controller.enqueue(enc({
@@ -2644,7 +2797,11 @@ Deno.serve(async (req) => {
               // Collect finalized agent steps for persistence.
               for (let i = 0; i < actionableSteps.length; i++) {
                 const s = actionableSteps[i];
-                const label = s.kind === "search" ? s.query : s.kind === "scrape" ? s.url : s.intent;
+                const label =
+                  s.kind === "search" ? s.query :
+                  s.kind === "scrape" ? s.url :
+                  s.kind === "memory" ? s.query :
+                  s.intent;
                 collectedAgentSteps.push({
                   index: i,
                   kind: s.kind,
@@ -2653,6 +2810,22 @@ Deno.serve(async (req) => {
                   status: "done",
                   narration: perStepNarration.get(i),
                 });
+              }
+
+              // Reflexion: emit the full list of models used (orchestrator + main model)
+              // so the UI badge can show "Claude +1" with a dropdown listing both.
+              if (reflexionEnabled) {
+                const orchestratorModel = { provider: "google", model: "gemini-3.5-flash" };
+                const answerModel = { provider, model };
+                const seen = new Set<string>();
+                const uniq: Array<{ provider: string; model: string }> = [];
+                for (const m of [orchestratorModel, answerModel]) {
+                  if (!seen.has(m.model)) {
+                    seen.add(m.model);
+                    uniq.push(m);
+                  }
+                }
+                controller.enqueue(enc({ type: "models_used", models: uniq }));
               }
 
               // Synthesize all collected web context into a single system message

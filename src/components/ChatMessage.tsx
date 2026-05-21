@@ -66,6 +66,7 @@ type Props = {
   thinkingMs?: number;
   thinkingDone?: boolean;
   agentSteps?: AgentStep[];
+  modelsUsed?: { provider: Provider; model: string }[];
   onRetry?: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
@@ -561,11 +562,37 @@ function WebSearchIcon({ className }: { className?: string }) {
   );
 }
 
+function ReflexionStepIcon({ kind, running }: { kind: AgentStep["kind"]; running: boolean }) {
+  const cls = `w-3.5 h-3.5 shrink-0 ${running ? "animate-pulse" : ""}`;
+  if (kind === "search") return <WebSearchIcon className={running ? "animate-pulse shrink-0" : "shrink-0"} />;
+  if (kind === "scrape" || kind === "read_url") return <Globe className={cls} />;
+  if (kind === "memory") return <Brain className={cls} />;
+  if (kind === "gmail") return <GoogleServiceLogo service="gmail" className={cls} />;
+  if (kind === "calendar") return <GoogleServiceLogo service="calendar" className={cls} />;
+  if (kind === "drive") return <GoogleServiceLogo service="drive" className={cls} />;
+  if (kind === "voyager") return <VoyagerLogo className={cls} />;
+  return <Sparkles className={cls} />;
+}
+
+function reflexionStepTag(kind: AgentStep["kind"]): string {
+  switch (kind) {
+    case "search": return "Web Search";
+    case "scrape":
+    case "read_url": return "Read";
+    case "memory": return "Remind";
+    case "gmail": return "Gmail";
+    case "calendar": return "Calendar";
+    case "drive": return "Drive";
+    case "voyager": return "Voyager";
+    case "analyze":
+    default: return "Analyze";
+  }
+}
+
 function AgentStepCard({ step }: { step: AgentStep }) {
-  const Icon = step.kind === "scrape" ? Globe : Sparkles;
-  const tag = step.kind === "search" ? "Web search" : step.kind === "scrape" ? "Read page" : "Analyze";
   const isRunning = step.status === "running";
   const isFailed = step.status === "failed";
+  const tag = reflexionStepTag(step.kind);
   // Tag = subject of the step (search query, URL, or analyze intent)
   const subject = step.label || step.intent;
   const shortSubject = subject.length > 80 ? subject.slice(0, 77) + "…" : subject;
@@ -573,10 +600,7 @@ function AgentStepCard({ step }: { step: AgentStep }) {
     <div className="mb-4">
       {/* Tag aligned left: icon + type + subject inline */}
       <div className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-foreground max-w-full">
-        {step.kind === "search"
-          ? <WebSearchIcon className={isRunning ? "animate-pulse shrink-0" : "shrink-0"} />
-          : <Icon className={`w-3.5 h-3.5 shrink-0 ${isRunning ? "animate-pulse" : ""}`} />
-        }
+        <ReflexionStepIcon kind={step.kind} running={isRunning} />
         <span className="text-muted-foreground shrink-0">{tag}</span>
         {subject && (
           <>
@@ -635,6 +659,7 @@ function ChatMessageImpl({
   thinkingMs,
   thinkingDone,
   agentSteps,
+  modelsUsed,
   onRetry,
   onDelete,
   onEdit,
@@ -765,7 +790,7 @@ function ChatMessageImpl({
       <div className="max-w-3xl mx-auto px-6 md:px-4">
         {(provider || googleService || voyagerService || (tool && tool.status !== "failed")) && (
           <div className="mb-1.5 flex items-center flex-wrap" style={{ gap: "10px" }}>
-            {provider && <ProviderBadge provider={provider} model={model} />}
+            {provider && <ProviderBadge provider={provider} model={model} modelsUsed={modelsUsed} />}
             {googleService && (
               <div
                 className="inline-flex items-center h-6 gap-1.5 rounded-full bg-[var(--blue-tag-bg)] px-2.5 text-[11px] font-medium max-w-full"
