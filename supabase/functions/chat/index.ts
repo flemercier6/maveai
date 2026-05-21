@@ -71,6 +71,12 @@ const MODEL_PRICES: Record<string, Price> = {
   "mistral-large-latest": { input: 2, output: 6 },
   "mistral-small-latest": { input: 0.2, output: 0.6 },
 };
+
+// ---------- Linkup web search pricing ----------
+// Linkup standard depth: $0.006 per search request. Billed as passthrough on
+// top of model token cost so the user pays for the web tool when it's used.
+// (Deep depth would be $0.05/search — we only use standard, see linkupSearch.)
+const LINKUP_SEARCH_COST_USD = 0.006;
 function priceFor(model: string): Price {
   if (MODEL_PRICES[model]) return MODEL_PRICES[model];
   // Fuzzy fallbacks for variants/aliases
@@ -1743,6 +1749,10 @@ Deno.serve(async (req) => {
     // Aggregated sources from the agentic loop (multiple searches/scrapes).
     let agenticUsed = false;
     let agenticNarration = "";
+    // Count of successful Linkup web searches performed for this request.
+    // Used to passthrough-bill the Linkup API cost to the user (it's not free).
+    // Standard depth pricing: $0.006 per search (see LINKUP_SEARCH_COST_USD).
+    let webSearchCount = 0;
     const agenticSources: WebSource[] = [];
     const agenticImages: WebImage[] = [];
     const agenticContextBlocks: string[] = [];
@@ -2527,6 +2537,7 @@ Deno.serve(async (req) => {
                 if (step.kind === "search") {
                   const res = await linkupSearch(linkupKey!, step.query);
                   if (res) {
+                    webSearchCount += 1;
                     foundCount = res.sources.length;
                     for (const s of res.sources) {
                       if (!agenticSources.find((x) => x.url === s.url)) agenticSources.push(s);
@@ -2671,6 +2682,7 @@ Deno.serve(async (req) => {
                 controller.enqueue(enc({ type: "tool", tool: "search", label: decision.query, status: "running" }));
                 const res = await linkupSearch(linkupKey, decision.query);
                 if (res) {
+                  webSearchCount += 1;
                   webContext = {
                     kind: "search",
                     label: decision.query,
@@ -2961,6 +2973,10 @@ Deno.serve(async (req) => {
           // ---------- Compute cost up-front so it can be included in the insert ----------
           let inputCost = 0;
           let outputCost = 0;
+          // Passthrough Linkup cost: $0.006 × successful searches (standard depth).
+          // Bundled into total_cost_usd so the billing pipeline (markup × FX) applies
+          // uniformly. Tracked separately for analytics via webSearchCount.
+          const webSearchCost = webSearchCount * LINKUP_SEARCH_COST_USD;
           if (usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) {
             const price = priceFor(model);
             inputCost = (usage.input_tokens / 1_000_000) * price.input;
@@ -2971,17 +2987,22 @@ Deno.serve(async (req) => {
               output_tokens: usage.output_tokens,
               input_cost_usd: inputCost,
               output_cost_usd: outputCost,
-              cost_usd: inputCost + outputCost,
+              web_search_count: webSearchCount,
+              web_search_cost_usd: webSearchCost,
+              cost_usd: inputCost + outputCost + webSearchCost,
             }));
             (metaPayload as any).cost = {
               inputTokens: usage.input_tokens,
               outputTokens: usage.output_tokens,
               inputCostUsd: inputCost,
               outputCostUsd: outputCost,
+              webSearchCount,
+              webSearchCostUsd: webSearchCost,
             };
           } else if (!ephemeral) {
             console.warn("[usage] skipped — no usage data returned by provider");
           }
+
 
           // ---------- Emit `done` IMMEDIATELY ----------
           // Everything below (DB writes + memory extraction) runs AFTER the
@@ -3021,18 +3042,20 @@ Deno.serve(async (req) => {
                   .update({ updated_at: new Date().toISOString() })
                   .eq("id", conversationId)
                   .then(({ error }) => { if (error) console.error("conv update failed", error); }),
-                usage && (usage.input_tokens > 0 || usage.output_tokens > 0)
+                (usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) || webSearchCount > 0
                   ? supabase.from("usage_events").insert({
                       user_id: user.id,
                       conversation_id: conversationId,
                       message_id: insertedMsgId,
                       provider,
                       model,
-                      input_tokens: usage.input_tokens,
-                      output_tokens: usage.output_tokens,
+                      input_tokens: usage?.input_tokens ?? 0,
+                      output_tokens: usage?.output_tokens ?? 0,
                       input_cost_usd: inputCost,
                       output_cost_usd: outputCost,
-                      total_cost_usd: inputCost + outputCost,
+                      // total_cost_usd includes Linkup passthrough so the billing
+                      // pipeline (markup × FX) bills the web search to the user.
+                      total_cost_usd: inputCost + outputCost + webSearchCost,
                     }).then(({ error }) => { if (error) console.error("[usage] insert error:", error); })
                   : Promise.resolve(),
               ]);
