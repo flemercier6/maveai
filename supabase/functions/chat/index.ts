@@ -1296,13 +1296,49 @@ Deno.serve(async (req) => {
     }
 
     // ---------- Free-tier enforcement ----------
-    // Free users: 5 requests/day, no premium models, no memory injection.
     const FREE_DAILY_LIMIT = 5;
     const PREMIUM_MODELS = new Set([
       "gpt-5.5", "claude-opus-4-7", "gemini-2.5-pro", "mistral-large-latest",
     ]);
-    const { data: planData } = await supabase.rpc("get_user_plan", { _user_id: user.id });
-    const userPlan = typeof planData === "string" ? planData : "free";
+
+    // Pure message computations (no DB) — done before any await.
+    const lastUserMsg = [...(messages as Msg[])].reverse().find((m) => m.role === "user");
+    const lastUserText = lastUserMsg?.content ?? "";
+    const queryKeywords = new Set(extractKeywords(lastUserText, 20));
+    const isFirstTurn = (messages as Msg[]).filter((m) => m.role === "assistant").length === 0;
+
+    // Fire all DB queries in parallel instead of sequentially (~400–600 ms saved).
+    // user_integrations fetches both google & voyager in one round-trip.
+    // user_memories is pre-fetched with confidence-ordered fields for both modes;
+    // we post-filter to the appropriate subset after the batch resolves.
+    const [
+      planResult,
+      convResult,
+      memPrefResult,
+      integrationsResult,
+      memResult,
+      countResult,
+    ] = await Promise.all([
+      supabase.rpc("get_user_plan", { _user_id: user.id }),
+      conversationId
+        ? supabase.from("conversations").select("folder_id").eq("id", conversationId).maybeSingle()
+        : Promise.resolve({ data: null as null, error: null }),
+      supabase.from("ai_preferences").select("memory_mode").eq("user_id", user.id).maybeSingle(),
+      supabase.from("user_integrations")
+        .select("provider,account_email")
+        .eq("user_id", user.id)
+        .in("provider", ["google", "voyager"]),
+      supabase.from("user_memories")
+        .select("id,content,kind,keywords,folder_id,confidence,last_seen_at")
+        .eq("user_id", user.id)
+        .order("confidence", { ascending: false })
+        .order("last_seen_at", { ascending: false })
+        .limit(50),
+      supabase.rpc("count_today_requests", { _user_id: user.id }),
+    ]);
+
+    // Process plan & enforce free-tier limits.
+    const userPlan = typeof planResult.data === "string" ? planResult.data : "free";
     const isFreeUser = userPlan === "free";
 
     if (isFreeUser) {
@@ -1312,8 +1348,7 @@ Deno.serve(async (req) => {
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      const { data: countData } = await supabase.rpc("count_today_requests", { _user_id: user.id });
-      const todayCount = typeof countData === "number" ? countData : 0;
+      const todayCount = typeof countResult.data === "number" ? countResult.data : 0;
       if (todayCount >= FREE_DAILY_LIMIT) {
         return new Response(
           JSON.stringify({ error: "daily_limit", message: "Daily free limit reached (5 messages)." }),
@@ -1321,67 +1356,40 @@ Deno.serve(async (req) => {
         );
       }
     }
-    //  1) PROFILE (identity + preference): ALWAYS injected. These are core facts
-    //     about the user (name, job, response preferences, etc.) that must
-    //     influence every reply — e.g. signing an email with the real name
-    //     instead of "[Your name]".
-    //  2) CONTEXTUAL (project/context/fact): injected ONLY when keyword-relevant
-    //     to the current user message — saves tokens.
-    const lastUserMsg = [...(messages as Msg[])].reverse().find((m) => m.role === "user");
-    const queryKeywords = new Set(extractKeywords(lastUserMsg?.content ?? "", 20));
 
-    // If this conversation belongs to a folder, fetch the folder so we can
-    // (1) inject its instructions as priority context and
-    // (2) boost memories scoped to that folder over global ones.
+    // Process integrations — google & voyager from the same pre-fetched row set.
+    const integrationRows = (integrationsResult.data ?? []) as Array<{ provider: string; account_email: string | null }>;
+    const googleIntegration = integrationRows.find((r) => r.provider === "google") ?? null;
+    const voyagerIntegration = integrationRows.find((r) => r.provider === "voyager") ?? null;
+    let googleConnected = !!googleIntegration;
+    let googleAccountEmail: string | null = googleIntegration?.account_email ?? null;
+    let voyagerConnected = !!voyagerIntegration;
+
+    // Folder lookup: only needed when the conversation belongs to a folder (uncommon).
     let folderRow: { id: string; name: string; instructions: string | null } | null = null;
-    if (conversationId) {
-      const { data: convRow } = await supabase
-        .from("conversations")
-        .select("folder_id")
-        .eq("id", conversationId)
+    const folderId = (convResult.data as { folder_id?: string | null } | null)?.folder_id;
+    if (folderId) {
+      const { data: f } = await supabase
+        .from("folders")
+        .select("id,name,instructions")
+        .eq("id", folderId)
         .maybeSingle();
-      const folderId = (convRow as { folder_id?: string | null } | null)?.folder_id;
-      if (folderId) {
-        const { data: f } = await supabase
-          .from("folders")
-          .select("id,name,instructions")
-          .eq("id", folderId)
-          .maybeSingle();
-        if (f) folderRow = f as typeof folderRow;
-      }
+      if (f) folderRow = f as typeof folderRow;
     }
 
-    // Read memory_mode from DB (server-side, not client-trusted).
-    const { data: memPrefRow } = await supabase
-      .from("ai_preferences")
-      .select("memory_mode")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // Process memory mode (server-side, not client-trusted).
     const memoryMode: "classic" | "smart" =
-      (memPrefRow as { memory_mode?: string } | null)?.memory_mode === "smart" ? "smart" : "classic";
-
-    // Smart mode injects top facts only at the START of a new conversation
-    // (= no prior assistant turns). Subsequent turns rely on conversation history.
-    const isFirstTurn = (messages as Msg[]).filter((m) => m.role === "assistant").length === 0;
+      (memPrefResult.data as { memory_mode?: string } | null)?.memory_mode === "smart" ? "smart" : "classic";
     const skipMemoryInjection = memoryMode === "smart" && !isFirstTurn;
 
-    // Free-tier: no memory injection at all.
-    const { data: memRows } = isFreeUser || skipMemoryInjection
-      ? { data: [] as Array<{ id: string; content: string; kind: string; keywords: string[] | null; folder_id: string | null; confidence?: number; last_seen_at?: string }> }
-      : memoryMode === "smart"
-        ? await supabase
-            .from("user_memories")
-            .select("id,content,kind,keywords,folder_id,confidence,last_seen_at")
-            .eq("user_id", user.id)
-            .order("confidence", { ascending: false })
-            .order("last_seen_at", { ascending: false })
-            .limit(15)
-        : await supabase
-            .from("user_memories")
-            .select("id,content,kind,keywords,folder_id")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(100);
+    // Post-filter pre-fetched memory rows to the mode-appropriate subset.
+    const allFetchedMemRows = (memResult.data ?? []) as Array<{
+      id: string; content: string; kind: string; keywords: string[] | null;
+      folder_id: string | null; confidence?: number; last_seen_at?: string;
+    }>;
+    const memRows = (isFreeUser || skipMemoryInjection)
+      ? []
+      : (memoryMode === "smart" ? allFetchedMemRows.slice(0, 15) : allFetchedMemRows);
 
 
     const PROFILE_KINDS = new Set(["identity", "preference"]);
@@ -1501,19 +1509,6 @@ Deno.serve(async (req) => {
       }
       : null;
 
-    // Detect Voyager CRM connection early so we can auto-route CRM intents without /voyager.
-    let voyagerConnected = false;
-    try {
-      const { data: vi } = await supabase
-        .from("user_integrations")
-        .select("user_id")
-        .eq("user_id", user.id)
-        .eq("provider", "voyager")
-        .maybeSingle();
-      if (vi) voyagerConnected = true;
-    } catch (e) {
-      console.warn("voyager integration lookup failed", e);
-    }
     const voyagerEnabled = voyagerService || voyagerConnected;
 
     // Hard guardrail: the model never executes CRM ops itself.
@@ -1582,26 +1577,7 @@ Deno.serve(async (req) => {
     const enc = sseEncoder();
     let assistantText = "";
 
-    // ---------- Google integration: detect connection ----------
-    let googleConnected = false;
-    let googleAccountEmail: string | null = null;
-    try {
-      const { data: gi } = await supabase
-        .from("user_integrations")
-        .select("account_email")
-        .eq("user_id", user.id)
-        .eq("provider", "google")
-        .maybeSingle();
-      if (gi) {
-        googleConnected = true;
-        googleAccountEmail = (gi as { account_email: string | null }).account_email;
-      }
-    } catch (e) {
-      console.warn("google integration lookup failed", e);
-    }
-
     // ---------- Web tools: detect & fetch BEFORE streaming ----------
-    const lastUserText = lastUserMsg?.content ?? "";
     type VoyagerRouterDecision = {
       resource: string;
       method?: string;
@@ -2001,8 +1977,15 @@ Deno.serve(async (req) => {
 
           // ---------- Google integration router ----------
           // Run AFTER clarify, BEFORE web tools.
+          // Fast local pre-filter: the AI gateway call costs ~200-500ms — only
+          // pay for it when the message plausibly mentions a Google service.
           const googleApiKey = Deno.env.get("GOOGLE_API_KEY");
-          if (googleConnected && googleApiKey && !writingMode && lastUserText) {
+          const fastNoGoogle = (() => {
+            if (googleService) return false; // explicit /gmail or /calendar invocation: always classify
+            const t = lastUserText.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+            return !/\b(gmail|e-?mail|mail|courriel|inbox|brouillon|draft|envoie|envoyer|send|reponds|reply|write to|ecris a|redige|compose|prepare|calendar|calendrier|agenda|meeting|reunion|rendez-?vous|rdv|event|evenement|slot|creneau|drive|document|doc|sheet|spreadsheet|tableur|google )\b/.test(t);
+          })();
+          if (googleConnected && googleApiKey && !writingMode && lastUserText && !fastNoGoogle) {
             try {
               let decision = await classifyGoogleIntent(
                 googleApiKey,
@@ -2171,8 +2154,15 @@ Deno.serve(async (req) => {
 
           // ---------- Voyager CRM router ----------
           // Runs for explicit /voyager requests and for CRM intents when Voyager is connected.
+          // Local pre-filter avoids the ~200-500 ms classifier call when the user
+          // is clearly not asking about CRM data.
           const forcedVoyagerDecision = pendingVoyagerWriteFromHistory();
-          if (voyagerEnabled && lastUserText && (!writingMode || forcedVoyagerDecision)) {
+          const fastNoVoyager = (() => {
+            if (voyagerService || forcedVoyagerDecision) return false; // explicit invocation
+            const t = lastUserText.toLowerCase();
+            return !/\b(crm|voyager|contact|contacts|company|companies|deal|deals|client|prospect|lead|opportunit|entreprise|societe|pipeline|account|customer|fiche|interlocuteur)\b/.test(t);
+          })();
+          if (voyagerEnabled && lastUserText && !fastNoVoyager && (!writingMode || forcedVoyagerDecision)) {
             try {
               const googleKeyForVoyager = Deno.env.get("GOOGLE_API_KEY");
               const sys =
