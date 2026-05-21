@@ -760,11 +760,15 @@ export default function Chat() {
     }).select().single();
     if (error || !data) { toast.error(error?.message ?? "Error"); return null; }
     setConversations((prev) => [data as Conversation, ...prev]);
+    // Mark BEFORE setActiveId so the load-messages effect sees the flag synchronously
+    // and skips the empty DB fetch that would otherwise wipe the optimistic UI.
+    freshConvIdsRef.current.add(data.id);
     setActiveId(data.id);
     // Mark this conversation as awaiting an AI-generated title (sidebar will show a shimmer).
     setTitleAnim((prev) => ({ ...prev, [data.id]: { target: null, shown: "" } }));
     return data.id;
   };
+
 
   // Animate the AI-generated title character-by-character into the sidebar.
   const startTitleAnimation = (convId: string, target: string) => {
