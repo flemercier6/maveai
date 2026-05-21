@@ -2040,15 +2040,12 @@ Deno.serve(async (req) => {
           const willGoogle = googleConnected && !!googleApiKey && !writingMode && !!lastUserText && !fastNoGoogle;
           const willVoyager = voyagerEnabled && !!lastUserText && !fastNoVoyager && (!writingMode || !!forcedVoyagerDecision);
 
+          // Clarify was pre-launched BEFORE DB reads (see earlyClarifyPromise above) so its
+          // network latency overlaps with the DB batch. Reuse the in-flight promise here.
           const clarifyPromise: Promise<ClarifyQuestion[] | null> = willClarify
-            ? decideClarify({
-                googleKey: googleApiKey,
-                openaiKey: Deno.env.get("OPENAI_API_KEY"),
-                anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
-                userText: lastUserText,
-                hasHistory: userTurns > 1,
-              }).catch((e) => { console.warn("clarify promise failed", e); return null; })
+            ? earlyClarifyPromise
             : Promise.resolve(null);
+
 
           const googleDecisionPromise: Promise<GoogleRouterDecision> = willGoogle
             ? classifyGoogleIntent(
