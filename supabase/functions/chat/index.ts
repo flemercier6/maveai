@@ -2895,47 +2895,14 @@ Deno.serve(async (req) => {
           if (collectedThinkingSteps.length) {
             (metaPayload as any).thinking_steps = collectedThinkingSteps;
           }
-          let insertedMsg: { id: string } | null = null;
-          if (!ephemeral) {
-            const { data } = await supabase
-              .from("messages")
-              .insert({
-                conversation_id: conversationId,
-                user_id: user.id,
-                role: "assistant",
-                content: assistantText,
-                model,
-                meta: metaPayload,
-              })
-              .select("id")
-              .single();
-            insertedMsg = data;
-            await supabase
-              .from("conversations")
-              .update({ updated_at: new Date().toISOString() })
-              .eq("id", conversationId);
-          }
 
-          // ---------- Persist usage event with computed cost ----------
-          console.log("[usage] provider=", provider, "model=", model, "usage=", JSON.stringify(usage));
+          // ---------- Compute cost up-front so it can be included in the insert ----------
+          let inputCost = 0;
+          let outputCost = 0;
           if (usage && (usage.input_tokens > 0 || usage.output_tokens > 0)) {
             const price = priceFor(model);
-            const inputCost = (usage.input_tokens / 1_000_000) * price.input;
-            const outputCost = (usage.output_tokens / 1_000_000) * price.output;
-            const { error: usageErr } = await supabase.from("usage_events").insert({
-              user_id: user.id,
-              conversation_id: conversationId,
-              message_id: insertedMsg?.id ?? null,
-              provider,
-              model,
-              input_tokens: usage.input_tokens,
-              output_tokens: usage.output_tokens,
-              input_cost_usd: inputCost,
-              output_cost_usd: outputCost,
-              total_cost_usd: inputCost + outputCost,
-            });
-            if (usageErr) console.error("[usage] insert error:", usageErr);
-            else console.log("[usage] inserted ok");
+            inputCost = (usage.input_tokens / 1_000_000) * price.input;
+            outputCost = (usage.output_tokens / 1_000_000) * price.output;
             controller.enqueue(enc({
               type: "usage",
               input_tokens: usage.input_tokens,
@@ -2944,85 +2911,121 @@ Deno.serve(async (req) => {
               output_cost_usd: outputCost,
               cost_usd: inputCost + outputCost,
             }));
-            // Persist cost into messages.meta.cost so the developer breakdown
-            // can be shown after a reload.
-            if (insertedMsg?.id) {
-              const metaWithCost = {
-                ...metaPayload,
-                cost: {
-                  inputTokens: usage.input_tokens,
-                  outputTokens: usage.output_tokens,
-                  inputCostUsd: inputCost,
-                  outputCostUsd: outputCost,
-                },
-              };
-              await supabase
-                .from("messages")
-                .update({ meta: metaWithCost })
-                .eq("id", insertedMsg.id);
-            }
+            (metaPayload as any).cost = {
+              inputTokens: usage.input_tokens,
+              outputTokens: usage.output_tokens,
+              inputCostUsd: inputCost,
+              outputCostUsd: outputCost,
+            };
           } else if (!ephemeral) {
             console.warn("[usage] skipped — no usage data returned by provider");
           }
 
-          // (Title generation moved to the start of the stream so it runs even on early returns.)
-          const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
-
-          // ---------- Extract memorable facts ----------
-          if (!ephemeral && !isFreeUser) {
-            if (memoryMode === "smart") {
-              // Await the smart pipeline so we can emit a `memory` event
-              // back to the client (powers MemoryInsights). The call happens
-              // after the assistant stream is done, so it only adds latency
-              // to the post-stream tail.
-              try {
-                const fnUrl = `${supabaseUrl}/functions/v1/memory-extract-smart`;
-                const r = await fetch(fnUrl, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: authHeader,
-                    apikey: anonKey,
-                  },
-                  body: JSON.stringify({ userText: lastUser, assistantText }),
-                });
-                if (r.ok) {
-                  const j = await r.json().catch(() => ({} as any));
-                  const added = Number(j?.added) || 0;
-                  const updated = Number(j?.updated) || 0;
-                  if (added + updated > 0) {
-                    controller.enqueue(enc({ type: "memory", added, updated }));
-                  }
-                } else {
-                  console.warn("[smart-memory] http error", r.status, await r.text().catch(() => ""));
-                }
-              } catch (err) {
-                console.error("smart memory dispatch failed:", err);
-              }
-            } else {
-
-              try {
-                const memResult = await extractAndSaveMemory({
-                  supabase,
-                  userId: user.id,
-                  openaiKey: Deno.env.get("OPENAI_API_KEY"),
-                  googleKey: Deno.env.get("GOOGLE_API_KEY"),
-                  anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
-                  userText: lastUser,
-                  assistantText,
-                });
-                if (memResult && (memResult.added > 0 || memResult.updated > 0)) {
-                  controller.enqueue(enc({ type: "memory", added: memResult.added, updated: memResult.updated }));
-                }
-              } catch (err) {
-                console.error("memory extract failed:", err);
-              }
-            }
-          }
-
-
+          // ---------- Emit `done` IMMEDIATELY ----------
+          // Everything below (DB writes + memory extraction) runs AFTER the
+          // client has received `done` via EdgeRuntime.waitUntil. This saves
+          // 1–3 seconds of perceived latency on every turn (previously the
+          // stream was held open while we did 4–5 sequential DB ops + memory).
           controller.enqueue(enc({ type: "done" }));
           controller.close();
+
+          const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+
+          const persistTail = async () => {
+            let insertedMsgId: string | null = null;
+            if (!ephemeral) {
+              try {
+                const { data } = await supabase
+                  .from("messages")
+                  .insert({
+                    conversation_id: conversationId,
+                    user_id: user.id,
+                    role: "assistant",
+                    content: assistantText,
+                    model,
+                    meta: metaPayload,
+                  })
+                  .select("id")
+                  .single();
+                insertedMsgId = data?.id ?? null;
+              } catch (e) {
+                console.error("persist assistant message failed", e);
+              }
+
+              // Fire conv update + usage event in parallel.
+              await Promise.all([
+                supabase
+                  .from("conversations")
+                  .update({ updated_at: new Date().toISOString() })
+                  .eq("id", conversationId)
+                  .then(({ error }) => { if (error) console.error("conv update failed", error); }),
+                usage && (usage.input_tokens > 0 || usage.output_tokens > 0)
+                  ? supabase.from("usage_events").insert({
+                      user_id: user.id,
+                      conversation_id: conversationId,
+                      message_id: insertedMsgId,
+                      provider,
+                      model,
+                      input_tokens: usage.input_tokens,
+                      output_tokens: usage.output_tokens,
+                      input_cost_usd: inputCost,
+                      output_cost_usd: outputCost,
+                      total_cost_usd: inputCost + outputCost,
+                    }).then(({ error }) => { if (error) console.error("[usage] insert error:", error); })
+                  : Promise.resolve(),
+              ]);
+            }
+
+            // ---------- Extract memorable facts ----------
+            if (!ephemeral && !isFreeUser) {
+              if (memoryMode === "smart") {
+                try {
+                  const fnUrl = `${supabaseUrl}/functions/v1/memory-extract-smart`;
+                  await fetch(fnUrl, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: authHeader,
+                      apikey: anonKey,
+                    },
+                    body: JSON.stringify({ userText: lastUser, assistantText }),
+                  });
+                } catch (err) {
+                  console.error("smart memory dispatch failed:", err);
+                }
+              } else {
+                try {
+                  await extractAndSaveMemory({
+                    supabase,
+                    userId: user.id,
+                    openaiKey: Deno.env.get("OPENAI_API_KEY"),
+                    googleKey: Deno.env.get("GOOGLE_API_KEY"),
+                    anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+                    userText: lastUser,
+                    assistantText,
+                  });
+                } catch (err) {
+                  console.error("memory extract failed:", err);
+                }
+              }
+            }
+          };
+
+          // Run persistence after the response has been delivered to the client.
+          // EdgeRuntime.waitUntil keeps the worker alive without blocking the
+          // response. Falls back to a void promise locally where it's undefined.
+          try {
+            // @ts-ignore — EdgeRuntime is provided by the Supabase Edge runtime
+            if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+              // @ts-ignore
+              EdgeRuntime.waitUntil(persistTail().catch((e) => console.error("persistTail failed", e)));
+            } else {
+              void persistTail().catch((e) => console.error("persistTail failed", e));
+            }
+          } catch (e) {
+            console.error("scheduling persistTail failed", e);
+          }
+
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           controller.enqueue(enc({ type: "error", error: msg }));
