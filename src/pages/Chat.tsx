@@ -1560,9 +1560,9 @@ export default function Chat() {
           }
           return trimmed;
         });
-        if (userMsg?.id) {
-          await supabase.from("messages").delete().eq("id", userMsg.id);
-        }
+        // Note: user message was inserted fire-and-forget without awaiting,
+        // so we don't have its id to delete here on abort. It stays persisted.
+
       } else {
         const msg = e instanceof Error ? e.message : String(e);
         toast.error(msg);
