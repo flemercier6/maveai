@@ -2577,8 +2577,11 @@ Deno.serve(async (req) => {
                   images: agenticImages,
                 };
               }
-            } else {
+            } else if (!fastNoAgentic) {
               // ---------- LEGACY single-shot web call (simple queries) ----------
+              // Skipped entirely when fastNoAgentic is true: short/conversational
+              // messages almost never need web tools, and decideWebTool costs
+              // 300–800 ms (sometimes more on Gemini 503s).
               const decision = await decideWebTool({
                 googleKey: googleKeyForAgent,
                 openaiKey: Deno.env.get("OPENAI_API_KEY"),
