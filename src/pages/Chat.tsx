@@ -1045,7 +1045,7 @@ export default function Chat() {
       : { provider, model };
     // Apply blacklist fallback: pick the user's first non-blacklisted favorite,
     // or any other allowed model if the resolved one is forbidden.
-    const fallbackOrder = ["gemini-3.5-flash", "gpt-5.5", "gpt-4o-mini", "gemini-2.5-pro", "claude-sonnet-4-6", "claude-opus-4-7", "mistral-large-latest", "mistral-small-latest"];
+    const fallbackOrder = ["gemini-3.5-flash", "gpt-5.5", "gpt-5-nano", "gemini-2.5-pro", "claude-sonnet-4-6", "claude-opus-4-7", "mistral-large-latest", "mistral-small-latest"];
     const safeModel = pickAllowedModel(aiPrefs, resolved.model, fallbackOrder);
     const sendProvider = (safeModel === resolved.model ? resolved.provider : providerForModel(safeModel)) as Provider;
     const sendModel = safeModel;
@@ -1761,7 +1761,7 @@ export default function Chat() {
     const seedProvider = (assistantMsg?.provider ?? provider) as Provider;
     const seedModel =
       assistantMsg?.model ||
-      (model === AUTO_MODEL_ID ? "gpt-4o-mini" : model);
+      (model === AUTO_MODEL_ID ? "gpt-5-nano" : model);
     setExploreSeed({
       conversationId: activeId,
       sourceMessageId: payload.messageId,
@@ -1794,7 +1794,7 @@ export default function Chat() {
       quotedText: branch.quoted_text,
       parentHistory,
       provider,
-      model: model === AUTO_MODEL_ID ? "gpt-4o-mini" : model,
+      model: model === AUTO_MODEL_ID ? "gpt-5-nano" : model,
       existingBranchId: branch.id,
     });
     setExploreOpen(true);
