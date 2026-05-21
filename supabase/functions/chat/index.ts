@@ -1338,6 +1338,29 @@ Deno.serve(async (req) => {
     const queryKeywords = new Set(extractKeywords(lastUserText, 20));
     const isFirstTurn = (messages as Msg[]).filter((m) => m.role === "assistant").length === 0;
 
+    // ========= STEP 5: Pre-launch the Clarify classifier in parallel with DB reads =========
+    // Clarify only needs lastUserText + payload flags (all known here). Firing it BEFORE
+    // the DB Promise.all overlaps the ~200-500 ms classifier call with the ~200-400 ms DB
+    // batch instead of running it after. Net saving: typically 200-400 ms.
+    const userTurnsEarly = (messages as Msg[]).filter((m) => m.role === "user").length;
+    const fastNoClarifyEarly =
+      userTurnsEarly > 1 ||
+      lastUserText.length < 120 ||
+      lastUserText.trim().endsWith("?") ||
+      /^(what|how|why|who|when|where|which|tell|explain|describe|list|give|show|find|define|translate|write|create|make|build|fix|help|can |could |please )/i.test(lastUserText.trim());
+    const willClarifyEarly =
+      !ephemeral && !skipClarify && !writingMode && !!lastUserText && !fastNoClarifyEarly;
+    const earlyClarifyPromise: Promise<ClarifyQuestion[] | null> = willClarifyEarly
+      ? decideClarify({
+          googleKey: Deno.env.get("GOOGLE_API_KEY"),
+          openaiKey: Deno.env.get("OPENAI_API_KEY"),
+          anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
+          userText: lastUserText,
+          hasHistory: userTurnsEarly > 1,
+        }).catch((e) => { console.warn("early clarify failed", e); return null; })
+      : Promise.resolve(null);
+
+
     // Fire all DB queries in parallel instead of sequentially (~400–600 ms saved).
     // user_integrations fetches both google & voyager in one round-trip.
     // user_memories is pre-fetched with confidence-ordered fields for both modes;
@@ -2017,15 +2040,12 @@ Deno.serve(async (req) => {
           const willGoogle = googleConnected && !!googleApiKey && !writingMode && !!lastUserText && !fastNoGoogle;
           const willVoyager = voyagerEnabled && !!lastUserText && !fastNoVoyager && (!writingMode || !!forcedVoyagerDecision);
 
+          // Clarify was pre-launched BEFORE DB reads (see earlyClarifyPromise above) so its
+          // network latency overlaps with the DB batch. Reuse the in-flight promise here.
           const clarifyPromise: Promise<ClarifyQuestion[] | null> = willClarify
-            ? decideClarify({
-                googleKey: googleApiKey,
-                openaiKey: Deno.env.get("OPENAI_API_KEY"),
-                anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
-                userText: lastUserText,
-                hasHistory: userTurns > 1,
-              }).catch((e) => { console.warn("clarify promise failed", e); return null; })
+            ? earlyClarifyPromise
             : Promise.resolve(null);
+
 
           const googleDecisionPromise: Promise<GoogleRouterDecision> = willGoogle
             ? classifyGoogleIntent(
