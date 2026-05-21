@@ -71,6 +71,12 @@ const MODEL_PRICES: Record<string, Price> = {
   "mistral-large-latest": { input: 2, output: 6 },
   "mistral-small-latest": { input: 0.2, output: 0.6 },
 };
+
+// ---------- Linkup web search pricing ----------
+// Linkup standard depth: $0.006 per search request. Billed as passthrough on
+// top of model token cost so the user pays for the web tool when it's used.
+// (Deep depth would be $0.05/search — we only use standard, see linkupSearch.)
+const LINKUP_SEARCH_COST_USD = 0.006;
 function priceFor(model: string): Price {
   if (MODEL_PRICES[model]) return MODEL_PRICES[model];
   // Fuzzy fallbacks for variants/aliases
