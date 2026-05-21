@@ -209,6 +209,22 @@ export function RequestBreakdown({ meta }: { meta: RequestMeta }) {
                 </div>
               </div>
             )}
+            {/* Web search (Linkup passthrough) */}
+            {webSearchCount > 0 && (
+              <div>
+                <div className="text-xs uppercase tracking-wider text-white/40 mb-2">Web search</div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-white/70 leading-snug">
+                    Linkup ·{" "}
+                    <span className="text-white/50">
+                      {webSearchCount} {webSearchCount > 1 ? "recherches" : "recherche"} × ×{WEB_SEARCH_MULTIPLIER}
+                    </span>
+                  </span>
+                  <span className="tabular-nums font-medium whitespace-nowrap">{fmtEur(webSearchBilled)}</span>
+                </div>
+              </div>
+            )}
+
 
             {/* Total */}
             {cost && (
