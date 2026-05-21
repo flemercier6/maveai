@@ -1069,7 +1069,7 @@ export default function Chat() {
     // (provider/model update + user message persistence) fire in the background
     // and run in parallel with the LLM fetch — saves ~200-400 ms of frontend latency.
     let convId: string | null = null;
-    if (!ephemeral) {
+    if (!ephemeral && user) {
       convId = await ensureConversation(text || atts[0]?.name || "Attachment");
       if (!convId) { setSending(false); return; }
     }
@@ -1079,7 +1079,7 @@ export default function Chat() {
           a.kind === "image" ? `📎 Image: ${a.name}` : `📎 File: ${a.name}`
         ).join("\n")
       : "";
-    if (!ephemeral && convId) {
+    if (!ephemeral && user && convId) {
       // Background updates — DO NOT await. These run in parallel with the LLM call.
       void supabase.from("conversations")
         .update({ provider: convProvider, model: convModel })
@@ -1088,7 +1088,7 @@ export default function Chat() {
       void supabase.from("messages")
         .insert({
           conversation_id: convId,
-          user_id: user!.id,
+          user_id: user.id,
           role: "user",
           content: displayContent + persistedSummary,
         })
