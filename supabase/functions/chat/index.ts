@@ -2667,11 +2667,12 @@ Deno.serve(async (req) => {
                   images: agenticImages,
                 };
               }
-            } else if (!fastNoAgentic) {
-              // ---------- LEGACY single-shot web call (simple queries) ----------
-              // Skipped entirely when fastNoAgentic is true: short/conversational
-              // messages almost never need web tools, and decideWebTool costs
-              // 300–800 ms (sometimes more on Gemini 503s).
+            } else {
+              // ---------- LEGACY single-shot web call ----------
+              // Runs for both fastNoAgentic queries AND non-complex agentic plans.
+              // decideWebTool is a fast (~300-600ms) single LLM call that returns
+              // "search" / "scrape" / "none" — cheap enough to always check so that
+              // questions like "qui a gagné hier ?" actually trigger a web search.
               const decision = await decideWebTool({
                 googleKey: googleKeyForAgent,
                 openaiKey: Deno.env.get("OPENAI_API_KEY"),
