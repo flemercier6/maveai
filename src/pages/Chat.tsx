@@ -9,6 +9,7 @@ import { ModelPicker } from "@/components/ModelPicker";
 
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
@@ -182,8 +183,10 @@ export default function Chat() {
   const [exploreRequested, setExploreRequested] = useState(false);
   // User explicitly invoked /page — next send generates a structured one-pager.
   const [pageRequested, setPageRequested] = useState(false);
-  // User explicitly toggled Web search for the next message.
-  const [webRequested, setWebRequested] = useState(false);
+  // Persistent Web search toggle (localStorage).
+  const [webEnabled, setWebEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem("web-search-enabled") !== "false"; } catch { return true; }
+  });
   // Reflexion mode (multi-step ReAct loop). Effort controls max iterations.
   const [reflexionRequested, setReflexionRequested] = useState(false);
   const [reflexionEffort, setReflexionEffort] = useState<"low" | "medium" | "high">("medium");
@@ -1143,7 +1146,9 @@ export default function Chat() {
           reflexionMode,
           reflexionEffort: reflexionEffortForTurn,
           aiPrefs: {
-            disabledModes: aiPrefs.disabledModes,
+            disabledModes: webEnabled
+              ? aiPrefs.disabledModes.filter((m) => m !== "web")
+              : [...new Set([...aiPrefs.disabledModes, "web"])],
             blacklistedModels: aiPrefs.blacklistedModels,
             favoriteModels: aiPrefs.favoriteModels,
             responseLength: aiPrefs.responseLength,
@@ -2288,6 +2293,24 @@ export default function Chat() {
                         <Paperclip className="w-4 h-4 mr-2" />
                         Attach files or images
                       </DropdownMenuItem>
+                      {!aiPrefs.disabledModes.includes("web") && (
+                        <DropdownMenuItem
+                          onSelect={(e) => e.preventDefault()}
+                          className="flex items-center justify-between cursor-default"
+                        >
+                          <div className="flex items-center">
+                            <Globe className="w-4 h-4 mr-2" />
+                            Web Search
+                          </div>
+                          <Switch
+                            checked={webEnabled}
+                            onCheckedChange={(checked) => {
+                              setWebEnabled(checked);
+                              try { localStorage.setItem("web-search-enabled", String(checked)); } catch {}
+                            }}
+                          />
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setGoogleService("gmail")}>
                         <GoogleServiceLogo service="gmail" className="w-4 h-4 mr-2" />
@@ -2349,28 +2372,6 @@ export default function Chat() {
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="top">Page</TooltipContent>
-                    </Tooltip>
-                  )}
-                  {!aiPrefs.disabledModes.includes("web") && !webRequested && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setWebRequested(true)}
-                          aria-label="Activate Web search"
-                          className="h-9 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path d="M8.00004 14.6666C11.6819 14.6666 14.6667 11.6819 14.6667 7.99998C14.6667 4.31808 11.6819 1.33331 8.00004 1.33331C4.31814 1.33331 1.33337 4.31808 1.33337 7.99998C1.33337 11.6819 4.31814 14.6666 8.00004 14.6666Z" stroke="currentColor" strokeWidth="1.2"/>
-                            <path d="M5.33337 7.99998C5.33337 12 8.00004 14.6666 8.00004 14.6666C8.00004 14.6666 10.6667 12 10.6667 7.99998C10.6667 3.99998 8.00004 1.33331 8.00004 1.33331C8.00004 1.33331 5.33337 3.99998 5.33337 7.99998Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
-                            <path d="M14 10H2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M14 6H2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">Web search</TooltipContent>
                     </Tooltip>
                   )}
                   {!aiPrefs.disabledModes.includes("reflexion") && !reflexionRequested && (
@@ -2514,26 +2515,6 @@ export default function Chat() {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  )}
-                  {webRequested && (
-                    <button
-                      type="button"
-                      onClick={() => setWebRequested(false)}
-                      aria-label="Remove Web search"
-                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[var(--blue-tag-bg)] transition-colors text-base"
-                      style={{ color: "var(--blue-tag-fg)" }}
-                    >
-                      <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "var(--blue-tag-fg)" }}>
-                          <path d="M8.00004 14.6666C11.6819 14.6666 14.6667 11.6819 14.6667 7.99998C14.6667 4.31808 11.6819 1.33331 8.00004 1.33331C4.31814 1.33331 1.33337 4.31808 1.33337 7.99998C1.33337 11.6819 4.31814 14.6666 8.00004 14.6666Z" stroke="currentColor" strokeWidth="1.2"/>
-                          <path d="M5.33337 7.99998C5.33337 12 8.00004 14.6666 8.00004 14.6666C8.00004 14.6666 10.6667 12 10.6667 7.99998C10.6667 3.99998 8.00004 1.33331 8.00004 1.33331C8.00004 1.33331 5.33337 3.99998 5.33337 7.99998Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
-                          <path d="M14 10H2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M14 6H2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--blue-tag-fg)" }} />
-                      </span>
-                      Web search
-                    </button>
                   )}
                   {googleService && (
                     <button
