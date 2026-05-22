@@ -25,7 +25,7 @@ const ContextMenuSubTrigger = React.forwardRef<
   <ContextMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "flex cursor-default select-none items-center rounded-[12px] px-2 py-1.5 text-sm outline-none data-[state=open]:bg-accent data-[state=open]:text-accent-foreground focus:bg-dropdown-hover hover:bg-dropdown-hover",
+      "flex cursor-default select-none items-center rounded-[12px] px-2 py-1.5 text-[12px] outline-none data-[state=open]:bg-accent data-[state=open]:text-accent-foreground focus:bg-dropdown-hover hover:bg-dropdown-hover",
       inset && "pl-8",
       className,
     )}
@@ -78,7 +78,7 @@ const ContextMenuItem = React.forwardRef<
   <ContextMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-[12px] px-2 py-1.5 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-dropdown-hover hover:bg-dropdown-hover",
+      "relative flex cursor-default select-none items-center rounded-[12px] px-2 py-1.5 text-[12px] outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-dropdown-hover hover:bg-dropdown-hover",
       inset && "pl-8",
       className,
     )}
@@ -94,7 +94,7 @@ const ContextMenuCheckboxItem = React.forwardRef<
   <ContextMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-[12px] py-1.5 pl-8 pr-2 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-dropdown-hover hover:bg-dropdown-hover",
+      "relative flex cursor-default select-none items-center rounded-[12px] py-1.5 pl-8 pr-2 text-[12px] outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-dropdown-hover hover:bg-dropdown-hover",
       className,
     )}
     checked={checked}
@@ -117,7 +117,7 @@ const ContextMenuRadioItem = React.forwardRef<
   <ContextMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-[12px] py-1.5 pl-8 pr-2 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-dropdown-hover hover:bg-dropdown-hover",
+      "relative flex cursor-default select-none items-center rounded-[12px] py-1.5 pl-8 pr-2 text-[12px] outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-dropdown-hover hover:bg-dropdown-hover",
       className,
     )}
     {...props}
@@ -140,7 +140,7 @@ const ContextMenuLabel = React.forwardRef<
 >(({ className, inset, ...props }, ref) => (
   <ContextMenuPrimitive.Label
     ref={ref}
-    className={cn("px-2 py-1.5 text-sm font-semibold text-foreground", inset && "pl-8", className)}
+    className={cn("px-2 py-1.5 text-[12px] font-semibold text-foreground", inset && "pl-8", className)}
     {...props}
   />
 ));

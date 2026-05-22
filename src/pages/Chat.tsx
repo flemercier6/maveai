@@ -1750,15 +1750,22 @@ export default function Chat() {
   // ---- Attachments ----
   const openFilePicker = () => fileInputRef.current?.click();
 
-  // Global Cmd/Ctrl + U → open the file picker. Overrides the browser's
-  // view-source shortcut, which is fine in this app.
+  // Global keyboard shortcuts:
+  // - Cmd/Ctrl + U → open the file picker (overrides browser view-source)
+  // - Cmd/Ctrl + O → open the settings dialog (via the open-settings event
+  //   that ChatSidebar listens to)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
       if (!mod || e.shiftKey || e.altKey) return;
-      if (e.key !== "u" && e.key !== "U") return;
-      e.preventDefault();
-      openFilePicker();
+      const key = e.key.toLowerCase();
+      if (key === "u") {
+        e.preventDefault();
+        openFilePicker();
+      } else if (key === "o") {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent("open-settings"));
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
