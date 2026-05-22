@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Copy, Check, ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -32,8 +32,6 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
       return saved ? Math.max(MIN_WIDTH, parseInt(saved)) : DEFAULT_WIDTH;
     } catch { return DEFAULT_WIDTH; }
   });
-  // Track viewport width so the panel stays full-width on mobile through
-  // orientation changes / URL-bar show-hide on iOS.
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth : 0,
   );
@@ -42,21 +40,16 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-  // On mobile we ignore the saved/resizable width and take the full viewport.
   const effectiveWidth = isMobile ? viewportWidth : width;
 
-  // editing=false → rendered markdown preview; editing=true → editable textarea.
-  // The state flips automatically on click / blur — there's no user-visible toggle.
-  const [editing, setEditing] = useState(false);
-
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Block-level editing: only the clicked block becomes a textarea, the rest stay
+  // rendered as markdown. editingBlock is the index of the block currently being
+  // edited, or null when no block is in edit mode.
+  const [editingBlock, setEditingBlock] = useState<number | null>(null);
+  const blockTextareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const askInputRef = useRef<HTMLInputElement>(null);
-
-  // Snapshot of content at the moment streaming starts.
-  const prevContentRef = useRef<string>("");
-  const streamingActiveRef = useRef<boolean>(false);
 
   // Selection toolbar state
   const [selInfo, setSelInfo] = useState<SelInfo | null>(null);
@@ -67,34 +60,52 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     try { localStorage.setItem("note-panel-width", String(width)); } catch { /* ignore */ }
   }, [width]);
 
-  // Report the rendered width so the parent can shrink the main chat to match.
   useEffect(() => {
     onWidthChange?.(effectiveWidth);
   }, [effectiveWidth, onWidthChange]);
 
-  // Capture pre-edit snapshot when streaming begins.
+  // Streaming → exit block edit mode and dismiss any open toolbar
   useEffect(() => {
-    if (streaming && !streamingActiveRef.current) {
-      prevContentRef.current = content;
-      streamingActiveRef.current = true;
+    if (streaming) {
+      setEditingBlock(null);
+      setSelInfo(null);
+      setAskMode(false);
     }
-    if (!streaming) {
-      streamingActiveRef.current = false;
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streaming]);
 
-  // Dismiss toolbar when streaming starts.
-  useEffect(() => {
-    if (streaming) { setSelInfo(null); setAskMode(false); }
-  }, [streaming]);
-
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = el.scrollHeight + "px";
+  // Split content into paragraph-level blocks (separator = one or more blank lines).
+  // Empty content yields a single empty block so the user has a click target.
+  const blocks = useMemo(() => {
+    if (!content) return [""];
+    return content.split(/\n{2,}/);
   }, [content]);
+
+  const updateBlock = (i: number, val: string) => {
+    const next = blocks.slice();
+    next[i] = val;
+    onChange(next.join("\n\n"));
+  };
+
+  // Focus + size the textarea when we enter edit mode. preventScroll keeps the
+  // panel anchored at the clicked position (fixes the scroll-to-top issue).
+  useEffect(() => {
+    if (editingBlock === null) return;
+    const ta = blockTextareaRef.current;
+    if (!ta) return;
+    ta.focus({ preventScroll: true });
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    ta.style.height = "auto";
+    ta.style.height = ta.scrollHeight + "px";
+  }, [editingBlock]);
+
+  // Keep the textarea sized to its content as the user types.
+  useEffect(() => {
+    if (editingBlock === null) return;
+    const ta = blockTextareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = ta.scrollHeight + "px";
+  }, [content, editingBlock]);
 
   // Dismiss toolbar on click / tap outside.
   useEffect(() => {
@@ -115,24 +126,26 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     };
   }, [selInfo]);
 
-  // Document-level selection capture — works for both the textarea (edit mode)
+  // Document-level selection capture — works for both the block-edit textarea
   // and the rendered markdown preview (uses window.getSelection).
   useEffect(() => {
     if (!open || streaming) return;
 
     const capture = (mouseEvent: MouseEvent | null) => {
-      // Don't fire when clicking inside the toolbar itself
       if (mouseEvent && barRef.current?.contains(mouseEvent.target as Node)) return;
 
-      // Edit mode: textarea selection
-      const ta = textareaRef.current;
-      if (ta) {
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
-        if (start !== end) {
-          const x = mouseEvent?.clientX ?? ta.getBoundingClientRect().left + 120;
-          const y = mouseEvent?.clientY ?? ta.getBoundingClientRect().top + 40;
-          setSelInfo({ text: ta.value.slice(start, end), start, end, x, y });
+      // Block edit mode: textarea selection. We store start=-1 so applyFormat
+      // falls back to content.indexOf() — positions inside a single block
+      // would otherwise need conversion to absolute content offsets.
+      const blockTa = blockTextareaRef.current;
+      if (blockTa && editingBlock !== null) {
+        const s = blockTa.selectionStart;
+        const e = blockTa.selectionEnd;
+        if (s !== e) {
+          const text = blockTa.value.slice(s, e);
+          const x = mouseEvent?.clientX ?? blockTa.getBoundingClientRect().left + 120;
+          const y = mouseEvent?.clientY ?? blockTa.getBoundingClientRect().top + 40;
+          setSelInfo({ text, start: -1, end: -1, x, y });
           setAskMode(false);
           setAskValue("");
           return;
@@ -164,15 +177,12 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
       setAskValue("");
     };
 
-    // Defer to next tick so the browser finalizes the selection first
     const onMouseUp = (e: MouseEvent) => setTimeout(() => capture(e), 0);
     const onTouchEnd = (e: TouchEvent) => {
-      // Use the released touch point for positioning
       const t = e.changedTouches[0];
       const synthetic = t
         ? ({ clientX: t.clientX, clientY: t.clientY, target: e.target } as MouseEvent)
         : null;
-      // iOS Safari needs a slightly longer delay to settle the selection handles
       setTimeout(() => capture(synthetic), 60);
     };
     const onKeyUp = (e: KeyboardEvent) => {
@@ -189,7 +199,7 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
       document.removeEventListener("touchend", onTouchEnd);
       document.removeEventListener("keyup", onKeyUp);
     };
-  }, [open, streaming, editing]);
+  }, [open, streaming, editingBlock]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
@@ -217,10 +227,8 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     if (!selInfo) return;
     const { start, end, text } = selInfo;
     if (start >= 0) {
-      // Edit mode: precise range from textarea
       onChange(content.slice(0, start) + marker + text + marker + content.slice(end));
     } else {
-      // Preview mode: find first occurrence of the rendered text in source
       const idx = content.indexOf(text);
       if (idx >= 0) {
         onChange(content.slice(0, idx) + marker + text + marker + content.slice(idx + text.length));
@@ -238,61 +246,6 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     setAskValue("");
   };
 
-  // Line-by-line streaming view.
-  const renderStreaming = () => {
-    const prev = prevContentRef.current;
-
-    // No new content received yet — show pre-edit content dimmed while AI "prepares".
-    if (content === prev) {
-      return (
-        <div
-          className="w-full min-h-full p-6 text-[15px] leading-[1.85] font-[inherit] whitespace-pre-wrap text-foreground"
-          style={{ opacity: 0.45, transition: "opacity 0.4s ease" }}
-        >
-          {prev || " "}
-        </div>
-      );
-    }
-
-    const newLines = content.split("\n");
-    const oldLines = prev ? prev.split("\n") : [];
-    const completedLines = newLines.slice(0, -1);
-    const currentLine = newLines[newLines.length - 1] ?? "";
-    const remainingOldLines = oldLines.slice(newLines.length);
-
-    return (
-      <div className="w-full min-h-full p-6 text-[15px] leading-[1.85] font-[inherit]">
-        {/* Completed lines: stable keys so note-line-in only plays when a line first appears */}
-        {completedLines.map((line, i) => (
-          <div key={i} className="note-line-in whitespace-pre-wrap text-foreground" style={{ minHeight: "1.85em" }}>
-            {line || " "}
-          </div>
-        ))}
-
-        {/* Current line being written: slow shimmer on the text itself */}
-        <div className="whitespace-pre-wrap" style={{ minHeight: "1.85em" }}>
-          <span className="note-line-shimmer">{currentLine || " "}</span>
-        </div>
-
-        {/* Old lines not yet reached: gradient fade with distance */}
-        {remainingOldLines.map((line, i) => (
-          <div
-            key={`r${i}`}
-            className="whitespace-pre-wrap"
-            style={{
-              minHeight: "1.85em",
-              opacity: Math.max(0.08, 0.5 - i * 0.09),
-              transition: "opacity 0.5s ease",
-              color: "hsl(var(--foreground))",
-            }}
-          >
-            {line || " "}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   return (
     <div
       style={{ width: effectiveWidth, maxWidth: "100vw" }}
@@ -303,7 +256,6 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
         open ? "translate-x-0" : "translate-x-full",
       )}
     >
-      {/* Drag-to-resize handle — desktop only */}
       {!isMobile && (
         <div
           onMouseDown={startResize}
@@ -311,12 +263,10 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
         />
       )}
 
-      {/* Inner panel */}
       <div className={cn(
         "flex flex-col h-full overflow-hidden bg-sidebar",
         isMobile ? "rounded-none" : "rounded-[12px]",
       )}>
-        {/* Header */}
         <div className={cn("flex items-center gap-2 shrink-0", isMobile ? "px-3 py-2.5" : "px-4 py-3")}>
           <button
             onClick={onClose}
@@ -346,51 +296,67 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
           </button>
         </div>
 
-        {/* Content area — preview by default; click anywhere to edit. */}
+        {/* Content area — markdown rendered always; one block at a time can swap
+            to a raw textarea while every other block keeps its formatting. */}
         <div className="relative flex-1 overflow-y-auto">
-          {streaming ? renderStreaming() : editing ? (
-            <textarea
-              ref={textareaRef}
-              autoFocus
-              value={content}
-              onChange={(e) => onChange(e.target.value)}
-              onBlur={(e) => {
-                // Don't exit if blur was caused by clicking the toolbar
-                if (barRef.current?.contains(e.relatedTarget as Node)) return;
-                setEditing(false);
-              }}
-              placeholder="Your note will appear here…"
-              className={cn(
-                "w-full min-h-full text-[15px] leading-[1.85] bg-transparent resize-none outline-none text-foreground font-[inherit]",
-                isMobile ? "p-4" : "p-6",
-              )}
-            />
-          ) : (
-            <div
-              ref={previewRef}
-              onClick={(e) => {
-                // Don't flip to edit if the click is part of a real selection drag
-                const sel = window.getSelection();
-                if (sel && !sel.isCollapsed && sel.toString().trim()) return;
-                // Don't flip on clicks targeting the toolbar
-                if (barRef.current?.contains(e.target as Node)) return;
-                setEditing(true);
-              }}
-              className={cn(
-                "chat-prose text-[15px] cursor-text",
-                isMobile ? "p-4" : "p-6",
-              )}
-            >
-              {content
-                ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-                : <span className="text-muted-foreground">Your note will appear here…</span>
-              }
-            </div>
-          )}
+          <div
+            ref={previewRef}
+            className={cn(
+              "chat-prose text-[15px]",
+              streaming ? "" : "cursor-text",
+              isMobile ? "p-4" : "p-6",
+            )}
+          >
+            {blocks.length === 1 && !blocks[0] && !streaming ? (
+              <p
+                className="text-muted-foreground"
+                onClick={() => setEditingBlock(0)}
+              >
+                Your note will appear here…
+              </p>
+            ) : (
+              blocks.map((block, i) =>
+                !streaming && editingBlock === i ? (
+                  <textarea
+                    key={`edit-${i}`}
+                    ref={blockTextareaRef}
+                    value={block}
+                    onChange={(e) => updateBlock(i, e.target.value)}
+                    onBlur={(e) => {
+                      if (barRef.current?.contains(e.relatedTarget as Node)) return;
+                      setEditingBlock(null);
+                    }}
+                    className="w-full resize-none outline-none bg-transparent text-[15px] leading-[1.85] font-[inherit] text-foreground my-2 block"
+                    style={{ overflow: "hidden" }}
+                  />
+                ) : (
+                  <div
+                    key={`view-${i}`}
+                    onClick={(e) => {
+                      if (streaming) return;
+                      const sel = window.getSelection();
+                      if (sel && !sel.isCollapsed && sel.toString().trim()) return;
+                      if (barRef.current?.contains(e.target as Node)) return;
+                      setEditingBlock(i);
+                    }}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {block || "​"}
+                    </ReactMarkdown>
+                  </div>
+                ),
+              )
+            )}
+            {streaming && (
+              <span
+                aria-hidden
+                className="inline-block w-1.5 h-4 ml-0.5 align-middle bg-muted-foreground/60 animate-pulse rounded-sm"
+              />
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Floating selection toolbar — portaled to body to escape the CSS transform context */}
       {selInfo && !streaming && createPortal(
         <div
           ref={barRef}
