@@ -2419,7 +2419,7 @@ export default function Chat() {
                       <TooltipContent side="top">Page</TooltipContent>
                     </Tooltip>
                   )}
-                  {!aiPrefs.disabledModes.includes("reflexion") && !reflexionRequested && (
+                  {!aiPrefs.disabledModes.includes("reflexion" as ModeId) && !reflexionRequested && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
