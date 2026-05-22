@@ -25,7 +25,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "flex cursor-default select-none items-center rounded-[12px] px-2 py-1.5 outline-none data-[state=open]:bg-accent focus:bg-accent text-[14px]",
+      "flex cursor-default select-none items-center rounded-[12px] px-2 py-1.5 outline-none data-[state=open]:bg-accent focus:bg-accent text-[14px] whitespace-nowrap",
       inset && "pl-8",
       className,
     )}
@@ -79,7 +79,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-[12px] px-2 py-1.5 outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-dropdown-hover hover:bg-dropdown-hover text-[14px]",
+      "relative flex cursor-default select-none items-center rounded-[12px] px-2 py-1.5 outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-dropdown-hover hover:bg-dropdown-hover text-[14px] whitespace-nowrap",
       inset && "pl-8",
       className,
     )}
@@ -95,7 +95,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-[12px] py-1.5 pl-8 pr-2 outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-dropdown-hover hover:bg-dropdown-hover text-[14px]",
+      "relative flex cursor-default select-none items-center rounded-[12px] py-1.5 pl-8 pr-2 outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-dropdown-hover hover:bg-dropdown-hover text-[14px] whitespace-nowrap",
       className,
     )}
     checked={checked}
@@ -118,7 +118,7 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-[12px] py-1.5 pl-8 pr-2 outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-dropdown-hover hover:bg-dropdown-hover text-[14px]",
+      "relative flex cursor-default select-none items-center rounded-[12px] py-1.5 pl-8 pr-2 outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-dropdown-hover hover:bg-dropdown-hover text-[14px] whitespace-nowrap",
       className,
     )}
     {...props}

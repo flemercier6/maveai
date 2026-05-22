@@ -2318,7 +2318,7 @@ export default function Chat() {
                         <Plus className="w-4 h-4 transition-transform duration-200 group-data-[state=open]:rotate-45" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuContent align="start">
                       <DropdownMenuItem onClick={openFilePicker}>
                         <Paperclip className="w-4 h-4 mr-2" />
                         <span className="flex-1">Attach files or images</span>
