@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Copy, Check, ArrowRight } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { marked } from "marked";
+import TurndownService from "turndown";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -18,10 +18,27 @@ type Props = {
   onAskChange?: (selection: string, request: string) => void;
 };
 
-type SelInfo = { text: string; start: number; end: number; x: number; y: number };
+type SelInfo = { text: string; x: number; y: number };
 
 const MIN_WIDTH = 380;
 const DEFAULT_WIDTH = 520;
+
+const turndownService = new TurndownService({
+  headingStyle: "atx",
+  bulletListMarker: "-",
+  emDelimiter: "_",
+  strongDelimiter: "**",
+  codeBlockStyle: "fenced",
+});
+
+function renderMarkdownToHTML(md: string): string {
+  if (!md) return "";
+  return marked.parse(md, { async: false, gfm: true, breaks: false }) as string;
+}
+
+function htmlToMarkdown(html: string): string {
+  return turndownService.turndown(html).trim();
+}
 
 export function NotePanel({ open, content, title, streaming, onClose, onChange, onTitleChange, onWidthChange, onAskChange }: Props) {
   const isMobile = useIsMobile();
@@ -42,16 +59,18 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
   }, []);
   const effectiveWidth = isMobile ? viewportWidth : width;
 
-  // Block-level editing: only the clicked block becomes a textarea, the rest stay
-  // rendered as markdown. editingBlock is the index of the block currently being
-  // edited, or null when no block is in edit mode.
-  const [editingBlock, setEditingBlock] = useState<number | null>(null);
-  const blockTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const previewRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const askInputRef = useRef<HTMLInputElement>(null);
 
-  // Selection toolbar state
+  // Last markdown we synced into the DOM. We use this to distinguish "external"
+  // content changes (which should update the DOM) from "user-typed" changes
+  // (which originate from the DOM itself — don't overwrite).
+  const lastSyncedRef = useRef<string>("");
+  // Whether the editor currently has focus (user mid-edit).
+  const focusedRef = useRef<boolean>(false);
+
+  // Selection toolbar state.
   const [selInfo, setSelInfo] = useState<SelInfo | null>(null);
   const [askMode, setAskMode] = useState(false);
   const [askValue, setAskValue] = useState("");
@@ -64,50 +83,47 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     onWidthChange?.(effectiveWidth);
   }, [effectiveWidth, onWidthChange]);
 
-  // Streaming → exit block edit mode and dismiss any open toolbar
+  // Sync DOM with the `content` prop. Runs on mount + whenever content changes
+  // from outside. We skip if the change originates from a user commit (we set
+  // lastSyncedRef before calling onChange so the next render here is a no-op).
+  // We also skip while the user is actively editing — streaming updates pause
+  // until they blur.
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    if (content === lastSyncedRef.current) return;
+    if (focusedRef.current && !streaming) return;
+    el.innerHTML = renderMarkdownToHTML(content);
+    lastSyncedRef.current = content;
+  }, [content, streaming]);
+
+  // Streaming → dismiss toolbar; editor is not editable.
   useEffect(() => {
     if (streaming) {
-      setEditingBlock(null);
       setSelInfo(null);
       setAskMode(false);
     }
   }, [streaming]);
 
-  // Split content into paragraph-level blocks (separator = one or more blank lines).
-  // Empty content yields a single empty block so the user has a click target.
-  const blocks = useMemo(() => {
-    if (!content) return [""];
-    return content.split(/\n{2,}/);
-  }, [content]);
-
-  const updateBlock = (i: number, val: string) => {
-    const next = blocks.slice();
-    next[i] = val;
-    onChange(next.join("\n\n"));
+  // Commit user edits: read innerHTML, convert to markdown, push to parent.
+  const commit = () => {
+    const el = editorRef.current;
+    if (!el) return;
+    const html = el.innerHTML;
+    const md = htmlToMarkdown(html);
+    lastSyncedRef.current = md;
+    if (md !== content) onChange(md);
   };
 
-  // Focus + size the textarea when we enter edit mode. preventScroll keeps the
-  // panel anchored at the clicked position (fixes the scroll-to-top issue).
-  useEffect(() => {
-    if (editingBlock === null) return;
-    const ta = blockTextareaRef.current;
-    if (!ta) return;
-    ta.focus({ preventScroll: true });
-    ta.setSelectionRange(ta.value.length, ta.value.length);
-    ta.style.height = "auto";
-    ta.style.height = ta.scrollHeight + "px";
-  }, [editingBlock]);
+  const handleFocus = () => { focusedRef.current = true; };
+  const handleBlur = (e: React.FocusEvent) => {
+    // Don't commit / lose focus when blurring into the toolbar (Bold/Italic/Ask)
+    if (barRef.current?.contains(e.relatedTarget as Node)) return;
+    focusedRef.current = false;
+    commit();
+  };
 
-  // Keep the textarea sized to its content as the user types.
-  useEffect(() => {
-    if (editingBlock === null) return;
-    const ta = blockTextareaRef.current;
-    if (!ta) return;
-    ta.style.height = "auto";
-    ta.style.height = ta.scrollHeight + "px";
-  }, [content, editingBlock]);
-
-  // Dismiss toolbar on click / tap outside.
+  // Dismiss toolbar on outside click.
   useEffect(() => {
     if (!selInfo) return;
     const onDown = (e: MouseEvent | TouchEvent) => {
@@ -126,50 +142,23 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     };
   }, [selInfo]);
 
-  // Document-level selection capture — works for both the block-edit textarea
-  // and the rendered markdown preview (uses window.getSelection).
+  // Capture selection inside the editor for the floating toolbar.
   useEffect(() => {
     if (!open || streaming) return;
 
     const capture = (mouseEvent: MouseEvent | null) => {
       if (mouseEvent && barRef.current?.contains(mouseEvent.target as Node)) return;
-
-      // Block edit mode: textarea selection. We store start=-1 so applyFormat
-      // falls back to content.indexOf() — positions inside a single block
-      // would otherwise need conversion to absolute content offsets.
-      const blockTa = blockTextareaRef.current;
-      if (blockTa && editingBlock !== null) {
-        const s = blockTa.selectionStart;
-        const e = blockTa.selectionEnd;
-        if (s !== e) {
-          const text = blockTa.value.slice(s, e);
-          const x = mouseEvent?.clientX ?? blockTa.getBoundingClientRect().left + 120;
-          const y = mouseEvent?.clientY ?? blockTa.getBoundingClientRect().top + 40;
-          setSelInfo({ text, start: -1, end: -1, x, y });
-          setAskMode(false);
-          setAskValue("");
-          return;
-        }
-      }
-
-      // Preview mode: document selection inside the rendered markdown
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
-
       const text = sel.toString().trim();
       if (!text) return;
-
-      const preview = previewRef.current;
-      if (!preview) return;
-      if (!preview.contains(sel.anchorNode) || !preview.contains(sel.focusNode)) return;
-
+      const editor = editorRef.current;
+      if (!editor) return;
+      if (!editor.contains(sel.anchorNode) || !editor.contains(sel.focusNode)) return;
       const rect = sel.getRangeAt(0).getBoundingClientRect();
       if (rect.width === 0 && rect.height === 0) return;
-
       setSelInfo({
         text,
-        start: -1,
-        end: -1,
         x: mouseEvent ? mouseEvent.clientX : rect.left + rect.width / 2,
         y: rect.top,
       });
@@ -199,7 +188,7 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
       document.removeEventListener("touchend", onTouchEnd);
       document.removeEventListener("keyup", onKeyUp);
     };
-  }, [open, streaming, editingBlock]);
+  }, [open, streaming]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
@@ -223,19 +212,14 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
     window.addEventListener("mouseup", onUp);
   };
 
-  const applyFormat = (marker: string) => {
-    if (!selInfo) return;
-    const { start, end, text } = selInfo;
-    if (start >= 0) {
-      onChange(content.slice(0, start) + marker + text + marker + content.slice(end));
-    } else {
-      const idx = content.indexOf(text);
-      if (idx >= 0) {
-        onChange(content.slice(0, idx) + marker + text + marker + content.slice(idx + text.length));
-      }
-    }
+  // Apply Bold/Italic via the browser's native execCommand — it wraps the
+  // current selection in <strong>/<em>, which turndown converts to **/_ on commit.
+  const applyFormat = (cmd: "bold" | "italic") => {
+    document.execCommand(cmd);
     setSelInfo(null);
-    window.getSelection()?.removeAllRanges();
+    // Optimistically commit so the markdown source reflects the change even if
+    // the user clicks away to a different element.
+    commit();
   };
 
   const handleAskSubmit = () => {
@@ -296,70 +280,44 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
           </button>
         </div>
 
-        {/* Content area — markdown rendered always; one block at a time can swap
-            to a raw textarea while every other block keeps its formatting. */}
+        {/* Single contentEditable area. Markdown is rendered as HTML and the
+            user edits the rendered output directly. On blur, the HTML is
+            converted back to markdown via turndown. */}
         <div className="relative flex-1 overflow-y-auto">
           <div
-            ref={previewRef}
+            ref={editorRef}
+            contentEditable={!streaming}
+            suppressContentEditableWarning
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            data-placeholder="Your note will appear here…"
             className={cn(
-              "chat-prose text-[15px]",
-              streaming ? "" : "cursor-text",
+              "chat-prose text-[15px] outline-none min-h-full note-editor",
               isMobile ? "p-4" : "p-6",
+              streaming ? "" : "cursor-text",
             )}
-          >
-            {blocks.length === 1 && !blocks[0] && !streaming ? (
-              <p
-                className="text-muted-foreground"
-                onClick={() => setEditingBlock(0)}
-              >
-                Your note will appear here…
-              </p>
-            ) : (
-              blocks.map((block, i) =>
-                !streaming && editingBlock === i ? (
-                  <textarea
-                    key={`edit-${i}`}
-                    ref={blockTextareaRef}
-                    value={block}
-                    onChange={(e) => updateBlock(i, e.target.value)}
-                    onBlur={(e) => {
-                      if (barRef.current?.contains(e.relatedTarget as Node)) return;
-                      setEditingBlock(null);
-                    }}
-                    className="w-full resize-none outline-none bg-transparent text-[15px] leading-[1.85] font-[inherit] text-foreground my-2 block"
-                    style={{ overflow: "hidden" }}
-                  />
-                ) : (
-                  <div
-                    key={`view-${i}`}
-                    onClick={(e) => {
-                      if (streaming) return;
-                      const sel = window.getSelection();
-                      if (sel && !sel.isCollapsed && sel.toString().trim()) return;
-                      if (barRef.current?.contains(e.target as Node)) return;
-                      setEditingBlock(i);
-                    }}
-                  >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {block || "​"}
-                    </ReactMarkdown>
-                  </div>
-                ),
-              )
-            )}
-            {streaming && (
-              <span
-                aria-hidden
-                className="inline-block w-1.5 h-4 ml-0.5 align-middle bg-muted-foreground/60 animate-pulse rounded-sm"
-              />
-            )}
-          </div>
+          />
+          {streaming && (
+            <span
+              aria-hidden
+              className="absolute bottom-6 left-6 inline-block w-1.5 h-4 align-middle bg-muted-foreground/60 animate-pulse rounded-sm"
+            />
+          )}
         </div>
       </div>
+
+      <style>{`
+        .note-editor:empty::before {
+          content: attr(data-placeholder);
+          color: hsl(var(--muted-foreground));
+          pointer-events: none;
+        }
+      `}</style>
 
       {selInfo && !streaming && createPortal(
         <div
           ref={barRef}
+          onMouseDown={(e) => e.preventDefault()}
           style={{
             position: "fixed",
             left: Math.min(Math.max(selInfo.x, askMode ? 140 : 95), window.innerWidth - (askMode ? 140 : 95)),
@@ -403,14 +361,14 @@ export function NotePanel({ open, content, title, streaming, onClose, onChange, 
               </button>
               <div className="w-px h-4 bg-border mx-0.5 shrink-0" />
               <button
-                onClick={() => applyFormat("**")}
+                onClick={() => applyFormat("bold")}
                 className="w-7 h-7 rounded-[6px] hover:bg-dropdown-hover text-foreground flex items-center justify-center font-bold text-[13px] transition-colors"
                 aria-label="Bold"
               >
                 B
               </button>
               <button
-                onClick={() => applyFormat("_")}
+                onClick={() => applyFormat("italic")}
                 className="w-7 h-7 rounded-[6px] hover:bg-dropdown-hover text-foreground flex items-center justify-center italic text-[13px] transition-colors"
                 aria-label="Italic"
               >
