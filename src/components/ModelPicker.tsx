@@ -85,7 +85,7 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
         <SelectContent align="end" className="w-[260px]">
           <SelectItem
             value={AUTO_MODEL_ID}
-            className="p-[5px] bg-[#F8F7F5] data-[state=checked]:bg-[#F8F7F5] focus:bg-[#F8F7F5]"
+            className="p-[5px] min-h-[50px] bg-[#F8F7F5] data-[state=checked]:bg-[#F8F7F5] focus:bg-[#F8F7F5]"
           >
             <span className="flex items-center gap-2">
               <span className="flex flex-col leading-tight">
