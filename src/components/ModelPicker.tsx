@@ -9,8 +9,8 @@ import { Lock, Star } from "lucide-react";
 
 const NewBadge = () => (
   <span
-    className="rounded-sm px-1.5 py-0.5 leading-none"
-    style={{ background: "#F0F6FF", color: "#0062FF", fontSize: "10px", fontWeight: 400 }}
+    className="px-1.5 py-0.5 leading-none"
+    style={{ background: "#F0F6FF", color: "#0062FF", fontSize: "10px", fontWeight: 400, borderRadius: "50px" }}
   >
     New
   </span>
@@ -120,7 +120,7 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
                   onBlur={hideTip}
                   className={locked ? "opacity-60" : undefined}
                 >
-                  <span className="flex items-center gap-2 leading-none">
+                  <span className="flex w-full items-center gap-2 leading-none">
                     <ProviderLogo provider={p} className="w-5 h-5 shrink-0" />
                     <span className="leading-none text-base">{m.label}</span>
                     {isFav && (
