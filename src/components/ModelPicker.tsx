@@ -85,16 +85,16 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
         <SelectContent align="end" className="w-[260px]">
           <SelectItem
             value={AUTO_MODEL_ID}
-            className="py-3.5 bg-[#F8F7F5] data-[state=checked]:bg-[#F8F7F5] focus:bg-[#F8F7F5]"
+            className="p-[5px] bg-[#F8F7F5] data-[state=checked]:bg-[#F8F7F5] focus:bg-[#F8F7F5]"
           >
             <span className="flex items-center gap-2">
               <span className="flex flex-col leading-tight">
                 <span className="leading-none">Auto</span>
-                <span className="text-[9px] text-muted-foreground font-normal mt-0.5">Pick the best model for your request</span>
+                <span className="text-[10px] text-muted-foreground font-normal mt-0.5">Pick the best model for your request</span>
               </span>
             </span>
           </SelectItem>
-          <SelectSeparator />
+          <SelectSeparator className="mt-[5px]" />
           {orderedModels.map(({ p, m }, idx) => {
             const locked = isFree && isPremiumModel(m.id);
             const isFav = favRank.has(m.id);
