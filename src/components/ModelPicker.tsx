@@ -10,7 +10,7 @@ import { Lock, Star } from "lucide-react";
 const NewBadge = () => (
   <span
     className="leading-none"
-    style={{ background: "#F0F6FF", color: "#0062FF", fontSize: "10px", fontWeight: 400, borderRadius: "50px", padding: "2px 5px" }}
+    style={{ background: "#F0F6FF", color: "#0062FF", fontSize: "10px", fontWeight: 400, borderRadius: "50px", padding: "4px 10px" }}
   >
     New
   </span>
