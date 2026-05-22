@@ -35,7 +35,7 @@ export function ProviderBadge({
       {allModels.length > 1 ? (
         <span className="inline-flex items-center -space-x-1">
           {allModels.slice(0, 3).map((m, i) => (
-            <span key={`${m.provider}-${m.model}-${i}`} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted ring-1 ring-background">
+            <span key={`${m.provider}-${m.model}-${i}`} className="inline-flex items-center justify-center w-4 h-4 bg-muted" style={{ borderRadius: "50px", boxShadow: "0 0 0 1px var(--background)" }}>
               <ProviderLogo provider={m.provider} className="w-3.5 h-3.5" />
             </span>
           ))}
