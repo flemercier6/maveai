@@ -829,7 +829,14 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" side="top" className="w-[--radix-dropdown-menu-trigger-width]">
               <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setSettingsOpen(true); }}>
-                <Settings className="w-3.5 h-3.5 mr-2 opacity-70" /> Settings
+                <Settings className="w-3.5 h-3.5 mr-2 opacity-70" />
+                <span className="flex-1">Settings</span>
+                <span
+                  className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-[11px] font-medium"
+                  style={{ background: "#F8F7F5", color: "#888888", borderRadius: "7px" }}
+                >
+                  {typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘O" : "Ctrl+O"}
+                </span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={signOut}>
                 <LogOut className="w-3.5 h-3.5 mr-2 opacity-70" /> Sign out
