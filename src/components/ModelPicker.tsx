@@ -117,8 +117,9 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
                     {isFav && (
                       <Star className="w-3 h-3 text-amber-500 fill-current shrink-0" />
                     )}
-                    {m.id === "gpt-5.5" && !locked && (
-                      <span className="ml-1 rounded-sm bg-blue-500 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white leading-none">
+                    <span className="flex-1" />
+                    {m.id === "gemini-3.5-flash" && (
+                      <span className="rounded-sm px-1.5 py-0.5 leading-none" style={{ background: "#F0F6FF", color: "#0062FF", fontSize: "10px", fontWeight: 400 }}>
                         New
                       </span>
                     )}
