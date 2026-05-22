@@ -7,6 +7,15 @@ import { useAiPreferences } from "@/hooks/useAiPreferences";
 import { ProviderLogo } from "./ProviderLogo";
 import { Lock, Star } from "lucide-react";
 
+const NewBadge = () => (
+  <span
+    className="rounded-sm px-1.5 py-0.5 leading-none"
+    style={{ background: "#F0F6FF", color: "#0062FF", fontSize: "10px", fontWeight: 400 }}
+  >
+    New
+  </span>
+);
+
 type Props = {
   provider: Provider;
   model: string;
@@ -118,11 +127,7 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
                       <Star className="w-3 h-3 text-amber-500 fill-current shrink-0" />
                     )}
                     <span className="flex-1" />
-                    {m.id === "gemini-3.5-flash" && (
-                      <span className="rounded-sm px-1.5 py-0.5 leading-none" style={{ background: "#F0F6FF", color: "#0062FF", fontSize: "10px", fontWeight: 400 }}>
-                        New
-                      </span>
-                    )}
+                    {m.id === "gemini-3.5-flash" && <NewBadge />}
                     {locked && (
                       <span className="ml-1 inline-flex items-center gap-0.5 rounded-sm bg-foreground/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-foreground/70 leading-none">
                         <Lock className="w-2.5 h-2.5" /> Plus
