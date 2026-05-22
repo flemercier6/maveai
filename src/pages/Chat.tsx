@@ -1750,6 +1750,20 @@ export default function Chat() {
   // ---- Attachments ----
   const openFilePicker = () => fileInputRef.current?.click();
 
+  // Global Cmd/Ctrl + U → open the file picker. Overrides the browser's
+  // view-source shortcut, which is fine in this app.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod || e.shiftKey || e.altKey) return;
+      if (e.key !== "u" && e.key !== "U") return;
+      e.preventDefault();
+      openFilePicker();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const handleFiles = async (files: FileList | null) => {
     if (!files || !files.length) return;
     setAttachLoading(true);
@@ -2300,7 +2314,13 @@ export default function Chat() {
                     <DropdownMenuContent align="start" className="w-56">
                       <DropdownMenuItem onClick={openFilePicker}>
                         <Paperclip className="w-4 h-4 mr-2" />
-                        Attach files or images
+                        <span className="flex-1">Attach files or images</span>
+                        <span
+                          className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-[11px] font-medium"
+                          style={{ background: "#F8F7F5", color: "#888888", borderRadius: "7px" }}
+                        >
+                          {typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘U" : "Ctrl+U"}
+                        </span>
                       </DropdownMenuItem>
                       {!aiPrefs.disabledModes.includes("web") && (
                         <DropdownMenuItem
