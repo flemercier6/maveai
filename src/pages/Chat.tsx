@@ -2291,10 +2291,10 @@ export default function Chat() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
+                        className="group h-9 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
                         aria-label="Add attachment"
                       >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4 h-4 transition-transform duration-200 group-data-[state=open]:rotate-45" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-56">
