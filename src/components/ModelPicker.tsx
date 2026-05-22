@@ -5,7 +5,7 @@ import { MODELS, PROVIDERS, type Provider, providerForModel, AUTO_MODEL_ID } fro
 import { isPremiumModel } from "@/hooks/usePlan";
 import { useAiPreferences } from "@/hooks/useAiPreferences";
 import { ProviderLogo } from "./ProviderLogo";
-import { Sparkles, Lock, Star } from "lucide-react";
+import { Lock, Star } from "lucide-react";
 
 type Props = {
   provider: Provider;
@@ -85,13 +85,12 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
         <SelectContent align="end" className="w-[260px]">
           <SelectItem
             value={AUTO_MODEL_ID}
-            className="py-3.5 bg-muted data-[state=checked]:bg-muted focus:bg-muted"
+            className="py-3.5 bg-[#F8F7F5] data-[state=checked]:bg-[#F8F7F5] focus:bg-[#F8F7F5]"
           >
             <span className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 shrink-0" />
               <span className="flex flex-col leading-tight">
                 <span className="leading-none">Auto</span>
-                <span className="text-base text-muted-foreground font-normal mt-0.5">Pick the best model for your request</span>
+                <span className="text-[9px] text-muted-foreground font-normal mt-0.5">Pick the best model for your request</span>
               </span>
             </span>
           </SelectItem>

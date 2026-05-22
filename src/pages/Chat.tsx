@@ -2350,19 +2350,27 @@ export default function Chat() {
                       )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setGoogleService("gmail")}>
-                        <GoogleServiceLogo service="gmail" className="w-4 h-4 mr-2" />
+                        <span className="mr-2 inline-flex shrink-0" style={{ border: "1px solid #F8F7F5", borderRadius: "3px" }}>
+                          <GoogleServiceLogo service="gmail" className="w-4 h-4" />
+                        </span>
                         {GOOGLE_SERVICE_LABEL.gmail}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setGoogleService("calendar")}>
-                        <GoogleServiceLogo service="calendar" className="w-4 h-4 mr-2" />
+                        <span className="mr-2 inline-flex shrink-0" style={{ border: "1px solid #F8F7F5", borderRadius: "3px" }}>
+                          <GoogleServiceLogo service="calendar" className="w-4 h-4" />
+                        </span>
                         {GOOGLE_SERVICE_LABEL.calendar}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setGoogleService("drive")}>
-                        <GoogleServiceLogo service="drive" className="w-4 h-4 mr-2" />
+                        <span className="mr-2 inline-flex shrink-0" style={{ border: "1px solid #F8F7F5", borderRadius: "3px" }}>
+                          <GoogleServiceLogo service="drive" className="w-4 h-4" />
+                        </span>
                         {GOOGLE_SERVICE_LABEL.drive}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setVoyagerService(true)}>
-                        <VoyagerLogo className="w-4 h-4 mr-2" />
+                        <span className="mr-2 inline-flex shrink-0" style={{ border: "1px solid #F8F7F5", borderRadius: "3px" }}>
+                          <VoyagerLogo className="w-4 h-4" />
+                        </span>
                         {VOYAGER_LABEL}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
