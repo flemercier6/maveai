@@ -1107,9 +1107,17 @@ export default function Chat() {
         .then(({ error }) => { if (error) console.error("user message insert failed", error); });
     }
 
-    const baseMsgs: Msg[] = [...messages, { id: `eph-${Date.now()}`, role: "user", content: displayContent, attachments: attachmentPreviews.length ? attachmentPreviews : undefined }];
     const sentGoogleService = googleService;
     const sentVoyagerService = voyagerService;
+    const baseMsgs: Msg[] = [...messages, {
+      id: `eph-${Date.now()}`,
+      role: "user",
+      content: displayContent,
+      attachments: attachmentPreviews.length ? attachmentPreviews : undefined,
+      googleService: sentGoogleService ?? undefined,
+      voyagerService: sentVoyagerService || undefined,
+      reflexion: reflexionMode || undefined,
+    }];
     setMessages([...baseMsgs, { role: "assistant", content: "", provider: sendProvider, model: sendModel, googleService: sentGoogleService ?? undefined, voyagerService: sentVoyagerService || undefined, reflexion: reflexionMode || undefined }]);
     setStreaming(true);
     if (writingMode) {
@@ -2087,6 +2095,7 @@ export default function Chat() {
                   thinkingDone={m.thinkingDone}
                   agentSteps={m.agentSteps}
                   modelsUsed={m.modelsUsed}
+                  reflexion={m.reflexion}
                   attachments={m.attachments}
                   page={m.page}
                   onOpenPage={m.page ? () => { setActivePage(m.page!); setPageOpen(true); } : undefined}
@@ -2308,6 +2317,7 @@ export default function Chat() {
                               setWebEnabled(checked);
                               try { localStorage.setItem("web-search-enabled", String(checked)); } catch {}
                             }}
+                            style={{ transform: "scale(0.8)", transformOrigin: "right center" }}
                           />
                         </DropdownMenuItem>
                       )}

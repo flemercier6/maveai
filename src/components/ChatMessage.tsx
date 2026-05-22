@@ -80,6 +80,7 @@ type Props = {
   hasNote?: boolean;
   onOpenNote?: () => void;
   googleActionSlot?: React.ReactNode;
+  reflexion?: boolean;
 };
 
 function MemoryBadge({ added, updated }: { added: number; updated: number }) {
@@ -235,7 +236,8 @@ function SourceTag({ indices, sources }: { indices: number[]; sources: Source[] 
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center align-middle mx-0.5 h-5 pl-0.5 pr-1.5 rounded-full border border-border bg-card text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors no-underline gap-1"
+          className="inline-flex items-center align-middle mx-0.5 h-5 pl-0.5 pr-1.5 rounded-full text-[10px] font-medium transition-colors no-underline gap-1"
+          style={{ background: "#F8F7F5", color: "#888888" }}
         >
           <span className="inline-flex items-center">
             {thumbs.map(({ n, src }, i) => {
@@ -243,8 +245,8 @@ function SourceTag({ indices, sources }: { indices: number[]; sources: Source[] 
               return (
                 <span
                   key={n}
-                  className={`inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted overflow-hidden ring-1 ring-card ${i > 0 ? "-ml-1.5" : ""}`}
-                  style={{ zIndex: thumbs.length - i }}
+                  className={`inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted overflow-hidden ${i > 0 ? "-ml-1.5" : ""}`}
+                  style={{ zIndex: thumbs.length - i, boxShadow: "0 0 0 1.5px #F8F7F5" }}
                 >
                   {fav ? (
                     <img
@@ -601,37 +603,77 @@ function reflexionStepTag(kind: AgentStep["kind"]): string {
 
 function StepSourcesInline({ count, sources }: { count: number; sources?: Source[] }) {
   if (count <= 0) return null;
-  const items = (sources ?? []).slice(0, Math.min(3, count));
+  const items = (sources ?? []).slice(0, count);
+  const thumbs = items.slice(0, 3);
   return (
-    <span className="inline-flex items-center gap-1 ml-0.5 shrink-0">
-      {items.length > 0 && (
-        <span className="inline-flex items-center">
-          {items.map((src, i) => {
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 pl-0.5 pr-2 h-5 rounded-full text-[10px] font-medium transition-colors shrink-0"
+          style={{ background: "#F8F7F5", color: "#888888" }}
+        >
+          <span className="inline-flex items-center">
+            {thumbs.map((src, i) => {
+              const fav = faviconUrl(src.url);
+              return (
+                <span
+                  key={i}
+                  className={`inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted overflow-hidden ${i > 0 ? "-ml-1.5" : ""}`}
+                  style={{ zIndex: thumbs.length - i, boxShadow: "0 0 0 1.5px #F8F7F5" }}
+                >
+                  {fav ? (
+                    <img
+                      src={fav}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                    />
+                  ) : null}
+                </span>
+              );
+            })}
+          </span>
+          <span className="whitespace-nowrap">{count === 1 ? "Source" : `${count} Sources`}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-80 p-2">
+        <div className="text-[11px] font-medium text-muted-foreground px-2 py-1">
+          {items.length === 1 ? "Source" : `${items.length} Sources`}
+        </div>
+        <ul className="flex flex-col">
+          {items.map((src, n) => {
+            let host = "";
+            try { host = new URL(src.url).hostname.replace(/^www\./, ""); } catch { host = src.url; }
             const fav = faviconUrl(src.url);
             return (
-              <span
-                key={i}
-                className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-muted overflow-hidden ring-1 ring-background ${i > 0 ? "-ml-1" : ""}`}
-                style={{ zIndex: items.length - i }}
-              >
-                {fav ? (
-                  <img
-                    src={fav}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                  />
-                ) : null}
-              </span>
+              <li key={n}>
+                <a
+                  href={src.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-2 px-2 py-1.5 rounded-md hover:bg-dropdown-hover no-underline"
+                >
+                  <span className="mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted overflow-hidden shrink-0">
+                    {fav ? (
+                      <img src={fav} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      <span className="text-[10px] font-medium text-muted-foreground">{n + 1}</span>
+                    )}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] text-foreground line-clamp-2 leading-snug">{src.title}</span>
+                    <span className="block text-[11px] text-muted-foreground truncate">{host}</span>
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-1" />
+                </a>
+              </li>
             );
           })}
-        </span>
-      )}
-      <span className="text-[11px] whitespace-nowrap" style={{ color: "#B7B7B7" }}>
-        {count} source{count > 1 ? "s" : ""}
-      </span>
-    </span>
+        </ul>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -700,6 +742,7 @@ function ChatMessageImpl({
   thinkingDone,
   agentSteps,
   modelsUsed,
+  reflexion,
   onRetry,
   onDelete,
   onEdit,
@@ -736,48 +779,78 @@ function ChatMessageImpl({
     const modeMatch = content.match(/^\/(note|page|explore)(\s+|$)/);
     const modeId = modeMatch ? (modeMatch[1] as "note" | "page" | "explore") : null;
     const rest = modeMatch ? content.slice(modeMatch[0].length) : content;
-    const ModeTag = modeId ? (() => {
-      if (modeId === "note") {
-        return (
-          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[var(--blue-tag-bg)] text-sm" style={{ color: "var(--blue-tag-fg)" }}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-3.5 h-3.5 shrink-0">
-              <path d="M7.66663 3.33331C9.55223 3.33331 10.495 3.33331 11.0808 3.9191C11.6666 4.50489 11.6666 5.44769 11.6666 7.33331C11.6666 12.6666 14.3333 12.6666 14.3333 12.6666H4.82571C4.60707 12.6666 4.49775 12.6666 4.24986 12.6021C4.00197 12.5375 3.96254 12.5155 3.88368 12.4714C3.12363 12.0468 1.66663 10.7828 1.66663 7.33331C1.66663 5.44769 1.66663 4.50489 2.25241 3.9191C2.8382 3.33331 3.78101 3.33331 5.66663 3.33331" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M1.66663 6.66669V10.6667C1.66663 12.5523 1.66663 13.4951 2.25241 14.0809C2.8382 14.6667 3.78101 14.6667 5.66663 14.6667H7.71736C9.60296 14.6667 10.5458 14.6667 11.1316 14.0809C11.4582 13.7543 11.6027 13.3168 11.6666 12.6667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M7.66663 2.33331V4.33331C7.66663 4.64394 7.66663 4.79925 7.61589 4.92177C7.54823 5.08512 7.41843 5.21491 7.25509 5.28257C7.13256 5.33331 6.97723 5.33331 6.66663 5.33331C6.356 5.33331 6.20069 5.33331 6.07817 5.28257C5.91482 5.21491 5.78503 5.08512 5.71737 4.92177C5.66663 4.79925 5.66663 4.64394 5.66663 4.33331V2.33331C5.66663 2.02269 5.66663 1.86737 5.71737 1.74486C5.78503 1.58151 5.91482 1.45172 6.07817 1.38406C6.20069 1.33331 6.356 1.33331 6.66663 1.33331C6.97723 1.33331 7.13256 1.33331 7.25509 1.38406C7.41843 1.45172 7.54823 1.58151 7.61589 1.74486C7.66663 1.86737 7.66663 2.02269 7.66663 2.33331Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Note
-          </div>
-        );
-      }
-      if (modeId === "page") {
-        return (
-          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[var(--blue-tag-bg)] text-sm" style={{ color: "var(--blue-tag-fg)" }}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-3.5 h-3.5 shrink-0">
-              <path d="M2 8C2 5.17157 2 3.75736 2.87868 2.87868C3.75736 2 5.17157 2 8 2C10.8284 2 12.2427 2 13.1213 2.87868C14 3.75736 14 5.17157 14 8C14 10.8284 14 12.2427 13.1213 13.1213C12.2427 14 10.8284 14 8 14C5.17157 14 3.75736 14 2.87868 13.1213C2 12.2427 2 10.8284 2 8Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M2.33337 5.33331H13.6667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M8.66663 8H11.3333" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M8.66663 10.6667H9.99996" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M6 5.33331V14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Page
-          </div>
-        );
-      }
-      const cfg = {
-        explore: { label: "Explore", Icon: Sparkles },
-      }[modeId as "explore"];
-      const Icon = cfg.Icon;
-      return (
-        <div className="inline-flex items-center h-6 gap-1.5 rounded-full bg-muted px-2.5 text-[11px] font-medium text-muted-foreground">
-          <Icon className="w-3.5 h-3.5 shrink-0" />
-          <span>{cfg.label}</span>
+
+    // Build all active mode tags — grey pill, no border, icon + label same colour
+    const modePillClass = "inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[12px] font-medium text-muted-foreground";
+    const modeTags: React.ReactNode[] = [];
+    if (modeId === "note") {
+      modeTags.push(
+        <div key="note" className={modePillClass}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-3.5 h-3.5 shrink-0">
+            <path d="M7.66663 3.33331C9.55223 3.33331 10.495 3.33331 11.0808 3.9191C11.6666 4.50489 11.6666 5.44769 11.6666 7.33331C11.6666 12.6666 14.3333 12.6666 14.3333 12.6666H4.82571C4.60707 12.6666 4.49775 12.6666 4.24986 12.6021C4.00197 12.5375 3.96254 12.5155 3.88368 12.4714C3.12363 12.0468 1.66663 10.7828 1.66663 7.33331C1.66663 5.44769 1.66663 4.50489 2.25241 3.9191C2.8382 3.33331 3.78101 3.33331 5.66663 3.33331" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M1.66663 6.66669V10.6667C1.66663 12.5523 1.66663 13.4951 2.25241 14.0809C2.8382 14.6667 3.78101 14.6667 5.66663 14.6667H7.71736C9.60296 14.6667 10.5458 14.6667 11.1316 14.0809C11.4582 13.7543 11.6027 13.3168 11.6666 12.6667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M7.66663 2.33331V4.33331C7.66663 4.64394 7.66663 4.79925 7.61589 4.92177C7.54823 5.08512 7.41843 5.21491 7.25509 5.28257C7.13256 5.33331 6.97723 5.33331 6.66663 5.33331C6.356 5.33331 6.20069 5.33331 6.07817 5.28257C5.91482 5.21491 5.78503 5.08512 5.71737 4.92177C5.66663 4.79925 5.66663 4.64394 5.66663 4.33331V2.33331C5.66663 2.02269 5.66663 1.86737 5.71737 1.74486C5.78503 1.58151 5.91482 1.45172 6.07817 1.38406C6.20069 1.33331 6.356 1.33331 6.66663 1.33331C6.97723 1.33331 7.13256 1.33331 7.25509 1.38406C7.41843 1.45172 7.54823 1.58151 7.61589 1.74486C7.66663 1.86737 7.66663 2.02269 7.66663 2.33331Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span>Note</span>
         </div>
       );
-    })() : null;
+    }
+    if (modeId === "page") {
+      modeTags.push(
+        <div key="page" className={modePillClass}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-3.5 h-3.5 shrink-0">
+            <path d="M2 8C2 5.17157 2 3.75736 2.87868 2.87868C3.75736 2 5.17157 2 8 2C10.8284 2 12.2427 2 13.1213 2.87868C14 3.75736 14 5.17157 14 8C14 10.8284 14 12.2427 13.1213 13.1213C12.2427 14 10.8284 14 8 14C5.17157 14 3.75736 14 2.87868 13.1213C2 12.2427 2 10.8284 2 8Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M2.33337 5.33331H13.6667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M8.66663 8H11.3333" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M8.66663 10.6667H9.99996" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M6 5.33331V14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span>Page</span>
+        </div>
+      );
+    }
+    if (modeId === "explore") {
+      modeTags.push(
+        <div key="explore" className={modePillClass}>
+          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+          <span>Explore</span>
+        </div>
+      );
+    }
+    if (reflexion) {
+      modeTags.push(
+        <div key="reflexion" className={modePillClass}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-3.5 h-3.5 shrink-0">
+            <path d="M8 2C5.79 2 4 3.79 4 6c0 1.27.59 2.4 1.5 3.13V11c0 .55.45 1 1 1h3c.55 0 1-.45 1-1V9.13C11.41 8.4 12 7.27 12 6c0-2.21-1.79-4-4-4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M6.5 13.5h3M7 14.5h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span>Reflexion</span>
+        </div>
+      );
+    }
+    if (googleService) {
+      modeTags.push(
+        <div key="google" className={modePillClass}>
+          <GoogleServiceLogo service={googleService} className="w-3.5 h-3.5 shrink-0" />
+          <span>{GOOGLE_SERVICE_LABEL[googleService]}</span>
+        </div>
+      );
+    }
+    if (voyagerService) {
+      modeTags.push(
+        <div key="voyager" className={modePillClass}>
+          <VoyagerLogo className="w-3.5 h-3.5 shrink-0" />
+          <span>{VOYAGER_LABEL}</span>
+        </div>
+      );
+    }
+
     return (
       <div className="w-full py-3" id={id ? `chat-anchor-${id}` : undefined}>
         <div className="max-w-3xl mx-auto px-4 flex flex-col items-end gap-1.5">
-          {ModeTag}
+          {modeTags.length > 0 && (
+            <div className="flex flex-wrap justify-end gap-1.5">{modeTags}</div>
+          )}
           {attachments && attachments.length > 0 && (
             <div className="max-w-[80%] flex flex-wrap gap-2 justify-end">
               {attachments.map((a, i) =>
@@ -981,5 +1054,7 @@ export const ChatMessage = memo(ChatMessageImpl, (prev, next) =>
   prev.googleActionSlot === next.googleActionSlot &&
   prev.thinking === next.thinking &&
   prev.thinkingMs === next.thinkingMs &&
-  prev.thinkingDone === next.thinkingDone,
+  prev.thinkingDone === next.thinkingDone &&
+  prev.reflexion === next.reflexion &&
+  prev.voyagerService === next.voyagerService,
 );
