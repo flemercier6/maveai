@@ -1061,23 +1061,55 @@ async function decideClarify(args: {
   anthropicKey?: string;
   userText: string;
   hasHistory: boolean;
+  forceClarify?: boolean;
 }): Promise<ClarifyQuestion[] | null> {
-  const { userText, hasHistory } = args;
+  const { userText, hasHistory, forceClarify } = args;
   const trimmed = userText.trim();
-  if (trimmed.length < 40) return null;
-  // Skip when the user already asks a direct question or gives a clear write/code instruction.
-  const lower = trimmed.toLowerCase();
-  const quickSkipPrefixes = [
-    "écris", "ecris", "rédige", "redige", "compose", "traduis", "résume", "resume",
-    "explique", "définis", "definis", "donne-moi", "donne moi", "fais", "calcule",
-    "code", "corrige", "améliore", "ameliore", "réécris", "reecris",
-    "write", "draft", "compose", "translate", "summarize", "explain", "define",
-    "give me", "make", "fix", "improve", "rewrite", "list", "show",
-  ];
-  if (trimmed.endsWith("?") || trimmed.includes("?\n")) return null;
-  if (quickSkipPrefixes.some((p) => lower.startsWith(p))) return null;
+  if (!forceClarify) {
+    if (trimmed.length < 40) return null;
+    // Skip when the user already asks a direct question or gives a clear write/code instruction.
+    const lower = trimmed.toLowerCase();
+    const quickSkipPrefixes = [
+      "écris", "ecris", "rédige", "redige", "compose", "traduis", "résume", "resume",
+      "explique", "définis", "definis", "donne-moi", "donne moi", "fais", "calcule",
+      "code", "corrige", "améliore", "ameliore", "réécris", "reecris",
+      "write", "draft", "compose", "translate", "summarize", "explain", "define",
+      "give me", "make", "fix", "improve", "rewrite", "list", "show",
+    ];
+    if (trimmed.endsWith("?") || trimmed.includes("?\n")) return null;
+    if (quickSkipPrefixes.some((p) => lower.startsWith(p))) return null;
+  }
 
-  const prompt = `You are a clarification gatekeeper. Your DEFAULT answer is ALWAYS {"needs_clarification": false}.
+  const prompt = forceClarify
+    ? `The user has manually requested that you ask clarifying questions before answering. Your job is to generate 1–2 useful clarifying questions that would help you produce a better answer.
+
+Reply STRICTLY in JSON, no surrounding text:
+{
+  "needs_clarification": true,
+  "questions": [
+    {
+      "header": "<2-3 word tag, e.g. 'Audience', 'Tone', 'Scope', 'Objectif'>",
+      "question": "<one clear question ending with '?'>",
+      "multi": false,
+      "options": [
+        {"label": "<short, 1-5 words>"},
+        {"label": "..."},
+        {"label": "..."}
+      ]
+    }
+  ]
+}
+
+Rules:
+- Maximum 2 questions, prefer 1. Focus on what would most change your answer.
+- 2–4 options per question. Keep options VERY short — 1–3 words, max 24 characters.
+- Do NOT add an "Other" option — the UI handles that automatically.
+- Use the SAME LANGUAGE as the user's message.
+- Even short or simple messages deserve clarifying questions when this mode is active.
+
+User message:
+${userText.slice(0, 2000)}`
+    : `You are a clarification gatekeeper. Your DEFAULT answer is ALWAYS {"needs_clarification": false}.
 Only return true in rare cases where an answer CANNOT be reasonably attempted without knowing one specific missing piece of information that would fundamentally change the output.
 
 Reply STRICTLY in JSON, no surrounding text.
@@ -1587,6 +1619,7 @@ Deno.serve(async (req) => {
           anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
           userText: lastUserText,
           hasHistory: userTurnsEarly > 1,
+          forceClarify,
         }).catch((e) => { console.warn("early clarify failed", e); return null; })
       : Promise.resolve(null);
 
