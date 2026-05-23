@@ -1500,6 +1500,7 @@ Deno.serve(async (req) => {
         model: string;
         messages: Msg[];
         skipClarify?: boolean;
+        forceClarify?: boolean;
         writingMode?: boolean;
         previousCanvas?: string | null;
         forceCanvas?: boolean;
@@ -1524,7 +1525,7 @@ Deno.serve(async (req) => {
     }
     const user = { id: userData.user.id };
 
-    const { conversationId, provider, model: requestedModel, messages, skipClarify, writingMode, previousCanvas, forceCanvas, aiPrefs, googleService, voyagerService, reflexionMode, reflexionEffort } = payload;
+    const { conversationId, provider, model: requestedModel, messages, skipClarify, forceClarify, writingMode, previousCanvas, forceCanvas, aiPrefs, googleService, voyagerService, reflexionMode, reflexionEffort } = payload;
 
     // ---- Apply user AI preferences: blacklist fallback ----
     const blacklisted = new Set(aiPrefs?.blacklistedModels ?? []);
@@ -1578,7 +1579,7 @@ Deno.serve(async (req) => {
       lastUserText.trim().endsWith("?") ||
       /^(what|how|why|who|when|where|which|tell|explain|describe|list|give|show|find|define|translate|write|create|make|build|fix|help|can |could |please )/i.test(lastUserText.trim());
     const willClarifyEarly =
-      !ephemeral && !skipClarify && !writingMode && !!lastUserText && !fastNoClarifyEarly;
+      !ephemeral && !skipClarify && !writingMode && !!lastUserText && (!fastNoClarifyEarly || !!forceClarify);
     const earlyClarifyPromise: Promise<ClarifyQuestion[] | null> = willClarifyEarly
       ? decideClarify({
           googleKey: Deno.env.get("GOOGLE_API_KEY"),
@@ -2269,7 +2270,7 @@ Deno.serve(async (req) => {
             return !/\b(crm|voyager|contact|contacts|company|companies|deal|deals|client|prospect|lead|opportunit|entreprise|societe|pipeline|account|customer|fiche|interlocuteur)\b/.test(t);
           })();
 
-          const willClarify = !ephemeral && !skipClarify && !writingMode && !!lastUserText && !fastNoClarify;
+          const willClarify = !ephemeral && !skipClarify && !writingMode && !!lastUserText && (!fastNoClarify || !!forceClarify);
           const willGoogle = googleConnected && !!googleApiKey && !writingMode && !!lastUserText && !fastNoGoogle;
           const willVoyager = voyagerEnabled && !!lastUserText && !fastNoVoyager && (!writingMode || !!forcedVoyagerDecision);
 
