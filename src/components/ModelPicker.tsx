@@ -5,7 +5,7 @@ import { MODELS, PROVIDERS, type Provider, providerForModel, AUTO_MODEL_ID } fro
 import { isPremiumModel } from "@/hooks/usePlan";
 import { useAiPreferences } from "@/hooks/useAiPreferences";
 import { ProviderLogo } from "./ProviderLogo";
-import { Lock, Star } from "lucide-react";
+import { Star } from "lucide-react";
 
 const NewBadge = () => (
   <span
@@ -13,6 +13,19 @@ const NewBadge = () => (
     style={{ background: "#F0F6FF", color: "#0062FF", fontSize: "10px", fontWeight: 400, borderRadius: "50px", padding: "4px 10px" }}
   >
     New
+  </span>
+);
+
+const PlusBadge = () => (
+  <span
+    className="inline-flex items-center leading-none"
+    style={{ background: "#F7EBFF", color: "#9C4CFF", fontSize: "10px", fontWeight: 400, borderRadius: "50px", padding: "3px 5px", gap: "3px" }}
+  >
+    {/* sparkle icon at 7×7 */}
+    <svg width="7" height="7" viewBox="0 0 7 7" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+      <path d="M3.5 0L4.16 2.34L6.5 3.5L4.16 4.66L3.5 7L2.84 4.66L0.5 3.5L2.84 2.34L3.5 0Z" fill="#9C4CFF"/>
+    </svg>
+    Plus
   </span>
 );
 
@@ -36,8 +49,6 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
     [prefs.favoriteModels],
   );
 
-  // Build the flat ordered list of (provider, model) pairs.
-  // Favorites first (in user-defined order), then the rest grouped by provider.
   const orderedModels = useMemo(() => {
     const flat: { p: Provider; m: typeof MODELS[Provider][number] }[] = [];
     for (const p of PROVIDERS) {
@@ -54,13 +65,46 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
     return flat;
   }, [blacklist, favRank]);
 
-  const favoritesCount = orderedModels.filter((x) => favRank.has(x.m.id)).length;
-
   const showTip = (e: React.SyntheticEvent<HTMLElement>, text: string) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     setTip({ text, top: rect.top + rect.height / 2, left: rect.left - 12 });
   };
   const hideTip = () => setTip(null);
+
+  // When isFree, split into locked (Plus) and free (Basic) sections
+  const lockedModels = isFree ? orderedModels.filter(({ m }) => isPremiumModel(m.id)) : [];
+  const freeModels = isFree ? orderedModels.filter(({ m }) => !isPremiumModel(m.id)) : orderedModels;
+
+  const renderModelItem = ({ p, m }: { p: Provider; m: typeof MODELS[Provider][number] }, locked: boolean) => {
+    const isFav = favRank.has(m.id);
+    return (
+      <SelectItem
+        key={m.id}
+        value={m.id}
+        onMouseEnter={(e) => showTip(e, locked ? "Disponible avec Plus" : m.description)}
+        onMouseLeave={hideTip}
+        onFocus={(e) => showTip(e, locked ? "Disponible avec Plus" : m.description)}
+        onBlur={hideTip}
+        rightSlot={
+          m.id === "gemini-3.5-flash" && !locked ? <NewBadge /> :
+          locked ? <PlusBadge /> :
+          undefined
+        }
+      >
+        <span className="flex items-center gap-2 leading-none">
+          <span className="inline-flex shrink-0 overflow-hidden" style={{ border: "1px solid #F8F7F5", borderRadius: "50%", opacity: locked ? 0.35 : 1 }}>
+            <ProviderLogo provider={p} className="w-5 h-5" />
+          </span>
+          <span className="leading-none text-base" style={{ color: locked ? "rgba(0,0,0,0.3)" : undefined }}>
+            {m.label}
+          </span>
+          {isFav && !locked && (
+            <Star className="w-3 h-3 text-amber-500 fill-current shrink-0" />
+          )}
+        </span>
+      </SelectItem>
+    );
+  };
 
   return (
     <>
@@ -92,6 +136,7 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
           </SelectValue>
         </SelectTrigger>
         <SelectContent align="end" className="w-[260px]">
+          {/* Auto */}
           <SelectItem
             value={AUTO_MODEL_ID}
             className="p-[5px] min-h-[50px] bg-[#F8F7F5] data-[state=checked]:bg-[#F8F7F5] focus:bg-[#F8F7F5]"
@@ -104,43 +149,28 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
             </span>
           </SelectItem>
           <SelectSeparator className="mt-[5px]" />
-          {orderedModels.map(({ p, m }, idx) => {
-            const locked = isFree && isPremiumModel(m.id);
-            const isFav = favRank.has(m.id);
-            // Insert a separator between favorites and the rest of the list.
-            const showFavSep = favoritesCount > 0 && idx === favoritesCount;
-            return (
-              <span key={m.id}>
-                {showFavSep && <SelectSeparator />}
-                <SelectItem
-                  value={m.id}
-                  onMouseEnter={(e) => showTip(e, locked ? "Plus only" : m.description)}
-                  onMouseLeave={hideTip}
-                  onFocus={(e) => showTip(e, locked ? "Plus only" : m.description)}
-                  onBlur={hideTip}
-                  className={locked ? "opacity-60" : undefined}
-                  rightSlot={
-                    m.id === "gemini-3.5-flash" ? <NewBadge /> :
-                    locked ? (
-                      <span className="inline-flex items-center gap-0.5 rounded-sm bg-foreground/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-foreground/70 leading-none">
-                        <Lock className="w-2.5 h-2.5" /> Plus
-                      </span>
-                    ) : undefined
-                  }
-                >
-                  <span className="flex items-center gap-2 leading-none">
-                    <span className="inline-flex shrink-0 overflow-hidden" style={{ border: "1px solid #F8F7F5", borderRadius: "50%" }}>
-                      <ProviderLogo provider={p} className="w-5 h-5" />
-                    </span>
-                    <span className="leading-none text-base">{m.label}</span>
-                    {isFav && (
-                      <Star className="w-3 h-3 text-amber-500 fill-current shrink-0" />
-                    )}
-                  </span>
-                </SelectItem>
-              </span>
-            );
-          })}
+
+          {isFree ? (
+            <>
+              {/* Plus section */}
+              {lockedModels.length > 0 && (
+                <>
+                  <div className="px-2 py-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Plus</div>
+                  {lockedModels.map((item) => renderModelItem(item, true))}
+                  <SelectSeparator className="my-[5px]" />
+                </>
+              )}
+              {/* Basic section */}
+              {freeModels.length > 0 && (
+                <>
+                  <div className="px-2 py-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Basic</div>
+                  {freeModels.map((item) => renderModelItem(item, false))}
+                </>
+              )}
+            </>
+          ) : (
+            orderedModels.map((item) => renderModelItem(item, false))
+          )}
         </SelectContent>
       </Select>
 
