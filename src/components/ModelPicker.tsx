@@ -148,7 +148,7 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
         createPortal(
           <div
             style={{ position: "fixed", top: tip.top, left: tip.left, transform: "translate(-100%, -50%)" }}
-            className="pointer-events-none z-[100] whitespace-nowrap rounded-[4px] bg-tooltip px-2 py-1 text-xs text-tooltip-foreground shadow-md"
+            className="pointer-events-none z-[100] whitespace-nowrap rounded-[10px] bg-tooltip px-[10px] py-[5px] text-[10px] font-normal text-tooltip-foreground shadow-md"
           >
             {tip.text}
           </div>,
