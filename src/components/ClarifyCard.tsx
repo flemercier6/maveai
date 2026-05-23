@@ -1,7 +1,5 @@
 import { memo, useMemo, useState } from "react";
-import { Sparkles, Check, X, ArrowRight, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Check, X, ArrowRight } from "lucide-react";
 
 export type ClarifyOption = { label: string };
 export type ClarifyQuestion = {
@@ -12,7 +10,7 @@ export type ClarifyQuestion = {
 };
 
 type Answer = {
-  selected: number[]; // indices into options
+  selected: number[];
   other?: string;
 };
 
@@ -36,7 +34,6 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
     setAnswers((prev) => {
       const next = prev.slice();
       const cur = { ...next[step] };
-      // Always allow multi-select: clicking toggles the option in/out.
       cur.selected = cur.selected.includes(optIdx)
         ? cur.selected.filter((i) => i !== optIdx)
         : [...cur.selected, optIdx];
@@ -63,7 +60,6 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
       setStep((s) => Math.min(s + 1, total - 1));
       return;
     }
-    // Last step → build combined answer
     const lines: string[] = [];
     questions.forEach((qq, i) => {
       const aa = answers[i];
@@ -81,104 +77,94 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto mb-3">
-      <div className="rounded-2xl border border-border bg-card shadow-[0_4px_16px_-6px_hsl(0_0%_0%/0.08)] overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/40">
-          <div className="flex items-center gap-2 font-medium text-foreground text-base">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>A few quick questions to get this right</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] tabular-nums text-sm text-muted-foreground">
-              {step + 1} / {total}
-            </span>
-            <button
-              type="button"
-              onClick={onSkip}
-              aria-label="Dismiss"
-              className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-dropdown-hover transition-colors"
+      <div
+        className="bg-white rounded-[20px] overflow-hidden flex flex-col"
+        style={{ boxShadow: "0px 4px 5px rgba(0,0,0,0.1)" }}
+      >
+        {/* Header */}
+        <div className="bg-[#f8f7f5] px-[15px] py-[18px] flex items-center gap-[11px]">
+          {q.header && (
+            <span
+              className="bg-[#e0e0e0] rounded-[50px] text-[10px] text-[#888] font-normal whitespace-nowrap"
+              style={{ padding: "5px 7px" }}
             >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
+              {q.header}
+            </span>
+          )}
+          <h4 className="flex-1 text-[14px] font-semibold text-black leading-normal">
+            {q.question}
+          </h4>
+          <span className="text-[14px] text-[#888] font-normal whitespace-nowrap">
+            {step + 1}/{total}
+          </span>
+          <button
+            type="button"
+            onClick={onSkip}
+            aria-label="Close"
+            className="inline-flex items-center justify-center w-[17px] h-[17px] text-[#888] hover:text-foreground transition-colors shrink-0"
+          >
+            <X className="w-[17px] h-[17px]" strokeWidth={1.5} />
+          </button>
         </div>
 
-        {/* Progress bar */}
-        <div className="h-0.5 bg-muted">
-          <div
-            className="h-full bg-foreground transition-all duration-300"
-            style={{ width: `${((step + 1) / total) * 100}%` }}
-          />
-        </div>
-
-        <div className="px-4 py-4 space-y-3">
-          <div className="flex items-baseline gap-2">
-            {q.header && (
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                {q.header}
-              </span>
-            )}
-            <h4 className="font-medium text-foreground text-base">{q.question}</h4>
-          </div>
-          <div className="flex flex-col gap-1.5 items-stretch">
-            {q.options.map((opt, optIdx) => {
-              const active = a.selected.includes(optIdx);
-              return (
-                <button
-                  key={optIdx}
-                  type="button"
-                  onClick={() => toggle(optIdx)}
-                  className={[
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors w-full justify-start text-left",
-                    active
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-background text-foreground hover:bg-dropdown-hover",
-                  ].join(" ")}
-                >
-                  {active && <Check className="w-3 h-3 shrink-0" />}
-                  <span className="truncate text-base">{opt.label}</span>
-                </button>
-              );
-            })}
-          </div>
-          <Input
+        {/* Options */}
+        <div className="px-[20px] py-[11px] flex flex-col gap-[8px]">
+          {q.options.map((opt, optIdx) => {
+            const active = a.selected.includes(optIdx);
+            return (
+              <button
+                key={optIdx}
+                type="button"
+                onClick={() => toggle(optIdx)}
+                className={[
+                  "flex items-center gap-[10px] rounded-[12px] p-[10px] text-[12px] text-black text-left transition-colors",
+                  active ? "bg-[#d1d1d1]" : "bg-[#f8f7f5] hover:bg-[#ececec]",
+                ].join(" ")}
+              >
+                {active && <Check className="w-[9px] h-[9px] shrink-0" strokeWidth={3} />}
+                <span>{opt.label}</span>
+              </button>
+            );
+          })}
+          <input
+            type="text"
             value={a.other ?? ""}
             onChange={(e) => setOther(e.target.value)}
-            placeholder="Other (optional)…"
-            className="h-8 text-xs"
+            placeholder="Autre (optionel)"
+            className="border border-[#e0e0e0] rounded-[12px] p-[10px] text-[12px] text-black placeholder:text-[#888] bg-white outline-none focus:border-[#888]"
           />
         </div>
 
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-t border-border bg-muted/30">
-          {step > 0 ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setStep((s) => Math.max(0, s - 1))}
-              className="h-8 rounded-full text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Back
-            </Button>
-          ) : (
+        {/* Actions */}
+        <div className="px-[20px] pb-[8px] flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="text-[14px] text-[#888] font-normal hover:text-foreground transition-colors p-[10px]"
+          >
+            Cancel
+          </button>
+          <div className="flex items-center gap-[10px]">
             <button
               type="button"
               onClick={onSkip}
-              className="text-muted-foreground text-sm hover:text-foreground px-2"
+              className="text-[14px] text-[#888] font-normal hover:text-foreground transition-colors p-[10px]"
             >
               Skip
             </button>
-          )}
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleNext}
-            disabled={!canAdvance}
-            className="h-8 rounded-full"
-          >
-            {isLast ? "Send answers" : "Next"}
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Button>
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={!canAdvance}
+              className="bg-black text-white text-[14px] font-normal rounded-[50px] flex items-center justify-center gap-[10px] disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+              style={{ padding: "10px" }}
+            >
+              <span>{isLast ? "Send" : "Next"}</span>
+              <span className="inline-flex items-center justify-center rounded-full" style={{ width: "16.971px", height: "16.971px" }}>
+                <ArrowRight className="w-[12px] h-[12px]" strokeWidth={2} />
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
