@@ -81,9 +81,9 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
       <SelectItem
         key={m.id}
         value={m.id}
-        onMouseEnter={(e) => showTip(e, locked ? "Disponible avec Plus" : m.description)}
+        onMouseEnter={(e) => showTip(e, m.description)}
         onMouseLeave={hideTip}
-        onFocus={(e) => showTip(e, locked ? "Disponible avec Plus" : m.description)}
+        onFocus={(e) => showTip(e, m.description)}
         onBlur={hideTip}
         rightSlot={
           m.id === "gemini-3.5-flash" && !locked ? <NewBadge /> :
@@ -139,7 +139,7 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
           {/* Auto */}
           <SelectItem
             value={AUTO_MODEL_ID}
-            className="p-[5px] min-h-[50px] bg-[#F8F7F5] data-[state=checked]:bg-[#F8F7F5] focus:bg-[#F8F7F5]"
+            className="p-[10px] min-h-[50px] bg-[#F8F7F5] data-[state=checked]:bg-[#F8F7F5] focus:bg-[#F8F7F5]"
           >
             <span className="flex items-center gap-2">
               <span className="flex flex-col leading-tight">
@@ -152,21 +152,8 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
 
           {isFree ? (
             <>
-              {/* Plus section */}
-              {lockedModels.length > 0 && (
-                <>
-                  <div className="px-2 py-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Plus</div>
-                  {lockedModels.map((item) => renderModelItem(item, true))}
-                  <SelectSeparator className="my-[5px]" />
-                </>
-              )}
-              {/* Basic section */}
-              {freeModels.length > 0 && (
-                <>
-                  <div className="px-2 py-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Basic</div>
-                  {freeModels.map((item) => renderModelItem(item, false))}
-                </>
-              )}
+              {lockedModels.map((item) => renderModelItem(item, true))}
+              {freeModels.map((item) => renderModelItem(item, false))}
             </>
           ) : (
             orderedModels.map((item) => renderModelItem(item, false))
