@@ -93,7 +93,7 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
         onBlur={hideTip}
         rightSlot={
           m.id === "gemini-3.5-flash" && !locked ? <NewBadge /> :
-          locked ? <PlusBadge /> :
+          locked ? <span className="inline-flex items-center" style={{ gap: "5px" }}><LockIcon /><PlusBadge /></span> :
           undefined
         }
       >
