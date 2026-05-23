@@ -24,7 +24,7 @@ const LockIcon = () => (
 
 const PlusBadge = () => (
   <span
-    className="inline-flex items-center leading-none rounded-[50px] bg-[#F7EBFF] text-[#9C4CFF] dark:bg-[#1E0F33] dark:text-[#C084FC]"
+    className="inline-flex items-center leading-none rounded-[50px] bg-[#F7EBFF] text-[#9C4CFF] dark:bg-[#2D1A4A] dark:text-[#C084FC]"
     style={{ fontSize: "10px", fontWeight: 400, padding: "3px 5px", gap: "3px" }}
   >
     <svg width="6" height="6" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
