@@ -119,19 +119,22 @@ export function ModelPicker({ provider, model, onChange, disabled, isFree, onPre
                   onFocus={(e) => showTip(e, locked ? "Plus only" : m.description)}
                   onBlur={hideTip}
                   className={locked ? "opacity-60" : undefined}
+                  rightSlot={
+                    m.id === "gemini-3.5-flash" ? <NewBadge /> :
+                    locked ? (
+                      <span className="inline-flex items-center gap-0.5 rounded-sm bg-foreground/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-foreground/70 leading-none">
+                        <Lock className="w-2.5 h-2.5" /> Plus
+                      </span>
+                    ) : undefined
+                  }
                 >
-                  <span className="flex w-full items-center gap-2 leading-none">
-                    <ProviderLogo provider={p} className="w-5 h-5 shrink-0" />
+                  <span className="flex items-center gap-2 leading-none">
+                    <span className="inline-flex shrink-0 overflow-hidden" style={{ border: "1px solid #F8F7F5", borderRadius: "50%" }}>
+                      <ProviderLogo provider={p} className="w-5 h-5" />
+                    </span>
                     <span className="leading-none text-base">{m.label}</span>
                     {isFav && (
                       <Star className="w-3 h-3 text-amber-500 fill-current shrink-0" />
-                    )}
-                    <span className="flex-1" />
-                    {m.id === "gemini-3.5-flash" && <NewBadge />}
-                    {locked && (
-                      <span className="ml-1 inline-flex items-center gap-0.5 rounded-sm bg-foreground/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-foreground/70 leading-none">
-                        <Lock className="w-2.5 h-2.5" /> Plus
-                      </span>
                     )}
                   </span>
                 </SelectItem>
