@@ -80,20 +80,25 @@ export default {
         serif: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
       },
       fontSize: {
-        xs: ['8px', { lineHeight: '1.4' }],
-        sm: ['12px', { lineHeight: '1.45' }],
-        base: ['13px', { lineHeight: '1.5' }],
-        lg: ['15px', { lineHeight: '1.5' }],
-        xl: ['18px', { lineHeight: '1.45' }],
+        // Design system: xxs=8px  xs=10px  sm=12px  bd=14px  lg=18px
+        xxs:  ['8px',  { lineHeight: '1.4' }],
+        xs:   ['10px', { lineHeight: '1.4' }],
+        sm:   ['12px', { lineHeight: '1.45' }],
+        base: ['14px', { lineHeight: '1.5' }],
+        lg:   ['18px', { lineHeight: '1.45' }],
+        xl:   ['24px', { lineHeight: '1.3' }],
       },
       boxShadow: {
         soft: 'var(--shadow-sm)',
         elevated: 'var(--shadow-md)',
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "10px",
-        sm: "calc(var(--radius) - 4px)",
+        // Design system: xxs=4px  sm=10px  bd=14px  lg=24px  xl=50px
+        sm:  '4px',
+        md:  '10px',
+        lg:  'var(--radius)',  /* 14px (bd) */
+        xl:  '24px',
+        '2xl': '50px',
       },
       keyframes: {
         "accordion-down": {

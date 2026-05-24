@@ -310,7 +310,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     alt="Mave"
                     className="h-[17px] w-auto group-hover:opacity-0 transition-opacity dark:invert"
                   />
-                  <span className="absolute inset-0 m-auto flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-[#3a3a3a]" style={{ width: "36px", height: "36px" }}>
+                  <span className="absolute inset-0 m-auto flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-[#242424]" style={{ width: "36px", height: "36px" }}>
                     <PanelLeftOpen className="w-4 h-4 text-black dark:text-white" />
                   </span>
                 </button>

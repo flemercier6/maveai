@@ -6,143 +6,158 @@
 
 @layer base {
   :root {
-    /* Light, ChatGPT-like, soft and minimal */
-    --background: 0 0% 100%;
-    --foreground: 222 14% 12%;
+    /* ── Backgrounds ──────────────────────────────── */
+    --background: 0 0% 100%;          /* bg-primary:   #ffffff */
+    --foreground: 0 0% 0%;            /* text.primary: #000000 */
 
-    --surface: 60 9% 98%;            /* main chat area */
-    --surface-foreground: 222 14% 12%;
+    --surface: 40 18% 97%;            /* bg-secondary: #f8f7f5 */
+    --surface-foreground: 0 0% 0%;
 
-    --sidebar-bg: 220 13% 96%;
-    --sidebar-fg: 222 14% 18%;
-    --sidebar-active: 220 13% 90%;
-    --sidebar-hover: 220 13% 92%;
+    --sidebar-bg: 40 18% 97%;
+    --sidebar-fg: 0 0% 0%;
+    --sidebar-active: 0 0% 88%;
+    --sidebar-hover: 40 18% 97%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 14% 12%;
+    --card-foreground: 0 0% 0%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 14% 12%;
+    --popover-foreground: 0 0% 0%;
 
-    --primary: 0 0% 0%;              /* #000000 */
-    --primary-foreground: 0 0% 100%;
+    /* ── Buttons ──────────────────────────────────── */
+    --primary: 0 0% 0%;               /* button.primary.bg:   #000000 */
+    --primary-foreground: 0 0% 100%;  /* button.primary.text: #ffffff */
     --primary-hover: 0 0% 15%;
 
-    --secondary: 220 13% 95%;
-    --secondary-foreground: 222 14% 18%;
+    --secondary: 40 18% 97%;          /* bg-secondary: #f8f7f5 */
+    --secondary-foreground: 0 0% 0%;
 
-    --muted: 220 13% 96%;
-    --muted-foreground: 220 9% 46%;
+    /* ── Muted / accents ──────────────────────────── */
+    --muted: 40 18% 97%;              /* bg-secondary: #f8f7f5 */
+    --muted-foreground: 0 0% 53%;     /* text.secondary: #888888 */
 
-    --accent: 220 13% 94%;
-    --accent-foreground: 222 14% 12%;
+    --accent: 40 18% 97%;             /* hover.primary: #f8f7f5 */
+    --accent-foreground: 0 0% 0%;
 
-    --select-active: 214 100% 94%;     /* #E2EEFF */
-    --select-active-foreground: 222 14% 12%;
+    --select-active: 214 100% 94%;
+    --select-active-foreground: 0 0% 0%;
 
-    --destructive: 0 72% 51%;
+    /* ── Destructive ──────────────────────────────── */
+    --destructive: 7 100% 41%;        /* button.error.text: #d21800 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 88%;              /* #E0E0E0 — all strokes */
-    --input: 0 0% 88%;
-    --ring: 0 0% 0%;
+    /* ── Strokes & inputs ─────────────────────────── */
+    --border: 0 0% 88%;               /* border.primary: #e0e0e0 */
+    --input: 0 0% 88%;                /* input.border:   #e0e0e0 */
+    --ring: 217 100% 50%;             /* accent.primary: #0062ff */
 
-    --bubble-user: 40 18% 97%;            /* #F8F7F5 */
-    --bubble-user-fg: 222 14% 12%;
+    /* ── Chat bubbles ─────────────────────────────── */
+    --bubble-user: 40 18% 97%;        /* bg-secondary: #f8f7f5 */
+    --bubble-user-fg: 0 0% 0%;
     --bubble-assistant: 0 0% 100%;
-    --bubble-assistant-fg: 222 14% 12%;
+    --bubble-assistant-fg: 0 0% 0%;
 
-    --tooltip: 0 0% 0%;
-    --tooltip-foreground: 0 0% 100%;
+    /* ── Tooltip ──────────────────────────────────── */
+    --tooltip: 0 0% 0%;               /* tooltip.bg:   #000000 */
+    --tooltip-foreground: 0 0% 100%;  /* tooltip.text: #ffffff */
 
-    --dropdown-hover: 40 18% 97%;       /* #F8F7F5 — hover bg for dropdown items */
+    /* ── Hover / misc ─────────────────────────────── */
+    --dropdown-hover: 40 18% 97%;     /* hover.primary: #f8f7f5 */
+    --link: 217 100% 50%;             /* accent.primary: #0062ff */
+    --switch-on: 217 100% 50%;
 
-    --link: 217 100% 50%;             /* #0062FF — clickable URLs */
-    --switch-on: 217 100% 50%;        /* #0062FF — switches when checked */
+    --blue-tag-bg: #f0f6ff;           /* pills.modes.bg:   #f0f6ff */
+    --blue-tag-fg: #0062ff;           /* pills.modes.text: #0062ff */
 
-    --blue-tag-bg: #E6F1FF;
-    --blue-tag-fg: #0062FF;
+    --radius: 0.875rem;               /* bd radius: 14px */
 
-    --radius: 0.5rem;
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 10% / 0.05);
+    --shadow-md: 0 4px 16px -2px hsl(0 0% 10% / 0.08);
 
-    --shadow-sm: 0 1px 2px 0 hsl(220 13% 10% / 0.05);
-    --shadow-md: 0 4px 16px -2px hsl(220 13% 10% / 0.08);
-
-    --sidebar-background: 40 18% 97%;  /* #F8F7F5 */
-    --sidebar-foreground: 222 14% 18%;
+    /* ── Sidebar ──────────────────────────────────── */
+    --sidebar-background: 40 18% 97%; /* bg-secondary: #f8f7f5 */
+    --sidebar-foreground: 0 0% 0%;
     --sidebar-primary: 0 0% 0%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 90%;      /* #E6E6E6 — sidebar hover/active bg */
-    --sidebar-accent-foreground: 222 14% 12%;
-    --sidebar-border: 0 0% 88%;      /* #E0E0E0 */
-    --sidebar-ring: 0 0% 0%;
+    --sidebar-accent: 0 0% 88%;       /* bg-tertiary / hover: #e0e0e0 */
+    --sidebar-accent-foreground: 0 0% 0%;
+    --sidebar-border: 0 0% 88%;       /* border.primary: #e0e0e0 */
+    --sidebar-ring: 217 100% 50%;
   }
 
   .dark {
-    --background: 222 14% 8%;
-    --foreground: 220 13% 92%;
+    /* ── Backgrounds ──────────────────────────────── */
+    --background: 0 0% 9%;            /* bg-primary:   #181818 */
+    --foreground: 0 0% 100%;          /* text.primary: #ffffff */
 
-    --surface: 222 14% 10%;
-    --surface-foreground: 220 13% 92%;
+    --surface: 0 0% 14%;              /* bg-secondary: #242424 */
+    --surface-foreground: 0 0% 100%;
 
-    --sidebar-bg: 222 14% 7%;
-    --sidebar-fg: 220 13% 85%;
-    --sidebar-active: 222 14% 14%;
-    --sidebar-hover: 222 14% 12%;
+    --sidebar-bg: 0 0% 9%;
+    --sidebar-fg: 0 0% 100%;
+    --sidebar-active: 0 0% 14%;
+    --sidebar-hover: 0 0% 14%;
 
-    --card: 222 14% 11%;
-    --card-foreground: 220 13% 92%;
+    --card: 0 0% 14%;                 /* bg-secondary: #242424 */
+    --card-foreground: 0 0% 100%;
 
-    --popover: 222 14% 11%;
-    --popover-foreground: 220 13% 92%;
+    --popover: 0 0% 14%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
+    /* ── Buttons ──────────────────────────────────── */
+    --primary: 0 0% 100%;             /* button.primary.bg dark:   #ffffff */
+    --primary-foreground: 0 0% 0%;    /* button.primary.text dark: #000000 */
     --primary-hover: 0 0% 80%;
 
-    --secondary: 222 14% 16%;
-    --secondary-foreground: 220 13% 85%;
+    --secondary: 0 0% 14%;            /* bg-secondary: #242424 */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 222 14% 14%;
-    --muted-foreground: 220 9% 55%;
+    /* ── Muted / accents ──────────────────────────── */
+    --muted: 0 0% 14%;                /* bg-secondary: #242424 */
+    --muted-foreground: 0 0% 53%;     /* text.secondary: #888888 */
 
-    --accent: 222 14% 16%;
-    --accent-foreground: 220 13% 92%;
+    --accent: 0 0% 27%;               /* bg-tertiary: #444444 */
+    --accent-foreground: 0 0% 100%;
 
     --select-active: 217 50% 22%;
-    --select-active-foreground: 220 13% 92%;
+    --select-active-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 50%;
+    /* ── Destructive ──────────────────────────────── */
+    --destructive: 359 100% 65%;      /* button.error.text dark: #ff4d50 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 222 14% 20%;
-    --input: 222 14% 20%;
-    --ring: 0 0% 100%;
+    /* ── Strokes & inputs ─────────────────────────── */
+    --border: 0 0% 20%;               /* border.primary: #333333 */
+    --input: 0 0% 27%;                /* input.border:   #444444 */
+    --ring: 217 100% 50%;
 
-    --bubble-user: 222 14% 12%;
-    --bubble-user-fg: 220 13% 92%;
-    --bubble-assistant: 222 14% 8%;
-    --bubble-assistant-fg: 220 13% 92%;
+    /* ── Chat bubbles ─────────────────────────────── */
+    --bubble-user: 0 0% 14%;          /* bg-secondary: #242424 */
+    --bubble-user-fg: 0 0% 100%;
+    --bubble-assistant: 0 0% 9%;      /* bg-primary: #181818 */
+    --bubble-assistant-fg: 0 0% 100%;
 
-    --tooltip: 222 14% 16%;
-    --tooltip-foreground: 220 13% 92%;
+    /* ── Tooltip ──────────────────────────────────── */
+    --tooltip: 0 0% 14%;              /* tooltip.bg:   #242424 */
+    --tooltip-foreground: 0 0% 100%;  /* tooltip.text: #ffffff */
 
-    --dropdown-hover: 222 14% 14%;
+    /* ── Hover / misc ─────────────────────────────── */
+    --dropdown-hover: 0 0% 14%;       /* hover.primary: #242424 */
+    --link: 217 100% 60%;
+    --switch-on: 217 100% 60%;
 
-    --link: 217 100% 68%;
-    --switch-on: 217 100% 68%;
+    --blue-tag-bg: #002141;           /* pills.modes.bg dark:   #002141 */
+    --blue-tag-fg: #4da3ff;           /* pills.modes.text dark: #4da3ff */
 
-    --blue-tag-bg: #1e3a5f;
-    --blue-tag-fg: #60a5fa;
-
-    --sidebar-background: 222 14% 7%;
-    --sidebar-foreground: 220 13% 85%;
+    /* ── Sidebar ──────────────────────────────────── */
+    --sidebar-background: 0 0% 9%;    /* bg-primary: #181818 */
+    --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 0 0% 100%;
     --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 222 14% 14%;
-    --sidebar-accent-foreground: 220 13% 92%;
-    --sidebar-border: 222 14% 18%;
-    --sidebar-ring: 0 0% 100%;
+    --sidebar-accent: 0 0% 14%;       /* hover.primary: #242424 */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 20%;       /* border.primary: #333333 */
+    --sidebar-ring: 217 100% 50%;
   }
 }
 
