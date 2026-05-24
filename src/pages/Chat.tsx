@@ -267,19 +267,26 @@ export default function Chat() {
 
   const lastSentRef = useRef<string>("");
   const lastAttachmentsRef = useRef<Attachment[]>([]);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
   const activeComposer = useActiveComposer();
   const mainComposerDimmed = activeComposer === "explore";
 
-  // Auto-resize textarea height based on content
+  // Sync editor DOM when `input` is updated externally (clear-on-send,
+  // restore-on-abort, retry-from-message). Skipped when value already matches
+  // what's in the editor — i.e. when the user is just typing.
+  const lastSyncedInputRef = useRef<string>("");
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
+    if (readEditorText(el) === input) {
+      lastSyncedInputRef.current = input;
+      return;
+    }
+    setEditorText(el, input);
+    lastSyncedInputRef.current = input;
   }, [input]);
 
   // Anonymous users are allowed — they use the app in free mode without
