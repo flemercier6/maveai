@@ -215,6 +215,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
         loading={loading}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((c) => !c)}
+        result={action.result as Record<string, unknown> | undefined}
       />
     );
   }
@@ -396,6 +397,7 @@ function CalendarEventCard({
   loading,
   collapsed,
   onToggleCollapse,
+  result,
 }: {
   params: Record<string, unknown>;
   onChange: (next: Record<string, unknown>) => void;
@@ -405,6 +407,7 @@ function CalendarEventCard({
   loading: boolean;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  result?: Record<string, unknown>;
 }) {
   const set = (k: string, v: unknown) => onChange({ ...params, [k]: v });
 
