@@ -101,17 +101,23 @@ export function GoogleActionCard({ action, onChange }: Props) {
         : "Créer l'événement";
 
   const handleConfirm = async (overrideAction?: GoogleAction["action"]) => {
-    const effectiveAction = overrideAction ?? action.action;
+    let effectiveAction = overrideAction ?? action.action;
     // Strip UI-only fields before sending
     const cleanParams: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(params)) {
       if (!k.startsWith("_")) cleanParams[k] = v;
     }
+    // If a draft event was already created (Google Meet pre-created), patch it instead
+    const existingEventId = params._eventId as string | undefined;
+    let body: { action: string; params: Record<string, unknown> };
+    if (effectiveAction === "calendar.create" && existingEventId) {
+      body = { action: "calendar.update", params: { ...cleanParams, eventId: existingEventId } };
+    } else {
+      body = { action: effectiveAction, params: cleanParams };
+    }
     onChange({ ...action, action: effectiveAction, state: "executing", params: cleanParams });
     try {
-      const { data, error } = await supabase.functions.invoke("google-tools", {
-        body: { action: effectiveAction, params: cleanParams },
-      });
+      const { data, error } = await supabase.functions.invoke("google-tools", { body });
       if (error) throw error;
       if ((data as { error?: string })?.error) {
         throw new Error((data as { error: string }).error);
@@ -132,7 +138,17 @@ export function GoogleActionCard({ action, onChange }: Props) {
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
+    const existingEventId = params._eventId as string | undefined;
+    if (existingEventId) {
+      try {
+        await supabase.functions.invoke("google-tools", {
+          body: { action: "calendar.delete", params: { eventId: existingEventId } },
+        });
+      } catch (e) {
+        console.error("Failed to delete draft event", e);
+      }
+    }
     onChange({ ...action, state: "cancelled" });
   };
 
@@ -411,6 +427,61 @@ function CalendarEventCard({
 }) {
   const set = (k: string, v: unknown) => onChange({ ...params, [k]: v });
 
+  const [meetLoading, setMeetLoading] = useState(false);
+
+  const enableMeet = async () => {
+    if (params.addMeet || meetLoading) return;
+    setMeetLoading(true);
+    const cleanParams: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(params)) {
+      if (!k.startsWith("_")) cleanParams[k] = v;
+    }
+    cleanParams.addMeet = true;
+    try {
+      const existingEventId = params._eventId as string | undefined;
+      const body = existingEventId
+        ? { action: "calendar.update", params: { ...cleanParams, eventId: existingEventId } }
+        : { action: "calendar.create", params: cleanParams };
+      const { data, error } = await supabase.functions.invoke("google-tools", { body });
+      if (error) throw error;
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      const r = (data as { result?: { id?: string; meetUrl?: string } })?.result ?? {};
+      const code = r.meetUrl ? String(r.meetUrl).replace(/^https?:\/\/meet\.google\.com\//, "").split("?")[0] : "";
+      onChange({
+        ...params,
+        addMeet: true,
+        _eventId: r.id ?? params._eventId,
+        _meetUrl: r.meetUrl ?? null,
+        _meetCode: code,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Impossible de créer le Meet";
+      toast.error(msg);
+    } finally {
+      setMeetLoading(false);
+    }
+  };
+
+  const disableMeet = async () => {
+    if (!params.addMeet && !params._eventId) return;
+    const existingEventId = params._eventId as string | undefined;
+    if (existingEventId) {
+      try {
+        await supabase.functions.invoke("google-tools", {
+          body: { action: "calendar.delete", params: { eventId: existingEventId } },
+        });
+      } catch (e) {
+        console.error("Failed to delete draft event", e);
+      }
+    }
+    const next = { ...params };
+    delete next._eventId;
+    delete next._meetUrl;
+    delete next._meetCode;
+    next.addMeet = false;
+    onChange(next);
+  };
+
   const start = parseDateTime(fmt(params.start));
   const end = parseDateTime(fmt(params.end));
   const duration = calcDuration(fmt(params.start), fmt(params.end));
@@ -582,18 +653,20 @@ function CalendarEventCard({
                     <PopoverContent className="p-1 z-50" align="start" style={{ width: "var(--radix-popover-trigger-width)" }}>
                       <button
                         type="button"
-                        onClick={() => onChange({ ...params, addMeet: false })}
+                        onClick={disableMeet}
                         className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[6px] text-[14px] text-foreground hover:bg-dropdown-hover"
                       >
                         No visio-conference
                       </button>
                       <button
                         type="button"
-                        onClick={() => onChange({ ...params, addMeet: true })}
-                        className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[6px] text-[14px] text-foreground hover:bg-dropdown-hover"
+                        onClick={enableMeet}
+                        disabled={meetLoading}
+                        className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[6px] text-[14px] text-foreground hover:bg-dropdown-hover disabled:opacity-60"
                       >
                         <img src={gmeetLogo} alt="" className="w-[18px] h-[18px] object-contain" />
                         Google Meet
+                        {meetLoading ? <Loader2 className="w-3 h-3 animate-spin ml-auto" /> : null}
                       </button>
                     </PopoverContent>
                   </Popover>
@@ -604,13 +677,13 @@ function CalendarEventCard({
                     <div className="flex items-center gap-[10px] text-[14px]">
                       <span className="text-muted-foreground w-[140px] shrink-0">Google Meet URL</span>
                       <span className="text-foreground truncate underline">
-                        {result?.meetUrl ? String(result!.meetUrl) : "Sera généré à la création"}
+                        {meetLoading ? "Création…" : (params._meetUrl ? String(params._meetUrl) : (result?.meetUrl ? String(result.meetUrl) : "—"))}
                       </span>
                     </div>
                     <div className="flex items-center gap-[10px] text-[14px]">
                       <span className="text-muted-foreground w-[140px] shrink-0">Code</span>
                       <span className="text-foreground underline">
-                        {result?.meetUrl ? String(result!.meetUrl).replace(/^https?:\/\/meet\.google\.com\//, "").split("?")[0] : "—"}
+                        {meetLoading ? "…" : (params._meetCode ? String(params._meetCode) : "—")}
                       </span>
                     </div>
                   </div>

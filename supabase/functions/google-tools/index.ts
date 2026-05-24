@@ -344,6 +344,73 @@ async function calendarCreate(
   };
 }
 
+async function calendarUpdate(
+  accessToken: string,
+  params: {
+    eventId: string;
+    summary?: string;
+    start?: string;
+    end?: string;
+    description?: string;
+    location?: string;
+    attendees?: string[];
+    timeZone?: string;
+  },
+) {
+  const tz = params.timeZone ?? "UTC";
+  const body: Record<string, unknown> = {};
+  if (params.summary !== undefined) body.summary = params.summary;
+  if (params.description !== undefined) body.description = params.description;
+  if (params.location !== undefined) body.location = params.location;
+  if (params.start) body.start = { dateTime: params.start, timeZone: tz };
+  if (params.end) body.end = { dateTime: params.end, timeZone: tz };
+  if (params.attendees) body.attendees = params.attendees.map((email) => ({ email }));
+  const url = new URL(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(params.eventId)}`,
+  );
+  url.searchParams.set("sendUpdates", "all");
+  const r = await fetch(url.toString(), {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(`Calendar update failed: ${JSON.stringify(d)}`);
+  return {
+    id: d.id,
+    htmlLink: d.htmlLink,
+    summary: d.summary,
+    start: d.start?.dateTime ?? d.start?.date,
+    end: d.end?.dateTime ?? d.end?.date,
+    hangoutLink: d.hangoutLink ?? null,
+    meetUrl: d.hangoutLink ?? d.conferenceData?.entryPoints?.find(
+      (e: { entryPointType?: string; uri?: string }) => e.entryPointType === "video",
+    )?.uri ?? null,
+  };
+}
+
+async function calendarDelete(
+  accessToken: string,
+  params: { eventId: string },
+) {
+  const url = new URL(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(params.eventId)}`,
+  );
+  url.searchParams.set("sendUpdates", "all");
+  const r = await fetch(url.toString(), {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!r.ok && r.status !== 410) {
+    const t = await r.text();
+    throw new Error(`Calendar delete failed: ${t}`);
+  }
+  return { id: params.eventId, deleted: true };
+}
+
 // ---------- Server ----------
 
 Deno.serve(async (req) => {
@@ -414,6 +481,12 @@ Deno.serve(async (req) => {
         break;
       case "calendar.create":
         result = await calendarCreate(at, params as any);
+        break;
+      case "calendar.update":
+        result = await calendarUpdate(at, params as any);
+        break;
+      case "calendar.delete":
+        result = await calendarDelete(at, params as any);
         break;
       default:
         return new Response(JSON.stringify({ error: `Unknown action: ${action}` }), {
