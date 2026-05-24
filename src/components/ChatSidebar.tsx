@@ -44,6 +44,7 @@ import { usePlan } from "@/hooks/usePlan";
 import maveLogo from "@/assets/fevrier-logo.svg";
 import maveIcon from "@/assets/fevrier-icon.svg";
 import sidebarUserArrows from "@/assets/sidebar_user_arrows.svg";
+import sidebarToggleIcon from "@/assets/sidebar-toggle.svg";
 
 export type Conversation = {
   id: string;
