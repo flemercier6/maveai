@@ -1,6 +1,7 @@
 import gmailLogoUrl from "@/assets/logo-gmail.png";
 import calendarLogoUrl from "@/assets/logo-calendar.png";
 import driveLogoUrl from "@/assets/logo-drive.png";
+import { cn } from "@/lib/utils";
 
 export type GoogleService = "gmail" | "calendar" | "drive";
 
@@ -15,7 +16,7 @@ function GmailLogo({ className }: { className?: string }) {
     <img
       src={gmailLogoUrl}
       alt="Gmail"
-      className={className}
+      className={cn("rounded-[50px]", className)}
       draggable={false}
     />
   );
@@ -26,7 +27,7 @@ function CalendarLogo({ className }: { className?: string }) {
     <img
       src={calendarLogoUrl}
       alt="Calendar"
-      className={className}
+      className={cn("rounded-[50px]", className)}
       draggable={false}
     />
   );
@@ -37,7 +38,7 @@ function DriveLogo({ className }: { className?: string }) {
     <img
       src={driveLogoUrl}
       alt="Drive"
-      className={className}
+      className={cn("rounded-[50px]", className)}
       draggable={false}
     />
   );
