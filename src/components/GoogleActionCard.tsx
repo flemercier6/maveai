@@ -423,18 +423,15 @@ function CalendarEventCard({
                 )}
 
                 {/* Invitees */}
-                <EventRow label="Invitees">
-                  <EventPillInput
-                    value={attendees}
-                    onChange={(v) =>
-                      onChange({
-                        ...params,
-                        attendees: v.split(",").map((s) => s.trim()).filter(Boolean),
-                      })
-                    }
-                    placeholder="Add participants"
-                  />
-                </EventRow>
+                <div className="flex items-start gap-[10px] w-full">
+                  <span className="text-[14px] text-foreground w-[60px] shrink-0 pt-[10px]">Invitees</span>
+                  <div className="flex-1 min-w-0">
+                    <AttendeeInput
+                      attendees={Array.isArray(params.attendees) ? (params.attendees as string[]) : []}
+                      onChange={(next) => onChange({ ...params, attendees: next })}
+                    />
+                  </div>
+                </div>
 
                 {/* Separator */}
                 <div className="h-px bg-border w-full" />
