@@ -409,7 +409,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
               <Plus className="w-5 h-5 md:w-4 md:h-4 opacity-70" />
               <span>New chat</span>
               {isFree && (
-                <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider rounded-full bg-violet-100 text-violet-600 px-1.5 py-0.5">
+                <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider rounded-full bg-[#F7EBFF] text-[#9C4CFF] dark:bg-[#2D1A4A] dark:text-[#C084FC] px-1.5 py-0.5">
                   Plus
                 </span>
               )}

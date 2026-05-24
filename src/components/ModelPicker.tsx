@@ -9,7 +9,7 @@ import { Star } from "lucide-react";
 
 const NewBadge = () => (
   <span
-    className="leading-none rounded-[50px] bg-[#F0F6FF] text-[#0062FF] dark:bg-[#0A1F3F] dark:text-[#4DA3FF]"
+    className="leading-none rounded-[50px] bg-[#F0F6FF] text-[#0062FF] dark:bg-[#002141] dark:text-[#4DA3FF]"
     style={{ fontSize: "10px", fontWeight: 400, padding: "4px 10px" }}
   >
     New
