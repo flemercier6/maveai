@@ -219,6 +219,12 @@ export default function Chat() {
     start: number;
     pos: { left: number; top: number };
   } | null>(null);
+  const [mention, setMention] = useState<{
+    query: string;
+    start: number;
+    pos: { left: number; top: number };
+  } | null>(null);
+  const [mentionActive, setMentionActive] = useState(0);
 
   // ---- Explore (branch) side panel ----
   const [exploreOpen, setExploreOpen] = useState(false);
