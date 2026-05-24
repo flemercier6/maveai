@@ -555,10 +555,20 @@ function CalendarEventCard({
 
                 {/* Meeting type */}
                 <EventRow label="Meeting">
-                  <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] flex items-center justify-between w-full">
-                    <span className="text-muted-foreground">Create an online meeting</span>
-                    <ChevronDown className="w-[8px] h-[8px] text-muted-foreground shrink-0" />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onChange({ ...params, addMeet: !params.addMeet })}
+                    className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] flex items-center justify-between w-full hover:opacity-90 transition-opacity"
+                  >
+                    <span className={cn(params.addMeet ? "text-foreground" : "text-muted-foreground")}>
+                      {params.addMeet ? "Google Meet sera ajouté" : "Ajouter Google Meet"}
+                    </span>
+                    <Switch
+                      checked={Boolean(params.addMeet)}
+                      onCheckedChange={(v) => onChange({ ...params, addMeet: v })}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </button>
                 </EventRow>
               </>
             )}
