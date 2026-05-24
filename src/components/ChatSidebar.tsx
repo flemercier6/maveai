@@ -849,8 +849,8 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                 <Settings className="w-3.5 h-3.5 mr-2 opacity-70" />
                 <span className="flex-1">Settings</span>
                 <span
-                  className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-[11px] font-medium"
-                  style={{ background: "#F8F7F5", color: "#888888", borderRadius: "7px" }}
+                  className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-[11px] font-medium bg-[#f8f7f5] dark:bg-[#242424] text-[#888888]"
+                  style={{ borderRadius: "7px" }}
                 >
                   {typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘O" : "Ctrl+O"}
                 </span>

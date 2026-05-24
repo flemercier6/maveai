@@ -78,30 +78,30 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
   return (
     <div className="max-w-2xl mx-auto mb-3">
       <div
-        className="bg-white rounded-[20px] overflow-hidden flex flex-col"
+        className="bg-white dark:bg-[#181818] rounded-[20px] overflow-hidden flex flex-col"
         style={{ boxShadow: "0px 4px 5px rgba(0,0,0,0.1)" }}
       >
         {/* Header */}
-        <div className="bg-[#f8f7f5] px-[15px] py-[18px] flex items-center gap-[11px]">
+        <div className="bg-[#f8f7f5] dark:bg-[#242424] px-[15px] py-[18px] flex items-center gap-[11px]">
           {q.header && (
             <span
-              className="bg-[#e0e0e0] rounded-[50px] text-[10px] text-[#888] font-normal whitespace-nowrap"
+              className="bg-[#e0e0e0] dark:bg-[#444444] rounded-[50px] text-[10px] text-[#888888] font-normal whitespace-nowrap"
               style={{ padding: "5px 7px" }}
             >
               {q.header}
             </span>
           )}
-          <h4 className="flex-1 text-[14px] font-semibold text-black leading-normal">
+          <h4 className="flex-1 text-[14px] font-semibold text-black dark:text-white leading-normal">
             {q.question}
           </h4>
-          <span className="text-[14px] text-[#888] font-normal whitespace-nowrap">
+          <span className="text-[14px] text-[#888888] font-normal whitespace-nowrap">
             {step + 1}/{total}
           </span>
           <button
             type="button"
             onClick={onSkip}
             aria-label="Close"
-            className="inline-flex items-center justify-center w-[17px] h-[17px] text-[#888] hover:text-foreground transition-colors shrink-0"
+            className="inline-flex items-center justify-center w-[17px] h-[17px] text-[#888888] hover:text-foreground transition-colors shrink-0"
           >
             <X className="w-[17px] h-[17px]" strokeWidth={1.5} />
           </button>
@@ -117,8 +117,10 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
                 type="button"
                 onClick={() => toggle(optIdx)}
                 className={[
-                  "flex items-center gap-[10px] rounded-[12px] p-[10px] text-[12px] text-black text-left transition-colors",
-                  active ? "bg-[#d1d1d1]" : "bg-[#f8f7f5] hover:bg-[#ececec]",
+                  "flex items-center gap-[10px] rounded-[12px] p-[10px] text-[12px] text-black dark:text-white text-left transition-colors",
+                  active
+                    ? "bg-[#e0e0e0] dark:bg-[#444444]"
+                    : "bg-[#f8f7f5] dark:bg-[#242424] hover:bg-[#e0e0e0] dark:hover:bg-[#444444]",
                 ].join(" ")}
               >
                 {active && <Check className="w-[9px] h-[9px] shrink-0" strokeWidth={3} />}
@@ -131,7 +133,7 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
             value={a.other ?? ""}
             onChange={(e) => setOther(e.target.value)}
             placeholder="Autre (optionel)"
-            className="border border-[#e0e0e0] rounded-[12px] p-[10px] text-[12px] text-black placeholder:text-[#888] bg-white outline-none focus:border-[#888]"
+            className="border border-[#e0e0e0] dark:border-[#444444] rounded-[12px] p-[10px] text-[12px] text-black dark:text-white placeholder:text-[#888888] bg-white dark:bg-[#242424] outline-none focus:border-[#888888] dark:focus:border-[#888888]"
           />
         </div>
 
@@ -140,7 +142,7 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
           <button
             type="button"
             onClick={onSkip}
-            className="text-[14px] text-[#888] font-normal hover:text-foreground transition-colors p-[10px]"
+            className="text-[14px] text-[#888888] font-normal hover:text-foreground transition-colors p-[10px]"
           >
             Cancel
           </button>
@@ -148,7 +150,7 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
             <button
               type="button"
               onClick={onSkip}
-              className="text-[14px] text-[#888] font-normal hover:text-foreground transition-colors p-[10px]"
+              className="text-[14px] text-[#888888] font-normal hover:text-foreground transition-colors p-[10px]"
             >
               Skip
             </button>
@@ -156,7 +158,7 @@ function ClarifyCardImpl({ questions, onSubmit, onSkip }: Props) {
               type="button"
               onClick={handleNext}
               disabled={!canAdvance}
-              className="bg-black text-white text-[14px] font-normal rounded-[50px] flex items-center justify-center gap-[10px] disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+              className="bg-black dark:bg-white text-white dark:text-black text-[14px] font-normal rounded-[50px] flex items-center justify-center gap-[10px] disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
               style={{ padding: "10px" }}
             >
               <span>{isLast ? "Send" : "Next"}</span>

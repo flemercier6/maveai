@@ -691,10 +691,10 @@ function AgentStepCard({ step, sources }: { step: AgentStep; sources?: Source[] 
         <span className="shrink-0">{tag}</span>
         {subject && (
           <>
-            <span className="shrink-0" style={{ color: "#CCCCCC" }}>·</span>
+            <span className="shrink-0" style={{ color: "#bababa" }}>·</span>
             <span
               className="font-normal overflow-hidden text-ellipsis whitespace-nowrap"
-              style={{ color: "#B7B7B7", minWidth: 0 }}
+              style={{ color: "#bababa", minWidth: 0 }}
               title={subject}
             >
               {shortSubject}
