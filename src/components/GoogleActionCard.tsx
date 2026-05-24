@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Send, FileText, X, Check, Loader2, ChevronDown, ArrowRight, Clock } from "lucide-react";
+import { Send, FileText, X, Check, Loader2, ChevronDown, ArrowRight, Clock, Copy } from "lucide-react";
 import { GoogleServiceLogo } from "@/components/GoogleServiceLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -640,7 +640,7 @@ function CalendarEventCard({
                         <span className={cn("flex items-center gap-[8px]", params.addMeet ? "text-foreground" : "text-muted-foreground")}>
                           {params.addMeet ? (
                             <>
-                              <img src={gmeetLogo} alt="" className="w-[18px] h-[18px] object-contain" />
+                              <img src={gmeetLogo} alt="" className="w-[18px] h-[18px] object-contain rounded-full border border-border" />
                               Google Meet
                             </>
                           ) : (
@@ -664,7 +664,7 @@ function CalendarEventCard({
                         disabled={meetLoading}
                         className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[6px] text-[14px] text-foreground hover:bg-dropdown-hover disabled:opacity-60"
                       >
-                        <img src={gmeetLogo} alt="" className="w-[18px] h-[18px] object-contain" />
+                        <img src={gmeetLogo} alt="" className="w-[18px] h-[18px] object-contain rounded-full border border-border" />
                         Google Meet
                         {meetLoading ? <Loader2 className="w-3 h-3 animate-spin ml-auto" /> : null}
                       </button>
@@ -676,15 +676,43 @@ function CalendarEventCard({
                   <div className="w-full border border-border rounded-[10px] bg-background p-[10px] flex flex-col gap-[6px]">
                     <div className="flex items-center gap-[10px] text-[14px]">
                       <span className="text-muted-foreground w-[140px] shrink-0">Google Meet URL</span>
-                      <span className="text-foreground truncate underline">
+                      <span className="text-foreground truncate underline flex-1 min-w-0">
                         {meetLoading ? "Création…" : (params._meetUrl ? String(params._meetUrl) : (result?.meetUrl ? String(result.meetUrl) : "—"))}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = params._meetUrl ? String(params._meetUrl) : (result?.meetUrl ? String(result.meetUrl) : "");
+                          if (url) {
+                            navigator.clipboard.writeText(url);
+                            toast.success("URL copiée");
+                          }
+                        }}
+                        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Copier l'URL"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                     <div className="flex items-center gap-[10px] text-[14px]">
                       <span className="text-muted-foreground w-[140px] shrink-0">Code</span>
-                      <span className="text-foreground underline">
+                      <span className="text-foreground underline flex-1 min-w-0">
                         {meetLoading ? "…" : (params._meetCode ? String(params._meetCode) : "—")}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const code = params._meetCode ? String(params._meetCode) : "";
+                          if (code) {
+                            navigator.clipboard.writeText(code);
+                            toast.success("Code copié");
+                          }
+                        }}
+                        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Copier le code"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ) : null}
