@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { SkeletonShimmer } from "@/components/SkeletonShimmer";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 
 export type GoogleActionState = "pending" | "executing" | "done" | "cancelled" | "error";
 
@@ -148,14 +149,26 @@ export function GoogleActionCard({ action, onChange }: Props) {
           </span>
         </div>
         {action.action === "calendar.create" && r?.htmlLink ? (
-          <a
-            href={String(r.htmlLink)}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-1 inline-block text-xs text-foreground/60 hover:underline"
-          >
-            Voir dans Google Calendar →
-          </a>
+          <div className="mt-1 flex flex-col gap-0.5">
+            <a
+              href={String(r.htmlLink)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block text-xs text-foreground/60 hover:underline"
+            >
+              Voir dans Google Calendar →
+            </a>
+            {r?.meetUrl ? (
+              <a
+                href={String(r.meetUrl)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block text-xs text-foreground/60 hover:underline"
+              >
+                Rejoindre Google Meet →
+              </a>
+            ) : null}
+          </div>
         ) : null}
       </div>
     );
@@ -543,10 +556,20 @@ function CalendarEventCard({
 
                 {/* Meeting type */}
                 <EventRow label="Meeting">
-                  <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] flex items-center justify-between w-full">
-                    <span className="text-muted-foreground">Create an online meeting</span>
-                    <ChevronDown className="w-[8px] h-[8px] text-muted-foreground shrink-0" />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onChange({ ...params, addMeet: !params.addMeet })}
+                    className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] flex items-center justify-between w-full hover:opacity-90 transition-opacity"
+                  >
+                    <span className={cn(params.addMeet ? "text-foreground" : "text-muted-foreground")}>
+                      {params.addMeet ? "Google Meet sera ajouté" : "Ajouter Google Meet"}
+                    </span>
+                    <Switch
+                      checked={Boolean(params.addMeet)}
+                      onCheckedChange={(v) => onChange({ ...params, addMeet: v })}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </button>
                 </EventRow>
               </>
             )}
