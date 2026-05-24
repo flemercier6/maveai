@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 import { loadAttachment, type Attachment } from "@/lib/attachments";
 import { SlashCommandMenu, filterSlashItems, type SlashItem } from "@/components/SlashCommandMenu";
-import { getTextareaCaretCoords } from "@/lib/caret";
+
 import {
   readEditorText,
   listChips,
