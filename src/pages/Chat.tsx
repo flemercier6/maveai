@@ -7,7 +7,7 @@ import { ChatMessage } from "@/components/ChatMessage";
 import { ChatIndex } from "@/components/ChatIndex";
 import { ModelPicker } from "@/components/ModelPicker";
 
-import { Textarea } from "@/components/ui/textarea";
+
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
