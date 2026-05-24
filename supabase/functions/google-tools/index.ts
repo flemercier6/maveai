@@ -294,6 +294,7 @@ async function calendarCreate(
     location?: string;
     attendees?: string[];
     timeZone?: string;
+    addMeet?: boolean;
   },
 ) {
   const tz = params.timeZone ?? "UTC";
@@ -307,17 +308,27 @@ async function calendarCreate(
   if (params.attendees?.length) {
     body.attendees = params.attendees.map((email) => ({ email }));
   }
-  const r = await fetch(
-    "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+  if (params.addMeet) {
+    body.conferenceData = {
+      createRequest: {
+        requestId: `meet-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        conferenceSolutionKey: { type: "hangoutsMeet" },
       },
-      body: JSON.stringify(body),
-    },
+    };
+  }
+  const url = new URL(
+    "https://www.googleapis.com/calendar/v3/calendars/primary/events",
   );
+  url.searchParams.set("sendUpdates", "all");
+  if (params.addMeet) url.searchParams.set("conferenceDataVersion", "1");
+  const r = await fetch(url.toString(), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
   const d = await r.json();
   if (!r.ok) throw new Error(`Calendar create failed: ${JSON.stringify(d)}`);
   return {
@@ -326,6 +337,10 @@ async function calendarCreate(
     summary: d.summary,
     start: d.start?.dateTime ?? d.start?.date,
     end: d.end?.dateTime ?? d.end?.date,
+    hangoutLink: d.hangoutLink ?? null,
+    meetUrl: d.hangoutLink ?? d.conferenceData?.entryPoints?.find(
+      (e: { entryPointType?: string; uri?: string }) => e.entryPointType === "video",
+    )?.uri ?? null,
   };
 }
 
