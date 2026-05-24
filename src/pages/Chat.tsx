@@ -7,7 +7,7 @@ import { ChatMessage } from "@/components/ChatMessage";
 import { ChatIndex } from "@/components/ChatIndex";
 import { ModelPicker } from "@/components/ModelPicker";
 
-import { Textarea } from "@/components/ui/textarea";
+
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -23,7 +23,16 @@ import { toast } from "sonner";
 import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provider } from "@/lib/models";
 import { loadAttachment, type Attachment } from "@/lib/attachments";
 import { SlashCommandMenu, filterSlashItems, type SlashItem } from "@/components/SlashCommandMenu";
-import { getTextareaCaretCoords } from "@/lib/caret";
+
+import {
+  readEditorText,
+  listChips,
+  getCaretOffsetInText,
+  setEditorText,
+  insertChipAtCaret,
+  removeChips,
+  type ChipKind,
+} from "@/lib/composerEditor";
 import { ClarifyCard, type ClarifyQuestion } from "@/components/ClarifyCard";
 import type { RequestMeta } from "@/lib/requestMeta";
 import { billingMultiplier } from "@/lib/pricing";
@@ -258,19 +267,26 @@ export default function Chat() {
 
   const lastSentRef = useRef<string>("");
   const lastAttachmentsRef = useRef<Attachment[]>([]);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
   const activeComposer = useActiveComposer();
   const mainComposerDimmed = activeComposer === "explore";
 
-  // Auto-resize textarea height based on content
+  // Sync editor DOM when `input` is updated externally (clear-on-send,
+  // restore-on-abort, retry-from-message). Skipped when value already matches
+  // what's in the editor — i.e. when the user is just typing.
+  const lastSyncedInputRef = useRef<string>("");
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
+    if (readEditorText(el) === input) {
+      lastSyncedInputRef.current = input;
+      return;
+    }
+    setEditorText(el, input);
+    lastSyncedInputRef.current = input;
   }, [input]);
 
   // Anonymous users are allowed — they use the app in free mode without
@@ -1657,32 +1673,42 @@ export default function Chat() {
     return { start, query: token.slice(1) };
   };
 
+  // Get caret position relative to the editor container, for menu positioning.
+  const getCaretRelativePos = (): { left: number; top: number } => {
+    const el = textareaRef.current;
+    if (!el) return { left: 0, top: 0 };
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return { left: el.offsetLeft, top: el.offsetTop - 8 };
+    const range = sel.getRangeAt(0).cloneRange();
+    range.collapse(true);
+    const rect = range.getBoundingClientRect();
+    const editorRect = el.getBoundingClientRect();
+    // Fallback when collapsed range has no rect (empty editor)
+    const left = rect.left || editorRect.left;
+    return {
+      left: el.offsetLeft + (left - editorRect.left),
+      top: el.offsetTop - 8,
+    };
+  };
+
   const updateSlashFromTextarea = () => {
     const el = textareaRef.current;
     if (!el) return;
-    const caret = el.selectionStart ?? el.value.length;
-    const found = detectSlash(el.value, caret);
+    const value = readEditorText(el);
+    const caret = getCaretOffsetInText(el);
+    const found = detectSlash(value, caret);
     if (!found) {
       setSlash((s) => (s ? null : s));
     } else {
-      const { left } = getTextareaCaretCoords(el, found.start);
-      setSlash({
-        query: found.query,
-        start: found.start,
-        pos: { left: el.offsetLeft + left, top: el.offsetTop - 8 },
-      });
+      const pos = getCaretRelativePos();
+      setSlash({ query: found.query, start: found.start, pos });
     }
-    // Mention detection (@)
-    const mFound = detectMention(el.value, caret);
+    const mFound = detectMention(value, caret);
     if (!mFound) {
       setMention((m) => (m ? null : m));
     } else {
-      const { left } = getTextareaCaretCoords(el, mFound.start);
-      setMention({
-        query: mFound.query,
-        start: mFound.start,
-        pos: { left: el.offsetLeft + left, top: el.offsetTop - 8 },
-      });
+      const pos = getCaretRelativePos();
+      setMention({ query: mFound.query, start: mFound.start, pos });
       setMentionActive(0);
     }
   };
@@ -1698,7 +1724,7 @@ export default function Chat() {
   };
 
   type MentionItem = {
-    key: "gmail" | "calendar" | "drive" | "voyager";
+    key: ChipKind;
     label: string;
     icon: React.ReactNode;
   };
@@ -1714,61 +1740,65 @@ export default function Chat() {
       )
     : [];
 
-  const applyMentionSelection = (item: MentionItem) => {
+  // Activate an integration: insert an inline chip at the caret and update
+  // the integration state. Used by both the @-mention menu and the "+" menu.
+  const activateIntegration = (kind: ChipKind, removeLen: number) => {
     const el = textareaRef.current;
-    if (!el || !mention) return;
-    const before = el.value.slice(0, mention.start);
-    const after = el.value.slice(el.selectionStart ?? mention.start);
-    const next = before + after;
-    setInput(next);
-    setMention(null);
-    if (item.key === "voyager") {
-      setVoyagerService(true);
-      toast.success(`${VOYAGER_LABEL} enabled for next message`);
+    if (!el) return;
+    // Only one Google integration allowed at a time — swap chip if needed.
+    if (kind === "gmail" || kind === "calendar" || kind === "drive") {
+      removeChips(el, ["gmail", "calendar", "drive"]);
+      setGoogleService(kind);
     } else {
-      setGoogleService(item.key);
-      toast.success(`${GOOGLE_SERVICE_LABEL[item.key]} enabled for next message`);
+      setVoyagerService(true);
     }
-    setTimeout(() => {
-      const node = textareaRef.current;
-      if (!node) return;
-      node.focus();
-      node.setSelectionRange(mention.start, mention.start);
-    }, 0);
+    el.focus();
+    insertChipAtCaret(el, kind, removeLen);
+    syncFromEditor();
+  };
+
+  const applyMentionSelection = (item: MentionItem) => {
+    if (!mention) return;
+    const removeLen = mention.query.length + 1; // "@" + query
+    setMention(null);
+    activateIntegration(item.key, removeLen);
+    toast.success(
+      item.key === "voyager"
+        ? `${VOYAGER_LABEL} enabled for next message`
+        : `${GOOGLE_SERVICE_LABEL[item.key]} enabled for next message`,
+    );
   };
 
   const applySlashSelection = (item: SlashItem) => {
     const el = textareaRef.current;
     if (!el || !slash) return;
-    const before = el.value.slice(0, slash.start);
-    const after = el.value.slice((el.selectionStart ?? slash.start));
-    // Remove the leading whitespace separator? No — only strip the "/xxx" itself.
-    const next = before + after;
-    setInput(next);
+    // Strip the "/xxx" trigger from the editor by inserting an empty chip-less
+    // replacement: easier — rebuild the visible text minus the slice.
+    const value = readEditorText(el);
+    const caret = getCaretOffsetInText(el);
+    const nextText = value.slice(0, slash.start) + value.slice(caret);
+    // Preserve chips: rebuild text-only segments; chips remain as DOM.
+    // Simpler approach: just replace the trigger text by walking text nodes.
+    stripTextRange(el, slash.start, caret);
     setSlash(null);
-    // Update model picker
     if (item.provider === "auto") {
-      // Keep the previously chosen provider as the persistence target; switch model to AUTO
       setModel(AUTO_MODEL_ID);
     } else if (item.provider === "write") {
       if (isModeDisabled(aiPrefs, "note")) { toast.error("Note mode is disabled in your AI preferences"); return; }
-      // Don't change model — just flag the next send as writing-canvas mode.
       setWriteRequested(true);
       toast.success("Writing canvas enabled for next message");
     } else if (item.provider === "explore") {
       if (isModeDisabled(aiPrefs, "explore")) { toast.error("Explore mode is disabled in your AI preferences"); return; }
-      // Flag the next send to open a side exploration instead of posting to the main chat.
       setExploreRequested(true);
     } else if (item.provider === "page") {
       if (isModeDisabled(aiPrefs, "page")) { toast.error("Page mode is disabled in your AI preferences"); return; }
-      // Flag the next send to generate a structured one-pager.
       setPageRequested(true);
       toast.success("Page mode enabled for next message");
     } else if (item.provider === "gmail" || item.provider === "calendar" || item.provider === "drive") {
-      setGoogleService(item.provider);
+      activateIntegration(item.provider, 0);
       toast.success(`${GOOGLE_SERVICE_LABEL[item.provider]} enabled for next message`);
     } else if (item.provider === "voyager") {
-      setVoyagerService(true);
+      activateIntegration("voyager", 0);
       toast.success(`${VOYAGER_LABEL} enabled for next message`);
     } else {
       if (isModelBlacklisted(aiPrefs, item.model)) {
@@ -1778,14 +1808,66 @@ export default function Chat() {
       setProvider(item.provider as Provider);
       setModel(item.model);
     }
-    // Restore caret position where the "/xxx" used to start
-    setTimeout(() => {
-      const node = textareaRef.current;
-      if (!node) return;
-      node.focus();
-      node.setSelectionRange(slash.start, slash.start);
-    }, 0);
+    syncFromEditor();
+    setTimeout(() => textareaRef.current?.focus(), 0);
+    void nextText; // unused now, kept for clarity
   };
+
+  // Walk text nodes, deleting characters in [startOffset, endOffset) of the
+  // editor's visible text (chips count as 0 chars).
+  const stripTextRange = (root: HTMLElement, startOffset: number, endOffset: number) => {
+    let consumed = 0;
+    const toRemove: { node: Text; from: number; to: number }[] = [];
+    const walk = (node: Node) => {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as Element;
+        if (el.hasAttribute && el.hasAttribute("data-chip")) return;
+      }
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node as Text;
+        const len = (text.nodeValue || "").length;
+        const nodeStart = consumed;
+        const nodeEnd = consumed + len;
+        const overlapStart = Math.max(startOffset, nodeStart);
+        const overlapEnd = Math.min(endOffset, nodeEnd);
+        if (overlapEnd > overlapStart) {
+          toRemove.push({
+            node: text,
+            from: overlapStart - nodeStart,
+            to: overlapEnd - nodeStart,
+          });
+        }
+        consumed = nodeEnd;
+        return;
+      }
+      node.childNodes.forEach(walk);
+    };
+    root.childNodes.forEach(walk);
+    // Apply in reverse to keep offsets valid
+    for (let i = toRemove.length - 1; i >= 0; i--) {
+      const { node, from, to } = toRemove[i];
+      const v = node.nodeValue || "";
+      node.nodeValue = v.slice(0, from) + v.slice(to);
+    }
+  };
+
+  // After any DOM mutation: re-derive `input` from text and sync integration
+  // states from the chips present in the editor.
+  const syncFromEditor = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const txt = readEditorText(el);
+    lastSyncedInputRef.current = txt;
+    setInput(txt);
+    const chips = listChips(el);
+    const g = chips.find((c) => c === "gmail" || c === "calendar" || c === "drive") as
+      | GoogleService
+      | undefined;
+    setGoogleService((prev) => (prev === (g ?? null) ? prev : (g ?? null)));
+    const hasVoyager = chips.includes("voyager");
+    setVoyagerService((prev) => (prev === hasVoyager ? prev : hasVoyager));
+  };
+
 
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // When the slash menu is open, let it consume navigation/confirm keys
@@ -2242,7 +2324,12 @@ export default function Chat() {
                       const el = textareaRef.current;
                       if (el) {
                         el.focus();
-                        el.setSelectionRange(el.value.length, el.value.length);
+                        const sel = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(el);
+                        range.collapse(false);
+                        sel?.removeAllRanges();
+                        sel?.addRange(range);
                       }
                     }, 0);
                   } : undefined}
@@ -2368,14 +2455,19 @@ export default function Chat() {
                 </div>
               )}
               <div className="relative">
-                <Textarea
+                <div
                   ref={textareaRef}
-                  value={input}
-                  onChange={(e) => {
-                    setInput(e.target.value);
+                  role="textbox"
+                  aria-multiline="true"
+                  aria-label="Message"
+                  data-placeholder="Send a message or type / for commands..."
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={() => {
+                    syncFromEditor();
                     requestAnimationFrame(updateSlashFromTextarea);
                   }}
-                  onKeyDown={onKey}
+                  onKeyDown={onKey as unknown as React.KeyboardEventHandler<HTMLDivElement>}
                   onKeyUp={updateSlashFromTextarea}
                   onClick={updateSlashFromTextarea}
                   onFocus={() => notifyComposerFocus("main")}
@@ -2383,9 +2475,13 @@ export default function Chat() {
                     notifyComposerBlur("main");
                     setTimeout(() => { setSlash(null); setMention(null); }, 100);
                   }}
-                  placeholder="Send a message or type / for commands..."
-                  rows={1}
-                  className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
+                  onPaste={(e) => {
+                    // Force plain-text paste — preserves chip semantics.
+                    e.preventDefault();
+                    const text = e.clipboardData.getData("text/plain");
+                    document.execCommand("insertText", false, text);
+                  }}
+                  className="composer-editor w-full border-0 bg-transparent shadow-none outline-none min-h-[24px] max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed whitespace-pre-wrap break-words text-base"
                 />
               </div>
               {slash && (
@@ -2479,25 +2575,25 @@ export default function Chat() {
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setGoogleService("gmail")}>
+                      <DropdownMenuItem onClick={() => activateIntegration("gmail", 0)}>
                         <span className="mr-2 inline-flex shrink-0" style={{ border: "1px solid #F8F7F5", borderRadius: "50%", overflow: "hidden" }}>
                           <GoogleServiceLogo service="gmail" className="w-4 h-4" />
                         </span>
                         {GOOGLE_SERVICE_LABEL.gmail}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setGoogleService("calendar")}>
+                      <DropdownMenuItem onClick={() => activateIntegration("calendar", 0)}>
                         <span className="mr-2 inline-flex shrink-0" style={{ border: "1px solid #F8F7F5", borderRadius: "50%", overflow: "hidden" }}>
                           <GoogleServiceLogo service="calendar" className="w-4 h-4" />
                         </span>
                         {GOOGLE_SERVICE_LABEL.calendar}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setGoogleService("drive")}>
+                      <DropdownMenuItem onClick={() => activateIntegration("drive", 0)}>
                         <span className="mr-2 inline-flex shrink-0" style={{ border: "1px solid #F8F7F5", borderRadius: "50%", overflow: "hidden" }}>
                           <GoogleServiceLogo service="drive" className="w-4 h-4" />
                         </span>
                         {GOOGLE_SERVICE_LABEL.drive}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setVoyagerService(true)}>
+                      <DropdownMenuItem onClick={() => activateIntegration("voyager", 0)}>
                         <span className="mr-2 inline-flex shrink-0" style={{ border: "1px solid #F8F7F5", borderRadius: "50%", overflow: "hidden" }}>
                           <VoyagerLogo className="w-4 h-4" />
                         </span>
@@ -2731,36 +2827,7 @@ export default function Chat() {
                       Clarify
                     </button>
                   )}
-                  {googleService && (
-                    <button
-                      type="button"
-                      onClick={() => setGoogleService(null)}
-                      aria-label={`Remove ${GOOGLE_SERVICE_LABEL[googleService]}`}
-                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[var(--blue-tag-bg)] transition-colors text-base"
-                      style={{ color: "var(--blue-tag-fg)" }}
-                    >
-                      <span className="relative inline-flex items-center justify-center w-[18px] h-[18px]">
-                        <GoogleServiceLogo service={googleService} className="w-[18px] h-[18px] group-hover:opacity-0 transition-opacity" />
-                        <X className="w-[18px] h-[18px] absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--blue-tag-fg)" }} />
-                      </span>
-                      {GOOGLE_SERVICE_LABEL[googleService]}
-                    </button>
-                  )}
-                  {voyagerService && (
-                    <button
-                      type="button"
-                      onClick={() => setVoyagerService(false)}
-                      aria-label={`Remove ${VOYAGER_LABEL}`}
-                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[var(--blue-tag-bg)] transition-colors text-base"
-                      style={{ color: "var(--blue-tag-fg)" }}
-                    >
-                      <span className="relative inline-flex items-center justify-center w-[18px] h-[18px]">
-                        <VoyagerLogo className="w-[18px] h-[18px] group-hover:opacity-0 transition-opacity" />
-                        <X className="w-[18px] h-[18px] absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--blue-tag-fg)" }} />
-                      </span>
-                      {VOYAGER_LABEL}
-                    </button>
-                  )}
+                  {/* Integration chips now render inline inside the editor. */}
                 </div>
                 <div className="flex items-center gap-[15px]">
                   <ModelPicker

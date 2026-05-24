@@ -332,3 +332,13 @@
   }
 }
 
+
+/* Contenteditable composer placeholder */
+.composer-editor:empty::before {
+  content: attr(data-placeholder);
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+}
+.composer-editor [data-chip] img {
+  vertical-align: -3px;
+}
