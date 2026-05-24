@@ -2575,25 +2575,25 @@ export default function Chat() {
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setGoogleService("gmail")}>
+                      <DropdownMenuItem onClick={() => activateIntegration("gmail", 0)}>
                         <span className="mr-2 inline-flex shrink-0" style={{ border: "1px solid #F8F7F5", borderRadius: "50%", overflow: "hidden" }}>
                           <GoogleServiceLogo service="gmail" className="w-4 h-4" />
                         </span>
                         {GOOGLE_SERVICE_LABEL.gmail}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setGoogleService("calendar")}>
+                      <DropdownMenuItem onClick={() => activateIntegration("calendar", 0)}>
                         <span className="mr-2 inline-flex shrink-0" style={{ border: "1px solid #F8F7F5", borderRadius: "50%", overflow: "hidden" }}>
                           <GoogleServiceLogo service="calendar" className="w-4 h-4" />
                         </span>
                         {GOOGLE_SERVICE_LABEL.calendar}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setGoogleService("drive")}>
+                      <DropdownMenuItem onClick={() => activateIntegration("drive", 0)}>
                         <span className="mr-2 inline-flex shrink-0" style={{ border: "1px solid #F8F7F5", borderRadius: "50%", overflow: "hidden" }}>
                           <GoogleServiceLogo service="drive" className="w-4 h-4" />
                         </span>
                         {GOOGLE_SERVICE_LABEL.drive}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setVoyagerService(true)}>
+                      <DropdownMenuItem onClick={() => activateIntegration("voyager", 0)}>
                         <span className="mr-2 inline-flex shrink-0" style={{ border: "1px solid #F8F7F5", borderRadius: "50%", overflow: "hidden" }}>
                           <VoyagerLogo className="w-4 h-4" />
                         </span>
