@@ -2455,14 +2455,19 @@ export default function Chat() {
                 </div>
               )}
               <div className="relative">
-                <Textarea
+                <div
                   ref={textareaRef}
-                  value={input}
-                  onChange={(e) => {
-                    setInput(e.target.value);
+                  role="textbox"
+                  aria-multiline="true"
+                  aria-label="Message"
+                  data-placeholder="Send a message or type / for commands..."
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={() => {
+                    syncFromEditor();
                     requestAnimationFrame(updateSlashFromTextarea);
                   }}
-                  onKeyDown={onKey}
+                  onKeyDown={onKey as unknown as React.KeyboardEventHandler<HTMLDivElement>}
                   onKeyUp={updateSlashFromTextarea}
                   onClick={updateSlashFromTextarea}
                   onFocus={() => notifyComposerFocus("main")}
@@ -2470,9 +2475,13 @@ export default function Chat() {
                     notifyComposerBlur("main");
                     setTimeout(() => { setSlash(null); setMention(null); }, 100);
                   }}
-                  placeholder="Send a message or type / for commands..."
-                  rows={1}
-                  className="w-full resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed"
+                  onPaste={(e) => {
+                    // Force plain-text paste — preserves chip semantics.
+                    e.preventDefault();
+                    const text = e.clipboardData.getData("text/plain");
+                    document.execCommand("insertText", false, text);
+                  }}
+                  className="composer-editor w-full border-0 bg-transparent shadow-none outline-none min-h-[24px] max-h-48 overflow-y-auto py-3.5 px-4 leading-relaxed whitespace-pre-wrap break-words text-base"
                 />
               </div>
               {slash && (
