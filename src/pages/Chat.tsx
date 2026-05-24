@@ -2827,36 +2827,7 @@ export default function Chat() {
                       Clarify
                     </button>
                   )}
-                  {googleService && (
-                    <button
-                      type="button"
-                      onClick={() => setGoogleService(null)}
-                      aria-label={`Remove ${GOOGLE_SERVICE_LABEL[googleService]}`}
-                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[var(--blue-tag-bg)] transition-colors text-base"
-                      style={{ color: "var(--blue-tag-fg)" }}
-                    >
-                      <span className="relative inline-flex items-center justify-center w-[18px] h-[18px]">
-                        <GoogleServiceLogo service={googleService} className="w-[18px] h-[18px] group-hover:opacity-0 transition-opacity" />
-                        <X className="w-[18px] h-[18px] absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--blue-tag-fg)" }} />
-                      </span>
-                      {GOOGLE_SERVICE_LABEL[googleService]}
-                    </button>
-                  )}
-                  {voyagerService && (
-                    <button
-                      type="button"
-                      onClick={() => setVoyagerService(false)}
-                      aria-label={`Remove ${VOYAGER_LABEL}`}
-                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[var(--blue-tag-bg)] transition-colors text-base"
-                      style={{ color: "var(--blue-tag-fg)" }}
-                    >
-                      <span className="relative inline-flex items-center justify-center w-[18px] h-[18px]">
-                        <VoyagerLogo className="w-[18px] h-[18px] group-hover:opacity-0 transition-opacity" />
-                        <X className="w-[18px] h-[18px] absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--blue-tag-fg)" }} />
-                      </span>
-                      {VOYAGER_LABEL}
-                    </button>
-                  )}
+                  {/* Integration chips now render inline inside the editor. */}
                 </div>
                 <div className="flex items-center gap-[15px]">
                   <ModelPicker
