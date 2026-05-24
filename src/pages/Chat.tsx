@@ -2324,7 +2324,12 @@ export default function Chat() {
                       const el = textareaRef.current;
                       if (el) {
                         el.focus();
-                        el.setSelectionRange(el.value.length, el.value.length);
+                        const sel = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(el);
+                        range.collapse(false);
+                        sel?.removeAllRanges();
+                        sel?.addRange(range);
                       }
                     }, 0);
                   } : undefined}
