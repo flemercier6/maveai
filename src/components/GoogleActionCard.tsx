@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SkeletonShimmer } from "@/components/SkeletonShimmer";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export type GoogleActionState = "pending" | "executing" | "done" | "cancelled" | "error";
 
@@ -356,29 +358,56 @@ function CalendarEventCard({
                   />
                 </EventRow>
 
-                {/* Date + Time */}
-                <div className="flex items-center justify-between w-full gap-[10px]">
-                  <div className="flex items-center gap-[10px] shrink-0">
-                    <span className="text-[14px] text-foreground w-[60px] shrink-0">Date</span>
-                    <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap">
-                      {start?.date ?? "—"}
-                    </div>
+                {/* Date + Time inline */}
+                <div className="flex items-center gap-[10px] w-full flex-wrap">
+                  <span className="text-[14px] text-foreground w-[60px] shrink-0">Date</span>
+
+                  {/* Date picker */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap hover:opacity-90 transition-opacity"
+                      >
+                        {start?.date ?? "—"}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 z-50" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={params.start ? new Date(fmt(params.start)) : undefined}
+                        onSelect={(d) => {
+                          if (!d) return;
+                          const applyDate = (iso: string): string => {
+                            const base = iso ? new Date(iso) : new Date();
+                            const next = new Date(base);
+                            next.setFullYear(d.getFullYear(), d.getMonth(), d.getDate());
+                            return next.toISOString();
+                          };
+                          onChange({
+                            ...params,
+                            start: applyDate(fmt(params.start)),
+                            end: applyDate(fmt(params.end)),
+                          });
+                        }}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  {/* Time, inline right after date */}
+                  <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap">
+                    {start?.time ?? "—"}
                   </div>
-                  <div className="flex items-center gap-[10px] shrink-0">
-                    <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
-                    <div className="flex items-center gap-[10px]">
-                      <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap">
-                        {start?.time ?? "—"}
-                      </div>
-                      <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
-                      <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap">
-                        {end?.time ?? "—"}
-                      </div>
-                    </div>
-                    {duration && (
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">{duration}</span>
-                    )}
+                  <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap">
+                    {end?.time ?? "—"}
                   </div>
+                  {duration && (
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">{duration}</span>
+                  )}
                 </div>
 
                 {/* Separator */}
