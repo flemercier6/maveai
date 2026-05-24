@@ -309,8 +309,8 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                     alt="Mave"
                     className="h-[17px] w-auto group-hover:opacity-0 transition-opacity"
                   />
-                  <span className="absolute inset-0 flex items-center justify-center rounded-md bg-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                    <PanelLeftOpen className="w-4 h-4 opacity-70" />
+                  <span className="absolute inset-0 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "#FFF" }}>
+                    <PanelLeftOpen className="w-4 h-4" style={{ color: "#000" }} />
                   </span>
                 </button>
               </TooltipTrigger>
