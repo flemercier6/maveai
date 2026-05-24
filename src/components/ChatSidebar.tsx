@@ -294,7 +294,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           )}
           style={{ marginBottom: isCollapsed ? 16 : 40 }}
         >
-          {!isCollapsed && <img src={maveLogo} alt="Mave" className="h-4 w-auto" />}
+          {!isCollapsed && <img src={maveLogo} alt="Mave" className="h-5 w-auto" />}
           {isCollapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
