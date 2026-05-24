@@ -487,13 +487,29 @@ function CalendarEventCard({
 
                   {/* Time, inline right after date */}
                   <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
-                  <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap">
-                    {start?.time ?? "—"}
-                  </div>
+                  <input
+                    type="time"
+                    value={isoToTime(fmt(params.start))}
+                    onChange={(e) =>
+                      onChange({
+                        ...params,
+                        start: applyTime(fmt(params.start), e.target.value),
+                      })
+                    }
+                    className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground outline-none"
+                  />
                   <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
-                  <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap">
-                    {end?.time ?? "—"}
-                  </div>
+                  <input
+                    type="time"
+                    value={isoToTime(fmt(params.end))}
+                    onChange={(e) =>
+                      onChange({
+                        ...params,
+                        end: applyTime(fmt(params.end), e.target.value),
+                      })
+                    }
+                    className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground outline-none"
+                  />
                   {duration && (
                     <span className="text-[10px] text-muted-foreground whitespace-nowrap">{duration}</span>
                   )}
