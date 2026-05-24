@@ -732,13 +732,6 @@ function CalendarEventCard({
             <div className="flex items-center gap-[11px]">
               <button
                 type="button"
-                onClick={onCancel}
-                className="text-[14px] text-muted-foreground hover:text-foreground transition-colors px-[10px] py-[10px]"
-              >
-                Skip
-              </button>
-              <button
-                type="button"
                 onClick={onConfirm}
                 disabled={busy || loading}
                 className="flex items-center gap-[10px] bg-primary text-primary-foreground text-[14px] px-[10px] py-[10px] rounded-[50px] hover:opacity-90 transition-opacity disabled:opacity-60"
