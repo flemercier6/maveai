@@ -495,7 +495,7 @@ function CalendarEventCard({
       {/* Header */}
       <div className="bg-muted flex items-center justify-between px-[15px] py-[15px] rounded-t-[20px]">
         <div className="flex items-center gap-[10px]">
-          <GoogleServiceLogo service="calendar" className="w-4 h-4" />
+          <GoogleServiceLogo service="calendar" className="w-[18px] h-[18px]" />
           <span className="text-[14px] font-semibold text-foreground">Créer un événement</span>
         </div>
         <div className="flex items-center gap-[11px]">
