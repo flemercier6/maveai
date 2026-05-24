@@ -52,6 +52,25 @@ function calcDuration(start: string, end: string): string {
   } catch { return ""; }
 }
 
+function isoToTime(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+function applyTime(iso: string, timeVal: string): string {
+  if (!iso || !timeVal) return iso;
+  const [hours, minutes] = timeVal.split(":").map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return iso;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  d.setHours(hours, minutes, 0, 0);
+  return d.toISOString();
+}
+
 export function GoogleActionCard({ action, onChange }: Props) {
   const [params, setParams] = useState<Record<string, unknown>>(action.params);
   const [collapsed, setCollapsed] = useState(false);
@@ -468,13 +487,29 @@ function CalendarEventCard({
 
                   {/* Time, inline right after date */}
                   <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
-                  <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap">
-                    {start?.time ?? "—"}
-                  </div>
+                  <input
+                    type="time"
+                    value={isoToTime(fmt(params.start))}
+                    onChange={(e) =>
+                      onChange({
+                        ...params,
+                        start: applyTime(fmt(params.start), e.target.value),
+                      })
+                    }
+                    className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground outline-none"
+                  />
                   <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
-                  <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap">
-                    {end?.time ?? "—"}
-                  </div>
+                  <input
+                    type="time"
+                    value={isoToTime(fmt(params.end))}
+                    onChange={(e) =>
+                      onChange({
+                        ...params,
+                        end: applyTime(fmt(params.end), e.target.value),
+                      })
+                    }
+                    className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground outline-none"
+                  />
                   {duration && (
                     <span className="text-[10px] text-muted-foreground whitespace-nowrap">{duration}</span>
                   )}
