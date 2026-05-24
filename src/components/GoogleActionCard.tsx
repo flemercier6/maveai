@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Send, FileText, X, Check, Loader2, ChevronDown, ArrowRight, Clock, Copy } from "lucide-react";
+import { Send, FileText, X, Check, Loader2, ChevronDown, ArrowRight, ArrowUpRight, Clock, Copy } from "lucide-react";
 import { GoogleServiceLogo } from "@/components/GoogleServiceLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import gmeetLogo from "@/assets/gmeet-logo.png";
+import calendarLogo from "@/assets/logo-calendar.png";
 
 export type GoogleActionState = "pending" | "executing" | "done" | "cancelled" | "error";
 
