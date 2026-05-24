@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { SkeletonShimmer } from "@/components/SkeletonShimmer";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 
 export type GoogleActionState = "pending" | "executing" | "done" | "cancelled" | "error";
 
