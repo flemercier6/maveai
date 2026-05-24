@@ -24,6 +24,15 @@ import { DEFAULT_MODEL, AUTO_MODEL_ID, routeAuto, providerForModel, type Provide
 import { loadAttachment, type Attachment } from "@/lib/attachments";
 import { SlashCommandMenu, filterSlashItems, type SlashItem } from "@/components/SlashCommandMenu";
 import { getTextareaCaretCoords } from "@/lib/caret";
+import {
+  readEditorText,
+  listChips,
+  getCaretOffsetInText,
+  setEditorText,
+  insertChipAtCaret,
+  removeChips,
+  type ChipKind,
+} from "@/lib/composerEditor";
 import { ClarifyCard, type ClarifyQuestion } from "@/components/ClarifyCard";
 import type { RequestMeta } from "@/lib/requestMeta";
 import { billingMultiplier } from "@/lib/pricing";
