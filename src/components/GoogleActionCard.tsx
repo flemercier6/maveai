@@ -654,7 +654,7 @@ function CalendarEventCard({
                       <button
                         type="button"
                         onClick={disableMeet}
-                        className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[6px] text-[14px] text-foreground hover:bg-dropdown-hover"
+                        className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[10px] text-[14px] text-foreground hover:bg-dropdown-hover"
                       >
                         No visio-conference
                       </button>
@@ -662,7 +662,7 @@ function CalendarEventCard({
                         type="button"
                         onClick={enableMeet}
                         disabled={meetLoading}
-                        className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[6px] text-[14px] text-foreground hover:bg-dropdown-hover disabled:opacity-60"
+                        className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[10px] text-[14px] text-foreground hover:bg-dropdown-hover disabled:opacity-60"
                       >
                         <img src={gmeetLogo} alt="" className="w-[18px] h-[18px] object-contain rounded-full border border-border" />
                         Google Meet
