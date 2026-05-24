@@ -677,7 +677,7 @@ function CalendarEventCard({
 
                 {params.addMeet ? (
                   <div className="w-full border border-border rounded-[10px] bg-background p-[10px] flex flex-col gap-[6px]">
-                    <div className="group flex items-center gap-[10px] text-[14px]">
+                    <div className="group flex items-center gap-[10px] text-sm">
                       <span className="text-muted-foreground w-[140px] shrink-0">Google Meet URL</span>
                       <span className="text-foreground truncate underline">
                         {meetLoading ? "Création…" : (params._meetUrl ? String(params._meetUrl) : (result?.meetUrl ? String(result.meetUrl) : "—"))}
@@ -697,7 +697,7 @@ function CalendarEventCard({
                         <Copy className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <div className="group flex items-center gap-[10px] text-[14px]">
+                    <div className="group flex items-center gap-[10px] text-sm">
                       <span className="text-muted-foreground w-[140px] shrink-0">Code</span>
                       <span className="text-foreground underline">
                         {meetLoading ? "…" : (params._meetCode ? String(params._meetCode) : "—")}
