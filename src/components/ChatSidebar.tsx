@@ -303,15 +303,15 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                   type="button"
                   onClick={toggleCollapsed}
                   aria-label="Expand sidebar"
-                  className="group relative flex items-center justify-center rounded-md" style={{ width: "30px", height: "30px" }}
+                  className="group relative flex items-center justify-center w-9 h-9 rounded-md"
                 >
                   <img
                     src={maveIcon}
                     alt="Mave"
                     className="h-[17px] w-auto group-hover:opacity-0 transition-opacity"
                   />
-                  <span className="absolute inset-0 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "#FFF" }}>
-                    <img src={sidebarToggleIcon} alt="" className="w-[17px] h-[17px]" />
+                  <span className="absolute inset-0 m-auto flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "#FFF", width: "36px", height: "36px" }}>
+                    <PanelLeftOpen className="w-4 h-4" style={{ color: "#000" }} />
                   </span>
                 </button>
               </TooltipTrigger>
