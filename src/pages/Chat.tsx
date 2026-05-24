@@ -219,6 +219,12 @@ export default function Chat() {
     start: number;
     pos: { left: number; top: number };
   } | null>(null);
+  const [mention, setMention] = useState<{
+    query: string;
+    start: number;
+    pos: { left: number; top: number };
+  } | null>(null);
+  const [mentionActive, setMentionActive] = useState(0);
 
   // ---- Explore (branch) side panel ----
   const [exploreOpen, setExploreOpen] = useState(false);
@@ -1658,15 +1664,77 @@ export default function Chat() {
     const found = detectSlash(el.value, caret);
     if (!found) {
       setSlash((s) => (s ? null : s));
-      return;
+    } else {
+      const { left } = getTextareaCaretCoords(el, found.start);
+      setSlash({
+        query: found.query,
+        start: found.start,
+        pos: { left: el.offsetLeft + left, top: el.offsetTop - 8 },
+      });
     }
-    // Position the menu above the textarea, horizontally aligned with the caret
-    const { left } = getTextareaCaretCoords(el, found.start);
-    setSlash({
-      query: found.query,
-      start: found.start,
-      pos: { left: el.offsetLeft + left, top: el.offsetTop - 8 },
-    });
+    // Mention detection (@)
+    const mFound = detectMention(el.value, caret);
+    if (!mFound) {
+      setMention((m) => (m ? null : m));
+    } else {
+      const { left } = getTextareaCaretCoords(el, mFound.start);
+      setMention({
+        query: mFound.query,
+        start: mFound.start,
+        pos: { left: el.offsetLeft + left, top: el.offsetTop - 8 },
+      });
+      setMentionActive(0);
+    }
+  };
+
+  // ---- @ Mention detection (integrations) ----
+  const detectMention = (value: string, caret: number) => {
+    const before = value.slice(0, caret);
+    const m = before.match(/(?:^|\s)(@[A-Za-z0-9.\-]*)$/);
+    if (!m) return null;
+    const token = m[1];
+    const start = before.length - token.length;
+    return { start, query: token.slice(1).toLowerCase() };
+  };
+
+  type MentionItem = {
+    key: "gmail" | "calendar" | "drive" | "voyager";
+    label: string;
+    icon: React.ReactNode;
+  };
+  const ALL_MENTION_ITEMS: MentionItem[] = [
+    { key: "gmail", label: GOOGLE_SERVICE_LABEL.gmail, icon: <GoogleServiceLogo service="gmail" className="w-4 h-4" /> },
+    { key: "calendar", label: GOOGLE_SERVICE_LABEL.calendar, icon: <GoogleServiceLogo service="calendar" className="w-4 h-4" /> },
+    { key: "drive", label: GOOGLE_SERVICE_LABEL.drive, icon: <GoogleServiceLogo service="drive" className="w-4 h-4" /> },
+    { key: "voyager", label: VOYAGER_LABEL, icon: <VoyagerLogo className="w-4 h-4" /> },
+  ];
+  const mentionItems = mention
+    ? ALL_MENTION_ITEMS.filter((i) =>
+        !mention.query || i.label.toLowerCase().includes(mention.query) || i.key.includes(mention.query),
+      )
+    : [];
+
+  const applyMentionSelection = (item: MentionItem) => {
+    const el = textareaRef.current;
+    if (!el || !mention) return;
+    const before = el.value.slice(0, mention.start);
+    const after = el.value.slice(el.selectionStart ?? mention.start);
+    const next = before + after;
+    setInput(next);
+    setMention(null);
+    if (item.key === "voyager") {
+      setVoyagerService(true);
+      toast.success(`${VOYAGER_LABEL} enabled for next message`);
+    } else {
+      setGoogleService(item.key);
+      toast.success(`${GOOGLE_SERVICE_LABEL[item.key]} enabled for next message`);
+    }
+    setTimeout(() => {
+      const node = textareaRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(mention.start, mention.start);
+    }, 0);
   };
 
   const applySlashSelection = (item: SlashItem) => {
@@ -1723,6 +1791,28 @@ export default function Chat() {
     // When the slash menu is open, let it consume navigation/confirm keys
     if (slash && ["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.key)) {
       return;
+    }
+    if (mention && mentionItems.length) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setMentionActive((a) => (a + 1) % mentionItems.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setMentionActive((a) => (a - 1 + mentionItems.length) % mentionItems.length);
+        return;
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        applyMentionSelection(mentionItems[mentionActive]);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setMention(null);
+        return;
+      }
     }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -2291,7 +2381,7 @@ export default function Chat() {
                   onFocus={() => notifyComposerFocus("main")}
                   onBlur={() => {
                     notifyComposerBlur("main");
-                    setTimeout(() => setSlash(null), 100);
+                    setTimeout(() => { setSlash(null); setMention(null); }, 100);
                   }}
                   placeholder="Send a message or type / for commands..."
                   rows={1}
@@ -2312,6 +2402,36 @@ export default function Chat() {
                   blacklistedModels={aiPrefs.blacklistedModels}
                   favoriteModels={aiPrefs.favoriteModels}
                 />
+              )}
+              {mention && mentionItems.length > 0 && (
+                <div
+                  role="listbox"
+                  className="absolute z-50 w-56 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg"
+                  style={{ left: mention.pos.left, top: mention.pos.top, transform: "translateY(-100%)" }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  {mentionItems.map((it, idx) => {
+                    const isActive = idx === mentionActive;
+                    return (
+                      <button
+                        key={it.key}
+                        type="button"
+                        role="option"
+                        aria-selected={isActive}
+                        onMouseEnter={() => setMentionActive(idx)}
+                        onClick={() => applyMentionSelection(it)}
+                        className={`w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm ${
+                          isActive ? "bg-dropdown-hover" : ""
+                        }`}
+                      >
+                        <span className="inline-flex items-center justify-center w-4 h-4 shrink-0">
+                          {it.icon}
+                        </span>
+                        <span className="text-[13px] text-foreground truncate">{it.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               )}
               <div className="flex items-center justify-between gap-[15px] px-2 pb-2">
                 <div className="flex items-center gap-2">
