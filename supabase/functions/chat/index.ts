@@ -2075,6 +2075,31 @@ Deno.serve(async (req) => {
           rationale: "deterministic Gmail read fallback",
         };
       }
+
+      // Calendar fallbacks when user explicitly invoked /calendar.
+      const mentionsCalendar = /\b(calendar|calendrier|agenda|meeting|reunion|rendez-?vous|rdv|event|evenement|creneau|slot)\b/.test(normalized);
+      const isCreating = /\b(cree|creer|ajoute|ajouter|planifie|planifier|schedule|create|add|book|bloque|bloquer|reserve|reserver|organise|organiser|nouveau|new|set up)\b/.test(normalized);
+      if (googleService === "calendar" && isCreating) {
+        return {
+          action: "calendar.create",
+          params: { summary: "", start: "", end: "" },
+          rationale: "deterministic /calendar create fallback",
+        };
+      }
+      if (googleService === "calendar" && userText.trim()) {
+        return {
+          action: "calendar.list",
+          params: { maxResults: 10 },
+          rationale: "deterministic /calendar list fallback",
+        };
+      }
+      if (mentionsCalendar && isCreating) {
+        return {
+          action: "calendar.create",
+          params: { summary: "", start: "", end: "" },
+          rationale: "deterministic calendar create fallback",
+        };
+      }
       return null;
     }
 
@@ -2221,6 +2246,62 @@ Deno.serve(async (req) => {
         to: typeof parsed?.to === "string" ? parsed.to : current.to,
         subject: typeof parsed?.subject === "string" ? parsed.subject : current.subject,
         body: typeof parsed?.body === "string" ? parsed.body : current.body,
+      };
+    }
+
+    async function draftCalendarEvent(
+      googleApiKey: string,
+      userText: string,
+      historyTail: { role: string; content: string }[],
+      current: { summary: string; start: string; end: string },
+    ): Promise<{ summary: string; start: string; end: string; description?: string; location?: string; attendees?: string[] }> {
+      const sys =
+        `You are creating a Google Calendar event on behalf of the user (${googleAccountEmail ?? "unknown"}).\n` +
+        `Today is ${new Date().toISOString()}.\n\n` +
+        `From the user's request and the recent conversation, fill in the event fields:\n` +
+        `- "summary": short event title.\n` +
+        `- "start": ISO 8601 datetime. Resolve relative dates ("tomorrow 3pm", "next monday 10h") to absolute dates. Default to the next business day at 09:00 if unspecified.\n` +
+        `- "end": ISO 8601 datetime. If duration not specified, default to 30 minutes after start.\n` +
+        `- "description": optional event description if the user provided context.\n` +
+        `- "location": optional location if mentioned.\n` +
+        `- "attendees": optional array of email addresses if the user mentioned participants.\n` +
+        `- Reply with a single JSON object: {"summary":"...","start":"...","end":"...","description":"...","location":"...","attendees":["..."]}.\n` +
+        `- Omit optional fields if not relevant.` +
+        (current.summary ? `\nKeep this title if reasonable: "${current.summary}".` : "") +
+        (current.start ? `\nKeep this start if reasonable: "${current.start}".` : "") +
+        (current.end ? `\nKeep this end if reasonable: "${current.end}".` : "");
+
+      const body = {
+        contents: [
+          ...historyTail.slice(-6).map((m) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content.slice(0, 2000) }],
+          })),
+          { role: "user", parts: [{ text: userText.slice(0, 4000) }] },
+        ],
+        systemInstruction: { role: "user", parts: [{ text: sys }] },
+        generationConfig: {
+          temperature: 0.5,
+          responseMimeType: "application/json",
+        },
+      };
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${googleApiKey}`;
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(`calendar drafter failed: ${JSON.stringify(d)}`);
+      const text: string = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+      const parsed = JSON.parse(text);
+      return {
+        summary: typeof parsed?.summary === "string" ? parsed.summary : current.summary,
+        start: typeof parsed?.start === "string" ? parsed.start : current.start,
+        end: typeof parsed?.end === "string" ? parsed.end : current.end,
+        ...(typeof parsed?.description === "string" && parsed.description ? { description: parsed.description } : {}),
+        ...(typeof parsed?.location === "string" && parsed.location ? { location: parsed.location } : {}),
+        ...(Array.isArray(parsed?.attendees) && parsed.attendees.length ? { attendees: parsed.attendees } : {}),
       };
     }
 
@@ -2452,8 +2533,58 @@ Deno.serve(async (req) => {
                         );
                       }
                     }
+                  } else if (decision.action === "calendar.create") {
+                    const params = (decision.params ?? {}) as Record<string, unknown>;
+                    const currentSummary = String(params.summary ?? "").trim();
+                    const currentStart = String(params.start ?? "").trim();
+                    const currentEnd = String(params.end ?? "").trim();
+                    const needsDrafting = !currentSummary || !currentStart || !currentEnd;
+
+                    controller.enqueue(
+                      enc({
+                        type: "google_action",
+                        mode: "proposal",
+                        action: decision.action,
+                        params: decision.params,
+                        loading: needsDrafting,
+                      }),
+                    );
+
+                    if (needsDrafting) {
+                      try {
+                        const drafted = await draftCalendarEvent(
+                          googleApiKey,
+                          lastUserText,
+                          trimmedHistory.map((m) => ({ role: m.role, content: m.content ?? "" })),
+                          { summary: currentSummary, start: currentStart, end: currentEnd },
+                        );
+                        decision = {
+                          ...decision,
+                          params: { ...params, ...drafted },
+                        };
+                        controller.enqueue(
+                          enc({
+                            type: "google_action",
+                            mode: "proposal",
+                            action: decision.action,
+                            params: decision.params,
+                            loading: false,
+                          }),
+                        );
+                      } catch (e) {
+                        console.warn("draftCalendarEvent failed", e);
+                        controller.enqueue(
+                          enc({
+                            type: "google_action",
+                            mode: "proposal",
+                            action: decision.action,
+                            params: decision.params,
+                            loading: false,
+                          }),
+                        );
+                      }
+                    }
                   } else {
-                    // Non-email write actions (calendar.create) — emit card directly.
                     controller.enqueue(
                       enc({
                         type: "google_action",
