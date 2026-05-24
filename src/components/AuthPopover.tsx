@@ -98,7 +98,7 @@ export function AuthPopover() {
   if (!open) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-[216px]">
+    <div className="fixed bottom-4 right-4 z-50 w-[216px] min-w-[250px]">
       <div className="bg-muted rounded-[15px] pt-[16px] pb-[20px] pl-[25px] pr-[17px] flex flex-col gap-[18px]">
 
         {/* Close + Logo */}
