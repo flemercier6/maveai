@@ -1839,12 +1839,25 @@ Deno.serve(async (req) => {
         "- Any modification (create, update, delete) ALWAYS requires the user to explicitly confirm via the in-chat confirmation card. Never claim success without that confirmation.",
     };
 
+    // Hard guardrail: tell the model the truth about the Google connection so it
+    // never hallucinates "I'm not connected" when the user actually is.
+    const googleGuardSystem: Msg = {
+      role: "system",
+      content:
+        "GOOGLE INTEGRATION RULES (strict):\n" +
+        (googleConnected
+          ? `- The user HAS connected their Google account${googleAccountEmail ? ` (${googleAccountEmail})` : ""}. Gmail, Google Calendar and Google Drive are AVAILABLE. NEVER say you are not connected, never ask the user to connect — they already did.\n- The server routes Gmail/Calendar actions: read ops run server-side and their result is injected into your context; write ops (gmail.draft, gmail.send, calendar.create) are surfaced as an in-chat confirmation card that you MUST NOT execute or fake.\n- If the user asks you to write/send an email or create an event, do NOT refuse — the server will open the correct card. Just acknowledge briefly and let the card appear.\n`
+          : "- The user has NOT connected Google. You cannot read Gmail, send emails, or create calendar events. If asked, tell them briefly to connect Google in Settings → Integrations.\n") +
+        "- Never claim a Google action was performed without an explicit user confirmation through the card.",
+    };
+
     // Prepend system messages (style + memory) and drop any previous duplicates from the client.
     const baseSystems: Msg[] = [
       ...(writingMode ? [] : [styleSystem]),
       ...(writingSystem ? [writingSystem] : []),
       ...(memorySystem ? [memorySystem] : []),
       voyagerGuardSystem,
+      googleGuardSystem,
     ];
     const cleanedClientMessages = messages.filter(
       (m) =>
