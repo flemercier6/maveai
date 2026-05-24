@@ -2381,7 +2381,7 @@ export default function Chat() {
                   onFocus={() => notifyComposerFocus("main")}
                   onBlur={() => {
                     notifyComposerBlur("main");
-                    setTimeout(() => setSlash(null), 100);
+                    setTimeout(() => { setSlash(null); setMention(null); }, 100);
                   }}
                   placeholder="Send a message or type / for commands..."
                   rows={1}
@@ -2402,6 +2402,36 @@ export default function Chat() {
                   blacklistedModels={aiPrefs.blacklistedModels}
                   favoriteModels={aiPrefs.favoriteModels}
                 />
+              )}
+              {mention && mentionItems.length > 0 && (
+                <div
+                  role="listbox"
+                  className="absolute z-50 w-56 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg"
+                  style={{ left: mention.pos.left, top: mention.pos.top, transform: "translateY(-100%)" }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  {mentionItems.map((it, idx) => {
+                    const isActive = idx === mentionActive;
+                    return (
+                      <button
+                        key={it.key}
+                        type="button"
+                        role="option"
+                        aria-selected={isActive}
+                        onMouseEnter={() => setMentionActive(idx)}
+                        onClick={() => applyMentionSelection(it)}
+                        className={`w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm ${
+                          isActive ? "bg-dropdown-hover" : ""
+                        }`}
+                      >
+                        <span className="inline-flex items-center justify-center w-4 h-4 shrink-0">
+                          {it.icon}
+                        </span>
+                        <span className="text-[13px] text-foreground truncate">{it.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               )}
               <div className="flex items-center justify-between gap-[15px] px-2 pb-2">
                 <div className="flex items-center gap-2">
