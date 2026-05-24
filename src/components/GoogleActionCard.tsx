@@ -493,19 +493,22 @@ function CalendarEventCard({
     <div className="my-2 rounded-[20px] bg-background overflow-hidden flex flex-col gap-[11px] drop-shadow-[0_4px_5px_rgba(0,0,0,0.1)]">
 
       {/* Header */}
-      <div className="bg-muted flex items-center justify-between px-[15px] py-[15px] rounded-t-[20px]">
+      <div
+        className="bg-muted flex items-center justify-between px-[15px] py-[15px] rounded-t-[20px] cursor-pointer select-none"
+        onClick={onToggleCollapse}
+      >
         <div className="flex items-center gap-[10px]">
           <GoogleServiceLogo service="calendar" className="w-[18px] h-[18px]" />
           <span className="text-[14px] font-semibold text-foreground">Créer un événement</span>
         </div>
-        <div className="flex items-center gap-[11px]">
+        <div className="flex items-center gap-[11px]" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={onToggleCollapse}
             aria-label="Réduire"
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ChevronDown className={cn("w-4 h-4 transition-transform", collapsed && "rotate-180")} />
+            <ChevronDown className={cn("w-4 h-4 transition-transform", collapsed ? "rotate-[-90deg]" : "rotate-0")} />
           </button>
           <button
             type="button"
