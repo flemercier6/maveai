@@ -98,8 +98,8 @@ export function AuthPopover() {
   if (!open) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-[216px] min-w-[300px] min-h-[400px]">
-      <div className="bg-muted rounded-[15px] pt-[16px] pb-[20px] pl-[25px] pr-[17px] flex flex-col gap-[18px]">
+    <div className="fixed bottom-[15px] right-[15px] z-50 w-[216px] min-w-[300px] min-h-[400px]">
+      <div className="bg-muted rounded-[15px] pt-[16px] pb-[20px] pl-[25px] pr-[17px] flex flex-col gap-[18px] shadow-[0_4px_10px_0_rgba(0,0,0,0.10)]">
 
         {/* Close + Logo */}
         <div className="flex flex-col gap-[12px]">
@@ -164,7 +164,7 @@ export function AuthPopover() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
             autoComplete="email"
-            className="w-full px-[10px] py-[7px] rounded-[8px] bg-muted border border-border text-[10px] text-foreground placeholder:text-muted-foreground outline-none focus:border-muted-foreground transition-colors"
+            className="w-full px-[10px] py-[7px] rounded-[8px] bg-muted border border-border text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-muted-foreground transition-colors"
           />
           <input
             type="password"
@@ -172,13 +172,13 @@ export function AuthPopover() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            className="w-full px-[10px] py-[7px] rounded-[8px] bg-muted border border-border text-[10px] text-foreground placeholder:text-muted-foreground outline-none focus:border-muted-foreground transition-colors"
+            className="w-full px-[10px] py-[7px] rounded-[8px] bg-muted border border-border text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-muted-foreground transition-colors"
           />
           <button
             type="submit"
             disabled={submitting}
             className={cn(
-              "w-full px-[10px] py-[7px] rounded-[10px] bg-primary text-primary-foreground text-[10px] font-semibold hover:opacity-90 transition-opacity",
+              "w-full px-[10px] py-[7px] rounded-[10px] bg-primary text-primary-foreground text-[14px] font-semibold hover:opacity-90 transition-opacity",
               submitting && "opacity-60 cursor-not-allowed",
             )}
           >
