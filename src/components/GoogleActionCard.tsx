@@ -427,6 +427,61 @@ function CalendarEventCard({
 }) {
   const set = (k: string, v: unknown) => onChange({ ...params, [k]: v });
 
+  const [meetLoading, setMeetLoading] = useState(false);
+
+  const enableMeet = async () => {
+    if (params.addMeet || meetLoading) return;
+    setMeetLoading(true);
+    const cleanParams: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(params)) {
+      if (!k.startsWith("_")) cleanParams[k] = v;
+    }
+    cleanParams.addMeet = true;
+    try {
+      const existingEventId = params._eventId as string | undefined;
+      const body = existingEventId
+        ? { action: "calendar.update", params: { ...cleanParams, eventId: existingEventId } }
+        : { action: "calendar.create", params: cleanParams };
+      const { data, error } = await supabase.functions.invoke("google-tools", { body });
+      if (error) throw error;
+      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+      const r = (data as { result?: { id?: string; meetUrl?: string } })?.result ?? {};
+      const code = r.meetUrl ? String(r.meetUrl).replace(/^https?:\/\/meet\.google\.com\//, "").split("?")[0] : "";
+      onChange({
+        ...params,
+        addMeet: true,
+        _eventId: r.id ?? params._eventId,
+        _meetUrl: r.meetUrl ?? null,
+        _meetCode: code,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Impossible de créer le Meet";
+      toast.error(msg);
+    } finally {
+      setMeetLoading(false);
+    }
+  };
+
+  const disableMeet = async () => {
+    if (!params.addMeet && !params._eventId) return;
+    const existingEventId = params._eventId as string | undefined;
+    if (existingEventId) {
+      try {
+        await supabase.functions.invoke("google-tools", {
+          body: { action: "calendar.delete", params: { eventId: existingEventId } },
+        });
+      } catch (e) {
+        console.error("Failed to delete draft event", e);
+      }
+    }
+    const next = { ...params };
+    delete next._eventId;
+    delete next._meetUrl;
+    delete next._meetCode;
+    next.addMeet = false;
+    onChange(next);
+  };
+
   const start = parseDateTime(fmt(params.start));
   const end = parseDateTime(fmt(params.end));
   const duration = calcDuration(fmt(params.start), fmt(params.end));
