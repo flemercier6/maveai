@@ -743,7 +743,7 @@ function CalendarEventCard({
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <>
-                    <span>Next</span>
+                    <span>{Array.isArray(params.attendees) && (params.attendees as string[]).length > 0 ? "Create and Send" : "Create"}</span>
                     <ArrowRight className="w-3 h-3" />
                   </>
                 )}
