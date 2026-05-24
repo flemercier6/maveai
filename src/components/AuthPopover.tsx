@@ -117,7 +117,7 @@ export function AuthPopover() {
             <img
               src={fevrierLogo}
               alt="fevrier"
-              className="h-[16px] w-auto dark:invert"
+              className="h-[18px] w-auto dark:invert"
             />
           </div>
         </div>
@@ -148,7 +148,7 @@ export function AuthPopover() {
             <path fill="#4CAF50" d="M24 43.5c5 0 9.5-1.7 13-4.6l-6-5c-2 1.4-4.4 2.1-7 2.1-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39.1 16.2 43.5 24 43.5z" />
             <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4-4 5.3l6 5c-.4.4 6.7-4.9 6.7-14.3 0-1.2-.1-2.3-.4-3.5z" />
           </svg>
-          <span className="text-[12px] font-medium text-foreground whitespace-nowrap">
+          <span className="text-[14px] font-medium text-foreground whitespace-nowrap">
             {googleLoading ? "Redirecting…" : "Continue with Google"}
           </span>
         </button>
