@@ -601,13 +601,13 @@ function CalendarEventCard({
                     <div className="flex items-center gap-[10px] text-[14px]">
                       <span className="text-muted-foreground w-[140px] shrink-0">Google Meet URL</span>
                       <span className="text-foreground truncate underline">
-                        {r?.meetUrl ? String(r.meetUrl) : "Sera généré à la création"}
+                        {(action.result as any)?.meetUrl ? String((action.result as any).meetUrl) : "Sera généré à la création"}
                       </span>
                     </div>
                     <div className="flex items-center gap-[10px] text-[14px]">
                       <span className="text-muted-foreground w-[140px] shrink-0">Code</span>
                       <span className="text-foreground underline">
-                        {r?.meetUrl ? String(r.meetUrl).replace(/^https?:\/\/meet\.google\.com\//, "").split("?")[0] : "—"}
+                        {(action.result as any)?.meetUrl ? String((action.result as any).meetUrl).replace(/^https?:\/\/meet\.google\.com\//, "").split("?")[0] : "—"}
                       </span>
                     </div>
                   </div>
