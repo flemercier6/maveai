@@ -164,7 +164,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
           ? "Email envoyé"
           : "Événement créé";
     return (
-      <div className="my-2 rounded-[14px] bg-secondary px-3 py-2 flex items-center justify-between gap-4 min-h-[35px]">
+      <div className="my-2 rounded-[14px] bg-secondary px-3 py-2 flex items-center justify-between gap-4 min-h-[45px]">
         <div className="flex items-center gap-2">
           <Check className="w-4 h-4 text-[#00BA42]" strokeWidth={2.5} />
           <span className="text-foreground font-semibold" style={{ fontSize: 14 }}>
