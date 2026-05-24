@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SkeletonShimmer } from "@/components/SkeletonShimmer";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export type GoogleActionState = "pending" | "executing" | "done" | "cancelled" | "error";
 
