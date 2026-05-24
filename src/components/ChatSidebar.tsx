@@ -41,7 +41,7 @@ import { SearchChatsDialog } from "@/components/SearchChatsDialog";
 import { FolderDialog } from "@/components/FolderDialog";
 import { getColor, getIcon, type FolderRow } from "@/lib/folders";
 import { usePlan } from "@/hooks/usePlan";
-import maveLogo from "@/assets/mave_logo.svg";
+import maveLogo from "@/assets/fevrier-logo.svg";
 import sidebarUserArrows from "@/assets/sidebar_user_arrows.svg";
 
 export type Conversation = {
