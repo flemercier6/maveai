@@ -97,9 +97,11 @@ export function AuthPopover() {
 
   if (!open) return null;
 
+  const bothFilled = email.trim().length > 0 && password.length > 0;
+
   return (
     <div className="fixed bottom-[15px] right-[15px] z-50 w-[216px] min-w-[300px] min-h-[400px]">
-      <div className="bg-muted rounded-[15px] pt-[16px] pb-[20px] pl-[25px] pr-[17px] flex flex-col gap-[18px] shadow-[0_4px_10px_0_rgba(0,0,0,0.10)]">
+      <div className="bg-bg-primary-token rounded-[15px] pt-[16px] pb-[20px] pl-[25px] pr-[17px] flex flex-col gap-[18px] shadow-[0_4px_10px_0_rgba(0,0,0,0.10)]">
 
         {/* Close + Logo */}
         <div className="flex flex-col gap-[12px]">
@@ -138,7 +140,7 @@ export function AuthPopover() {
           onClick={onGoogle}
           disabled={googleLoading}
           className={cn(
-            "w-full flex items-center justify-center gap-[10px] px-[10px] py-[7px] rounded-[8px] bg-background border border-border hover:opacity-90 transition-opacity",
+            "w-full flex items-center justify-center gap-[10px] px-[10px] py-[7px] rounded-[8px] bg-btn-primary text-btn-primary-foreground hover:opacity-90 transition-opacity",
             googleLoading && "opacity-60 cursor-not-allowed",
           )}
         >
@@ -148,7 +150,7 @@ export function AuthPopover() {
             <path fill="#4CAF50" d="M24 43.5c5 0 9.5-1.7 13-4.6l-6-5c-2 1.4-4.4 2.1-7 2.1-5.3 0-9.7-3.1-11.3-7.5l-6.5 5C9.6 39.1 16.2 43.5 24 43.5z" />
             <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4-4 5.3l6 5c-.4.4 6.7-4.9 6.7-14.3 0-1.2-.1-2.3-.4-3.5z" />
           </svg>
-          <span className="text-[14px] font-medium text-foreground whitespace-nowrap">
+          <span className="text-[14px] font-medium text-btn-primary-foreground whitespace-nowrap">
             {googleLoading ? "Redirecting…" : "Continue with Google"}
           </span>
         </button>
@@ -164,7 +166,7 @@ export function AuthPopover() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
             autoComplete="email"
-            className="w-full px-[10px] py-[7px] rounded-[8px] bg-muted border border-border text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-muted-foreground transition-colors"
+            className="w-full px-[10px] py-[7px] rounded-[8px] bg-input-secondary-bg border border-input-secondary-border text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-muted-foreground transition-colors"
           />
           <input
             type="password"
@@ -172,13 +174,16 @@ export function AuthPopover() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            className="w-full px-[10px] py-[7px] rounded-[8px] bg-muted border border-border text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-muted-foreground transition-colors"
+            className="w-full px-[10px] py-[7px] rounded-[8px] bg-input-secondary-bg border border-input-secondary-border text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-muted-foreground transition-colors"
           />
           <button
             type="submit"
             disabled={submitting}
             className={cn(
-              "w-full px-[10px] py-[7px] rounded-[10px] bg-primary text-primary-foreground text-[14px] font-semibold hover:opacity-90 transition-opacity",
+              "w-full px-[10px] py-[7px] rounded-[10px] text-[14px] font-semibold hover:opacity-90 transition-all",
+              bothFilled
+                ? "bg-btn-primary text-btn-primary-foreground"
+                : "bg-btn-muted text-btn-muted-foreground",
               submitting && "opacity-60 cursor-not-allowed",
             )}
           >

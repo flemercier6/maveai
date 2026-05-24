@@ -63,6 +63,23 @@ export default {
           foreground: "hsl(var(--tooltip-foreground))",
         },
         "dropdown-hover": "hsl(var(--dropdown-hover))",
+        "bg-primary-token": "hsl(var(--bg-primary))",
+        "input-primary": {
+          bg: "hsl(var(--input-primary-bg))",
+          border: "hsl(var(--input-primary-border))",
+        },
+        "input-secondary": {
+          bg: "hsl(var(--input-secondary-bg))",
+          border: "hsl(var(--input-secondary-border))",
+        },
+        "btn-primary": {
+          DEFAULT: "hsl(var(--button-primary-background))",
+          foreground: "hsl(var(--button-primary-text))",
+        },
+        "btn-muted": {
+          DEFAULT: "hsl(var(--button-muted-background))",
+          foreground: "hsl(var(--button-muted-text))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

@@ -69,6 +69,17 @@
     --blue-tag-bg: #f0f6ff;           /* pills.modes.bg:   #f0f6ff */
     --blue-tag-fg: #0062ff;           /* pills.modes.text: #0062ff */
 
+    /* ── New tokens ──────────────────────────────── */
+    --bg-primary: 0 0% 100%;                /* #ffffff */
+    --input-primary-bg: 40 18% 97%;         /* #f8f7f5 */
+    --input-primary-border: 0 0% 88%;       /* #e0e0e0 */
+    --input-secondary-bg: 0 0% 100%;        /* #ffffff */
+    --input-secondary-border: 0 0% 88%;     /* #e0e0e0 */
+    --button-primary-background: 0 0% 0%;   /* #000000 */
+    --button-primary-text: 0 0% 100%;       /* #ffffff */
+    --button-muted-background: 40 18% 97%;  /* #f8f7f5 */
+    --button-muted-text: 0 0% 53%;          /* #888888 */
+
     --radius: 0.875rem;               /* bd radius: 14px */
 
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 10% / 0.05);
@@ -148,6 +159,17 @@
 
     --blue-tag-bg: #002141;           /* pills.modes.bg dark:   #002141 */
     --blue-tag-fg: #4da3ff;           /* pills.modes.text dark: #4da3ff */
+
+    /* ── New tokens ──────────────────────────────── */
+    --bg-primary: 0 0% 9%;                  /* #181818 */
+    --input-primary-bg: 0 0% 14%;           /* #242424 */
+    --input-primary-border: 0 0% 27%;       /* #444444 */
+    --input-secondary-bg: 0 0% 9%;          /* #181818 */
+    --input-secondary-border: 0 0% 27%;     /* #444444 */
+    --button-primary-background: 0 0% 100%; /* #ffffff */
+    --button-primary-text: 0 0% 0%;         /* #000000 */
+    --button-muted-background: 0 0% 14%;    /* #242424 */
+    --button-muted-text: 0 0% 53%;          /* #888888 */
 
     /* ── Sidebar ──────────────────────────────────── */
     --sidebar-background: 0 0% 9%;    /* bg-primary: #181818 */
