@@ -697,7 +697,7 @@ function CalendarEventCard({
                         <Copy className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <div className="group flex items-center gap-[10px] text-[14px]">
+                    <div className="group flex items-center gap-[10px] text-sm">
                       <span className="text-muted-foreground w-[140px] shrink-0">Code</span>
                       <span className="text-foreground underline">
                         {meetLoading ? "…" : (params._meetCode ? String(params._meetCode) : "—")}
