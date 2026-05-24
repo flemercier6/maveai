@@ -1,6 +1,7 @@
 import gmailLogoUrl from "@/assets/logo-gmail.png";
 import calendarLogoUrl from "@/assets/logo-calendar.png";
 import driveLogoUrl from "@/assets/logo-drive.png";
+import { cn } from "@/lib/utils";
 
 export type GoogleService = "gmail" | "calendar" | "drive";
 
