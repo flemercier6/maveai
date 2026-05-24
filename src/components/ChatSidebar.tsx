@@ -307,7 +307,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                   <img
                     src={maveIcon}
                     alt="Mave"
-                    className="h-5 w-auto group-hover:opacity-0 transition-opacity"
+                    className="h-[17px] w-auto group-hover:opacity-0 transition-opacity"
                   />
                   <span className="absolute inset-0 flex items-center justify-center rounded-md bg-primary opacity-0 group-hover:opacity-100 transition-opacity">
                     <PanelLeftOpen className="w-4 h-4 opacity-70" />
