@@ -281,6 +281,79 @@ function EventRow({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
+function AttendeeInput({
+  attendees,
+  onChange,
+}: {
+  attendees: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [raw, setRaw] = useState("");
+
+  const add = (email: string) => {
+    const trimmed = email.trim();
+    if (!trimmed) return;
+    if (attendees.includes(trimmed)) return;
+    onChange([...attendees, trimmed]);
+  };
+
+  const remove = (email: string) => {
+    onChange(attendees.filter((a) => a !== email));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === "," || e.key === " ") {
+      e.preventDefault();
+      add(raw);
+      setRaw("");
+    }
+    if (e.key === "Backspace" && raw === "" && attendees.length > 0) {
+      onChange(attendees.slice(0, -1));
+    }
+  };
+
+  const handleBlur = () => {
+    if (raw.trim()) {
+      add(raw);
+      setRaw("");
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-[6px]">
+      <input
+        type="text"
+        value={raw}
+        onChange={(e) => setRaw(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
+        placeholder="Add participants"
+        className="w-full bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground placeholder:text-muted-foreground outline-none"
+      />
+      {attendees.length > 0 && (
+        <div className="flex flex-wrap gap-[6px]">
+          {attendees.map((email) => (
+            <div
+              key={email}
+              className="inline-flex items-center gap-[6px] bg-input-primary-bg rounded-[10px] px-[10px] py-[6px] text-[12px] text-foreground"
+            >
+              <span className="truncate max-w-[200px]">{email}</span>
+              <button
+                type="button"
+                onClick={() => remove(email)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={`Retirer ${email}`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CalendarEventCard({
   params,
   onChange,
@@ -306,11 +379,8 @@ function CalendarEventCard({
   const end = parseDateTime(fmt(params.end));
   const duration = calcDuration(fmt(params.start), fmt(params.end));
 
-  const attendees = Array.isArray(params.attendees)
-    ? (params.attendees as string[]).join(", ")
-    : fmt(params.attendees);
-
   const host = fmt(params.organizer) || fmt(params.calendarId) || "";
+
 
   return (
     <div className="my-2 rounded-[20px] bg-background overflow-hidden flex flex-col gap-[11px] drop-shadow-[0_4px_5px_rgba(0,0,0,0.1)]">
@@ -423,18 +493,15 @@ function CalendarEventCard({
                 )}
 
                 {/* Invitees */}
-                <EventRow label="Invitees">
-                  <EventPillInput
-                    value={attendees}
-                    onChange={(v) =>
-                      onChange({
-                        ...params,
-                        attendees: v.split(",").map((s) => s.trim()).filter(Boolean),
-                      })
-                    }
-                    placeholder="Add participants"
-                  />
-                </EventRow>
+                <div className="flex items-start gap-[10px] w-full">
+                  <span className="text-[14px] text-foreground w-[60px] shrink-0 pt-[10px]">Invitees</span>
+                  <div className="flex-1 min-w-0">
+                    <AttendeeInput
+                      attendees={Array.isArray(params.attendees) ? (params.attendees as string[]) : []}
+                      onChange={(next) => onChange({ ...params, attendees: next })}
+                    />
+                  </div>
+                </div>
 
                 {/* Separator */}
                 <div className="h-px bg-border w-full" />
