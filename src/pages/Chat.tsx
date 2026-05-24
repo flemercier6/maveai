@@ -1135,11 +1135,17 @@ export default function Chat() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setSending(false);
+        setStreaming(false);
+        toast.error("Please sign in to send messages.");
+        return;
+      }
       const resp = await fetch(FUNC_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           conversationId: convId,
