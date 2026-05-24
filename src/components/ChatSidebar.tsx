@@ -42,6 +42,7 @@ import { FolderDialog } from "@/components/FolderDialog";
 import { getColor, getIcon, type FolderRow } from "@/lib/folders";
 import { usePlan } from "@/hooks/usePlan";
 import maveLogo from "@/assets/fevrier-logo.svg";
+import maveIcon from "@/assets/fevrier-icon.svg";
 import sidebarUserArrows from "@/assets/sidebar_user_arrows.svg";
 
 export type Conversation = {
@@ -294,27 +295,42 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           style={{ marginBottom: isCollapsed ? 16 : 40 }}
         >
           {!isCollapsed && <img src={maveLogo} alt="Mave" className="h-4 w-auto" />}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={toggleCollapsed}
-                aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                className={cn(
-                  isCollapsed
-                    ? COLLAPSED_ICON_BUTTON_CLASS
-                    : "flex items-center justify-center w-9 h-9 rounded-md text-sidebar-foreground hover:bg-sidebar-accent",
-                )}
-              >
-                {isCollapsed ? (
-                  <PanelLeftOpen className="w-4 h-4 opacity-70" />
-                ) : (
+          {isCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={toggleCollapsed}
+                  aria-label="Expand sidebar"
+                  className="group relative flex items-center justify-center w-9 h-9 rounded-md"
+                >
+                  <img
+                    src={maveIcon}
+                    alt="Mave"
+                    className="h-5 w-auto group-hover:opacity-0 transition-opacity"
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center rounded-md bg-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                    <PanelLeftOpen className="w-4 h-4 opacity-70" />
+                  </span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Expand sidebar</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={toggleCollapsed}
+                  aria-label="Collapse sidebar"
+                  className="flex items-center justify-center w-9 h-9 rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+                >
                   <PanelLeftClose className="w-4 h-4 opacity-70" />
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>{isCollapsed ? "Expand sidebar" : "Collapse sidebar"}</TooltipContent>
-          </Tooltip>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Collapse sidebar</TooltipContent>
+            </Tooltip>
+          )}
         </div>
         {collapsed ? (
           <div className="mt-2 flex flex-col items-center gap-1">
