@@ -215,6 +215,7 @@ export function GoogleActionCard({ action, onChange }: Props) {
         loading={loading}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((c) => !c)}
+        result={action.result as Record<string, unknown> | undefined}
       />
     );
   }
@@ -396,6 +397,7 @@ function CalendarEventCard({
   loading,
   collapsed,
   onToggleCollapse,
+  result,
 }: {
   params: Record<string, unknown>;
   onChange: (next: Record<string, unknown>) => void;
@@ -405,6 +407,7 @@ function CalendarEventCard({
   loading: boolean;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  result?: Record<string, unknown>;
 }) {
   const set = (k: string, v: unknown) => onChange({ ...params, [k]: v });
 
@@ -601,13 +604,13 @@ function CalendarEventCard({
                     <div className="flex items-center gap-[10px] text-[14px]">
                       <span className="text-muted-foreground w-[140px] shrink-0">Google Meet URL</span>
                       <span className="text-foreground truncate underline">
-                        {(action.result as any)?.meetUrl ? String((action.result as any).meetUrl) : "Sera généré à la création"}
+                        {result?.meetUrl ? String(result!.meetUrl) : "Sera généré à la création"}
                       </span>
                     </div>
                     <div className="flex items-center gap-[10px] text-[14px]">
                       <span className="text-muted-foreground w-[140px] shrink-0">Code</span>
                       <span className="text-foreground underline">
-                        {(action.result as any)?.meetUrl ? String((action.result as any).meetUrl).replace(/^https?:\/\/meet\.google\.com\//, "").split("?")[0] : "—"}
+                        {result?.meetUrl ? String(result!.meetUrl).replace(/^https?:\/\/meet\.google\.com\//, "").split("?")[0] : "—"}
                       </span>
                     </div>
                   </div>
