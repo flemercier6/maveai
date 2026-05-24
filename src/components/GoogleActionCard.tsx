@@ -52,6 +52,25 @@ function calcDuration(start: string, end: string): string {
   } catch { return ""; }
 }
 
+function isoToTime(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+function applyTime(iso: string, timeVal: string): string {
+  if (!iso || !timeVal) return iso;
+  const [hours, minutes] = timeVal.split(":").map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return iso;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  d.setHours(hours, minutes, 0, 0);
+  return d.toISOString();
+}
+
 export function GoogleActionCard({ action, onChange }: Props) {
   const [params, setParams] = useState<Record<string, unknown>>(action.params);
   const [collapsed, setCollapsed] = useState(false);
