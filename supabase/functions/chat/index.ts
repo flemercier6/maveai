@@ -2384,8 +2384,9 @@ Deno.serve(async (req) => {
             return !/\b(crm|voyager|contact|contacts|company|companies|deal|deals|client|prospect|lead|opportunit|entreprise|societe|pipeline|account|customer|fiche|interlocuteur)\b/.test(t);
           })();
 
-          const willClarify = !ephemeral && !skipClarify && !writingMode && !!lastUserText && (!fastNoClarify || !!forceClarify);
-          const willGoogle = googleConnected && !!googleApiKey && !writingMode && !!lastUserText && !fastNoGoogle;
+          const willClarify = !ephemeral && !skipClarify && !writingMode && !!lastUserText && !googleService && (!fastNoClarify || !!forceClarify);
+          const willGoogle = !writingMode && !!lastUserText && !fastNoGoogle;
+          const canGoogle = googleConnected && !!googleApiKey;
           const willVoyager = voyagerEnabled && !!lastUserText && !fastNoVoyager && (!writingMode || !!forcedVoyagerDecision);
 
           // Clarify was pre-launched BEFORE DB reads (see earlyClarifyPromise above) so its
@@ -2395,7 +2396,7 @@ Deno.serve(async (req) => {
             : Promise.resolve(null);
 
 
-          const googleDecisionPromise: Promise<GoogleRouterDecision> = willGoogle
+          const googleDecisionPromise: Promise<GoogleRouterDecision> = (willGoogle && canGoogle)
             ? classifyGoogleIntent(
                 googleApiKey!,
                 lastUserText,
@@ -2457,6 +2458,20 @@ Deno.serve(async (req) => {
 
           // ---------- Google integration router ----------
           if (willGoogle) {
+            if (!canGoogle) {
+              if (googleService) {
+                const svc = googleService === "gmail" ? "Gmail" : googleService === "calendar" ? "Google Calendar" : "Google Drive";
+                const msg = `Pour utiliser ${svc}, connecte ton compte Google dans les paramètres (onglet Intégrations).`;
+                controller.enqueue(enc({ type: "delta", text: msg }));
+                assistantText += msg;
+                if (!ephemeral && conversationId) {
+                  try { await supabase.from("messages").insert({ conversation_id: conversationId, user_id: user.id, role: "assistant", content: assistantText, model }); } catch (_) { /* ignore */ }
+                }
+                controller.enqueue(enc({ type: "done" }));
+                controller.close();
+                return;
+              }
+            } else {
             try {
               let decision = await googleDecisionPromise;
               if (decision.action === "none") {
@@ -2666,6 +2681,7 @@ Deno.serve(async (req) => {
               }
             } catch (e) {
               console.warn("google router skipped", e);
+            }
             }
           }
 
