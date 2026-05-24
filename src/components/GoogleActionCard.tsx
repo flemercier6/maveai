@@ -694,9 +694,9 @@ function CalendarEventCard({
                         <Copy className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <div className="flex items-center gap-[10px] text-[14px]">
+                    <div className="group flex items-center gap-[10px] text-[14px]">
                       <span className="text-muted-foreground w-[140px] shrink-0">Code</span>
-                      <span className="text-foreground underline flex-1 min-w-0">
+                      <span className="text-foreground underline">
                         {meetLoading ? "…" : (params._meetCode ? String(params._meetCode) : "—")}
                       </span>
                       <button
@@ -708,7 +708,7 @@ function CalendarEventCard({
                             toast.success("Code copié");
                           }
                         }}
-                        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
                         aria-label="Copier le code"
                       >
                         <Copy className="w-3.5 h-3.5" />
