@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Send, FileText, X, Check, Loader2, ChevronDown, ArrowRight, Clock, Copy } from "lucide-react";
+import { Send, FileText, X, Check, Loader2, ChevronDown, ArrowRight, ArrowUpRight, Clock, Copy } from "lucide-react";
 import { GoogleServiceLogo } from "@/components/GoogleServiceLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import gmeetLogo from "@/assets/gmeet-logo.png";
+import calendarLogo from "@/assets/logo-calendar.png";
 
 export type GoogleActionState = "pending" | "executing" | "done" | "cancelled" | "error";
 
@@ -155,34 +156,55 @@ export function GoogleActionCard({ action, onChange }: Props) {
   // ---------- Result view ----------
   if (action.state === "done") {
     const r = action.result as Record<string, unknown> | undefined;
+    const isCalendar = action.action === "calendar.create";
+    const label =
+      action.action === "gmail.draft"
+        ? "Brouillon enregistré dans Gmail"
+        : action.action === "gmail.send"
+          ? "Email envoyé"
+          : "Événement créé";
     return (
-      <div className="my-2 rounded-xl border border-border bg-card p-3 text-sm">
-        <div className="flex items-center gap-2 text-foreground/80 text-base">
-          <Check className="w-4 h-4 text-[hsl(140_70%_42%)]" />
-          <span className="font-medium text-foreground text-base">
-            {action.action === "gmail.draft" && "Brouillon enregistré dans Gmail"}
-            {action.action === "gmail.send" && "Email envoyé"}
-            {action.action === "calendar.create" && "Événement créé"}
+      <div className="my-2 rounded-[14px] bg-secondary px-3 py-2 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Check className="w-4 h-4 text-[#00BA42]" strokeWidth={2.5} />
+          <span className="text-foreground font-semibold" style={{ fontSize: 14 }}>
+            {label}
           </span>
         </div>
-        {action.action === "calendar.create" && r?.htmlLink ? (
-          <div className="mt-1 flex flex-col gap-0.5">
+        {isCalendar && r?.htmlLink ? (
+          <div className="flex items-center gap-5">
             <a
               href={String(r.htmlLink)}
               target="_blank"
               rel="noreferrer"
-              className="inline-block text-xs text-foreground/60 hover:underline"
+              className="flex items-center gap-2.5 text-muted-foreground hover:text-foreground transition-colors"
+              style={{ fontSize: 12 }}
             >
-              Voir dans Google Calendar →
+              <img
+                src={calendarLogo}
+                alt=""
+                className="w-5 h-5 rounded-[50px] border border-border"
+                draggable={false}
+              />
+              <span>Open Event</span>
+              <ArrowUpRight className="w-3 h-3" strokeWidth={1} />
             </a>
             {r?.meetUrl ? (
               <a
                 href={String(r.meetUrl)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-block text-xs text-foreground/60 hover:underline"
+                className="flex items-center gap-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                style={{ fontSize: 12 }}
               >
-                Rejoindre Google Meet →
+                <img
+                  src={gmeetLogo}
+                  alt=""
+                  className="w-5 h-5 rounded-[50px] border border-border"
+                  draggable={false}
+                />
+                <span>Join Google Meet</span>
+                <ArrowUpRight className="w-3 h-3" strokeWidth={1} />
               </a>
             ) : null}
           </div>
