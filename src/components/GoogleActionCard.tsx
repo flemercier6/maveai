@@ -8,6 +8,7 @@ import { SkeletonShimmer } from "@/components/SkeletonShimmer";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
+import gmeetLogo from "@/assets/gmeet-logo.png";
 
 export type GoogleActionState = "pending" | "executing" | "done" | "cancelled" | "error";
 
@@ -554,23 +555,63 @@ function CalendarEventCard({
                 {/* Separator */}
                 <div className="h-px bg-border w-full" />
 
-                {/* Meeting type */}
-                <EventRow label="Meeting">
-                  <button
-                    type="button"
-                    onClick={() => onChange({ ...params, addMeet: !params.addMeet })}
-                    className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] flex items-center justify-between w-full hover:opacity-90 transition-opacity"
-                  >
-                    <span className={cn(params.addMeet ? "text-foreground" : "text-muted-foreground")}>
-                      {params.addMeet ? "Google Meet sera ajouté" : "Ajouter Google Meet"}
-                    </span>
-                    <Switch
-                      checked={Boolean(params.addMeet)}
-                      onCheckedChange={(v) => onChange({ ...params, addMeet: v })}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </button>
+                {/* Visio */}
+                <EventRow label="Visio">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] flex items-center justify-between w-full hover:opacity-90 transition-opacity"
+                      >
+                        <span className={cn("flex items-center gap-[8px]", params.addMeet ? "text-foreground" : "text-muted-foreground")}>
+                          {params.addMeet ? (
+                            <>
+                              <img src={gmeetLogo} alt="" className="w-[18px] h-[18px] object-contain" />
+                              Google Meet
+                            </>
+                          ) : (
+                            "No visio-conference"
+                          )}
+                        </span>
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-1 z-50" align="start" style={{ width: "var(--radix-popover-trigger-width)" }}>
+                      <button
+                        type="button"
+                        onClick={() => onChange({ ...params, addMeet: false })}
+                        className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[6px] text-[14px] text-foreground hover:bg-dropdown-hover"
+                      >
+                        No visio-conference
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onChange({ ...params, addMeet: true })}
+                        className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[6px] text-[14px] text-foreground hover:bg-dropdown-hover"
+                      >
+                        <img src={gmeetLogo} alt="" className="w-[18px] h-[18px] object-contain" />
+                        Google Meet
+                      </button>
+                    </PopoverContent>
+                  </Popover>
                 </EventRow>
+
+                {params.addMeet ? (
+                  <div className="w-full border border-border rounded-[10px] bg-background p-[10px] flex flex-col gap-[6px]">
+                    <div className="flex items-center gap-[10px] text-[14px]">
+                      <span className="text-muted-foreground w-[140px] shrink-0">Google Meet URL</span>
+                      <span className="text-foreground truncate underline">
+                        {(action.result as any)?.meetUrl ? String((action.result as any).meetUrl) : "Sera généré à la création"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-[10px] text-[14px]">
+                      <span className="text-muted-foreground w-[140px] shrink-0">Code</span>
+                      <span className="text-foreground underline">
+                        {(action.result as any)?.meetUrl ? String((action.result as any).meetUrl).replace(/^https?:\/\/meet\.google\.com\//, "").split("?")[0] : "—"}
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
               </>
             )}
           </div>
