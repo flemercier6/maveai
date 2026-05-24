@@ -148,14 +148,26 @@ export function GoogleActionCard({ action, onChange }: Props) {
           </span>
         </div>
         {action.action === "calendar.create" && r?.htmlLink ? (
-          <a
-            href={String(r.htmlLink)}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-1 inline-block text-xs text-foreground/60 hover:underline"
-          >
-            Voir dans Google Calendar →
-          </a>
+          <div className="mt-1 flex flex-col gap-0.5">
+            <a
+              href={String(r.htmlLink)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block text-xs text-foreground/60 hover:underline"
+            >
+              Voir dans Google Calendar →
+            </a>
+            {r?.meetUrl ? (
+              <a
+                href={String(r.meetUrl)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block text-xs text-foreground/60 hover:underline"
+              >
+                Rejoindre Google Meet →
+              </a>
+            ) : null}
+          </div>
         ) : null}
       </div>
     );
