@@ -1673,32 +1673,42 @@ export default function Chat() {
     return { start, query: token.slice(1) };
   };
 
+  // Get caret position relative to the editor container, for menu positioning.
+  const getCaretRelativePos = (): { left: number; top: number } => {
+    const el = textareaRef.current;
+    if (!el) return { left: 0, top: 0 };
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return { left: el.offsetLeft, top: el.offsetTop - 8 };
+    const range = sel.getRangeAt(0).cloneRange();
+    range.collapse(true);
+    const rect = range.getBoundingClientRect();
+    const editorRect = el.getBoundingClientRect();
+    // Fallback when collapsed range has no rect (empty editor)
+    const left = rect.left || editorRect.left;
+    return {
+      left: el.offsetLeft + (left - editorRect.left),
+      top: el.offsetTop - 8,
+    };
+  };
+
   const updateSlashFromTextarea = () => {
     const el = textareaRef.current;
     if (!el) return;
-    const caret = el.selectionStart ?? el.value.length;
-    const found = detectSlash(el.value, caret);
+    const value = readEditorText(el);
+    const caret = getCaretOffsetInText(el);
+    const found = detectSlash(value, caret);
     if (!found) {
       setSlash((s) => (s ? null : s));
     } else {
-      const { left } = getTextareaCaretCoords(el, found.start);
-      setSlash({
-        query: found.query,
-        start: found.start,
-        pos: { left: el.offsetLeft + left, top: el.offsetTop - 8 },
-      });
+      const pos = getCaretRelativePos();
+      setSlash({ query: found.query, start: found.start, pos });
     }
-    // Mention detection (@)
-    const mFound = detectMention(el.value, caret);
+    const mFound = detectMention(value, caret);
     if (!mFound) {
       setMention((m) => (m ? null : m));
     } else {
-      const { left } = getTextareaCaretCoords(el, mFound.start);
-      setMention({
-        query: mFound.query,
-        start: mFound.start,
-        pos: { left: el.offsetLeft + left, top: el.offsetTop - 8 },
-      });
+      const pos = getCaretRelativePos();
+      setMention({ query: mFound.query, start: mFound.start, pos });
       setMentionActive(0);
     }
   };
@@ -1714,7 +1724,7 @@ export default function Chat() {
   };
 
   type MentionItem = {
-    key: "gmail" | "calendar" | "drive" | "voyager";
+    key: ChipKind;
     label: string;
     icon: React.ReactNode;
   };
@@ -1730,61 +1740,65 @@ export default function Chat() {
       )
     : [];
 
-  const applyMentionSelection = (item: MentionItem) => {
+  // Activate an integration: insert an inline chip at the caret and update
+  // the integration state. Used by both the @-mention menu and the "+" menu.
+  const activateIntegration = (kind: ChipKind, removeLen: number) => {
     const el = textareaRef.current;
-    if (!el || !mention) return;
-    const before = el.value.slice(0, mention.start);
-    const after = el.value.slice(el.selectionStart ?? mention.start);
-    const next = before + after;
-    setInput(next);
-    setMention(null);
-    if (item.key === "voyager") {
-      setVoyagerService(true);
-      toast.success(`${VOYAGER_LABEL} enabled for next message`);
+    if (!el) return;
+    // Only one Google integration allowed at a time — swap chip if needed.
+    if (kind === "gmail" || kind === "calendar" || kind === "drive") {
+      removeChips(el, ["gmail", "calendar", "drive"]);
+      setGoogleService(kind);
     } else {
-      setGoogleService(item.key);
-      toast.success(`${GOOGLE_SERVICE_LABEL[item.key]} enabled for next message`);
+      setVoyagerService(true);
     }
-    setTimeout(() => {
-      const node = textareaRef.current;
-      if (!node) return;
-      node.focus();
-      node.setSelectionRange(mention.start, mention.start);
-    }, 0);
+    el.focus();
+    insertChipAtCaret(el, kind, removeLen);
+    syncFromEditor();
+  };
+
+  const applyMentionSelection = (item: MentionItem) => {
+    if (!mention) return;
+    const removeLen = mention.query.length + 1; // "@" + query
+    setMention(null);
+    activateIntegration(item.key, removeLen);
+    toast.success(
+      item.key === "voyager"
+        ? `${VOYAGER_LABEL} enabled for next message`
+        : `${GOOGLE_SERVICE_LABEL[item.key]} enabled for next message`,
+    );
   };
 
   const applySlashSelection = (item: SlashItem) => {
     const el = textareaRef.current;
     if (!el || !slash) return;
-    const before = el.value.slice(0, slash.start);
-    const after = el.value.slice((el.selectionStart ?? slash.start));
-    // Remove the leading whitespace separator? No — only strip the "/xxx" itself.
-    const next = before + after;
-    setInput(next);
+    // Strip the "/xxx" trigger from the editor by inserting an empty chip-less
+    // replacement: easier — rebuild the visible text minus the slice.
+    const value = readEditorText(el);
+    const caret = getCaretOffsetInText(el);
+    const nextText = value.slice(0, slash.start) + value.slice(caret);
+    // Preserve chips: rebuild text-only segments; chips remain as DOM.
+    // Simpler approach: just replace the trigger text by walking text nodes.
+    stripTextRange(el, slash.start, caret);
     setSlash(null);
-    // Update model picker
     if (item.provider === "auto") {
-      // Keep the previously chosen provider as the persistence target; switch model to AUTO
       setModel(AUTO_MODEL_ID);
     } else if (item.provider === "write") {
       if (isModeDisabled(aiPrefs, "note")) { toast.error("Note mode is disabled in your AI preferences"); return; }
-      // Don't change model — just flag the next send as writing-canvas mode.
       setWriteRequested(true);
       toast.success("Writing canvas enabled for next message");
     } else if (item.provider === "explore") {
       if (isModeDisabled(aiPrefs, "explore")) { toast.error("Explore mode is disabled in your AI preferences"); return; }
-      // Flag the next send to open a side exploration instead of posting to the main chat.
       setExploreRequested(true);
     } else if (item.provider === "page") {
       if (isModeDisabled(aiPrefs, "page")) { toast.error("Page mode is disabled in your AI preferences"); return; }
-      // Flag the next send to generate a structured one-pager.
       setPageRequested(true);
       toast.success("Page mode enabled for next message");
     } else if (item.provider === "gmail" || item.provider === "calendar" || item.provider === "drive") {
-      setGoogleService(item.provider);
+      activateIntegration(item.provider, 0);
       toast.success(`${GOOGLE_SERVICE_LABEL[item.provider]} enabled for next message`);
     } else if (item.provider === "voyager") {
-      setVoyagerService(true);
+      activateIntegration("voyager", 0);
       toast.success(`${VOYAGER_LABEL} enabled for next message`);
     } else {
       if (isModelBlacklisted(aiPrefs, item.model)) {
@@ -1794,14 +1808,66 @@ export default function Chat() {
       setProvider(item.provider as Provider);
       setModel(item.model);
     }
-    // Restore caret position where the "/xxx" used to start
-    setTimeout(() => {
-      const node = textareaRef.current;
-      if (!node) return;
-      node.focus();
-      node.setSelectionRange(slash.start, slash.start);
-    }, 0);
+    syncFromEditor();
+    setTimeout(() => textareaRef.current?.focus(), 0);
+    void nextText; // unused now, kept for clarity
   };
+
+  // Walk text nodes, deleting characters in [startOffset, endOffset) of the
+  // editor's visible text (chips count as 0 chars).
+  const stripTextRange = (root: HTMLElement, startOffset: number, endOffset: number) => {
+    let consumed = 0;
+    const toRemove: { node: Text; from: number; to: number }[] = [];
+    const walk = (node: Node) => {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as Element;
+        if (el.hasAttribute && el.hasAttribute("data-chip")) return;
+      }
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node as Text;
+        const len = (text.nodeValue || "").length;
+        const nodeStart = consumed;
+        const nodeEnd = consumed + len;
+        const overlapStart = Math.max(startOffset, nodeStart);
+        const overlapEnd = Math.min(endOffset, nodeEnd);
+        if (overlapEnd > overlapStart) {
+          toRemove.push({
+            node: text,
+            from: overlapStart - nodeStart,
+            to: overlapEnd - nodeStart,
+          });
+        }
+        consumed = nodeEnd;
+        return;
+      }
+      node.childNodes.forEach(walk);
+    };
+    root.childNodes.forEach(walk);
+    // Apply in reverse to keep offsets valid
+    for (let i = toRemove.length - 1; i >= 0; i--) {
+      const { node, from, to } = toRemove[i];
+      const v = node.nodeValue || "";
+      node.nodeValue = v.slice(0, from) + v.slice(to);
+    }
+  };
+
+  // After any DOM mutation: re-derive `input` from text and sync integration
+  // states from the chips present in the editor.
+  const syncFromEditor = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const txt = readEditorText(el);
+    lastSyncedInputRef.current = txt;
+    setInput(txt);
+    const chips = listChips(el);
+    const g = chips.find((c) => c === "gmail" || c === "calendar" || c === "drive") as
+      | GoogleService
+      | undefined;
+    setGoogleService((prev) => (prev === (g ?? null) ? prev : (g ?? null)));
+    const hasVoyager = chips.includes("voyager");
+    setVoyagerService((prev) => (prev === hasVoyager ? prev : hasVoyager));
+  };
+
 
   const onKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // When the slash menu is open, let it consume navigation/confirm keys
