@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Send, FileText, X, Check, Loader2, ChevronDown } from "lucide-react";
+import { Send, FileText, X, Check, Loader2, ChevronDown, ArrowRight, Clock } from "lucide-react";
 import { GoogleServiceLogo } from "@/components/GoogleServiceLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,11 +27,33 @@ function fmt(value: unknown): string {
   return String(value);
 }
 
+function parseDateTime(iso: string): { date: string; time: string } | null {
+  if (!iso) return null;
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    const date = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+    const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", hour12: false });
+    return { date, time };
+  } catch { return null; }
+}
+
+function calcDuration(start: string, end: string): string {
+  if (!start || !end) return "";
+  try {
+    const mins = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000);
+    if (mins <= 0) return "";
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m ? `${h}h${m}` : `${h}h`;
+  } catch { return ""; }
+}
+
 export function GoogleActionCard({ action, onChange }: Props) {
   const [params, setParams] = useState<Record<string, unknown>>(action.params);
+  const [collapsed, setCollapsed] = useState(false);
 
-  // When the backend sends an updated proposal (e.g. after drafting completes),
-  // sync local field state with the new params.
   useEffect(() => {
     setParams(action.params);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -145,9 +167,24 @@ export function GoogleActionCard({ action, onChange }: Props) {
 
   const busy = action.state === "executing";
   const loading = !!action.loading;
-  const [collapsed, setCollapsed] = useState(false);
 
-  // ---------- Confirmation card ----------
+  // Calendar create — Figma design
+  if (isEvent) {
+    return (
+      <CalendarEventCard
+        params={params}
+        onChange={setParams}
+        onConfirm={() => handleConfirm()}
+        onCancel={handleCancel}
+        busy={busy}
+        loading={loading}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((c) => !c)}
+      />
+    );
+  }
+
+  // ---------- Email confirmation card ----------
   return (
     <div className="my-2 rounded-xl border border-border bg-card overflow-hidden">
       <button
@@ -170,75 +207,255 @@ export function GoogleActionCard({ action, onChange }: Props) {
       {!collapsed && (
         <div className="p-3 space-y-2 text-sm">
           {loading ? (
-            isEmail ? <EmailSkeleton /> : <EventSkeleton />
+            <EmailSkeleton />
           ) : (
-            <>
-              {isEmail ? <EmailFields params={params} onChange={setParams} /> : null}
-              {isEvent ? <EventFields params={params} onChange={setParams} /> : null}
-            </>
+            <EmailFields params={params} onChange={setParams} />
           )}
         </div>
       )}
 
       {!collapsed && (
-      <div className="flex items-center justify-end gap-2 px-3 py-2 bg-background">
-        <button
-          type="button"
-          onClick={handleCancel}
-          disabled={busy || loading}
-          className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-dropdown-hover transition-colors disabled:opacity-50 text-base"
-        >
-          Annuler
-        </button>
-        {isEmail ? (
-          <>
-            <button
-              type="button"
-              onClick={() => handleConfirm("gmail.draft")}
-              disabled={busy || loading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-dropdown-hover transition-colors disabled:opacity-50 text-base"
-            >
-              {busy && action.action === "gmail.draft" ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <FileText className="w-3.5 h-3.5" />
-              )}
-              Enregistrer comme brouillon
-            </button>
-            <button
-              type="button"
-              onClick={() => handleConfirm("gmail.send")}
-              disabled={busy || loading}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background font-medium hover:opacity-90 transition-opacity disabled:opacity-60 text-base",
-              )}
-            >
-              {busy && action.action === "gmail.send" ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Send className="w-3.5 h-3.5" />
-              )}
-              Envoyer
-            </button>
-          </>
-        ) : (
+        <div className="flex items-center justify-end gap-2 px-3 py-2 bg-background">
           <button
             type="button"
-            onClick={() => handleConfirm()}
+            onClick={handleCancel}
             disabled={busy || loading}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background font-medium hover:opacity-90 transition-opacity disabled:opacity-60 text-base",
-            )}
+            className="px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-dropdown-hover transition-colors disabled:opacity-50 text-base"
           >
-            {busy ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Check className="w-3.5 h-3.5" />
-            )}
-            {primaryLabel}
+            Annuler
           </button>
-        )}
+          <button
+            type="button"
+            onClick={() => handleConfirm("gmail.draft")}
+            disabled={busy || loading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-dropdown-hover transition-colors disabled:opacity-50 text-base"
+          >
+            {busy && action.action === "gmail.draft" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+            Enregistrer comme brouillon
+          </button>
+          <button
+            type="button"
+            onClick={() => handleConfirm("gmail.send")}
+            disabled={busy || loading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background font-medium hover:opacity-90 transition-opacity disabled:opacity-60 text-base"
+          >
+            {busy && action.action === "gmail.send" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            Envoyer
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- Calendar event card (Figma design) ----------
+
+function EventPillInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="flex-1 w-full bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground placeholder:text-muted-foreground outline-none"
+    />
+  );
+}
+
+function EventRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-[10px] w-full">
+      <span className="text-[14px] text-foreground w-[60px] shrink-0">{label}</span>
+      <div className="flex-1 min-w-0">{children}</div>
+    </div>
+  );
+}
+
+function CalendarEventCard({
+  params,
+  onChange,
+  onConfirm,
+  onCancel,
+  busy,
+  loading,
+  collapsed,
+  onToggleCollapse,
+}: {
+  params: Record<string, unknown>;
+  onChange: (next: Record<string, unknown>) => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+  busy: boolean;
+  loading: boolean;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+}) {
+  const set = (k: string, v: unknown) => onChange({ ...params, [k]: v });
+
+  const start = parseDateTime(fmt(params.start));
+  const end = parseDateTime(fmt(params.end));
+  const duration = calcDuration(fmt(params.start), fmt(params.end));
+
+  const attendees = Array.isArray(params.attendees)
+    ? (params.attendees as string[]).join(", ")
+    : fmt(params.attendees);
+
+  const host = fmt(params.organizer) || fmt(params.calendarId) || "";
+
+  return (
+    <div className="my-2 rounded-[20px] bg-background overflow-hidden flex flex-col gap-[11px] drop-shadow-[0_4px_5px_rgba(0,0,0,0.1)]">
+
+      {/* Header */}
+      <div className="bg-muted flex items-center justify-between px-[15px] py-[15px] rounded-t-[20px]">
+        <div className="flex items-center gap-[10px]">
+          <GoogleServiceLogo service="calendar" className="w-4 h-4" />
+          <span className="text-[14px] font-semibold text-foreground">Créer un événement</span>
+        </div>
+        <div className="flex items-center gap-[11px]">
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label="Réduire"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronDown className={cn("w-4 h-4 transition-transform", collapsed && "rotate-180")} />
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            aria-label="Fermer"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="w-[17px] h-[17px]" strokeWidth={1.5} />
+          </button>
+        </div>
       </div>
+
+      {!collapsed && (
+        <>
+          {/* Body */}
+          <div className="flex flex-col gap-[10px] px-[15px]">
+            {loading ? (
+              <EventSkeleton />
+            ) : (
+              <>
+                {/* Titre */}
+                <EventRow label="Titre">
+                  <EventPillInput
+                    value={fmt(params.summary)}
+                    onChange={(v) => set("summary", v)}
+                    placeholder="Titre de l'événement"
+                  />
+                </EventRow>
+
+                {/* Date + Time */}
+                <div className="flex items-center justify-between w-full gap-[10px]">
+                  <div className="flex items-center gap-[10px] shrink-0">
+                    <span className="text-[14px] text-foreground w-[60px] shrink-0">Date</span>
+                    <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap">
+                      {start?.date ?? "—"}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-[10px] shrink-0">
+                    <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
+                    <div className="flex items-center gap-[10px]">
+                      <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap">
+                        {start?.time ?? "—"}
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                      <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground whitespace-nowrap">
+                        {end?.time ?? "—"}
+                      </div>
+                    </div>
+                    {duration && (
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">{duration}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Separator */}
+                <div className="h-px bg-border w-full" />
+
+                {/* Host */}
+                {host && (
+                  <EventRow label="Host">
+                    <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] text-foreground truncate">
+                      {host}
+                    </div>
+                  </EventRow>
+                )}
+
+                {/* Invitees */}
+                <EventRow label="Invitees">
+                  <EventPillInput
+                    value={attendees}
+                    onChange={(v) =>
+                      onChange({
+                        ...params,
+                        attendees: v.split(",").map((s) => s.trim()).filter(Boolean),
+                      })
+                    }
+                    placeholder="Add participants"
+                  />
+                </EventRow>
+
+                {/* Separator */}
+                <div className="h-px bg-border w-full" />
+
+                {/* Meeting type */}
+                <EventRow label="Meeting">
+                  <div className="bg-input-primary-bg px-[10px] py-[10px] rounded-[10px] text-[14px] flex items-center justify-between w-full">
+                    <span className="text-muted-foreground">Create an online meeting</span>
+                    <ChevronDown className="w-[8px] h-[8px] text-muted-foreground shrink-0" />
+                  </div>
+                </EventRow>
+              </>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between pb-[5px] pl-[15px] pr-[5px]">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="text-[14px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Cancel
+            </button>
+            <div className="flex items-center gap-[11px]">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="text-[14px] text-muted-foreground hover:text-foreground transition-colors px-[10px] py-[10px]"
+              >
+                Skip
+              </button>
+              <button
+                type="button"
+                onClick={onConfirm}
+                disabled={busy || loading}
+                className="flex items-center gap-[10px] bg-primary text-primary-foreground text-[14px] px-[10px] py-[10px] rounded-[50px] hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {busy ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <span>Next</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
