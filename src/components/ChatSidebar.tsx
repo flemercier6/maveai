@@ -295,7 +295,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
           )}
           style={{ marginBottom: isCollapsed ? 16 : 40 }}
         >
-          {!isCollapsed && <img src={maveLogo} alt="Mave" className="h-5 w-auto" />}
+          {!isCollapsed && <img src={maveLogo} alt="Mave" className="h-5 w-auto dark:invert" />}
           {isCollapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -308,10 +308,10 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                   <img
                     src={maveIcon}
                     alt="Mave"
-                    className="h-[17px] w-auto group-hover:opacity-0 transition-opacity"
+                    className="h-[17px] w-auto group-hover:opacity-0 transition-opacity dark:invert"
                   />
-                  <span className="absolute inset-0 m-auto flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "#FFF", width: "36px", height: "36px" }}>
-                    <PanelLeftOpen className="w-4 h-4" style={{ color: "#000" }} />
+                  <span className="absolute inset-0 m-auto flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-[#3a3a3a]" style={{ width: "36px", height: "36px" }}>
+                    <PanelLeftOpen className="w-4 h-4 text-black dark:text-white" />
                   </span>
                 </button>
               </TooltipTrigger>
@@ -326,7 +326,7 @@ export function ChatSidebar({ conversations, activeId, onSelect, onNew, onNewEph
                   aria-label="Collapse sidebar"
                   className="flex items-center justify-center w-9 h-9 rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
                 >
-                  <img src={sidebarToggleIcon} alt="" className="w-[17px] h-[17px] opacity-70" />
+                  <img src={sidebarToggleIcon} alt="" className="w-[17px] h-[17px] opacity-70 dark:invert" />
                 </button>
               </TooltipTrigger>
               <TooltipContent>Collapse sidebar</TooltipContent>
