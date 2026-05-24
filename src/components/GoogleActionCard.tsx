@@ -653,18 +653,20 @@ function CalendarEventCard({
                     <PopoverContent className="p-1 z-50" align="start" style={{ width: "var(--radix-popover-trigger-width)" }}>
                       <button
                         type="button"
-                        onClick={() => onChange({ ...params, addMeet: false })}
+                        onClick={disableMeet}
                         className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[6px] text-[14px] text-foreground hover:bg-dropdown-hover"
                       >
                         No visio-conference
                       </button>
                       <button
                         type="button"
-                        onClick={() => onChange({ ...params, addMeet: true })}
-                        className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[6px] text-[14px] text-foreground hover:bg-dropdown-hover"
+                        onClick={enableMeet}
+                        disabled={meetLoading}
+                        className="w-full flex items-center gap-[8px] px-[10px] py-[8px] rounded-[6px] text-[14px] text-foreground hover:bg-dropdown-hover disabled:opacity-60"
                       >
                         <img src={gmeetLogo} alt="" className="w-[18px] h-[18px] object-contain" />
                         Google Meet
+                        {meetLoading ? <Loader2 className="w-3 h-3 animate-spin ml-auto" /> : null}
                       </button>
                     </PopoverContent>
                   </Popover>
@@ -675,13 +677,13 @@ function CalendarEventCard({
                     <div className="flex items-center gap-[10px] text-[14px]">
                       <span className="text-muted-foreground w-[140px] shrink-0">Google Meet URL</span>
                       <span className="text-foreground truncate underline">
-                        {result?.meetUrl ? String(result!.meetUrl) : "Sera généré à la création"}
+                        {meetLoading ? "Création…" : (params._meetUrl ? String(params._meetUrl) : (result?.meetUrl ? String(result.meetUrl) : "—"))}
                       </span>
                     </div>
                     <div className="flex items-center gap-[10px] text-[14px]">
                       <span className="text-muted-foreground w-[140px] shrink-0">Code</span>
                       <span className="text-foreground underline">
-                        {result?.meetUrl ? String(result!.meetUrl).replace(/^https?:\/\/meet\.google\.com\//, "").split("?")[0] : "—"}
+                        {meetLoading ? "…" : (params._meetCode ? String(params._meetCode) : "—")}
                       </span>
                     </div>
                   </div>
