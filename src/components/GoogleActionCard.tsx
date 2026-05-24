@@ -101,17 +101,23 @@ export function GoogleActionCard({ action, onChange }: Props) {
         : "Créer l'événement";
 
   const handleConfirm = async (overrideAction?: GoogleAction["action"]) => {
-    const effectiveAction = overrideAction ?? action.action;
+    let effectiveAction = overrideAction ?? action.action;
     // Strip UI-only fields before sending
     const cleanParams: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(params)) {
       if (!k.startsWith("_")) cleanParams[k] = v;
     }
+    // If a draft event was already created (Google Meet pre-created), patch it instead
+    const existingEventId = params._eventId as string | undefined;
+    let body: { action: string; params: Record<string, unknown> };
+    if (effectiveAction === "calendar.create" && existingEventId) {
+      body = { action: "calendar.update", params: { ...cleanParams, eventId: existingEventId } };
+    } else {
+      body = { action: effectiveAction, params: cleanParams };
+    }
     onChange({ ...action, action: effectiveAction, state: "executing", params: cleanParams });
     try {
-      const { data, error } = await supabase.functions.invoke("google-tools", {
-        body: { action: effectiveAction, params: cleanParams },
-      });
+      const { data, error } = await supabase.functions.invoke("google-tools", { body });
       if (error) throw error;
       if ((data as { error?: string })?.error) {
         throw new Error((data as { error: string }).error);
@@ -132,7 +138,17 @@ export function GoogleActionCard({ action, onChange }: Props) {
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
+    const existingEventId = params._eventId as string | undefined;
+    if (existingEventId) {
+      try {
+        await supabase.functions.invoke("google-tools", {
+          body: { action: "calendar.delete", params: { eventId: existingEventId } },
+        });
+      } catch (e) {
+        console.error("Failed to delete draft event", e);
+      }
+    }
     onChange({ ...action, state: "cancelled" });
   };
 
