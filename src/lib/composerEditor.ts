@@ -137,7 +137,7 @@ export function insertChipAtCaret(
   range.deleteContents();
   const chip = buildChipElement(kind);
   range.insertNode(chip);
-  const space = document.createTextNode("\u00A0");
+  const space = document.createTextNode(" ");
   chip.after(space);
   const newRange = document.createRange();
   newRange.setStart(space, 1);
