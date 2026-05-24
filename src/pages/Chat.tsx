@@ -1792,6 +1792,28 @@ export default function Chat() {
     if (slash && ["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(e.key)) {
       return;
     }
+    if (mention && mentionItems.length) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setMentionActive((a) => (a + 1) % mentionItems.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setMentionActive((a) => (a - 1 + mentionItems.length) % mentionItems.length);
+        return;
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        applyMentionSelection(mentionItems[mentionActive]);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setMention(null);
+        return;
+      }
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       send();
