@@ -735,6 +735,66 @@ function AgentStepsTrace({ steps, sources }: { steps: AgentStep[]; sources?: Sou
   );
 }
 
+function AgentStepsDetails({ steps }: { steps: AgentStep[] }) {
+  const [open, setOpen] = useState(false);
+  if (!steps.length) return null;
+  const sorted = [...steps].sort((a, b) => a.index - b.index);
+  const thoughts = sorted.filter((s) => s.kind === "thought").length;
+  const actions = sorted.filter((s) => s.kind !== "thought" && s.kind !== "finish").length;
+  return (
+    <div className="mt-4 border border-border rounded-lg overflow-hidden bg-muted/30">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-dropdown-hover transition-colors"
+      >
+        {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        <Brain className="w-3.5 h-3.5" />
+        <span>ReAct trace</span>
+        <span style={{ color: "#bababa" }}>
+          · {sorted.length} étape{sorted.length > 1 ? "s" : ""} ({thoughts} pensée{thoughts > 1 ? "s" : ""}, {actions} action{actions > 1 ? "s" : ""})
+        </span>
+      </button>
+      {open && (
+        <ol className="px-3 py-3 space-y-3 border-t border-border">
+          {sorted.map((s, i) => {
+            const tag = reflexionStepTag(s.kind);
+            const subject = s.label || s.intent;
+            return (
+              <li key={s.index} className="flex gap-3 text-sm">
+                <span className="shrink-0 w-5 h-5 rounded-full bg-background border border-border flex items-center justify-center text-xs font-medium text-muted-foreground">
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 font-medium flex-wrap" style={{ color: "#888888" }}>
+                    <ReflexionStepIcon kind={s.kind} running={false} />
+                    <span>{tag}</span>
+                    {subject && (
+                      <>
+                        <span style={{ color: "#bababa" }}>·</span>
+                        <span className="font-normal break-all" style={{ color: "#bababa" }}>{subject}</span>
+                      </>
+                    )}
+                    {s.status === "failed" && <span className="text-destructive ml-1">failed</span>}
+                    {s.foundCount !== undefined && s.foundCount > 0 && (
+                      <span style={{ color: "#bababa" }}>· {s.foundCount} résultat{s.foundCount > 1 ? "s" : ""}</span>
+                    )}
+                  </div>
+                  {s.narration && (
+                    <div className="mt-1 text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                      {s.narration}
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 function ChatMessageImpl({
   id,
   role,
