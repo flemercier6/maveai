@@ -74,7 +74,7 @@ export type MsgAttachmentPreview = { kind: "image" | "file"; name: string; dataU
 export type ThinkingStep = { index: number; text: string };
 export type AgentStep = {
   index: number;
-  kind: "search" | "scrape" | "analyze" | "memory" | "gmail" | "calendar" | "drive" | "voyager" | "read_url";
+  kind: "search" | "scrape" | "analyze" | "memory" | "gmail" | "calendar" | "drive" | "voyager" | "read_url" | "thought" | "finish" | "plan" | "hypothesis" | "challenge" | "compare" | "synthesize";
   label: string;
   intent: string;
   status: ToolStatus;
