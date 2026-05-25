@@ -2384,9 +2384,8 @@ Deno.serve(async (req) => {
           const userTurns = messages.filter((m) => m.role === "user").length;
           const fastNoClarify =
             userTurns > 1 ||
-            lastUserText.length < 120 ||
-            lastUserText.trim().endsWith("?") ||
-            /^(what|how|why|who|when|where|which|tell|explain|describe|list|give|show|find|define|translate|write|create|make|build|fix|help|can |could |please )/i.test(lastUserText.trim());
+            lastUserText.trim().length < 40;
+
 
           const googleApiKey = Deno.env.get("GOOGLE_API_KEY");
           const fastNoGoogle = (() => {
