@@ -1311,30 +1311,50 @@ async function runReactLoop(opts: {
     }
 
     // ---- 2. Decide action (strict JSON via responseSchema) ----
-    const toolsRemaining = Math.max(0, MIN_TOOL_CALLS - toolCallCount);
-    const canFinish = toolCallCount >= MIN_TOOL_CALLS;
+    const isLastProblem = currentProblemIdx >= problems.length - 1;
+    const hasMoreProblems = !isLastProblem;
+    const problemSatisfied = toolCallsForCurrentProblem >= MIN_PER_PROBLEM;
+    const globalSatisfied = toolCallCount >= MIN_TOOL_CALLS;
+    const canFinish = isLastProblem && problemSatisfied && globalSatisfied;
+    const canNextProblem = hasMoreProblems && problemSatisfied;
+
+    const iterTools = baseTools.slice();
+    if (canNextProblem) iterTools.push(`{"tool":"next_problem","args":{}}  // current sub-problem covered, move to the next one`);
+    iterTools.push(`{"tool":"finish","args":{}}  // ALL sub-problems covered, ready to answer`);
+
     const actionSys = `You decide the NEXT action of a ReAct agent. Reply with STRICT JSON only — no prose, no markdown, no preamble. Just the JSON object.`;
     const actionPrompt =
       `User question:\n"""${opts.userText.slice(0, 600)}"""\n\n` +
+      (problems.length > 1
+        ? `Sub-problem plan: ${problems.map((p, i) => `${i + 1}. ${p}`).join(" | ")}\n` +
+          `CURRENT sub-problem (${currentProblemIdx + 1}/${problems.length}): "${problems[currentProblemIdx]}"\n` +
+          `Tool calls done for this sub-problem: ${toolCallsForCurrentProblem} / min ${MIN_PER_PROBLEM}.\n\n`
+        : "") +
       `History:\n${renderHistory()}\n\n` +
       `Your latest thought: ${thoughtText}\n\n` +
-      `Available actions:\n${availableTools.join("\n")}\n\n` +
-      `Progress: ${toolCallCount} tool calls done so far. Minimum required: ${MIN_TOOL_CALLS}. Remaining iterations: ${MAX_ITER - iter - 1}.\n\n` +
+      `Available actions:\n${iterTools.join("\n")}\n\n` +
+      `Progress: ${toolCallCount} total tool calls. Remaining iterations: ${MAX_ITER - iter - 1}.\n\n` +
       `Rules:\n` +
+      `- Focus your next action on the CURRENT sub-problem only.\n` +
+      (canNextProblem
+        ? `- Once the current sub-problem is reasonably covered (≥${MIN_PER_PROBLEM} tool calls), call {"tool":"next_problem","args":{}} to move on.\n`
+        : "") +
       (canFinish
-        ? `- You MAY return {"tool":"finish","args":{}} only if you genuinely have enough deep, verified information to write a thorough answer.\n`
-        : `- You MUST NOT finish yet — you still need at least ${toolsRemaining} more tool call(s) to satisfy the user's effort level. Pick a tool (web_search / web_fetch / memory_recall).\n`) +
+        ? `- You MAY return {"tool":"finish","args":{}} only if ALL sub-problems are covered and you can write a thorough answer.\n`
+        : `- You MUST NOT finish yet — you still need to cover ${isLastProblem ? "this sub-problem deeper" : `${problems.length - currentProblemIdx - 1} more sub-problem(s)`}.\n`) +
       `- NEVER repeat an action with identical args (check history).\n` +
-      `- Vary angles: different queries, sub-topics, counter-arguments, primary sources, recent dates. Don't just rephrase the same query.\n` +
+      `- Vary angles: different queries, sub-topics, counter-arguments, primary sources.\n` +
       `- Prefer web_search for fresh facts; web_fetch only when you have a specific URL worth reading in full.\n` +
       `- Match the search query to the user's language.\n\n` +
-      `Reply with STRICT JSON ONLY: {"tool":"web_search|web_fetch|memory_recall|finish","args":{...}}`;
+      `Reply with STRICT JSON ONLY.`;
 
     // Build allowed tools enum for responseSchema
-    const allowedTools = ["finish"];
-    if (hasSearch) allowedTools.unshift("web_search");
+    const allowedTools: string[] = [];
+    if (hasSearch) allowedTools.push("web_search");
     if (hasFetch) allowedTools.push("web_fetch");
     if (hasMemory) allowedTools.push("memory_recall");
+    if (canNextProblem) allowedTools.push("next_problem");
+    allowedTools.push("finish");
 
     let action: any = null;
     try {
@@ -1370,7 +1390,6 @@ async function runReactLoop(opts: {
       );
       const j = await r.json();
       const raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
-      // Robust extraction: strip code fences, find first {...} block if there's any prose leak
       let cleaned = raw.replace(/```json|```/g, "").trim();
       const braceMatch = cleaned.match(/\{[\s\S]*\}/);
       if (braceMatch) cleaned = braceMatch[0];
@@ -1379,9 +1398,8 @@ async function runReactLoop(opts: {
     } catch (e) {
       console.error("[react] action parse failed", e, "— falling back to web_search");
       consecutiveFailures++;
-      // Fallback: if we can search, force a search using the user's question rather than aborting
       if (hasSearch && consecutiveFailures < 4) {
-        action = { tool: "web_search", args: { query: opts.userText.slice(0, 120) } };
+        action = { tool: "web_search", args: { query: problems[currentProblemIdx] || opts.userText.slice(0, 120) } };
       } else if (consecutiveFailures >= 4) {
         break;
       } else {
@@ -1390,10 +1408,36 @@ async function runReactLoop(opts: {
     }
     if (action) consecutiveFailures = 0;
 
-    // Block premature finish: if model tries to finish before minimum, force a search instead
-    if (action?.tool === "finish" && !canFinish && hasSearch) {
-      console.log(`[react] blocking premature finish (${toolCallCount}/${MIN_TOOL_CALLS} tool calls) — forcing search`);
-      action = { tool: "web_search", args: { query: `${opts.userText.slice(0, 80)} — angle ${toolCallCount + 1}` } };
+    // Block premature finish: if model tries to finish before all sub-problems covered, redirect.
+    if (action?.tool === "finish" && !canFinish) {
+      if (canNextProblem) {
+        console.log(`[react] redirecting premature finish → next_problem (${currentProblemIdx + 1}/${problems.length})`);
+        action = { tool: "next_problem", args: {} };
+      } else if (hasSearch) {
+        console.log(`[react] blocking premature finish — forcing search on current sub-problem`);
+        action = { tool: "web_search", args: { query: problems[currentProblemIdx] || opts.userText.slice(0, 80) } };
+      }
+    }
+
+    // Handle next_problem: advance to next sub-problem, reset per-problem counter.
+    if (action?.tool === "next_problem") {
+      if (hasMoreProblems) {
+        currentProblemIdx++;
+        toolCallsForCurrentProblem = 0;
+        const advIdx = stepIndex++;
+        const newProblem = problems[currentProblemIdx];
+        const label = `→ ${newProblem.slice(0, 60)}`;
+        opts.callbacks.onStepStart(advIdx, "plan", label, "");
+        const advNarration = `Sub-problem ${currentProblemIdx + 1}/${problems.length}: ${newProblem}`;
+        opts.callbacks.onThoughtChunk(advIdx, advNarration);
+        opts.callbacks.onThoughtDone(advIdx);
+        opts.callbacks.onStepDone(advIdx, "plan", label, "");
+        collectedSteps.push({ index: advIdx, kind: "plan", label, intent: "", status: "done", narration: advNarration });
+        history.push({ thought: thoughtText, action: { tool: "next_problem" }, observation: { ok: true, summary: `Moving to sub-problem ${currentProblemIdx + 1}: ${newProblem}` } });
+        continue;
+      }
+      // No more problems → treat as finish.
+      action = { tool: "finish", args: {} };
     }
 
     if (!action || action.tool === "finish") {
