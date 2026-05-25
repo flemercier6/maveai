@@ -2787,25 +2787,6 @@ export default function Chat() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
-                  {clarifyRequested && (
-                    <button
-                      type="button"
-                      onClick={() => setClarifyRequested(false)}
-                      aria-label="Remove Clarify"
-                      className="group inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-medium bg-[var(--blue-tag-bg)] transition-colors text-base"
-                      style={{ color: "var(--blue-tag-fg)" }}
-                    >
-                      <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-3.5 h-3.5 group-hover:opacity-0 transition-opacity" style={{ color: "var(--blue-tag-fg)" }}>
-                          <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2"/>
-                          <path d="M6.5 6C6.5 5.17 7.17 4.5 8 4.5C8.83 4.5 9.5 5.17 9.5 6C9.5 6.83 8 7.5 8 8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                          <circle cx="8" cy="10.5" r="0.6" fill="currentColor"/>
-                        </svg>
-                        <X className="w-3.5 h-3.5 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--blue-tag-fg)" }} />
-                      </span>
-                      Clarify
-                    </button>
-                  )}
                   {/* Integration chips now render inline inside the editor. */}
                 </div>
                 <div className="flex items-center gap-[15px]">
