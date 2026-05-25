@@ -19,7 +19,7 @@ type Props = {
 const STORAGE_KEY = "page-panel-width";
 const MIN_W = 520;
 
-export function PagePanel({ open, page, onClose, onWidthChange }: Props) {
+export function PagePanel({ open, page, pageKey, onClose, onWidthChange }: Props) {
   const [width, setWidth] = useState<number>(() => {
     if (typeof window === "undefined") return 900;
     const stored = Number(window.localStorage.getItem(STORAGE_KEY));
