@@ -631,9 +631,9 @@ async function linkupSearch(
       const t = (res.type ?? "").toString().toLowerCase();
       return t === "image" || /\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(res.url ?? "");
     });
-    // Keep more sources for Reflexion mode (no artificial 5-source cap), and trim each snippet
-    // a bit so the total prompt size stays reasonable.
-    const top = textResults.slice(0, 12);
+    // Cap sources per search — enough for diversification, not so many that
+    // every step looks identical or floods the trace.
+    const top = textResults.slice(0, 6);
     const sources: WebSource[] = top.map((res) => ({
       title: (res.name ?? res.title ?? "Untitled").toString(),
       url: (res.url ?? "").toString(),
