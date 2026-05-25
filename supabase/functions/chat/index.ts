@@ -1375,34 +1375,42 @@ async function runReactLoop(opts: {
     const canNextProblem = hasMoreProblems && problemSatisfied;
 
     const iterTools = baseTools.slice();
-    if (canNextProblem) iterTools.push(`{"tool":"next_problem","args":{}}  // current sub-problem covered, move to the next one`);
-    iterTools.push(`{"tool":"finish","args":{}}  // ALL sub-problems covered, ready to answer`);
+    if (canNextProblem) iterTools.push(`{"tool":"next_problem","args":{}}  // current chapter covered, move to the next one`);
+    iterTools.push(`{"tool":"finish","args":{}}  // ALL chapters covered, ready to answer`);
 
     const actionSys = `You decide the NEXT action of a ReAct agent. Reply with STRICT JSON only — no prose, no markdown, no preamble. Just the JSON object.`;
+    const curUsedQueries = queriesByProblem[currentProblemIdx] || [];
+    const curLearnings = learningsByProblem[currentProblemIdx] || [];
     const actionPrompt =
       `User question:\n"""${opts.userText.slice(0, 600)}"""\n\n` +
       (problems.length > 1
-        ? `Sub-problem plan: ${problems.map((p, i) => `${i + 1}. ${p}`).join(" | ")}\n` +
-          `CURRENT sub-problem (${currentProblemIdx + 1}/${problems.length}): "${problems[currentProblemIdx]}"\n` +
-          `Tool calls done for this sub-problem: ${toolCallsForCurrentProblem} / min ${MIN_PER_PROBLEM}.\n\n`
+        ? `Reasoning plan:\n${problems.map((p, i) => {
+            const mark = i < currentProblemIdx ? "✓" : i === currentProblemIdx ? "▶" : "·";
+            return `${mark} ${i + 1}. ${p.title}${p.focus ? ` — ${p.focus}` : ""}`;
+          }).join("\n")}\n` +
+          `CURRENT chapter (${currentProblemIdx + 1}/${problems.length}): "${problems[currentProblemIdx].title}"\n` +
+          `Tool calls done for this chapter: ${toolCallsForCurrentProblem} / min ${MIN_PER_PROBLEM}.\n` +
+          (curUsedQueries.length ? `Queries already used here (DO NOT repeat or paraphrase): ${curUsedQueries.map((q) => `"${q}"`).join(", ")}.\n` : "") +
+          (curLearnings.length ? `Already learned for this chapter:\n${curLearnings.map((l) => `- ${l}`).join("\n")}\n` : "") +
+          `\n`
         : "") +
       `History:\n${renderHistory()}\n\n` +
       `Your latest thought: ${thoughtText}\n\n` +
       `Available actions:\n${iterTools.join("\n")}\n\n` +
       `Progress: ${toolCallCount} total tool calls. Remaining iterations: ${MAX_ITER - iter - 1}.\n\n` +
       `Rules:\n` +
-      `- Focus your next action on the CURRENT sub-problem only.\n` +
+      `- Stay strictly on the CURRENT chapter. Do NOT jump ahead to a later chapter's angle.\n` +
       (canNextProblem
-        ? `- Once the current sub-problem is reasonably covered (≥${MIN_PER_PROBLEM} tool calls), call {"tool":"next_problem","args":{}} to move on.\n`
+        ? `- Once the chapter is reasonably covered (≥${MIN_PER_PROBLEM} tool calls), prefer {"tool":"next_problem","args":{}} over another redundant search.\n`
         : "") +
       (canFinish
-        ? `- You MAY return {"tool":"finish","args":{}} only if ALL sub-problems are covered and you can write a thorough answer.\n`
-        : `- You MUST NOT finish yet — you still need to cover ${isLastProblem ? "this sub-problem deeper" : `${problems.length - currentProblemIdx - 1} more sub-problem(s)`}.\n`) +
-      `- NEVER repeat an action with identical args (check history).\n` +
-      `- Vary angles: different queries, sub-topics, counter-arguments, primary sources.\n` +
+        ? `- You MAY return {"tool":"finish","args":{}} only if ALL chapters are covered and you can write a thorough answer.\n`
+        : `- You MUST NOT finish yet — you still need to cover ${isLastProblem ? "this chapter deeper" : `${problems.length - currentProblemIdx - 1} more chapter(s)`}.\n`) +
+      `- NEVER repeat or paraphrase a query already used in this chapter — pick a clearly NEW angle (different facet, sub-topic, counter-argument, primary source, time range, region).\n` +
       `- Prefer web_search for fresh facts; web_fetch only when you have a specific URL worth reading in full.\n` +
       `- Match the search query to the user's language.\n\n` +
       `Reply with STRICT JSON ONLY.`;
+
 
     // Build allowed tools enum for responseSchema
     const allowedTools: string[] = [];
