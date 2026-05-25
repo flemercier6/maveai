@@ -662,7 +662,7 @@ async function linkupSearch(
 // ---------- Agentic multi-step plan ----------
 // For complex queries, we ask a small/cheap model to draft an ordered plan of
 // 2–4 steps, where each step is either an "analyze" (pure reasoning, no tool),
-// a "search" (linkup web search) or a "scrape" (firecrawl URL). Between every
+// a "search" (linkup web search) or a "scrape" (linkup URL fetch). Between every
 // action we stream a short narrative "ok I just did X, now I'm moving to Y"
 // directly into the assistant message via `delta` events, so the user sees
 // the agent thinking in real time, inline.
