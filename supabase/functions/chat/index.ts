@@ -1130,8 +1130,16 @@ async function runReactLoop(opts: {
 
   // Chapter decomposition: at the start, identify ordered chapters (sub-problems)
   // to investigate one by one. Each effort tier allows more chapters.
-  const MAX_PROBLEMS = opts.effort === "low" ? 1 : opts.effort === "high" ? 4 : 3;
-  const MIN_PER_PROBLEM = opts.effort === "low" ? 1 : opts.effort === "high" ? 3 : 2;
+  const MAX_PROBLEMS = opts.effort === "low" ? 2 : opts.effort === "high" ? 5 : 4;
+  const MIN_PER_PROBLEM = opts.effort === "low" ? 1 : opts.effort === "high" ? 2 : 1;
+  // Heuristic: count distinct sub-questions in the user text to enforce a
+  // minimum decomposition (so a 4-part question never collapses into 1 chapter).
+  const questionMarks = (opts.userText.match(/\?/g) || []).length;
+  const subQuestionHints = (opts.userText.match(/\b(quels?|quelles?|comment|pourquoi|quand|où|combien|what|which|how|why|when|where)\b/gi) || []).length;
+  const MIN_PROBLEMS = Math.min(
+    MAX_PROBLEMS,
+    Math.max(1, Math.max(questionMarks, Math.ceil(subQuestionHints / 2))),
+  );
 
   const baseTools: string[] = [];
   if (hasSearch) baseTools.push(`{"tool":"web_search","args":{"query":"<short query in user's language, ≤12 words>"}}  // search the web for fresh facts`);
