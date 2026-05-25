@@ -66,22 +66,23 @@ export function SharePageButton({ page, pageKey, className }: Props) {
     }
     setBusy(true);
     try {
+      const pageJson = page as unknown as Record<string, unknown>;
       if (row) {
         const { error } = await supabase
           .from("shared_pages")
-          .update({ is_public: true, page: page as unknown as object, title: page.title })
+          .update({ is_public: true, page: pageJson, title: page.title })
           .eq("id", row.id);
         if (error) throw error;
         setRow({ ...row, is_public: true });
       } else {
         const { data, error } = await supabase
           .from("shared_pages")
-          .insert({
+          .insert([{
             user_id: user.id,
             title: page.title,
-            page: page as unknown as object,
+            page: pageJson,
             is_public: true,
-          })
+          }])
           .select("id, share_token, is_public")
           .single();
         if (error) throw error;
