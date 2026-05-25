@@ -1246,17 +1246,31 @@ async function runReactLoop(opts: {
       `No markdown, no bullets, no headings, no quotes, no placeholders. First person, present tense, plain prose. ` +
       `Be terse — better to write 1 complete short sentence than 2 truncated ones.`;
     const currentProblem = problems[currentProblemIdx];
+    const usedQueries = queriesByProblem[currentProblemIdx] || [];
+    const learnings = learningsByProblem[currentProblemIdx] || [];
+    const planList = problems.map((p, i) => {
+      const mark = i < currentProblemIdx ? "✓" : i === currentProblemIdx ? "▶" : "·";
+      return `${mark} ${i + 1}. ${p.title}`;
+    }).join("\n");
     const problemBanner = problems.length > 1
-      ? `Sub-problem plan: ${problems.map((p, i) => `${i + 1}. ${p}`).join(" | ")}\n` +
-        `CURRENT sub-problem (${currentProblemIdx + 1}/${problems.length}): "${currentProblem}"\n` +
-        `Tool calls done for this sub-problem: ${toolCallsForCurrentProblem} (min before moving on: ${MIN_PER_PROBLEM}).\n`
-      : "";
+      ? `Reasoning plan:\n${planList}\n` +
+        `CURRENT chapter (${currentProblemIdx + 1}/${problems.length}): "${currentProblem.title}"\n` +
+        (currentProblem.focus ? `Focus: ${currentProblem.focus}\n` : "") +
+        `Tool calls done for this chapter: ${toolCallsForCurrentProblem} / min ${MIN_PER_PROBLEM}.\n` +
+        (usedQueries.length ? `Queries already used here: ${usedQueries.map((q) => `"${q}"`).join(", ")}.\n` : "") +
+        (learnings.length ? `What you've learned for THIS chapter:\n${learnings.map((l) => `- ${l}`).join("\n")}\n` : "") +
+        `\n`
+      : (learnings.length ? `What you've learned so far:\n${learnings.map((l) => `- ${l}`).join("\n")}\n\n` : "");
     const thoughtPrompt =
       `User question:\n"""${opts.userText.slice(0, 800)}"""\n\n` +
       problemBanner +
       `History so far:\n${renderHistory()}\n\n` +
-      `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations.\n` +
-      `Write your next reasoning step now, FOCUSED on the current sub-problem. TOPIC line + 1-2 SHORT complete sentences (≤28 words total).`;
+      `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations.\n\n` +
+      `Write your next reasoning step now, FOCUSED on the CURRENT chapter. ` +
+      `Build on what you already learned for this chapter — do NOT restate earlier thoughts. ` +
+      `If the chapter is sufficiently covered, signal you'll move to the next one. ` +
+      `TOPIC line + 1-2 SHORT complete sentences (≤28 words total).`;
+
 
     let thoughtText = "";
     let topicBuf = "";
