@@ -26,7 +26,7 @@ type Source = { title: string; url: string };
 export type ThinkingStep = { index: number; text: string };
 export type AgentStep = {
   index: number;
-  kind: "search" | "scrape" | "analyze" | "memory" | "plan" | "hypothesis" | "challenge" | "compare" | "synthesize" | "gmail" | "calendar" | "drive" | "voyager" | "read_url";
+  kind: "search" | "scrape" | "analyze" | "memory" | "plan" | "hypothesis" | "challenge" | "compare" | "synthesize" | "gmail" | "calendar" | "drive" | "voyager" | "read_url" | "thought" | "finish";
   label: string;
   intent: string;
   status: ToolStatus;
