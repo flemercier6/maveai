@@ -786,6 +786,25 @@ function AgentStepsDetails({ steps }: { steps: AgentStep[] }) {
                       {s.narration}
                     </div>
                   )}
+                  {s.sources && s.sources.length > 0 && (
+                    <ul className="mt-1.5 space-y-0.5">
+                      {s.sources.map((src, k) => {
+                        let host = "";
+                        try { host = new URL(src.url).hostname.replace(/^www\./, ""); } catch { host = src.url; }
+                        const fav = faviconUrl(src.url);
+                        return (
+                          <li key={k}>
+                            <a href={src.url} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground no-underline">
+                              {fav && <img src={fav} alt="" className="w-3 h-3 rounded-sm" loading="lazy" />}
+                              <span className="truncate">{src.title}</span>
+                              <span className="opacity-60">· {host}</span>
+                            </a>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </div>
               </li>
             );
