@@ -79,6 +79,7 @@ export type AgentStep = {
   intent: string;
   status: ToolStatus;
   foundCount?: number;
+  sources?: Source[];
   narration: string;
   narrationDone?: boolean;
 };
