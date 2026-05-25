@@ -1107,17 +1107,83 @@ async function runReactLoop(opts: {
   const hasFetch = !!opts.linkupKey;
   const hasMemory = opts.memRows.length > 0;
 
-  const availableTools: string[] = [];
-  if (hasSearch) availableTools.push(`{"tool":"web_search","args":{"query":"<short query in user's language, ≤12 words>"}}  // search the web for fresh facts`);
-  if (hasFetch) availableTools.push(`{"tool":"web_fetch","args":{"url":"https://..."}}  // read a specific webpage`);
-  if (hasMemory) availableTools.push(`{"tool":"memory_recall","args":{"query":"<short phrase>"}}  // search the user's personal memory`);
-  availableTools.push(`{"tool":"finish","args":{}}  // call when you have enough to answer`);
+  // Sub-problem decomposition: at the start, identify ordered sub-problems
+  // to investigate one by one. Each effort tier allows more sub-problems.
+  const MAX_PROBLEMS = opts.effort === "low" ? 1 : opts.effort === "high" ? 4 : 3;
+  const MIN_PER_PROBLEM = opts.effort === "low" ? 1 : 2;
+
+  const baseTools: string[] = [];
+  if (hasSearch) baseTools.push(`{"tool":"web_search","args":{"query":"<short query in user's language, ≤12 words>"}}  // search the web for fresh facts`);
+  if (hasFetch) baseTools.push(`{"tool":"web_fetch","args":{"url":"https://..."}}  // read a specific webpage`);
+  if (hasMemory) baseTools.push(`{"tool":"memory_recall","args":{"query":"<short phrase>"}}  // search the user's personal memory`);
 
   const renderHistory = () => history.length === 0
     ? "(no actions yet — write your opening thought and choose the first action)"
     : history.map((h, i) =>
         `### Iteration ${i + 1}\nThought: ${h.thought}\nAction: ${JSON.stringify(h.action)}\nObservation: ${h.observation.summary}`,
       ).join("\n\n");
+
+  // ---- Phase 0: decompose the question into ordered sub-problems ----
+  let problems: string[] = [];
+  if (MAX_PROBLEMS > 1) {
+    const planIdx = stepIndex++;
+    opts.callbacks.onStepStart(planIdx, "plan", "", "");
+    try {
+      const planSys = `You decompose the user's question into ordered sub-problems to investigate one by one. Reply STRICTLY in the USER's language.`;
+      const planPrompt =
+        `User question:\n"""${opts.userText.slice(0, 1200)}"""\n\n` +
+        `Decompose into 1 to ${MAX_PROBLEMS} concise, ORDERED sub-problems. ` +
+        `If the question is simple/atomic, return a single sub-problem. ` +
+        `Each sub-problem is a short noun phrase (≤10 words), not a full sentence, in the user's language. ` +
+        `Sub-problems must be distinct (no overlap) and cover the question end-to-end.`;
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${opts.googleKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: planPrompt }] }],
+            systemInstruction: { parts: [{ text: planSys }] },
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "object",
+                properties: {
+                  problems: { type: "array", items: { type: "string" } },
+                },
+                required: ["problems"],
+              },
+              temperature: 0.4,
+              maxOutputTokens: 400,
+            },
+          }),
+        },
+      );
+      const j = await r.json();
+      const raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed.problems)) {
+        problems = parsed.problems.map((p: any) => String(p).trim()).filter(Boolean).slice(0, MAX_PROBLEMS);
+      }
+      tokensUsed += Math.ceil((planPrompt.length + raw.length) / 4);
+    } catch (e) {
+      console.error("[react] plan decomposition failed", e);
+    }
+    if (problems.length === 0) problems = [opts.userText.slice(0, 100)];
+    const planLabel = problems.length === 1
+      ? problems[0].slice(0, 60)
+      : `${problems.length} sub-problems`;
+    const planNarration = problems.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    opts.callbacks.onThoughtChunk(planIdx, planNarration);
+    opts.callbacks.onThoughtDone(planIdx);
+    opts.callbacks.onStepDone(planIdx, "plan", planLabel, "");
+    collectedSteps.push({ index: planIdx, kind: "plan", label: planLabel, intent: "", status: "done", narration: planNarration });
+  } else {
+    problems = [opts.userText.slice(0, 100)];
+  }
+
+  let currentProblemIdx = 0;
+  let toolCallsForCurrentProblem = 0;
 
   for (let iter = 0; iter < MAX_ITER; iter++) {
     if (tokensUsed >= BUDGET) break;
@@ -1137,11 +1203,18 @@ async function runReactLoop(opts: {
       `Each sentence must end with a period. ` +
       `No markdown, no bullets, no headings, no quotes, no placeholders. First person, present tense, plain prose. ` +
       `Be terse — better to write 1 complete short sentence than 2 truncated ones.`;
+    const currentProblem = problems[currentProblemIdx];
+    const problemBanner = problems.length > 1
+      ? `Sub-problem plan: ${problems.map((p, i) => `${i + 1}. ${p}`).join(" | ")}\n` +
+        `CURRENT sub-problem (${currentProblemIdx + 1}/${problems.length}): "${currentProblem}"\n` +
+        `Tool calls done for this sub-problem: ${toolCallsForCurrentProblem} (min before moving on: ${MIN_PER_PROBLEM}).\n`
+      : "";
     const thoughtPrompt =
       `User question:\n"""${opts.userText.slice(0, 800)}"""\n\n` +
+      problemBanner +
       `History so far:\n${renderHistory()}\n\n` +
       `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations.\n` +
-      `Write your next reasoning step now. TOPIC line + 1-2 SHORT complete sentences (≤28 words total).`;
+      `Write your next reasoning step now, FOCUSED on the current sub-problem. TOPIC line + 1-2 SHORT complete sentences (≤28 words total).`;
 
     let thoughtText = "";
     let topicBuf = "";
@@ -1238,30 +1311,50 @@ async function runReactLoop(opts: {
     }
 
     // ---- 2. Decide action (strict JSON via responseSchema) ----
-    const toolsRemaining = Math.max(0, MIN_TOOL_CALLS - toolCallCount);
-    const canFinish = toolCallCount >= MIN_TOOL_CALLS;
+    const isLastProblem = currentProblemIdx >= problems.length - 1;
+    const hasMoreProblems = !isLastProblem;
+    const problemSatisfied = toolCallsForCurrentProblem >= MIN_PER_PROBLEM;
+    const globalSatisfied = toolCallCount >= MIN_TOOL_CALLS;
+    const canFinish = isLastProblem && problemSatisfied && globalSatisfied;
+    const canNextProblem = hasMoreProblems && problemSatisfied;
+
+    const iterTools = baseTools.slice();
+    if (canNextProblem) iterTools.push(`{"tool":"next_problem","args":{}}  // current sub-problem covered, move to the next one`);
+    iterTools.push(`{"tool":"finish","args":{}}  // ALL sub-problems covered, ready to answer`);
+
     const actionSys = `You decide the NEXT action of a ReAct agent. Reply with STRICT JSON only — no prose, no markdown, no preamble. Just the JSON object.`;
     const actionPrompt =
       `User question:\n"""${opts.userText.slice(0, 600)}"""\n\n` +
+      (problems.length > 1
+        ? `Sub-problem plan: ${problems.map((p, i) => `${i + 1}. ${p}`).join(" | ")}\n` +
+          `CURRENT sub-problem (${currentProblemIdx + 1}/${problems.length}): "${problems[currentProblemIdx]}"\n` +
+          `Tool calls done for this sub-problem: ${toolCallsForCurrentProblem} / min ${MIN_PER_PROBLEM}.\n\n`
+        : "") +
       `History:\n${renderHistory()}\n\n` +
       `Your latest thought: ${thoughtText}\n\n` +
-      `Available actions:\n${availableTools.join("\n")}\n\n` +
-      `Progress: ${toolCallCount} tool calls done so far. Minimum required: ${MIN_TOOL_CALLS}. Remaining iterations: ${MAX_ITER - iter - 1}.\n\n` +
+      `Available actions:\n${iterTools.join("\n")}\n\n` +
+      `Progress: ${toolCallCount} total tool calls. Remaining iterations: ${MAX_ITER - iter - 1}.\n\n` +
       `Rules:\n` +
+      `- Focus your next action on the CURRENT sub-problem only.\n` +
+      (canNextProblem
+        ? `- Once the current sub-problem is reasonably covered (≥${MIN_PER_PROBLEM} tool calls), call {"tool":"next_problem","args":{}} to move on.\n`
+        : "") +
       (canFinish
-        ? `- You MAY return {"tool":"finish","args":{}} only if you genuinely have enough deep, verified information to write a thorough answer.\n`
-        : `- You MUST NOT finish yet — you still need at least ${toolsRemaining} more tool call(s) to satisfy the user's effort level. Pick a tool (web_search / web_fetch / memory_recall).\n`) +
+        ? `- You MAY return {"tool":"finish","args":{}} only if ALL sub-problems are covered and you can write a thorough answer.\n`
+        : `- You MUST NOT finish yet — you still need to cover ${isLastProblem ? "this sub-problem deeper" : `${problems.length - currentProblemIdx - 1} more sub-problem(s)`}.\n`) +
       `- NEVER repeat an action with identical args (check history).\n` +
-      `- Vary angles: different queries, sub-topics, counter-arguments, primary sources, recent dates. Don't just rephrase the same query.\n` +
+      `- Vary angles: different queries, sub-topics, counter-arguments, primary sources.\n` +
       `- Prefer web_search for fresh facts; web_fetch only when you have a specific URL worth reading in full.\n` +
       `- Match the search query to the user's language.\n\n` +
-      `Reply with STRICT JSON ONLY: {"tool":"web_search|web_fetch|memory_recall|finish","args":{...}}`;
+      `Reply with STRICT JSON ONLY.`;
 
     // Build allowed tools enum for responseSchema
-    const allowedTools = ["finish"];
-    if (hasSearch) allowedTools.unshift("web_search");
+    const allowedTools: string[] = [];
+    if (hasSearch) allowedTools.push("web_search");
     if (hasFetch) allowedTools.push("web_fetch");
     if (hasMemory) allowedTools.push("memory_recall");
+    if (canNextProblem) allowedTools.push("next_problem");
+    allowedTools.push("finish");
 
     let action: any = null;
     try {
@@ -1297,7 +1390,6 @@ async function runReactLoop(opts: {
       );
       const j = await r.json();
       const raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
-      // Robust extraction: strip code fences, find first {...} block if there's any prose leak
       let cleaned = raw.replace(/```json|```/g, "").trim();
       const braceMatch = cleaned.match(/\{[\s\S]*\}/);
       if (braceMatch) cleaned = braceMatch[0];
@@ -1306,9 +1398,8 @@ async function runReactLoop(opts: {
     } catch (e) {
       console.error("[react] action parse failed", e, "— falling back to web_search");
       consecutiveFailures++;
-      // Fallback: if we can search, force a search using the user's question rather than aborting
       if (hasSearch && consecutiveFailures < 4) {
-        action = { tool: "web_search", args: { query: opts.userText.slice(0, 120) } };
+        action = { tool: "web_search", args: { query: problems[currentProblemIdx] || opts.userText.slice(0, 120) } };
       } else if (consecutiveFailures >= 4) {
         break;
       } else {
@@ -1317,10 +1408,36 @@ async function runReactLoop(opts: {
     }
     if (action) consecutiveFailures = 0;
 
-    // Block premature finish: if model tries to finish before minimum, force a search instead
-    if (action?.tool === "finish" && !canFinish && hasSearch) {
-      console.log(`[react] blocking premature finish (${toolCallCount}/${MIN_TOOL_CALLS} tool calls) — forcing search`);
-      action = { tool: "web_search", args: { query: `${opts.userText.slice(0, 80)} — angle ${toolCallCount + 1}` } };
+    // Block premature finish: if model tries to finish before all sub-problems covered, redirect.
+    if (action?.tool === "finish" && !canFinish) {
+      if (canNextProblem) {
+        console.log(`[react] redirecting premature finish → next_problem (${currentProblemIdx + 1}/${problems.length})`);
+        action = { tool: "next_problem", args: {} };
+      } else if (hasSearch) {
+        console.log(`[react] blocking premature finish — forcing search on current sub-problem`);
+        action = { tool: "web_search", args: { query: problems[currentProblemIdx] || opts.userText.slice(0, 80) } };
+      }
+    }
+
+    // Handle next_problem: advance to next sub-problem, reset per-problem counter.
+    if (action?.tool === "next_problem") {
+      if (hasMoreProblems) {
+        currentProblemIdx++;
+        toolCallsForCurrentProblem = 0;
+        const advIdx = stepIndex++;
+        const newProblem = problems[currentProblemIdx];
+        const label = `→ ${newProblem.slice(0, 60)}`;
+        opts.callbacks.onStepStart(advIdx, "plan", label, "");
+        const advNarration = `Sub-problem ${currentProblemIdx + 1}/${problems.length}: ${newProblem}`;
+        opts.callbacks.onThoughtChunk(advIdx, advNarration);
+        opts.callbacks.onThoughtDone(advIdx);
+        opts.callbacks.onStepDone(advIdx, "plan", label, "");
+        collectedSteps.push({ index: advIdx, kind: "plan", label, intent: "", status: "done", narration: advNarration });
+        history.push({ thought: thoughtText, action: { tool: "next_problem" }, observation: { ok: true, summary: `Moving to sub-problem ${currentProblemIdx + 1}: ${newProblem}` } });
+        continue;
+      }
+      // No more problems → treat as finish.
+      action = { tool: "finish", args: {} };
     }
 
     if (!action || action.tool === "finish") {
@@ -1406,7 +1523,7 @@ async function runReactLoop(opts: {
       if (consecutiveFailures >= 2) break;
     }
 
-    if (observation.ok) toolCallCount++;
+    if (observation.ok) { toolCallCount++; toolCallsForCurrentProblem++; }
     history.push({ thought: thoughtText, action, observation });
     tokensUsed += Math.ceil(observation.summary.length / 4);
   }
