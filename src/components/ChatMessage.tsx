@@ -31,6 +31,7 @@ export type AgentStep = {
   intent: string;
   status: ToolStatus;
   foundCount?: number;
+  sources?: Source[];
   narration: string;
   narrationDone?: boolean;
 };
@@ -705,8 +706,8 @@ function AgentStepCard({ step, sources }: { step: AgentStep; sources?: Source[] 
             </span>
           </>
         )}
-        {step.kind === "search" && step.status === "done" && step.foundCount !== undefined && step.foundCount > 0 && (
-          <StepSourcesTag count={step.foundCount} sources={sources} />
+        {(step.kind === "search" || step.kind === "scrape") && step.status === "done" && ((step.sources && step.sources.length > 0) || (step.foundCount !== undefined && step.foundCount > 0)) && (
+          <StepSourcesTag count={step.sources?.length ?? step.foundCount ?? 0} sources={step.sources ?? sources} />
         )}
         {isFailed && <span className="text-destructive text-[11px] ml-1 shrink-0">failed</span>}
       </div>
@@ -784,6 +785,25 @@ function AgentStepsDetails({ steps }: { steps: AgentStep[] }) {
                     <div className="mt-1 text-foreground/80 leading-relaxed whitespace-pre-wrap">
                       {s.narration}
                     </div>
+                  )}
+                  {s.sources && s.sources.length > 0 && (
+                    <ul className="mt-1.5 space-y-0.5">
+                      {s.sources.map((src, k) => {
+                        let host = "";
+                        try { host = new URL(src.url).hostname.replace(/^www\./, ""); } catch { host = src.url; }
+                        const fav = faviconUrl(src.url);
+                        return (
+                          <li key={k}>
+                            <a href={src.url} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground no-underline">
+                              {fav && <img src={fav} alt="" className="w-3 h-3 rounded-sm" loading="lazy" />}
+                              <span className="truncate">{src.title}</span>
+                              <span className="opacity-60">· {host}</span>
+                            </a>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   )}
                 </div>
               </li>
