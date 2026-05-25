@@ -3192,7 +3192,7 @@ Deno.serve(async (req) => {
               });
               if (decision.action === "scrape" && linkupKey) {
                 controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "running" }));
-                const md = await linkupFetch(firecrawlKey, decision.url);
+                const md = await linkupFetch(linkupKey, decision.url);
                 if (md) {
                   webContext = {
                     kind: "scrape",
