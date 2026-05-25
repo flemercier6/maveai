@@ -495,6 +495,39 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_pages: {
+        Row: {
+          created_at: string
+          id: string
+          is_public: boolean
+          page: Json
+          share_token: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          page: Json
+          share_token?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          page?: Json
+          share_token?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       usage_events: {
         Row: {
           billed_at: string | null

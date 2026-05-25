@@ -5,11 +5,13 @@
 import { X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PageRenderer, type PageSpec } from "./PageRenderer";
+import { SharePageButton } from "./SharePageButton";
 import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
   page: PageSpec | null;
+  pageKey?: string;
   onClose: () => void;
   onWidthChange?: (width: number) => void;
 };
@@ -17,7 +19,7 @@ type Props = {
 const STORAGE_KEY = "page-panel-width";
 const MIN_W = 520;
 
-export function PagePanel({ open, page, onClose, onWidthChange }: Props) {
+export function PagePanel({ open, page, pageKey, onClose, onWidthChange }: Props) {
   const [width, setWidth] = useState<number>(() => {
     if (typeof window === "undefined") return 900;
     const stored = Number(window.localStorage.getItem(STORAGE_KEY));
@@ -138,9 +140,16 @@ export function PagePanel({ open, page, onClose, onWidthChange }: Props) {
           >
             <X className="w-4 h-4" />
           </button>
-          <div className={cn("font-grotesk text-[10px] uppercase tracking-[0.28em] truncate", headerText)}>
+          <div className={cn("flex-1 min-w-0 font-grotesk text-[10px] uppercase tracking-[0.28em] truncate", headerText)}>
             {page?.title ?? "Page"}
           </div>
+          {page && pageKey && (
+            <SharePageButton
+              page={page}
+              pageKey={pageKey}
+              className={cn(closeBtn)}
+            />
+          )}
         </div>
 
         {/* Content */}
