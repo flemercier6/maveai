@@ -1206,11 +1206,19 @@ async function runReactLoop(opts: {
       topicEmitted = true;
     }
     // Strip the TOPIC line from the persisted narration so the trace shows only the prose.
-    const cleanNarration = thoughtText.replace(/^\s*TOPIC\s*[:\-][^\n]*\n?/i, "").trim();
+    let cleanNarration = thoughtText.replace(/^\s*TOPIC\s*[:\-][^\n]*\n?/i, "").trim();
     const finalTopic = (() => {
       const m = thoughtText.match(/^\s*TOPIC\s*[:\-]\s*(.+?)\s*$/im);
       return m ? m[1].trim().slice(0, 80) : "";
     })();
+    // Fallback: if the model returned only a TOPIC line with no narration body,
+    // synthesize a tiny one-liner so the UI never shows an empty narration.
+    if (!cleanNarration && finalTopic) {
+      cleanNarration = iter === 0
+        ? `Starting on: ${finalTopic}.`
+        : `Continuing on: ${finalTopic}.`;
+      opts.callbacks.onThoughtChunk(thoughtIdx, cleanNarration);
+    }
     opts.callbacks.onThoughtDone(thoughtIdx);
     opts.callbacks.onStepDone(thoughtIdx, "thought", finalTopic, "");
     collectedSteps.push({
