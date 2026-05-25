@@ -482,7 +482,7 @@ async function* streamMistral(apiKey: string, model: string, messages: Msg[]): A
   return usage;
 }
 
-// ---------- Web tools (Firecrawl) ----------
+// ---------- Web tools (Linkup) ----------
 
 type WebDecision =
   | { action: "none" }
@@ -562,9 +562,9 @@ ${userText.slice(0, 1500)}`;
   return { action: "none" };
 }
 
-async function firecrawlScrape(apiKey: string, url: string): Promise<string | null> {
+async function linkupFetch(apiKey: string, url: string): Promise<string | null> {
   try {
-    const r = await fetch("https://api.firecrawl.dev/v2/scrape", {
+    const r = await fetch("https://api.linkup.so/v1/fetch", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -572,20 +572,21 @@ async function firecrawlScrape(apiKey: string, url: string): Promise<string | nu
       },
       body: JSON.stringify({
         url,
-        formats: ["markdown"],
-        onlyMainContent: true,
+        extractImages: false,
+        includeRawHtml: false,
+        renderJs: false,
       }),
     });
     const j = await r.json();
     if (!r.ok) {
-      console.error("firecrawl scrape error", r.status, j);
+      console.error("linkup fetch error", r.status, j);
       return null;
     }
-    const md: string | undefined = j?.data?.markdown ?? j?.markdown;
+    const md: string | undefined = j?.markdown ?? j?.content;
     if (!md) return null;
     return md.slice(0, 15000);
   } catch (e) {
-    console.error("firecrawl scrape exception", e);
+    console.error("linkup fetch exception", e);
     return null;
   }
 }
@@ -661,7 +662,7 @@ async function linkupSearch(
 // ---------- Agentic multi-step plan ----------
 // For complex queries, we ask a small/cheap model to draft an ordered plan of
 // 2–4 steps, where each step is either an "analyze" (pure reasoning, no tool),
-// a "search" (linkup web search) or a "scrape" (firecrawl URL). Between every
+// a "search" (linkup web search) or a "scrape" (linkup URL fetch). Between every
 // action we stream a short narrative "ok I just did X, now I'm moving to Y"
 // directly into the assistant message via `delta` events, so the user sees
 // the agent thinking in real time, inline.
@@ -2011,7 +2012,6 @@ Deno.serve(async (req) => {
       }
       return items.find((x) => normalizeVoyagerText(`${x?.first_name ?? ""} ${x?.last_name ?? ""}`) === term) ?? null;
     };
-    const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     const linkupKey = Deno.env.get("LINKUP_API_KEY");
     let webContext:
       | { kind: "scrape" | "search"; label: string; content: string; sources?: WebSource[]; images?: WebImage[] }
@@ -2854,7 +2854,7 @@ Deno.serve(async (req) => {
           // "simple query" pre-filter since the user EXPLICITLY asked for it.
           const reflexionEnabled = reflexionMode === true && !!googleKeyForAgent;
           const reflexionMaxSteps = reflexionEffort === "low" ? 3 : reflexionEffort === "high" ? 8 : 5;
-          if (reflexionEnabled || (!webDisabled && !googleService && !voyagerService && (firecrawlKey || linkupKey) && lastUserText)) {
+          if (reflexionEnabled || (!webDisabled && !googleService && !voyagerService && (linkupKey || linkupKey) && lastUserText)) {
             // Fast local pre-filter: skip the agentic plan API call for obviously
             // simple queries. The call costs ~300-600 ms; most short or conversational
             // messages will never trigger a multi-step plan anyway.
@@ -2877,7 +2877,7 @@ Deno.serve(async (req) => {
                 googleKey: googleKeyForAgent,
                 userText: lastUserText,
                 hasWebSearch: !!linkupKey,
-                hasScrape: !!firecrawlKey,
+                hasScrape: !!linkupKey,
                 hasMemory: allFetchedMemRows.length > 0,
                 maxSteps: reflexionMaxSteps,
               }).catch((e) => {
@@ -2889,7 +2889,7 @@ Deno.serve(async (req) => {
                   googleKey: googleKeyForAgent,
                   userText: lastUserText,
                   hasWebSearch: !!linkupKey,
-                  hasScrape: !!firecrawlKey,
+                  hasScrape: !!linkupKey,
                 })
                 : { complex: false, goal: "", steps: [] as AgenticStep[] };
 
@@ -3048,7 +3048,7 @@ Deno.serve(async (req) => {
                     }));
                   }
                 } else if (step.kind === "scrape") {
-                  const md = await firecrawlScrape(firecrawlKey!, step.url);
+                  const md = await linkupFetch(linkupKey!, step.url);
                   if (md) {
                     foundCount = 1;
                     if (!agenticSources.find((x) => x.url === step.url)) {
@@ -3190,9 +3190,9 @@ Deno.serve(async (req) => {
                 anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
                 userText: lastUserText,
               });
-              if (decision.action === "scrape" && firecrawlKey) {
+              if (decision.action === "scrape" && linkupKey) {
                 controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "running" }));
-                const md = await firecrawlScrape(firecrawlKey, decision.url);
+                const md = await linkupFetch(linkupKey, decision.url);
                 if (md) {
                   webContext = {
                     kind: "scrape",
