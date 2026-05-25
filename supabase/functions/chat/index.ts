@@ -1128,18 +1128,20 @@ async function runReactLoop(opts: {
 
     const thoughtSys =
       `You are a ReAct agent narrating your reasoning in the USER's exact language. ` +
-      `You MUST output BOTH a TOPIC line AND a narration body — never just the TOPIC line alone.\n\n` +
-      `STRICT format (exactly this shape):\n` +
+      `You MUST output BOTH a TOPIC line AND a SHORT narration body — never just the TOPIC line.\n\n` +
+      `STRICT format (exactly this shape, no more):\n` +
       `TOPIC: <≤6 words naming what you're thinking about>\n` +
-      `<sentence 1: what you just learned from the previous observation — skip only if this is iteration 1>\n` +
-      `<sentence 2: what you'll do next and why>\n\n` +
-      `Hard limits: 1 to 3 short sentences after the TOPIC line, ~60 words max. ` +
-      `No markdown, no bullets, no headings, no quotes, no placeholders like "<sentence 1>". First person, present tense, plain prose.`;
+      `<one short sentence: what you just learned (skip only on iteration 1)>\n` +
+      `<one short sentence: what you'll do next and why>\n\n` +
+      `HARD LIMITS (do NOT exceed): max 2 sentences after TOPIC, max 28 words TOTAL across both sentences, max 180 characters total. ` +
+      `Each sentence must end with a period. ` +
+      `No markdown, no bullets, no headings, no quotes, no placeholders. First person, present tense, plain prose. ` +
+      `Be terse — better to write 1 complete short sentence than 2 truncated ones.`;
     const thoughtPrompt =
       `User question:\n"""${opts.userText.slice(0, 800)}"""\n\n` +
       `History so far:\n${renderHistory()}\n\n` +
       `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations.\n` +
-      `Write your next reasoning step now. Remember: TOPIC line on line 1, then 1-3 short sentences of narration.`;
+      `Write your next reasoning step now. TOPIC line + 1-2 SHORT complete sentences (≤28 words total).`;
 
     let thoughtText = "";
     let topicBuf = "";
