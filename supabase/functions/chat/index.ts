@@ -1188,19 +1188,31 @@ async function runReactLoop(opts: {
       break;
     }
 
-    // ---- 2. Decide action (strict JSON) ----
-    const actionSys = `You decide the NEXT action of a ReAct agent. Reply with STRICT JSON only — no prose, no markdown.`;
+    // ---- 2. Decide action (strict JSON via responseSchema) ----
+    const toolsRemaining = Math.max(0, MIN_TOOL_CALLS - toolCallCount);
+    const canFinish = toolCallCount >= MIN_TOOL_CALLS;
+    const actionSys = `You decide the NEXT action of a ReAct agent. Reply with STRICT JSON only — no prose, no markdown, no preamble. Just the JSON object.`;
     const actionPrompt =
       `User question:\n"""${opts.userText.slice(0, 600)}"""\n\n` +
       `History:\n${renderHistory()}\n\n` +
       `Your latest thought: ${thoughtText}\n\n` +
       `Available actions:\n${availableTools.join("\n")}\n\n` +
+      `Progress: ${toolCallCount} tool calls done so far. Minimum required: ${MIN_TOOL_CALLS}. Remaining iterations: ${MAX_ITER - iter - 1}.\n\n` +
       `Rules:\n` +
-      `- If your latest thought concluded you have enough information to answer well, return {"tool":"finish","args":{}}.\n` +
-      `- NEVER repeat an action you already tried with the same args (check history).\n` +
+      (canFinish
+        ? `- You MAY return {"tool":"finish","args":{}} only if you genuinely have enough deep, verified information to write a thorough answer.\n`
+        : `- You MUST NOT finish yet — you still need at least ${toolsRemaining} more tool call(s) to satisfy the user's effort level. Pick a tool (web_search / web_fetch / memory_recall).\n`) +
+      `- NEVER repeat an action with identical args (check history).\n` +
+      `- Vary angles: different queries, sub-topics, counter-arguments, primary sources, recent dates. Don't just rephrase the same query.\n` +
       `- Prefer web_search for fresh facts; web_fetch only when you have a specific URL worth reading in full.\n` +
       `- Match the search query to the user's language.\n\n` +
-      `Reply with strict JSON only: {"tool":"...","args":{...}}`;
+      `Reply with STRICT JSON ONLY: {"tool":"web_search|web_fetch|memory_recall|finish","args":{...}}`;
+
+    // Build allowed tools enum for responseSchema
+    const allowedTools = ["finish"];
+    if (hasSearch) allowedTools.unshift("web_search");
+    if (hasFetch) allowedTools.push("web_fetch");
+    if (hasMemory) allowedTools.push("memory_recall");
 
     let action: any = null;
     try {
@@ -1212,21 +1224,55 @@ async function runReactLoop(opts: {
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: actionPrompt }] }],
             systemInstruction: { parts: [{ text: actionSys }] },
-            generationConfig: { responseMimeType: "application/json", temperature: 0.3, maxOutputTokens: 200 },
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "object",
+                properties: {
+                  tool: { type: "string", enum: allowedTools },
+                  args: {
+                    type: "object",
+                    properties: {
+                      query: { type: "string" },
+                      url: { type: "string" },
+                    },
+                  },
+                },
+                required: ["tool"],
+              },
+              temperature: 0.4,
+              maxOutputTokens: 500,
+            },
           }),
         },
       );
       const j = await r.json();
       const raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
-      action = JSON.parse(raw.replace(/```json|```/g, "").trim());
+      // Robust extraction: strip code fences, find first {...} block if there's any prose leak
+      let cleaned = raw.replace(/```json|```/g, "").trim();
+      const braceMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (braceMatch) cleaned = braceMatch[0];
+      action = JSON.parse(cleaned);
       tokensUsed += Math.ceil((actionPrompt.length + raw.length) / 4);
     } catch (e) {
-      console.error("[react] action parse failed", e);
+      console.error("[react] action parse failed", e, "— falling back to web_search");
       consecutiveFailures++;
-      if (consecutiveFailures >= 2) break;
-      continue;
+      // Fallback: if we can search, force a search using the user's question rather than aborting
+      if (hasSearch && consecutiveFailures < 4) {
+        action = { tool: "web_search", args: { query: opts.userText.slice(0, 120) } };
+      } else if (consecutiveFailures >= 4) {
+        break;
+      } else {
+        continue;
+      }
     }
-    consecutiveFailures = 0;
+    if (action) consecutiveFailures = 0;
+
+    // Block premature finish: if model tries to finish before minimum, force a search instead
+    if (action?.tool === "finish" && !canFinish && hasSearch) {
+      console.log(`[react] blocking premature finish (${toolCallCount}/${MIN_TOOL_CALLS} tool calls) — forcing search`);
+      action = { tool: "web_search", args: { query: `${opts.userText.slice(0, 80)} — angle ${toolCallCount + 1}` } };
+    }
 
     if (!action || action.tool === "finish") {
       const finishIdx = stepIndex++;
