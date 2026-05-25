@@ -1051,6 +1051,276 @@ function describeStep(s: AgenticStep): string {
   return `analyzing: ${s.intent}`;
 }
 
+// ============================================================================
+// DYNAMIC REACT LOOP — used by Reflexion mode.
+//
+// True ReAct: at each iteration the orchestrator decides what to do next based
+// on what it has learned. No pre-defined plan. Bounded by a token budget
+// (low/medium/high) with a hard iteration cap as a safety net.
+// ============================================================================
+type ReactToolName = "web_search" | "web_fetch" | "memory_recall" | "finish";
+type ReactObservation = { ok: boolean; summary: string; foundCount?: number };
+
+type ReactCallbacks = {
+  onStepStart: (idx: number, kind: string, label: string, intent: string) => void;
+  onStepDone: (idx: number, kind: string, label: string, intent: string, foundCount?: number, failed?: boolean) => void;
+  onThoughtChunk: (idx: number, text: string) => void;
+  onThoughtDone: (idx: number) => void;
+  onSources: (sources: WebSource[]) => void;
+};
+
+async function runReactLoop(opts: {
+  googleKey: string;
+  userText: string;
+  effort: "low" | "medium" | "high";
+  linkupKey?: string;
+  memRows: Array<{ content: string; kind: string; keywords?: string[] }>;
+  callbacks: ReactCallbacks;
+}): Promise<{
+  contextBlocks: string[];
+  sources: WebSource[];
+  images: WebImage[];
+  iterations: number;
+  searchCount: number;
+  perStepNarration: Map<number, string>;
+  combinedNarration: string;
+  collectedSteps: Array<{ index: number; kind: string; label: string; intent: string; status: string; foundCount?: number; narration?: string }>;
+}> {
+  const BUDGET = opts.effort === "low" ? 3000 : opts.effort === "high" ? 40000 : 12000;
+  const MAX_ITER = opts.effort === "low" ? 6 : opts.effort === "high" ? 30 : 15;
+
+  const history: Array<{ thought: string; action: any; observation: ReactObservation }> = [];
+  const contextBlocks: string[] = [];
+  const sources: WebSource[] = [];
+  const images: WebImage[] = [];
+  const perStepNarration = new Map<number, string>();
+  const collectedSteps: Array<{ index: number; kind: string; label: string; intent: string; status: string; foundCount?: number; narration?: string }> = [];
+  let tokensUsed = 0;
+  let stepIndex = 0;
+  let consecutiveFailures = 0;
+  let searchCount = 0;
+  let combinedNarration = "";
+
+  const hasSearch = !!opts.linkupKey;
+  const hasFetch = !!opts.linkupKey;
+  const hasMemory = opts.memRows.length > 0;
+
+  const availableTools: string[] = [];
+  if (hasSearch) availableTools.push(`{"tool":"web_search","args":{"query":"<short query in user's language, ≤12 words>"}}  // search the web for fresh facts`);
+  if (hasFetch) availableTools.push(`{"tool":"web_fetch","args":{"url":"https://..."}}  // read a specific webpage`);
+  if (hasMemory) availableTools.push(`{"tool":"memory_recall","args":{"query":"<short phrase>"}}  // search the user's personal memory`);
+  availableTools.push(`{"tool":"finish","args":{}}  // call when you have enough to answer`);
+
+  const renderHistory = () => history.length === 0
+    ? "(no actions yet — write your opening thought and choose the first action)"
+    : history.map((h, i) =>
+        `### Iteration ${i + 1}\nThought: ${h.thought}\nAction: ${JSON.stringify(h.action)}\nObservation: ${h.observation.summary}`,
+      ).join("\n\n");
+
+  for (let iter = 0; iter < MAX_ITER; iter++) {
+    if (tokensUsed >= BUDGET) break;
+
+    // ---- 1. Stream the thought ----
+    const thoughtIdx = stepIndex++;
+    opts.callbacks.onStepStart(thoughtIdx, "thought", "", "");
+
+    const thoughtSys =
+      `You are a ReAct agent reasoning step-by-step to answer the user's question with depth and accuracy. ` +
+      `Write a SHORT thought (1-3 sentences, max 60 words) in the USER's exact language explaining what you've ` +
+      `learned so far and what you'll do NEXT (and why). Be specific to the actual question. ` +
+      `No markdown, no bullets, no headings. First person, present tense. Don't repeat earlier observations verbatim.`;
+    const thoughtPrompt =
+      `User question:\n"""${opts.userText.slice(0, 800)}"""\n\n` +
+      `History so far:\n${renderHistory()}\n\n` +
+      `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations. ` +
+      `Write your next thought.`;
+
+    let thoughtText = "";
+    try {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse&key=${opts.googleKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: thoughtPrompt }] }],
+            systemInstruction: { parts: [{ text: thoughtSys }] },
+            generationConfig: { temperature: 0.7, maxOutputTokens: 250 },
+          }),
+        },
+      );
+      if (r.ok && r.body) {
+        for await (const line of parseSSELines(r.body.getReader())) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6).trim();
+          try {
+            const j = JSON.parse(data);
+            const txt = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("");
+            if (txt) {
+              thoughtText += txt;
+              perStepNarration.set(thoughtIdx, (perStepNarration.get(thoughtIdx) ?? "") + txt);
+              combinedNarration += txt;
+              opts.callbacks.onThoughtChunk(thoughtIdx, txt);
+            }
+          } catch { /* partial JSON */ }
+        }
+      }
+    } catch (e) {
+      console.error("[react] thought stream failed", e);
+    }
+    opts.callbacks.onThoughtDone(thoughtIdx);
+    opts.callbacks.onStepDone(thoughtIdx, "thought", "", "");
+    collectedSteps.push({
+      index: thoughtIdx, kind: "thought", label: "", intent: "",
+      status: "done", narration: thoughtText,
+    });
+    tokensUsed += Math.ceil((thoughtPrompt.length + thoughtText.length) / 4);
+
+    if (tokensUsed >= BUDGET) {
+      const finishIdx = stepIndex++;
+      opts.callbacks.onStepStart(finishIdx, "finish", "", "");
+      opts.callbacks.onStepDone(finishIdx, "finish", "", "");
+      collectedSteps.push({ index: finishIdx, kind: "finish", label: "", intent: "", status: "done" });
+      break;
+    }
+
+    // ---- 2. Decide action (strict JSON) ----
+    const actionSys = `You decide the NEXT action of a ReAct agent. Reply with STRICT JSON only — no prose, no markdown.`;
+    const actionPrompt =
+      `User question:\n"""${opts.userText.slice(0, 600)}"""\n\n` +
+      `History:\n${renderHistory()}\n\n` +
+      `Your latest thought: ${thoughtText}\n\n` +
+      `Available actions:\n${availableTools.join("\n")}\n\n` +
+      `Rules:\n` +
+      `- If your latest thought concluded you have enough information to answer well, return {"tool":"finish","args":{}}.\n` +
+      `- NEVER repeat an action you already tried with the same args (check history).\n` +
+      `- Prefer web_search for fresh facts; web_fetch only when you have a specific URL worth reading in full.\n` +
+      `- Match the search query to the user's language.\n\n` +
+      `Reply with strict JSON only: {"tool":"...","args":{...}}`;
+
+    let action: any = null;
+    try {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${opts.googleKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: actionPrompt }] }],
+            systemInstruction: { parts: [{ text: actionSys }] },
+            generationConfig: { responseMimeType: "application/json", temperature: 0.3, maxOutputTokens: 200 },
+          }),
+        },
+      );
+      const j = await r.json();
+      const raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
+      action = JSON.parse(raw.replace(/```json|```/g, "").trim());
+      tokensUsed += Math.ceil((actionPrompt.length + raw.length) / 4);
+    } catch (e) {
+      console.error("[react] action parse failed", e);
+      consecutiveFailures++;
+      if (consecutiveFailures >= 2) break;
+      continue;
+    }
+    consecutiveFailures = 0;
+
+    if (!action || action.tool === "finish") {
+      const finishIdx = stepIndex++;
+      opts.callbacks.onStepStart(finishIdx, "finish", "", "");
+      opts.callbacks.onStepDone(finishIdx, "finish", "", "");
+      collectedSteps.push({ index: finishIdx, kind: "finish", label: "", intent: "", status: "done" });
+      history.push({ thought: thoughtText, action: { tool: "finish" }, observation: { ok: true, summary: "ending loop" } });
+      break;
+    }
+
+    // ---- 3. Execute action ----
+    const tool: ReactToolName = action.tool;
+    let observation: ReactObservation = { ok: false, summary: "unknown tool" };
+
+    if (tool === "web_search" && opts.linkupKey && typeof action.args?.query === "string") {
+      const query = String(action.args.query).slice(0, 150).trim();
+      const actionIdx = stepIndex++;
+      opts.callbacks.onStepStart(actionIdx, "search", query, "");
+      const res = await linkupSearch(opts.linkupKey, query);
+      if (res) {
+        searchCount += 1;
+        for (const s of res.sources) if (!sources.find((x) => x.url === s.url)) sources.push(s);
+        for (const im of res.images) if (!images.find((x) => x.url === im.url)) images.push(im);
+        contextBlocks.push(`## Web search — "${query}"\n\n${res.content}`);
+        observation = {
+          ok: true,
+          summary: `Found ${res.sources.length} sources. Top titles: ${res.sources.slice(0, 3).map((s) => s.title).join(" | ")}`,
+          foundCount: res.sources.length,
+        };
+        opts.callbacks.onStepDone(actionIdx, "search", query, "", res.sources.length);
+        opts.callbacks.onSources(sources);
+        collectedSteps.push({ index: actionIdx, kind: "search", label: query, intent: "", status: "done", foundCount: res.sources.length });
+      } else {
+        observation = { ok: false, summary: `No results for "${query}"` };
+        opts.callbacks.onStepDone(actionIdx, "search", query, "", 0, true);
+        collectedSteps.push({ index: actionIdx, kind: "search", label: query, intent: "", status: "failed" });
+      }
+    } else if (tool === "web_fetch" && opts.linkupKey && typeof action.args?.url === "string" && /^https?:\/\//.test(action.args.url)) {
+      const url = String(action.args.url);
+      const actionIdx = stepIndex++;
+      opts.callbacks.onStepStart(actionIdx, "scrape", url, "");
+      const md = await linkupFetch(opts.linkupKey, url);
+      if (md) {
+        if (!sources.find((x) => x.url === url)) sources.push({ title: url, url });
+        contextBlocks.push(`## Page fetch — ${url}\n\n${md}`);
+        observation = { ok: true, summary: `Retrieved page (${md.length} chars).`, foundCount: 1 };
+        opts.callbacks.onStepDone(actionIdx, "scrape", url, "", 1);
+        opts.callbacks.onSources(sources);
+        collectedSteps.push({ index: actionIdx, kind: "scrape", label: url, intent: "", status: "done", foundCount: 1 });
+      } else {
+        observation = { ok: false, summary: `Fetch failed for ${url} (blocked or empty).` };
+        opts.callbacks.onStepDone(actionIdx, "scrape", url, "", 0, true);
+        collectedSteps.push({ index: actionIdx, kind: "scrape", label: url, intent: "", status: "failed" });
+      }
+    } else if (tool === "memory_recall" && typeof action.args?.query === "string") {
+      const query = String(action.args.query).slice(0, 150).trim();
+      const actionIdx = stepIndex++;
+      opts.callbacks.onStepStart(actionIdx, "memory", query, "");
+      const qKw = new Set(extractKeywords(query, 12));
+      type Scored = { content: string; kind: string; score: number };
+      const matches: Scored[] = [];
+      for (const m of opts.memRows) {
+        const kws = (m.keywords && m.keywords.length) ? m.keywords : extractKeywords(m.content, 12);
+        const score = memoryRelevance(kws, qKw);
+        if (score > 0) matches.push({ content: m.content, kind: m.kind, score });
+      }
+      matches.sort((a, b) => b.score - a.score);
+      const top = matches.slice(0, 8);
+      if (top.length) {
+        contextBlocks.push(`## Memory recall — "${query}"\n\n` + top.map((m) => `- (${m.kind}) ${m.content}`).join("\n"));
+        observation = { ok: true, summary: `Found ${top.length} relevant memories.`, foundCount: top.length };
+      } else {
+        observation = { ok: false, summary: `No relevant memories for "${query}".` };
+      }
+      opts.callbacks.onStepDone(actionIdx, "memory", query, "", top.length);
+      collectedSteps.push({ index: actionIdx, kind: "memory", label: query, intent: "", status: "done", foundCount: top.length });
+    } else {
+      observation = { ok: false, summary: `Unavailable tool: ${JSON.stringify(action)}` };
+      consecutiveFailures++;
+      if (consecutiveFailures >= 2) break;
+    }
+
+    history.push({ thought: thoughtText, action, observation });
+    tokensUsed += Math.ceil(observation.summary.length / 4);
+  }
+
+  return {
+    contextBlocks,
+    sources,
+    images,
+    iterations: history.length,
+    searchCount,
+    perStepNarration,
+    combinedNarration,
+    collectedSteps,
+  };
+}
+
 // ---------- Clarifying questions ----------
 type ClarifyQuestion = {
   question: string;
@@ -2853,12 +3123,83 @@ Deno.serve(async (req) => {
 
           // Run web tool detection + fetch (notify client of progress)
           const googleKeyForAgent = Deno.env.get("GOOGLE_API_KEY");
-          // Reflexion mode forces the multi-step loop even when no web key is
-          // present — it can still query memory + analyze. It also bypasses the
-          // "simple query" pre-filter since the user EXPLICITLY asked for it.
+          // Reflexion mode: TRUE ReAct loop — model decides each step dynamically.
+          // Bounded by token budget (low=3k, medium=12k, high=40k) with hard iter cap.
           const reflexionEnabled = reflexionMode === true && !!googleKeyForAgent;
-          const reflexionMaxSteps = reflexionEffort === "low" ? 3 : reflexionEffort === "high" ? 8 : 5;
-          if (reflexionEnabled || (!webDisabled && !googleService && !voyagerService && (linkupKey || linkupKey) && lastUserText)) {
+
+          if (reflexionEnabled) {
+            agenticUsed = true;
+            controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
+            controller.enqueue(enc({ type: "phase", phase: "generating" }));
+
+            const reactResult = await runReactLoop({
+              googleKey: googleKeyForAgent!,
+              userText: lastUserText,
+              effort: (reflexionEffort ?? "medium") as "low" | "medium" | "high",
+              linkupKey,
+              memRows: allFetchedMemRows,
+              callbacks: {
+                onStepStart: (idx, kind, label, intent) => {
+                  controller.enqueue(enc({
+                    type: "agent_step", index: idx, kind, label, intent, status: "running",
+                  }));
+                },
+                onStepDone: (idx, kind, label, intent, foundCount, failed) => {
+                  controller.enqueue(enc({
+                    type: "agent_step", index: idx, kind, label, intent,
+                    status: failed ? "failed" : "done",
+                    ...(typeof foundCount === "number" ? { foundCount } : {}),
+                  }));
+                },
+                onThoughtChunk: (idx, text) => {
+                  agenticNarration += text;
+                  perStepNarration.set(idx, (perStepNarration.get(idx) ?? "") + text);
+                  controller.enqueue(enc({ type: "agent_narration", index: idx, text }));
+                },
+                onThoughtDone: (idx) => {
+                  controller.enqueue(enc({ type: "agent_narration", index: idx, done: true }));
+                },
+                onSources: (srcs) => {
+                  controller.enqueue(enc({ type: "sources", sources: srcs }));
+                },
+              },
+            });
+
+            // Merge into outer state used by the final-answer phase.
+            for (const s of reactResult.sources) {
+              if (!agenticSources.find((x) => x.url === s.url)) agenticSources.push(s);
+            }
+            for (const im of reactResult.images) {
+              if (!agenticImages.find((x) => x.url === im.url)) agenticImages.push(im);
+            }
+            for (const b of reactResult.contextBlocks) agenticContextBlocks.push(b);
+            webSearchCount += reactResult.searchCount;
+            for (const cs of reactResult.collectedSteps) collectedAgentSteps.push(cs);
+
+            // Emit the full list of models used (orchestrator + main model).
+            {
+              const orchestratorModel = { provider: "google", model: "gemini-3.5-flash" };
+              const answerModel = { provider, model };
+              const seen = new Set<string>();
+              const uniq: Array<{ provider: string; model: string }> = [];
+              for (const m of [orchestratorModel, answerModel]) {
+                if (!seen.has(m.model)) { seen.add(m.model); uniq.push(m); }
+              }
+              controller.enqueue(enc({ type: "models_used", models: uniq }));
+            }
+
+            if (agenticContextBlocks.length) {
+              const flat = agenticContextBlocks.join("\n\n---\n\n").slice(0, 12000);
+              webContext = {
+                kind: "search",
+                label: lastUserText.slice(0, 60),
+                content: flat,
+                sources: agenticSources,
+                images: agenticImages,
+              };
+            }
+          } else if (!webDisabled && !googleService && !voyagerService && linkupKey && lastUserText) {
+
             // Fast local pre-filter: skip the agentic plan API call for obviously
             // simple queries. The call costs ~300-600 ms; most short or conversational
             // messages will never trigger a multi-step plan anyway.

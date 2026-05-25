@@ -26,7 +26,7 @@ type Source = { title: string; url: string };
 export type ThinkingStep = { index: number; text: string };
 export type AgentStep = {
   index: number;
-  kind: "search" | "scrape" | "analyze" | "memory" | "plan" | "hypothesis" | "challenge" | "compare" | "synthesize" | "gmail" | "calendar" | "drive" | "voyager" | "read_url";
+  kind: "search" | "scrape" | "analyze" | "memory" | "plan" | "hypothesis" | "challenge" | "compare" | "synthesize" | "gmail" | "calendar" | "drive" | "voyager" | "read_url" | "thought" | "finish";
   label: string;
   intent: string;
   status: ToolStatus;
@@ -578,6 +578,8 @@ function ReflexionStepIcon({ kind, running }: { kind: AgentStep["kind"]; running
   if (kind === "challenge") return <AlertCircle className={cls} />;
   if (kind === "compare") return <Scale className={cls} />;
   if (kind === "synthesize") return <Layers className={cls} />;
+  if (kind === "thought") return <Brain className={cls} />;
+  if (kind === "finish") return <Check className={cls} />;
   return <Sparkles className={cls} />;
 }
 
@@ -596,6 +598,8 @@ function reflexionStepTag(kind: AgentStep["kind"]): string {
     case "challenge": return "Challenge";
     case "compare": return "Compare";
     case "synthesize": return "Synthesize";
+    case "thought": return "Thinking";
+    case "finish": return "Ready";
     case "analyze":
     default: return "Analyze";
   }
