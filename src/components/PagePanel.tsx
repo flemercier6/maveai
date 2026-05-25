@@ -5,11 +5,13 @@
 import { X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PageRenderer, type PageSpec } from "./PageRenderer";
+import { SharePageButton } from "./SharePageButton";
 import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
   page: PageSpec | null;
+  pageKey?: string;
   onClose: () => void;
   onWidthChange?: (width: number) => void;
 };
