@@ -2645,27 +2645,6 @@ export default function Chat() {
                       <TooltipContent side="top">Page</TooltipContent>
                     </Tooltip>
                   )}
-                  {!clarifyRequested && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setClarifyRequested(true)}
-                          aria-label="Activate Clarify"
-                          className="h-9 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-dropdown-hover"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2"/>
-                            <path d="M6.5 6C6.5 5.17 7.17 4.5 8 4.5C8.83 4.5 9.5 5.17 9.5 6C9.5 6.83 8 7.5 8 8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                            <circle cx="8" cy="10.5" r="0.6" fill="currentColor"/>
-                          </svg>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">Clarify</TooltipContent>
-                    </Tooltip>
-                  )}
                   {!aiPrefs.disabledModes.includes("reflexion" as ModeId) && !reflexionRequested && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
