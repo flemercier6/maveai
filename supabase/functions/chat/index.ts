@@ -1129,17 +1129,49 @@ async function runReactLoop(opts: {
     opts.callbacks.onStepStart(thoughtIdx, "thought", "", "");
 
     const thoughtSys =
-      `You are a ReAct agent reasoning step-by-step to answer the user's question with depth and accuracy. ` +
-      `Write a SHORT thought (1-3 sentences, max 60 words) in the USER's exact language explaining what you've ` +
-      `learned so far and what you'll do NEXT (and why). Be specific to the actual question. ` +
-      `No markdown, no bullets, no headings. First person, present tense. Don't repeat earlier observations verbatim.`;
+      `You are a ReAct agent. Write your next reasoning step in the USER's exact language. ` +
+      `Format STRICTLY as:\n` +
+      `TOPIC: <≤6 words naming what you're thinking about right now>\n` +
+      `<one short sentence about what you just learned from the last observation (skip if no prior step)>\n` +
+      `<one short sentence about what you'll do next and why>\n\n` +
+      `Hard limits: max 2 sentences after the TOPIC line, max 40 words total in the sentences. ` +
+      `No markdown, no bullets, no headings, no quotes. First person, present tense.`;
     const thoughtPrompt =
       `User question:\n"""${opts.userText.slice(0, 800)}"""\n\n` +
       `History so far:\n${renderHistory()}\n\n` +
-      `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations. ` +
-      `Write your next thought.`;
+      `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations.\n` +
+      `Write your next reasoning step now (TOPIC line + 1-2 short sentences).`;
 
     let thoughtText = "";
+    let topicBuf = "";
+    let topicEmitted = false;
+    let narrationBuf = ""; // buffered until topic line is complete
+    const emitNarrationChunk = (txt: string) => {
+      perStepNarration.set(thoughtIdx, (perStepNarration.get(thoughtIdx) ?? "") + txt);
+      combinedNarration += txt;
+      opts.callbacks.onThoughtChunk(thoughtIdx, txt);
+    };
+    const handleStreamText = (txt: string) => {
+      thoughtText += txt;
+      if (topicEmitted) {
+        emitNarrationChunk(txt);
+        return;
+      }
+      topicBuf += txt;
+      const nl = topicBuf.indexOf("\n");
+      if (nl === -1) return; // wait for the full topic line
+      const firstLine = topicBuf.slice(0, nl);
+      const rest = topicBuf.slice(nl + 1);
+      const m = firstLine.match(/^\s*TOPIC\s*[:\-]\s*(.+?)\s*$/i);
+      const topic = (m ? m[1] : firstLine).trim().slice(0, 80);
+      // Emit the topic as the step's label by re-sending the running event with a label.
+      opts.callbacks.onStepStart(thoughtIdx, "thought", topic, "");
+      topicEmitted = true;
+      topicBuf = "";
+      const trimmed = rest.replace(/^\s+/, "");
+      if (trimmed) emitNarrationChunk(trimmed);
+    };
+
     try {
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse&key=${opts.googleKey}`,
@@ -1149,7 +1181,7 @@ async function runReactLoop(opts: {
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: thoughtPrompt }] }],
             systemInstruction: { parts: [{ text: thoughtSys }] },
-            generationConfig: { temperature: 0.7, maxOutputTokens: 800 },
+            generationConfig: { temperature: 0.7, maxOutputTokens: 220 },
           }),
         },
       );
@@ -1160,23 +1192,31 @@ async function runReactLoop(opts: {
           try {
             const j = JSON.parse(data);
             const txt = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("");
-            if (txt) {
-              thoughtText += txt;
-              perStepNarration.set(thoughtIdx, (perStepNarration.get(thoughtIdx) ?? "") + txt);
-              combinedNarration += txt;
-              opts.callbacks.onThoughtChunk(thoughtIdx, txt);
-            }
+            if (txt) handleStreamText(txt);
           } catch { /* partial JSON */ }
         }
       }
     } catch (e) {
       console.error("[react] thought stream failed", e);
     }
+    // Flush: if no newline ever arrived, treat the buffer as the topic.
+    if (!topicEmitted && topicBuf.trim()) {
+      const m = topicBuf.match(/^\s*TOPIC\s*[:\-]\s*(.+?)\s*$/i);
+      const topic = (m ? m[1] : topicBuf).trim().slice(0, 80);
+      opts.callbacks.onStepStart(thoughtIdx, "thought", topic, "");
+      topicEmitted = true;
+    }
+    // Strip the TOPIC line from the persisted narration so the trace shows only the prose.
+    const cleanNarration = thoughtText.replace(/^\s*TOPIC\s*[:\-][^\n]*\n?/i, "").trim();
+    const finalTopic = (() => {
+      const m = thoughtText.match(/^\s*TOPIC\s*[:\-]\s*(.+?)\s*$/im);
+      return m ? m[1].trim().slice(0, 80) : "";
+    })();
     opts.callbacks.onThoughtDone(thoughtIdx);
-    opts.callbacks.onStepDone(thoughtIdx, "thought", "", "");
+    opts.callbacks.onStepDone(thoughtIdx, "thought", finalTopic, "");
     collectedSteps.push({
-      index: thoughtIdx, kind: "thought", label: "", intent: "",
-      status: "done", narration: thoughtText,
+      index: thoughtIdx, kind: "thought", label: finalTopic, intent: "",
+      status: "done", narration: cleanNarration,
     });
     tokensUsed += Math.ceil((thoughtPrompt.length + thoughtText.length) / 4);
 
