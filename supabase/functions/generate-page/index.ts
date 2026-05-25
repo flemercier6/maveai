@@ -20,7 +20,7 @@ const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 // Models used in the pipeline. We pick a strong-reasoning model for the
 // planning step and a cheap/fast model for the bulk content step.
-const PLANNER_MODEL_DEFAULT = "claude-sonnet-4-6";
+const PLANNER_MODEL_DEFAULT = "gemini-2.5-pro";
 const CONTENT_MODEL_DEFAULT = "gpt-5-mini";
 
 // Public list prices (USD per 1M tokens). Keep aligned with src/lib/pricing.ts.
