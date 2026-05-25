@@ -1203,11 +1203,18 @@ async function runReactLoop(opts: {
       `Each sentence must end with a period. ` +
       `No markdown, no bullets, no headings, no quotes, no placeholders. First person, present tense, plain prose. ` +
       `Be terse — better to write 1 complete short sentence than 2 truncated ones.`;
+    const currentProblem = problems[currentProblemIdx];
+    const problemBanner = problems.length > 1
+      ? `Sub-problem plan: ${problems.map((p, i) => `${i + 1}. ${p}`).join(" | ")}\n` +
+        `CURRENT sub-problem (${currentProblemIdx + 1}/${problems.length}): "${currentProblem}"\n` +
+        `Tool calls done for this sub-problem: ${toolCallsForCurrentProblem} (min before moving on: ${MIN_PER_PROBLEM}).\n`
+      : "";
     const thoughtPrompt =
       `User question:\n"""${opts.userText.slice(0, 800)}"""\n\n` +
+      problemBanner +
       `History so far:\n${renderHistory()}\n\n` +
       `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations.\n` +
-      `Write your next reasoning step now. TOPIC line + 1-2 SHORT complete sentences (≤28 words total).`;
+      `Write your next reasoning step now, FOCUSED on the current sub-problem. TOPIC line + 1-2 SHORT complete sentences (≤28 words total).`;
 
     let thoughtText = "";
     let topicBuf = "";
