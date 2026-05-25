@@ -1130,8 +1130,16 @@ async function runReactLoop(opts: {
 
   // Chapter decomposition: at the start, identify ordered chapters (sub-problems)
   // to investigate one by one. Each effort tier allows more chapters.
-  const MAX_PROBLEMS = opts.effort === "low" ? 1 : opts.effort === "high" ? 4 : 3;
-  const MIN_PER_PROBLEM = opts.effort === "low" ? 1 : opts.effort === "high" ? 3 : 2;
+  const MAX_PROBLEMS = opts.effort === "low" ? 2 : opts.effort === "high" ? 5 : 4;
+  const MIN_PER_PROBLEM = opts.effort === "low" ? 1 : opts.effort === "high" ? 2 : 1;
+  // Heuristic: count distinct sub-questions in the user text to enforce a
+  // minimum decomposition (so a 4-part question never collapses into 1 chapter).
+  const questionMarks = (opts.userText.match(/\?/g) || []).length;
+  const subQuestionHints = (opts.userText.match(/\b(quels?|quelles?|comment|pourquoi|quand|où|combien|what|which|how|why|when|where)\b/gi) || []).length;
+  const MIN_PROBLEMS = Math.min(
+    MAX_PROBLEMS,
+    Math.max(1, Math.max(questionMarks, Math.ceil(subQuestionHints / 2))),
+  );
 
   const baseTools: string[] = [];
   if (hasSearch) baseTools.push(`{"tool":"web_search","args":{"query":"<short query in user's language, ≤12 words>"}}  // search the web for fresh facts`);
@@ -1180,10 +1188,18 @@ async function runReactLoop(opts: {
       const planSys = `You decompose the user's question into ordered CHAPTERS of a reasoning plan, each covering a distinct angle. Reply STRICTLY in the USER's language.`;
       const planPrompt =
         `User question:\n"""${opts.userText.slice(0, 1200)}"""\n\n` +
-        `Decompose into 1 to ${MAX_PROBLEMS} ORDERED, NON-OVERLAPPING chapters. Each has:\n` +
+        `Decompose into ${MIN_PROBLEMS === MAX_PROBLEMS ? `EXACTLY ${MAX_PROBLEMS}` : `${MIN_PROBLEMS} to ${MAX_PROBLEMS}`} ORDERED, NON-OVERLAPPING chapters. Each has:\n` +
         `- title: short noun phrase (≤8 words), names the angle\n` +
         `- focus: one short sentence (≤20 words) stating exactly what must be uncovered to close this chapter\n\n` +
-        `Rules: chapters must be SEMANTICALLY DISTINCT (different facets, not rephrasings). Ordered logically (foundations → specifics → synthesis). If the question is simple/atomic, return a single chapter. Use the user's language.`;
+        `CRITICAL DECOMPOSITION RULES:\n` +
+        `- If the user asked MULTIPLE distinct sub-questions (e.g. "comment X ? quels Y ? quels Z ?"), each sub-question becomes its OWN chapter. NEVER merge them.\n` +
+        `- A chapter title must NEVER be a near-copy of the full user question. Each chapter is ONE specific facet.\n` +
+        `- Chapters must be SEMANTICALLY DISTINCT (different facets, not rephrasings of each other).\n` +
+        `- Ordered logically: foundations → specifics → pitfalls/synthesis.\n` +
+        `- Only return a single chapter if the question is truly atomic (one narrow factual ask). A question with commas, multiple "?" or multiple interrogative words ("quels/comment/pourquoi") is NEVER atomic.\n` +
+        `- Use the user's language.\n\n` +
+        `Example — user asks "Comment gagner à un jeu en difficulté max ? quelles étapes ? quels choix ? quels pièges ?":\n` +
+        `→ 4 chapters: (1) "Stratégie globale de victoire", (2) "Étapes & ordre d'exécution", (3) "Choix critiques (build, unités, tech)", (4) "Pièges courants à éviter".`;
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${opts.googleKey}`,
         {
@@ -1269,6 +1285,12 @@ async function runReactLoop(opts: {
     const currentProblem = problems[currentProblemIdx];
     const usedQueries = queriesByProblem[currentProblemIdx] || [];
     const learnings = learningsByProblem[currentProblemIdx] || [];
+    // Previous thoughts written for THIS chapter — used to forbid repetition.
+    const priorThoughtsForChapter = history
+      .map((h, i) => ({ h, p: historyProblemIdx[i] }))
+      .filter((x) => x.p === currentProblemIdx && x.h.thought)
+      .map((x) => x.h.thought.replace(/^\s*TOPIC\s*[:\-][^\n]*\n?/i, "").trim())
+      .filter(Boolean);
     const planList = problems.map((p, i) => {
       const mark = i < currentProblemIdx ? "✓" : i === currentProblemIdx ? "▶" : "·";
       return `${mark} ${i + 1}. ${p.title}`;
@@ -1280,16 +1302,19 @@ async function runReactLoop(opts: {
         `Tool calls done for this chapter: ${toolCallsForCurrentProblem} / min ${MIN_PER_PROBLEM}.\n` +
         (usedQueries.length ? `Queries already used here: ${usedQueries.map((q) => `"${q}"`).join(", ")}.\n` : "") +
         (learnings.length ? `What you've learned for THIS chapter:\n${learnings.map((l) => `- ${l}`).join("\n")}\n` : "") +
+        (priorThoughtsForChapter.length ? `Your PREVIOUS thoughts on this chapter (DO NOT repeat or paraphrase any of these — say something NEW):\n${priorThoughtsForChapter.map((t) => `- "${t.slice(0, 160)}"`).join("\n")}\n` : "") +
         `\n`
-      : (learnings.length ? `What you've learned so far:\n${learnings.map((l) => `- ${l}`).join("\n")}\n\n` : "");
+      : (learnings.length ? `What you've learned so far:\n${learnings.map((l) => `- ${l}`).join("\n")}\n\n` : "") +
+        (priorThoughtsForChapter.length ? `Your PREVIOUS thoughts (DO NOT repeat — bring a NEW angle):\n${priorThoughtsForChapter.map((t) => `- "${t.slice(0, 160)}"`).join("\n")}\n\n` : "");
     const thoughtPrompt =
       `User question:\n"""${opts.userText.slice(0, 800)}"""\n\n` +
       problemBanner +
       `History so far:\n${renderHistory()}\n\n` +
       `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations.\n\n` +
-      `Write your next reasoning step now, FOCUSED on the CURRENT chapter. ` +
-      `Build on what you already learned for this chapter — do NOT restate earlier thoughts. ` +
-      `If the chapter is sufficiently covered, signal you'll move to the next one. ` +
+      `Write your next reasoning step now, FOCUSED on the CURRENT chapter "${currentProblem.title}". ` +
+      `Your thought MUST advance the chapter — introduce a NEW sub-angle, fact, contrast, or decision criterion not already mentioned above. ` +
+      `If you cannot find anything new to add, the chapter is COVERED: explicitly say "${problems.length > 1 && currentProblemIdx < problems.length - 1 ? "passons au chapitre suivant" : "j'ai assez d'éléments pour répondre"}" and pick the corresponding action. ` +
+      `Forbidden: paraphrasing a previous thought, restating the chapter title, generic filler ("je vais chercher", "je continue"). ` +
       `TOPIC line + 1-2 SHORT complete sentences (≤28 words total).`;
 
 
