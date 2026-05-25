@@ -1523,7 +1523,7 @@ async function runReactLoop(opts: {
       if (consecutiveFailures >= 2) break;
     }
 
-    if (observation.ok) toolCallCount++;
+    if (observation.ok) { toolCallCount++; toolCallsForCurrentProblem++; }
     history.push({ thought: thoughtText, action, observation });
     tokensUsed += Math.ceil(observation.summary.length / 4);
   }
