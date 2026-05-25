@@ -1063,7 +1063,7 @@ type ReactObservation = { ok: boolean; summary: string; foundCount?: number };
 
 type ReactCallbacks = {
   onStepStart: (idx: number, kind: string, label: string, intent: string) => void;
-  onStepDone: (idx: number, kind: string, label: string, intent: string, foundCount?: number, failed?: boolean) => void;
+  onStepDone: (idx: number, kind: string, label: string, intent: string, foundCount?: number, failed?: boolean, stepSources?: WebSource[]) => void;
   onThoughtChunk: (idx: number, text: string) => void;
   onThoughtDone: (idx: number) => void;
   onSources: (sources: WebSource[]) => void;
