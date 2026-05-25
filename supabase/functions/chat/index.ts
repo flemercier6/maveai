@@ -1463,7 +1463,7 @@ async function runReactLoop(opts: {
       console.error("[react] action parse failed", e, "— falling back to web_search");
       consecutiveFailures++;
       if (hasSearch && consecutiveFailures < 4) {
-        action = { tool: "web_search", args: { query: problems[currentProblemIdx] || opts.userText.slice(0, 120) } };
+        action = { tool: "web_search", args: { query: problems[currentProblemIdx]?.title || opts.userText.slice(0, 120) } };
       } else if (consecutiveFailures >= 4) {
         break;
       } else {
