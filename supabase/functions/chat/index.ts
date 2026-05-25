@@ -3123,12 +3123,83 @@ Deno.serve(async (req) => {
 
           // Run web tool detection + fetch (notify client of progress)
           const googleKeyForAgent = Deno.env.get("GOOGLE_API_KEY");
-          // Reflexion mode forces the multi-step loop even when no web key is
-          // present — it can still query memory + analyze. It also bypasses the
-          // "simple query" pre-filter since the user EXPLICITLY asked for it.
+          // Reflexion mode: TRUE ReAct loop — model decides each step dynamically.
+          // Bounded by token budget (low=3k, medium=12k, high=40k) with hard iter cap.
           const reflexionEnabled = reflexionMode === true && !!googleKeyForAgent;
-          const reflexionMaxSteps = reflexionEffort === "low" ? 3 : reflexionEffort === "high" ? 8 : 5;
-          if (reflexionEnabled || (!webDisabled && !googleService && !voyagerService && (linkupKey || linkupKey) && lastUserText)) {
+
+          if (reflexionEnabled) {
+            agenticUsed = true;
+            controller.enqueue(enc({ type: "phase", phase: "analyzing" }));
+            controller.enqueue(enc({ type: "phase", phase: "generating" }));
+
+            const reactResult = await runReactLoop({
+              googleKey: googleKeyForAgent!,
+              userText: lastUserText,
+              effort: (reflexionEffort ?? "medium") as "low" | "medium" | "high",
+              linkupKey,
+              memRows: allFetchedMemRows,
+              callbacks: {
+                onStepStart: (idx, kind, label, intent) => {
+                  controller.enqueue(enc({
+                    type: "agent_step", index: idx, kind, label, intent, status: "running",
+                  }));
+                },
+                onStepDone: (idx, kind, label, intent, foundCount, failed) => {
+                  controller.enqueue(enc({
+                    type: "agent_step", index: idx, kind, label, intent,
+                    status: failed ? "failed" : "done",
+                    ...(typeof foundCount === "number" ? { foundCount } : {}),
+                  }));
+                },
+                onThoughtChunk: (idx, text) => {
+                  agenticNarration += text;
+                  perStepNarration.set(idx, (perStepNarration.get(idx) ?? "") + text);
+                  controller.enqueue(enc({ type: "agent_narration", index: idx, text }));
+                },
+                onThoughtDone: (idx) => {
+                  controller.enqueue(enc({ type: "agent_narration", index: idx, done: true }));
+                },
+                onSources: (srcs) => {
+                  controller.enqueue(enc({ type: "sources", sources: srcs }));
+                },
+              },
+            });
+
+            // Merge into outer state used by the final-answer phase.
+            for (const s of reactResult.sources) {
+              if (!agenticSources.find((x) => x.url === s.url)) agenticSources.push(s);
+            }
+            for (const im of reactResult.images) {
+              if (!agenticImages.find((x) => x.url === im.url)) agenticImages.push(im);
+            }
+            for (const b of reactResult.contextBlocks) agenticContextBlocks.push(b);
+            webSearchCount += reactResult.searchCount;
+            for (const cs of reactResult.collectedSteps) collectedAgentSteps.push(cs);
+
+            // Emit the full list of models used (orchestrator + main model).
+            {
+              const orchestratorModel = { provider: "google", model: "gemini-3.5-flash" };
+              const answerModel = { provider, model };
+              const seen = new Set<string>();
+              const uniq: Array<{ provider: string; model: string }> = [];
+              for (const m of [orchestratorModel, answerModel]) {
+                if (!seen.has(m.model)) { seen.add(m.model); uniq.push(m); }
+              }
+              controller.enqueue(enc({ type: "models_used", models: uniq }));
+            }
+
+            if (agenticContextBlocks.length) {
+              const flat = agenticContextBlocks.join("\n\n---\n\n").slice(0, 12000);
+              webContext = {
+                kind: "search",
+                label: lastUserText.slice(0, 60),
+                content: flat,
+                sources: agenticSources,
+                images: agenticImages,
+              };
+            }
+          } else if (!webDisabled && !googleService && !voyagerService && linkupKey && lastUserText) {
+
             // Fast local pre-filter: skip the agentic plan API call for obviously
             // simple queries. The call costs ~300-600 ms; most short or conversational
             // messages will never trigger a multi-step plan anyway.
