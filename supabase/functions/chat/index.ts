@@ -705,40 +705,50 @@ async function decideReflexionPlan(args: {
     args.hasScrape ? `{"kind":"scrape","url":"https://...","intent":"why read this specific URL (≤12 words)"}` : null,
   ].filter(Boolean).join("\n");
 
-  const prompt = `You are the planner of a deep Reflexion reasoning loop. The user EXPLICITLY wants a multi-step reasoning process with genuine intellectual depth — not just search + answer.
+  const prompt = `You are the planner of a deep Reflexion reasoning loop. The user wants a multi-step research process that genuinely decomposes their question.
 
-Design a reasoning journey that surfaces the AI's thinking clearly. Use these step kinds:
+STEP 1 — DETECT SUB-QUESTIONS: Read the user's message and identify 2-4 DISTINCT sub-questions or angles. Each sub-question should be answerable independently.
 
-REASONING STEPS (no tool call — the AI reasons out loud):
-{"kind":"plan","intent":"What angles you'll explore and your initial hypothesis (specific to this question)"}
-{"kind":"hypothesis","intent":"Your working assumption before gathering evidence"}
-{"kind":"challenge","intent":"Which assumption or finding you're questioning and why"}
-{"kind":"compare","intent":"What two perspectives or conclusions you're weighing"}
-{"kind":"synthesize","intent":"What threads you're pulling together into a conclusion"}
-{"kind":"analyze","intent":"What specific aspect you're reasoning through"}
+STEP 2 — BUILD THE PLAN: Create one search+reasoning group per sub-question. The full structure is:
+  • {"kind":"plan"} — list the sub-questions you found and your approach
+  • For EACH sub-question: one data step (search/memory) + one reasoning step
+  • {"kind":"synthesize"} — weave all sub-questions into a unified conclusion
 
-DATA GATHERING STEPS (call a tool):
+STEP KINDS:
+
+Reasoning (no tool):
+{"kind":"plan","intent":"List the distinct sub-questions and your exploration approach (specific to this question)"}
+{"kind":"hypothesis","intent":"Your working assumption before evidence for a specific sub-question"}
+{"kind":"challenge","intent":"Which specific finding or assumption you're questioning and why"}
+{"kind":"compare","intent":"Two concrete perspectives or conclusions you're weighing on a specific angle"}
+{"kind":"synthesize","intent":"Pull all sub-questions together into a unified conclusion"}
+{"kind":"analyze","intent":"Reason through a specific aspect in depth"}
+
+Data tools:
 ${dataKinds || '(no data tools available — use reasoning steps only)'}
 
-RULES:
-1. ALWAYS start with {"kind":"plan",...} — it shows the user your approach upfront.
-2. Use "hypothesis" before searching when you have a prior expectation to test.
-3. After gathering data: ALWAYS include at least one of challenge/compare/synthesize to show the reasoning.
-4. For conflicting evidence: use "compare" to weigh perspectives explicitly.
-5. For assumptions that might be wrong: use "challenge" to question them.
-6. End with "synthesize" when multiple angles were explored (medium/high effort).
-7. Intents MUST be SPECIFIC to the user's actual question — reference the real topic.
-8. Total steps: ${minSteps} to ${maxSteps}. NEVER fewer than ${minSteps}.
-9. Search queries: in the user's language, ≤12 words, concrete and targeted.
-10. DO NOT end with a plain "analyze" step — use "synthesize" instead for the final reasoning.
+CRITICAL RULES:
+1. ALWAYS start with {"kind":"plan"} that explicitly names the sub-questions you detected.
+2. Each search query MUST target a DIFFERENT sub-question or angle. NEVER duplicate or paraphrase a prior search.
+3. Search queries: in the user's language, ≤10 words, concrete and scoped to ONE sub-question.
+4. After each data step, add at least one reasoning step (challenge/analyze) about THAT specific finding.
+5. ALWAYS end with {"kind":"synthesize"} as the last step.
+6. Total steps: ${minSteps} to ${maxSteps}. NEVER fewer than ${minSteps}.
+7. Intents MUST be SPECIFIC to the real topic — never generic phrases like "gather relevant facts".
 
-Good plan examples:
-- Low effort (3 steps): [plan, search, challenge]
-- Medium effort (5 steps): [plan, hypothesis, search, challenge, synthesize]
-- High effort (7+ steps): [plan, hypothesis, memory, search, search(2nd angle), challenge, compare, synthesize]
+Example for "How to win at chess? What openings? What traps to avoid? What endgame?":
+{"goal":"Master chess strategy: openings, traps, and endgame technique","steps":[
+  {"kind":"plan","intent":"Three sub-questions: best openings, common traps, endgame technique — will search each separately"},
+  {"kind":"search","query":"best chess openings for beginners win rate","intent":"Find which openings give the best practical winning chances"},
+  {"kind":"challenge","intent":"Question whether opening theory matters more than middlegame calculation"},
+  {"kind":"search","query":"most dangerous chess traps to avoid","intent":"Identify tactical pitfalls that cause quick losses"},
+  {"kind":"analyze","intent":"Assess which traps are most common at amateur level and why"},
+  {"kind":"search","query":"chess endgame technique key principles","intent":"Understand how to convert winning endgame positions"},
+  {"kind":"synthesize","intent":"Combine openings, trap awareness and endgame skill into a practical winning roadmap"}
+]}
 
 Reply ONLY with strict JSON — no prose, no markdown:
-{"goal":"<one short sentence in the user's language>","steps":[...]}
+{"goal":"<one sentence in the user's language>","steps":[...]}
 
 User message:
 """${userText.slice(0, 2000)}"""`;
@@ -786,13 +796,17 @@ User message:
       }
     }
     if (steps.length < 2) {
+      // Extract a concise search query: first sentence or first 60 chars of goal.
+      const fallbackGoal = (parsed.goal ?? userText).toString().trim();
+      const fallbackQuery = (fallbackGoal.split(/[?!]/)[0] ?? fallbackGoal).slice(0, 60).trim();
       return {
         complex: true,
-        goal: (parsed.goal ?? userText.slice(0, 100)).toString().slice(0, 200),
+        goal: fallbackGoal.slice(0, 200),
         steps: [
-          { kind: "plan", intent: "outline the approach and key angles to explore" },
-          ...(args.hasWebSearch ? [{ kind: "search" as const, query: userText.slice(0, 80), intent: "gather relevant facts" }] : []),
-          { kind: "synthesize", intent: "weigh the findings and form a conclusion" },
+          { kind: "plan", intent: "outline the distinct sub-questions and exploration approach" },
+          ...(args.hasWebSearch ? [{ kind: "search" as const, query: fallbackQuery, intent: "gather relevant evidence" }] : []),
+          { kind: "challenge", intent: "question the main assumption in the evidence found" },
+          { kind: "synthesize", intent: "weigh the findings and form a clear conclusion" },
         ].slice(0, maxSteps),
       };
     }
@@ -924,6 +938,7 @@ async function* streamAgenticNarration(
     nextStep?: AgenticStep;
     isFinal?: boolean;
     observations?: string[];
+    priorNarrations?: string[];
   },
 ): AsyncGenerator<string> {
   const isReasoningStep = args.currentStep && REFLEXION_REASONING_KINDS.has(args.currentStep.kind);
@@ -940,27 +955,32 @@ async function* streamAgenticNarration(
     const obsBlock = (args.observations ?? []).length > 0
       ? `\n\nContext gathered so far:\n${(args.observations ?? []).map((o, i) => `${i + 1}. ${o}`).join("\n")}`
       : "";
+    const priorBlock = (args.priorNarrations ?? []).length > 0
+      ? `\n\nALREADY COVERED in prior steps (DO NOT restate — build on these instead):\n${(args.priorNarrations ?? []).map((n, i) => `Step ${i + 1}: ${n.slice(0, 250)}`).join("\n")}`
+      : "";
     const reasoningGuide: Record<string, string> = {
       plan:
-        `Describe your approach to this question. Mention the key angles you'll explore, what you already suspect, and why a careful multi-step analysis is warranted. Be concrete about the specific topic.`,
+        `Describe the distinct sub-questions you detected and your approach. What angles will you explore, and why does each matter? Be concrete about the specific topic.`,
       hypothesis:
-        `State your working hypothesis before gathering evidence. What do you currently expect the answer to be? What prior knowledge or reasoning leads you there? Acknowledge what could make you wrong.`,
+        `State your working hypothesis for THIS specific sub-question before gathering evidence. What do you currently expect? What prior knowledge leads you there? Acknowledge what could prove you wrong.`,
       challenge:
-        `Question your current understanding. Identify the weakest assumption in what you've found or reasoned so far. Name a specific counterargument or gap. What would need to be true for your current thinking to be wrong?`,
+        `Question a SPECIFIC finding or assumption from what you've gathered so far. Name a concrete counterargument or gap. What would need to be true for your current thinking on this sub-question to be wrong?`,
       compare:
-        `Name the two (or more) competing perspectives and walk through the key dimensions. Where do they agree? Where do they diverge and why? Make a preliminary judgment about which evidence is stronger.`,
+        `Name two competing perspectives on THIS specific angle. Where do they agree? Where do they diverge and why? Make a preliminary judgment about which evidence is stronger.`,
       synthesize:
-        `Weave the key threads together. What does the combined evidence point to? Name any remaining tensions or uncertainties. State your emerging conclusion and what it's based on.`,
+        `Weave together the findings from ALL sub-questions explored above. What does the combined evidence point to? Name any remaining tensions. State your unified conclusion based on the full investigation.`,
     };
     sys =
       `You are an AI reasoning out loud in front of the user, in the user's language. ` +
       `This is a deep reasoning step — you are NOT announcing a transition, you are DOING actual intellectual work. ` +
-      `Write 2-4 sentences (70-120 words). First person, present tense, flowing prose. ` +
-      `No headings, no markdown, no bullets, no quotes. Write in the user's exact language.`;
+      `Write 2-4 sentences (70-130 words). First person, present tense, flowing prose. ` +
+      `No headings, no markdown, no bullets, no quotes. Write in the user's exact language. ` +
+      `CRITICAL: If prior steps are shown, DO NOT repeat their content — add new insight that builds on them.`;
     task =
-      `Reasoning step type: "${kind}"\nStep intent: "${intent}"${obsBlock}\n\n` +
+      `Reasoning step type: "${kind}"\nStep intent: "${intent}"${obsBlock}${priorBlock}\n\n` +
       `${reasoningGuide[kind] ?? `Reason through: ${intent}`}\n\n` +
-      `Be SPECIFIC to the user's actual question. DO NOT say "I will now do X" — ACTUALLY DO the reasoning.`;
+      `Be SPECIFIC to the user's actual question. DO NOT say "I will now do X" — ACTUALLY DO the reasoning. ` +
+      `Each step must contribute NEW thinking not already covered above.`;
     maxTokens = 500;
   } else if (args.phase === "intro") {
     sys =
@@ -970,10 +990,14 @@ async function* streamAgenticNarration(
     task = `The user asked a question that requires research. Write a short opener saying you'll start by ${describeStep(args.nextStep!)}.`;
     maxTokens = 300;
   } else if (args.phase === "between") {
+    const priorSummary = (args.priorNarrations ?? []).length > 0
+      ? ` Already covered: ${(args.priorNarrations ?? []).map((n, i) => `step ${i + 1}: ${n.slice(0, 120)}`).join("; ")}.`
+      : "";
     sys =
       `You are an AI assistant THINKING OUT LOUD in front of the user, in the user's language. ` +
       `Write 1 to 3 SHORT sentences (max ~60 words total). First person, present tense, casual but precise. ` +
-      `No headings, no markdown, no bullets. Match the user's language exactly.`;
+      `No headings, no markdown, no bullets. Match the user's language exactly. ` +
+      `IMPORTANT: DO NOT repeat findings already covered in prior steps — only mention what is NEW from this step.`;
     if (args.justDid) {
       const did = args.justDid;
       const verb = did.kind === "search"
@@ -986,13 +1010,10 @@ async function* streamAgenticNarration(
             ? `found ${did.foundCount} relevant ${did.foundCount > 1 ? "memories" : "memory"}`
             : `found ${did.foundCount} relevant source${did.foundCount > 1 ? "s" : ""}`)
         : `didn't find much`;
-      const obsNote = (args.observations ?? []).length > 1
-        ? ` (previous findings: ${(args.observations ?? []).slice(0, -1).join("; ")})`
-        : "";
       if (args.isFinal) {
-        task = `You just ${verb} (${found}, intent: ${did.intent})${obsNote}. Say in 1-2 sentences what you understood from this step and that you now have enough to answer.`;
+        task = `You just ${verb} (${found}, intent: ${did.intent}).${priorSummary} Say in 1-2 sentences what NEW thing you learned from this step (not already covered) and that you now have enough to answer.`;
       } else {
-        task = `You just ${verb} (${found}, intent: ${did.intent})${obsNote}. Briefly say what you learned or confirmed, then announce the next step: ${describeStep(args.nextStep!)}.`;
+        task = `You just ${verb} (${found}, intent: ${did.intent}).${priorSummary} Briefly say what NEW thing you learned or confirmed from this specific search (not already covered), then announce the next step: ${describeStep(args.nextStep!)}.`;
       }
     } else {
       task = args.isFinal
@@ -2884,13 +2905,15 @@ Deno.serve(async (req) => {
             // the orchestrator failed or returned nothing.
             if (reflexionEnabled && (!plan.complex || plan.steps.length < 2)) {
               console.warn("[reflexion] planner returned empty, using fallback plan");
+              // Use first sentence as search query rather than the full verbatim user message.
+              const fallbackQuery = (lastUserText.split(/[?!]/)[0] ?? lastUserText).slice(0, 70).trim();
               const fallbackSteps: AgenticStep[] = [
-                { kind: "plan", intent: "outline the approach and what angles to explore" },
+                { kind: "plan", intent: "outline the distinct sub-questions and exploration approach" },
               ];
               if (linkupKey) {
                 fallbackSteps.push({
                   kind: "search",
-                  query: lastUserText.slice(0, 100),
+                  query: fallbackQuery,
                   intent: "gather relevant evidence from the web",
                 });
               }
@@ -2922,9 +2945,10 @@ Deno.serve(async (req) => {
                 return i !== arr.length - 1;
               });
 
-              // Track observations accumulated across steps so reasoning steps
-              // can reference earlier findings for genuine chain-of-thought.
+              // Track observations and completed narrations accumulated across steps
+              // so each step can build on prior findings without repetition.
               const stepObservations: string[] = [];
+              const completedNarrations: string[] = [];
 
               const streamNarrationForStep = async (
                 stepIdx: number,
@@ -2935,6 +2959,7 @@ Deno.serve(async (req) => {
                   nextStep?: AgenticStep;
                   isFinal?: boolean;
                   observations?: string[];
+                  priorNarrations?: string[];
                 },
               ) => {
                 try {
@@ -2948,6 +2973,7 @@ Deno.serve(async (req) => {
                     nextStep: opts.nextStep,
                     isFinal: opts.isFinal,
                     observations: opts.observations,
+                    priorNarrations: opts.priorNarrations,
                   })) {
                     agenticNarration += chunk;
                     perStepNarration.set(stepIdx, (perStepNarration.get(stepIdx) ?? "") + chunk);
@@ -3116,7 +3142,12 @@ Deno.serve(async (req) => {
                   nextStep,
                   isFinal: isLastAction,
                   observations: stepObservations.slice(),
+                  priorNarrations: completedNarrations.slice(),
                 });
+
+                // Collect this step's narration so subsequent steps can avoid repetition.
+                const thisNarration = perStepNarration.get(i);
+                if (thisNarration) completedNarrations.push(thisNarration);
               }
 
               // Collect finalized agent steps for persistence.
