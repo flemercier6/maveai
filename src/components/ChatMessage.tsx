@@ -706,8 +706,8 @@ function AgentStepCard({ step, sources }: { step: AgentStep; sources?: Source[] 
             </span>
           </>
         )}
-        {step.kind === "search" && step.status === "done" && step.foundCount !== undefined && step.foundCount > 0 && (
-          <StepSourcesTag count={step.foundCount} sources={sources} />
+        {(step.kind === "search" || step.kind === "scrape") && step.status === "done" && ((step.sources && step.sources.length > 0) || (step.foundCount !== undefined && step.foundCount > 0)) && (
+          <StepSourcesTag count={step.sources?.length ?? step.foundCount ?? 0} sources={step.sources ?? sources} />
         )}
         {isFailed && <span className="text-destructive text-[11px] ml-1 shrink-0">failed</span>}
       </div>
