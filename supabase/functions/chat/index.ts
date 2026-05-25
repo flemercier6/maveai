@@ -2855,7 +2855,7 @@ Deno.serve(async (req) => {
           // "simple query" pre-filter since the user EXPLICITLY asked for it.
           const reflexionEnabled = reflexionMode === true && !!googleKeyForAgent;
           const reflexionMaxSteps = reflexionEffort === "low" ? 3 : reflexionEffort === "high" ? 8 : 5;
-          if (reflexionEnabled || (!webDisabled && !googleService && !voyagerService && (firecrawlKey || linkupKey) && lastUserText)) {
+          if (reflexionEnabled || (!webDisabled && !googleService && !voyagerService && (linkupKey || linkupKey) && lastUserText)) {
             // Fast local pre-filter: skip the agentic plan API call for obviously
             // simple queries. The call costs ~300-600 ms; most short or conversational
             // messages will never trigger a multi-step plan anyway.
@@ -2878,7 +2878,7 @@ Deno.serve(async (req) => {
                 googleKey: googleKeyForAgent,
                 userText: lastUserText,
                 hasWebSearch: !!linkupKey,
-                hasScrape: !!firecrawlKey,
+                hasScrape: !!linkupKey,
                 hasMemory: allFetchedMemRows.length > 0,
                 maxSteps: reflexionMaxSteps,
               }).catch((e) => {
@@ -2890,7 +2890,7 @@ Deno.serve(async (req) => {
                   googleKey: googleKeyForAgent,
                   userText: lastUserText,
                   hasWebSearch: !!linkupKey,
-                  hasScrape: !!firecrawlKey,
+                  hasScrape: !!linkupKey,
                 })
                 : { complex: false, goal: "", steps: [] as AgenticStep[] };
 
@@ -3049,7 +3049,7 @@ Deno.serve(async (req) => {
                     }));
                   }
                 } else if (step.kind === "scrape") {
-                  const md = await firecrawlScrape(firecrawlKey!, step.url);
+                  const md = await linkupFetch(linkupKey!, step.url);
                   if (md) {
                     foundCount = 1;
                     if (!agenticSources.find((x) => x.url === step.url)) {
@@ -3191,9 +3191,9 @@ Deno.serve(async (req) => {
                 anthropicKey: Deno.env.get("ANTHROPIC_API_KEY"),
                 userText: lastUserText,
               });
-              if (decision.action === "scrape" && firecrawlKey) {
+              if (decision.action === "scrape" && linkupKey) {
                 controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "running" }));
-                const md = await firecrawlScrape(firecrawlKey, decision.url);
+                const md = await linkupFetch(firecrawlKey, decision.url);
                 if (md) {
                   webContext = {
                     kind: "scrape",
