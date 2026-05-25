@@ -562,9 +562,9 @@ ${userText.slice(0, 1500)}`;
   return { action: "none" };
 }
 
-async function firecrawlScrape(apiKey: string, url: string): Promise<string | null> {
+async function linkupFetch(apiKey: string, url: string): Promise<string | null> {
   try {
-    const r = await fetch("https://api.firecrawl.dev/v2/scrape", {
+    const r = await fetch("https://api.linkup.so/v1/fetch", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -572,20 +572,21 @@ async function firecrawlScrape(apiKey: string, url: string): Promise<string | nu
       },
       body: JSON.stringify({
         url,
-        formats: ["markdown"],
-        onlyMainContent: true,
+        extractImages: false,
+        includeRawHtml: false,
+        renderJs: false,
       }),
     });
     const j = await r.json();
     if (!r.ok) {
-      console.error("firecrawl scrape error", r.status, j);
+      console.error("linkup fetch error", r.status, j);
       return null;
     }
-    const md: string | undefined = j?.data?.markdown ?? j?.markdown;
+    const md: string | undefined = j?.markdown ?? j?.content;
     if (!md) return null;
     return md.slice(0, 15000);
   } catch (e) {
-    console.error("firecrawl scrape exception", e);
+    console.error("linkup fetch exception", e);
     return null;
   }
 }
