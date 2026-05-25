@@ -563,32 +563,35 @@ ${userText.slice(0, 1500)}`;
 }
 
 async function linkupFetch(apiKey: string, url: string): Promise<string | null> {
-  try {
-    const r = await fetch("https://api.linkup.so/v1/fetch", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        url,
-        extractImages: false,
-        includeRawHtml: false,
-        renderJs: false,
-      }),
-    });
-    const j = await r.json();
-    if (!r.ok) {
-      console.error("linkup fetch error", r.status, j);
-      return null;
+  // Try fast path first (no JS rendering), then retry with renderJs on failure
+  // since many modern sites return empty/blocked content without JS execution.
+  for (const renderJs of [false, true]) {
+    try {
+      const r = await fetch("https://api.linkup.so/v1/fetch", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url,
+          extractImages: false,
+          includeRawHtml: false,
+          renderJs,
+        }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        console.error("linkup fetch error", r.status, "renderJs=", renderJs, j);
+        continue;
+      }
+      const md: string | undefined = j?.markdown ?? j?.content;
+      if (md && md.trim().length > 0) return md.slice(0, 15000);
+    } catch (e) {
+      console.error("linkup fetch exception renderJs=", renderJs, e);
     }
-    const md: string | undefined = j?.markdown ?? j?.content;
-    if (!md) return null;
-    return md.slice(0, 15000);
-  } catch (e) {
-    console.error("linkup fetch exception", e);
-    return null;
   }
+  return null;
 }
 
 type WebSource = { title: string; url: string };
@@ -3204,6 +3207,12 @@ Deno.serve(async (req) => {
                   controller.enqueue(enc({ type: "sources", sources: webContext.sources }));
                   collectedAgentSteps.push({ index: 0, kind: "scrape", label: decision.url, intent: decision.url, status: "done", foundCount: 1 });
                 } else {
+                  webContext = {
+                    kind: "scrape",
+                    label: decision.url,
+                    content: `The page at ${decision.url} could not be fetched (the site blocked the request, requires authentication, or returned no readable content). Tell the user the page could not be retrieved and suggest they paste the relevant content or try another URL. Do NOT claim you lack internet access — you do have web fetching capability, this specific URL just failed.`,
+                    sources: [{ title: decision.url, url: decision.url }],
+                  };
                   controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "failed" }));
                   collectedAgentSteps.push({ index: 0, kind: "scrape", label: decision.url, intent: decision.url, status: "failed" });
                 }
