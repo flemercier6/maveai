@@ -1102,6 +1102,7 @@ async function runReactLoop(opts: {
   let stepIndex = 0;
   let consecutiveFailures = 0;
   let searchCount = 0;
+  let toolCallCount = 0;
   let combinedNarration = "";
 
   const hasSearch = !!opts.linkupKey;
