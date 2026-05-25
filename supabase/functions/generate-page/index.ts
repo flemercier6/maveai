@@ -232,7 +232,7 @@ serve(async (req) => {
     // Pick planner + content models, honouring blacklist with sensible fallbacks.
     const plannerFallbacks = [
       ...favorites,
-      "claude-sonnet-4-6", "gemini-2.5-pro", "gpt-5.5", "gpt-5-mini",
+      "gemini-2.5-pro", "gpt-5.5", "gpt-5-mini",
     ];
     const contentFallbacks = [
       ...favorites,
