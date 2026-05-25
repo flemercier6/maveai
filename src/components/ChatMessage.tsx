@@ -645,7 +645,7 @@ function StepSourcesTag({ count, sources }: { count: number; sources?: Source[] 
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80 p-2">
         <div className="text-[11px] font-medium text-muted-foreground px-2 py-1">
-          {items.length === 1 ? "Source" : `${items.length} Sources`}
+          Sources
         </div>
         <ul className="flex flex-col">
           {items.map((src, n) => {
