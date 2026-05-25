@@ -208,6 +208,7 @@ export default function Chat() {
   // Side panel showing a generated PageSpec.
   const [pageOpen, setPageOpen] = useState(false);
   const [activePage, setActivePage] = useState<PageSpec | null>(null);
+  const [activePageKey, setActivePageKey] = useState<string | null>(null);
   // Note side panel (replaces inline CanvasBlock).
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteContent, setNoteContent] = useState("");
@@ -2308,7 +2309,7 @@ export default function Chat() {
                   reflexion={m.reflexion}
                   attachments={m.attachments}
                   page={m.page}
-                  onOpenPage={m.page ? () => { setActivePage(m.page!); setPageOpen(true); } : undefined}
+                  onOpenPage={m.page ? () => { setActivePage(m.page!); setActivePageKey(m.id ?? `${convId ?? "new"}:${i}`); setPageOpen(true); } : undefined}
                   hasNote={m.hasNote}
                   onOpenNote={m.hasNote ? () => setNoteOpen(true) : undefined}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
@@ -2874,6 +2875,7 @@ export default function Chat() {
       <PagePanel
         open={pageOpen}
         page={activePage}
+        pageKey={activePageKey ?? undefined}
         onClose={() => setPageOpen(false)}
         onWidthChange={setPageWidth}
       />
