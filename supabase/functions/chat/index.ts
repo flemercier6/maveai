@@ -3207,6 +3207,12 @@ Deno.serve(async (req) => {
                   controller.enqueue(enc({ type: "sources", sources: webContext.sources }));
                   collectedAgentSteps.push({ index: 0, kind: "scrape", label: decision.url, intent: decision.url, status: "done", foundCount: 1 });
                 } else {
+                  webContext = {
+                    kind: "scrape",
+                    label: decision.url,
+                    content: `The page at ${decision.url} could not be fetched (the site blocked the request, requires authentication, or returned no readable content). Tell the user the page could not be retrieved and suggest they paste the relevant content or try another URL. Do NOT claim you lack internet access — you do have web fetching capability, this specific URL just failed.`,
+                    sources: [{ title: decision.url, url: decision.url }],
+                  };
                   controller.enqueue(enc({ type: "tool", tool: "scrape", label: decision.url, status: "failed" }));
                   collectedAgentSteps.push({ index: 0, kind: "scrape", label: decision.url, intent: decision.url, status: "failed" });
                 }
