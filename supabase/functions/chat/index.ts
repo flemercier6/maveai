@@ -1609,11 +1609,13 @@ Deno.serve(async (req) => {
     // the DB Promise.all overlaps the ~200-500 ms classifier call with the ~200-400 ms DB
     // batch instead of running it after. Net saving: typically 200-400 ms.
     const userTurnsEarly = (messages as Msg[]).filter((m) => m.role === "user").length;
+    // Only skip the clarify gatekeeper when there's clearly nothing to clarify:
+    // either the user is already in a back-and-forth (>1 user turn) or the
+    // message is trivially short. The gatekeeper LLM itself is strict and
+    // returns needs_clarification=false in the vast majority of cases.
     const fastNoClarifyEarly =
       userTurnsEarly > 1 ||
-      lastUserText.length < 120 ||
-      lastUserText.trim().endsWith("?") ||
-      /^(what|how|why|who|when|where|which|tell|explain|describe|list|give|show|find|define|translate|write|create|make|build|fix|help|can |could |please )/i.test(lastUserText.trim());
+      lastUserText.trim().length < 40;
     const willClarifyEarly =
       !ephemeral && !skipClarify && !writingMode && !!lastUserText && (!fastNoClarifyEarly || !!forceClarify);
     const earlyClarifyPromise: Promise<ClarifyQuestion[] | null> = willClarifyEarly
@@ -2382,9 +2384,8 @@ Deno.serve(async (req) => {
           const userTurns = messages.filter((m) => m.role === "user").length;
           const fastNoClarify =
             userTurns > 1 ||
-            lastUserText.length < 120 ||
-            lastUserText.trim().endsWith("?") ||
-            /^(what|how|why|who|when|where|which|tell|explain|describe|list|give|show|find|define|translate|write|create|make|build|fix|help|can |could |please )/i.test(lastUserText.trim());
+            lastUserText.trim().length < 40;
+
 
           const googleApiKey = Deno.env.get("GOOGLE_API_KEY");
           const fastNoGoogle = (() => {
