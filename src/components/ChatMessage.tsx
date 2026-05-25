@@ -1035,6 +1035,9 @@ function ChatMessageImpl({
             </>
           );
         })()}
+        {!isUser && !streaming && agentSteps && agentSteps.length > 0 && (
+          <AgentStepsDetails steps={agentSteps} />
+        )}
         {page && onOpenPage && <PageCard page={page} onOpen={onOpenPage} />}
         {googleActionSlot}
         {!streaming && content && (
