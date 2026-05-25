@@ -1107,17 +1107,83 @@ async function runReactLoop(opts: {
   const hasFetch = !!opts.linkupKey;
   const hasMemory = opts.memRows.length > 0;
 
-  const availableTools: string[] = [];
-  if (hasSearch) availableTools.push(`{"tool":"web_search","args":{"query":"<short query in user's language, ≤12 words>"}}  // search the web for fresh facts`);
-  if (hasFetch) availableTools.push(`{"tool":"web_fetch","args":{"url":"https://..."}}  // read a specific webpage`);
-  if (hasMemory) availableTools.push(`{"tool":"memory_recall","args":{"query":"<short phrase>"}}  // search the user's personal memory`);
-  availableTools.push(`{"tool":"finish","args":{}}  // call when you have enough to answer`);
+  // Sub-problem decomposition: at the start, identify ordered sub-problems
+  // to investigate one by one. Each effort tier allows more sub-problems.
+  const MAX_PROBLEMS = opts.effort === "low" ? 1 : opts.effort === "high" ? 4 : 3;
+  const MIN_PER_PROBLEM = opts.effort === "low" ? 1 : 2;
+
+  const baseTools: string[] = [];
+  if (hasSearch) baseTools.push(`{"tool":"web_search","args":{"query":"<short query in user's language, ≤12 words>"}}  // search the web for fresh facts`);
+  if (hasFetch) baseTools.push(`{"tool":"web_fetch","args":{"url":"https://..."}}  // read a specific webpage`);
+  if (hasMemory) baseTools.push(`{"tool":"memory_recall","args":{"query":"<short phrase>"}}  // search the user's personal memory`);
 
   const renderHistory = () => history.length === 0
     ? "(no actions yet — write your opening thought and choose the first action)"
     : history.map((h, i) =>
         `### Iteration ${i + 1}\nThought: ${h.thought}\nAction: ${JSON.stringify(h.action)}\nObservation: ${h.observation.summary}`,
       ).join("\n\n");
+
+  // ---- Phase 0: decompose the question into ordered sub-problems ----
+  let problems: string[] = [];
+  if (MAX_PROBLEMS > 1) {
+    const planIdx = stepIndex++;
+    opts.callbacks.onStepStart(planIdx, "plan", "", "");
+    try {
+      const planSys = `You decompose the user's question into ordered sub-problems to investigate one by one. Reply STRICTLY in the USER's language.`;
+      const planPrompt =
+        `User question:\n"""${opts.userText.slice(0, 1200)}"""\n\n` +
+        `Decompose into 1 to ${MAX_PROBLEMS} concise, ORDERED sub-problems. ` +
+        `If the question is simple/atomic, return a single sub-problem. ` +
+        `Each sub-problem is a short noun phrase (≤10 words), not a full sentence, in the user's language. ` +
+        `Sub-problems must be distinct (no overlap) and cover the question end-to-end.`;
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${opts.googleKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: planPrompt }] }],
+            systemInstruction: { parts: [{ text: planSys }] },
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "object",
+                properties: {
+                  problems: { type: "array", items: { type: "string" } },
+                },
+                required: ["problems"],
+              },
+              temperature: 0.4,
+              maxOutputTokens: 400,
+            },
+          }),
+        },
+      );
+      const j = await r.json();
+      const raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed.problems)) {
+        problems = parsed.problems.map((p: any) => String(p).trim()).filter(Boolean).slice(0, MAX_PROBLEMS);
+      }
+      tokensUsed += Math.ceil((planPrompt.length + raw.length) / 4);
+    } catch (e) {
+      console.error("[react] plan decomposition failed", e);
+    }
+    if (problems.length === 0) problems = [opts.userText.slice(0, 100)];
+    const planLabel = problems.length === 1
+      ? problems[0].slice(0, 60)
+      : `${problems.length} sub-problems`;
+    const planNarration = problems.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    opts.callbacks.onThoughtChunk(planIdx, planNarration);
+    opts.callbacks.onThoughtDone(planIdx);
+    opts.callbacks.onStepDone(planIdx, "plan", planLabel, "");
+    collectedSteps.push({ index: planIdx, kind: "plan", label: planLabel, intent: "", status: "done", narration: planNarration });
+  } else {
+    problems = [opts.userText.slice(0, 100)];
+  }
+
+  let currentProblemIdx = 0;
+  let toolCallsForCurrentProblem = 0;
 
   for (let iter = 0; iter < MAX_ITER; iter++) {
     if (tokensUsed >= BUDGET) break;
