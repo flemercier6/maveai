@@ -66,7 +66,7 @@ export function SharePageButton({ page, pageKey, className }: Props) {
     }
     setBusy(true);
     try {
-      const pageJson = page as unknown as Record<string, unknown>;
+      const pageJson = JSON.parse(JSON.stringify(page));
       if (row) {
         const { error } = await supabase
           .from("shared_pages")
