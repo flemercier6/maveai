@@ -1127,18 +1127,19 @@ async function runReactLoop(opts: {
     opts.callbacks.onStepStart(thoughtIdx, "thought", "", "");
 
     const thoughtSys =
-      `You are a ReAct agent. Write your next reasoning step in the USER's exact language. ` +
-      `Format STRICTLY as:\n` +
-      `TOPIC: <≤6 words naming what you're thinking about right now>\n` +
-      `<one short sentence about what you just learned from the last observation (skip if no prior step)>\n` +
-      `<one short sentence about what you'll do next and why>\n\n` +
-      `Hard limits: max 2 sentences after the TOPIC line, max 40 words total in the sentences. ` +
-      `No markdown, no bullets, no headings, no quotes. First person, present tense.`;
+      `You are a ReAct agent narrating your reasoning in the USER's exact language. ` +
+      `You MUST output BOTH a TOPIC line AND a narration body — never just the TOPIC line alone.\n\n` +
+      `STRICT format (exactly this shape):\n` +
+      `TOPIC: <≤6 words naming what you're thinking about>\n` +
+      `<sentence 1: what you just learned from the previous observation — skip only if this is iteration 1>\n` +
+      `<sentence 2: what you'll do next and why>\n\n` +
+      `Hard limits: 1 to 3 short sentences after the TOPIC line, ~60 words max. ` +
+      `No markdown, no bullets, no headings, no quotes, no placeholders like "<sentence 1>". First person, present tense, plain prose.`;
     const thoughtPrompt =
       `User question:\n"""${opts.userText.slice(0, 800)}"""\n\n` +
       `History so far:\n${renderHistory()}\n\n` +
       `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations.\n` +
-      `Write your next reasoning step now (TOPIC line + 1-2 short sentences).`;
+      `Write your next reasoning step now. Remember: TOPIC line on line 1, then 1-3 short sentences of narration.`;
 
     let thoughtText = "";
     let topicBuf = "";
@@ -1179,7 +1180,7 @@ async function runReactLoop(opts: {
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: thoughtPrompt }] }],
             systemInstruction: { parts: [{ text: thoughtSys }] },
-            generationConfig: { temperature: 0.7, maxOutputTokens: 220 },
+            generationConfig: { temperature: 0.7, maxOutputTokens: 700 },
           }),
         },
       );
