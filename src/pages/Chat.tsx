@@ -474,6 +474,7 @@ export default function Chat() {
                   intent: String(s.intent ?? ""),
                   status: "done" as const,
                   foundCount: typeof s.foundCount === "number" ? s.foundCount : undefined,
+                  sources: Array.isArray(s.sources) ? s.sources.filter((x: any) => x && x.url).map((x: any) => ({ title: String(x.title ?? x.url), url: String(x.url) })) : undefined,
                   narration: typeof s.narration === "string" ? s.narration : undefined,
                   narrationDone: true,
                 }))
