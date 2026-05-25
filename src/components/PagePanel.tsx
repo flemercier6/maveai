@@ -140,9 +140,16 @@ export function PagePanel({ open, page, pageKey, onClose, onWidthChange }: Props
           >
             <X className="w-4 h-4" />
           </button>
-          <div className={cn("font-grotesk text-[10px] uppercase tracking-[0.28em] truncate", headerText)}>
+          <div className={cn("flex-1 min-w-0 font-grotesk text-[10px] uppercase tracking-[0.28em] truncate", headerText)}>
             {page?.title ?? "Page"}
           </div>
+          {page && pageKey && (
+            <SharePageButton
+              page={page}
+              pageKey={pageKey}
+              className={cn(closeBtn)}
+            />
+          )}
         </div>
 
         {/* Content */}
