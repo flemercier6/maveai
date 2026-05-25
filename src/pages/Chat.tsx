@@ -1392,6 +1392,9 @@ export default function Chat() {
                 });
               }
             } else if (j.type === "agent_step") {
+              const stepSources: Source[] | undefined = Array.isArray(j.stepSources)
+                ? j.stepSources.map((s: any) => ({ title: String(s.title ?? s.url ?? ""), url: String(s.url ?? "") })).filter((s: Source) => !!s.url)
+                : undefined;
               const step: AgentStep = {
                 index: Number(j.index) || 0,
                 kind: j.kind,
@@ -1399,6 +1402,7 @@ export default function Chat() {
                 intent: String(j.intent ?? ""),
                 status: (j.status as ToolStatus) ?? "running",
                 foundCount: typeof j.foundCount === "number" ? j.foundCount : undefined,
+                sources: stepSources,
                 narration: "",
               };
               setMessages((prev) => {
@@ -1415,6 +1419,7 @@ export default function Chat() {
                     ...updated[idx],
                     status: step.status,
                     foundCount: step.foundCount ?? updated[idx].foundCount,
+                    sources: step.sources ?? updated[idx].sources,
                     label: step.label,
                     intent: step.intent,
                     kind: step.kind,
