@@ -631,16 +631,14 @@ async function linkupSearch(
       const t = (res.type ?? "").toString().toLowerCase();
       return t === "image" || /\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(res.url ?? "");
     });
-    // Token-cost optimization: keep fewer sources and shorter snippets.
-    // Linkup is already on `depth: "standard"` (not "deep"), so the API call
-    // itself is cheap; the bulk of token cost comes from the snippets we
-    // re-inject into the LLM prompt below.
-    const top = textResults.slice(0, 5);
+    // Keep more sources for Reflexion mode (no artificial 5-source cap), and trim each snippet
+    // a bit so the total prompt size stays reasonable.
+    const top = textResults.slice(0, 12);
     const sources: WebSource[] = top.map((res) => ({
       title: (res.name ?? res.title ?? "Untitled").toString(),
       url: (res.url ?? "").toString(),
     }));
-    const images: WebImage[] = imageResults.slice(0, 4).map((res) => ({
+    const images: WebImage[] = imageResults.slice(0, 6).map((res) => ({
       url: (res.url ?? "").toString(),
       title: (res.name ?? res.title ?? "").toString() || undefined,
       sourceUrl: (res.sourceUrl ?? res.referrer ?? undefined) as string | undefined,
@@ -648,11 +646,11 @@ async function linkupSearch(
     const blocks = top.map((res, i) => {
       const title = sources[i].title;
       const url = sources[i].url;
-      const content = (res.content ?? res.snippet ?? res.description ?? "").toString().slice(0, 900);
+      const content = (res.content ?? res.snippet ?? res.description ?? "").toString().slice(0, 700);
       return `### Source ${i + 1}: ${title}\nURL: ${url}\n\n${content}`;
     });
     return {
-      content: blocks.join("\n\n---\n\n").slice(0, 5000),
+      content: blocks.join("\n\n---\n\n").slice(0, 10000),
       sources,
       images,
     };
@@ -1129,18 +1127,19 @@ async function runReactLoop(opts: {
     opts.callbacks.onStepStart(thoughtIdx, "thought", "", "");
 
     const thoughtSys =
-      `You are a ReAct agent. Write your next reasoning step in the USER's exact language. ` +
-      `Format STRICTLY as:\n` +
-      `TOPIC: <≤6 words naming what you're thinking about right now>\n` +
-      `<one short sentence about what you just learned from the last observation (skip if no prior step)>\n` +
-      `<one short sentence about what you'll do next and why>\n\n` +
-      `Hard limits: max 2 sentences after the TOPIC line, max 40 words total in the sentences. ` +
-      `No markdown, no bullets, no headings, no quotes. First person, present tense.`;
+      `You are a ReAct agent narrating your reasoning in the USER's exact language. ` +
+      `You MUST output BOTH a TOPIC line AND a narration body — never just the TOPIC line alone.\n\n` +
+      `STRICT format (exactly this shape):\n` +
+      `TOPIC: <≤6 words naming what you're thinking about>\n` +
+      `<sentence 1: what you just learned from the previous observation — skip only if this is iteration 1>\n` +
+      `<sentence 2: what you'll do next and why>\n\n` +
+      `Hard limits: 1 to 3 short sentences after the TOPIC line, ~60 words max. ` +
+      `No markdown, no bullets, no headings, no quotes, no placeholders like "<sentence 1>". First person, present tense, plain prose.`;
     const thoughtPrompt =
       `User question:\n"""${opts.userText.slice(0, 800)}"""\n\n` +
       `History so far:\n${renderHistory()}\n\n` +
       `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations.\n` +
-      `Write your next reasoning step now (TOPIC line + 1-2 short sentences).`;
+      `Write your next reasoning step now. Remember: TOPIC line on line 1, then 1-3 short sentences of narration.`;
 
     let thoughtText = "";
     let topicBuf = "";
@@ -1181,7 +1180,7 @@ async function runReactLoop(opts: {
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: thoughtPrompt }] }],
             systemInstruction: { parts: [{ text: thoughtSys }] },
-            generationConfig: { temperature: 0.7, maxOutputTokens: 220 },
+            generationConfig: { temperature: 0.7, maxOutputTokens: 700 },
           }),
         },
       );
@@ -1207,11 +1206,19 @@ async function runReactLoop(opts: {
       topicEmitted = true;
     }
     // Strip the TOPIC line from the persisted narration so the trace shows only the prose.
-    const cleanNarration = thoughtText.replace(/^\s*TOPIC\s*[:\-][^\n]*\n?/i, "").trim();
+    let cleanNarration = thoughtText.replace(/^\s*TOPIC\s*[:\-][^\n]*\n?/i, "").trim();
     const finalTopic = (() => {
       const m = thoughtText.match(/^\s*TOPIC\s*[:\-]\s*(.+?)\s*$/im);
       return m ? m[1].trim().slice(0, 80) : "";
     })();
+    // Fallback: if the model returned only a TOPIC line with no narration body,
+    // synthesize a tiny one-liner so the UI never shows an empty narration.
+    if (!cleanNarration && finalTopic) {
+      cleanNarration = iter === 0
+        ? `Starting on: ${finalTopic}.`
+        : `Continuing on: ${finalTopic}.`;
+      opts.callbacks.onThoughtChunk(thoughtIdx, cleanNarration);
+    }
     opts.callbacks.onThoughtDone(thoughtIdx);
     opts.callbacks.onStepDone(thoughtIdx, "thought", finalTopic, "");
     collectedSteps.push({
