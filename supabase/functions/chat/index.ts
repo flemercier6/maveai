@@ -1145,7 +1145,7 @@ async function runReactLoop(opts: {
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: thoughtPrompt }] }],
             systemInstruction: { parts: [{ text: thoughtSys }] },
-            generationConfig: { temperature: 0.7, maxOutputTokens: 250 },
+            generationConfig: { temperature: 0.7, maxOutputTokens: 800 },
           }),
         },
       );
