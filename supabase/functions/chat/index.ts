@@ -1088,6 +1088,9 @@ async function runReactLoop(opts: {
 }> {
   const BUDGET = opts.effort === "low" ? 3000 : opts.effort === "high" ? 40000 : 12000;
   const MAX_ITER = opts.effort === "low" ? 6 : opts.effort === "high" ? 30 : 15;
+  // Minimum tool calls (search/fetch/memory) before the agent is allowed to finish.
+  // Forces real deep-dive instead of the orchestrator bailing out after one thought.
+  const MIN_TOOL_CALLS = opts.effort === "low" ? 1 : opts.effort === "high" ? 8 : 4;
 
   const history: Array<{ thought: string; action: any; observation: ReactObservation }> = [];
   const contextBlocks: string[] = [];
