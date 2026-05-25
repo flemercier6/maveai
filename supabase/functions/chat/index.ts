@@ -1107,35 +1107,62 @@ async function runReactLoop(opts: {
   const hasFetch = !!opts.linkupKey;
   const hasMemory = opts.memRows.length > 0;
 
-  // Sub-problem decomposition: at the start, identify ordered sub-problems
-  // to investigate one by one. Each effort tier allows more sub-problems.
+  // Chapter decomposition: at the start, identify ordered chapters (sub-problems)
+  // to investigate one by one. Each effort tier allows more chapters.
   const MAX_PROBLEMS = opts.effort === "low" ? 1 : opts.effort === "high" ? 4 : 3;
-  const MIN_PER_PROBLEM = opts.effort === "low" ? 1 : 2;
+  const MIN_PER_PROBLEM = opts.effort === "low" ? 1 : opts.effort === "high" ? 3 : 2;
 
   const baseTools: string[] = [];
   if (hasSearch) baseTools.push(`{"tool":"web_search","args":{"query":"<short query in user's language, ≤12 words>"}}  // search the web for fresh facts`);
   if (hasFetch) baseTools.push(`{"tool":"web_fetch","args":{"url":"https://..."}}  // read a specific webpage`);
   if (hasMemory) baseTools.push(`{"tool":"memory_recall","args":{"query":"<short phrase>"}}  // search the user's personal memory`);
 
+  // Per-chapter tracking: queries used + learnings collected so we never repeat
+  // angles and each chapter clearly builds toward its focus.
+  type Problem = { title: string; focus: string };
+  let problems: Problem[] = [];
+  const historyProblemIdx: number[] = []; // parallel to `history`
+  const queriesByProblem: string[][] = [];
+  const learningsByProblem: string[][] = [];
+
+  const normalizeQuery = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
+  const isDuplicateQuery = (pIdx: number, q: string) => {
+    const n = normalizeQuery(q);
+    if (!n) return true;
+    const prev = queriesByProblem[pIdx] || [];
+    return prev.some((p) => {
+      const pn = normalizeQuery(p);
+      if (!pn) return false;
+      if (pn === n) return true;
+      const a = new Set(n.split(" ").filter((w) => w.length > 2));
+      const b = new Set(pn.split(" ").filter((w) => w.length > 2));
+      if (!a.size || !b.size) return false;
+      let inter = 0;
+      for (const w of a) if (b.has(w)) inter++;
+      return inter / Math.min(a.size, b.size) >= 0.7;
+    });
+  };
+
   const renderHistory = () => history.length === 0
     ? "(no actions yet — write your opening thought and choose the first action)"
-    : history.map((h, i) =>
-        `### Iteration ${i + 1}\nThought: ${h.thought}\nAction: ${JSON.stringify(h.action)}\nObservation: ${h.observation.summary}`,
-      ).join("\n\n");
+    : history.map((h, i) => {
+        const pIdx = historyProblemIdx[i] ?? 0;
+        const tag = problems.length > 1 ? ` [ch.${pIdx + 1}]` : "";
+        return `### Iter ${i + 1}${tag}\nThought: ${h.thought}\nAction: ${JSON.stringify(h.action)}\nObs: ${h.observation.summary}`;
+      }).join("\n\n");
 
-  // ---- Phase 0: decompose the question into ordered sub-problems ----
-  let problems: string[] = [];
+  // ---- Phase 0: decompose the question into ordered chapters ----
   if (MAX_PROBLEMS > 1) {
     const planIdx = stepIndex++;
     opts.callbacks.onStepStart(planIdx, "plan", "", "");
     try {
-      const planSys = `You decompose the user's question into ordered sub-problems to investigate one by one. Reply STRICTLY in the USER's language.`;
+      const planSys = `You decompose the user's question into ordered CHAPTERS of a reasoning plan, each covering a distinct angle. Reply STRICTLY in the USER's language.`;
       const planPrompt =
         `User question:\n"""${opts.userText.slice(0, 1200)}"""\n\n` +
-        `Decompose into 1 to ${MAX_PROBLEMS} concise, ORDERED sub-problems. ` +
-        `If the question is simple/atomic, return a single sub-problem. ` +
-        `Each sub-problem is a short noun phrase (≤10 words), not a full sentence, in the user's language. ` +
-        `Sub-problems must be distinct (no overlap) and cover the question end-to-end.`;
+        `Decompose into 1 to ${MAX_PROBLEMS} ORDERED, NON-OVERLAPPING chapters. Each has:\n` +
+        `- title: short noun phrase (≤8 words), names the angle\n` +
+        `- focus: one short sentence (≤20 words) stating exactly what must be uncovered to close this chapter\n\n` +
+        `Rules: chapters must be SEMANTICALLY DISTINCT (different facets, not rephrasings). Ordered logically (foundations → specifics → synthesis). If the question is simple/atomic, return a single chapter. Use the user's language.`;
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${opts.googleKey}`,
         {
@@ -1149,12 +1176,19 @@ async function runReactLoop(opts: {
               responseSchema: {
                 type: "object",
                 properties: {
-                  problems: { type: "array", items: { type: "string" } },
+                  chapters: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: { title: { type: "string" }, focus: { type: "string" } },
+                      required: ["title", "focus"],
+                    },
+                  },
                 },
-                required: ["problems"],
+                required: ["chapters"],
               },
               temperature: 0.4,
-              maxOutputTokens: 400,
+              maxOutputTokens: 600,
             },
           }),
         },
@@ -1162,28 +1196,36 @@ async function runReactLoop(opts: {
       const j = await r.json();
       const raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed.problems)) {
-        problems = parsed.problems.map((p: any) => String(p).trim()).filter(Boolean).slice(0, MAX_PROBLEMS);
+      if (Array.isArray(parsed.chapters)) {
+        problems = parsed.chapters
+          .map((c: any) => ({ title: String(c?.title || "").trim(), focus: String(c?.focus || "").trim() }))
+          .filter((c: Problem) => c.title)
+          .slice(0, MAX_PROBLEMS);
       }
       tokensUsed += Math.ceil((planPrompt.length + raw.length) / 4);
     } catch (e) {
       console.error("[react] plan decomposition failed", e);
     }
-    if (problems.length === 0) problems = [opts.userText.slice(0, 100)];
-    const planLabel = problems.length === 1
-      ? problems[0].slice(0, 60)
-      : `${problems.length} sub-problems`;
-    const planNarration = problems.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    if (problems.length === 0) problems = [{ title: opts.userText.slice(0, 80), focus: "" }];
+    const planLabel = problems.length === 1 ? problems[0].title.slice(0, 60) : `${problems.length} chapters`;
+    const planNarration = problems
+      .map((p, i) => p.focus ? `${i + 1}. ${p.title} — ${p.focus}` : `${i + 1}. ${p.title}`)
+      .join("\n");
     opts.callbacks.onThoughtChunk(planIdx, planNarration);
     opts.callbacks.onThoughtDone(planIdx);
     opts.callbacks.onStepDone(planIdx, "plan", planLabel, "");
     collectedSteps.push({ index: planIdx, kind: "plan", label: planLabel, intent: "", status: "done", narration: planNarration });
   } else {
-    problems = [opts.userText.slice(0, 100)];
+    problems = [{ title: opts.userText.slice(0, 80), focus: "" }];
+  }
+  for (let i = 0; i < problems.length; i++) {
+    queriesByProblem.push([]);
+    learningsByProblem.push([]);
   }
 
   let currentProblemIdx = 0;
   let toolCallsForCurrentProblem = 0;
+
 
   for (let iter = 0; iter < MAX_ITER; iter++) {
     if (tokensUsed >= BUDGET) break;
@@ -1204,17 +1246,31 @@ async function runReactLoop(opts: {
       `No markdown, no bullets, no headings, no quotes, no placeholders. First person, present tense, plain prose. ` +
       `Be terse — better to write 1 complete short sentence than 2 truncated ones.`;
     const currentProblem = problems[currentProblemIdx];
+    const usedQueries = queriesByProblem[currentProblemIdx] || [];
+    const learnings = learningsByProblem[currentProblemIdx] || [];
+    const planList = problems.map((p, i) => {
+      const mark = i < currentProblemIdx ? "✓" : i === currentProblemIdx ? "▶" : "·";
+      return `${mark} ${i + 1}. ${p.title}`;
+    }).join("\n");
     const problemBanner = problems.length > 1
-      ? `Sub-problem plan: ${problems.map((p, i) => `${i + 1}. ${p}`).join(" | ")}\n` +
-        `CURRENT sub-problem (${currentProblemIdx + 1}/${problems.length}): "${currentProblem}"\n` +
-        `Tool calls done for this sub-problem: ${toolCallsForCurrentProblem} (min before moving on: ${MIN_PER_PROBLEM}).\n`
-      : "";
+      ? `Reasoning plan:\n${planList}\n` +
+        `CURRENT chapter (${currentProblemIdx + 1}/${problems.length}): "${currentProblem.title}"\n` +
+        (currentProblem.focus ? `Focus: ${currentProblem.focus}\n` : "") +
+        `Tool calls done for this chapter: ${toolCallsForCurrentProblem} / min ${MIN_PER_PROBLEM}.\n` +
+        (usedQueries.length ? `Queries already used here: ${usedQueries.map((q) => `"${q}"`).join(", ")}.\n` : "") +
+        (learnings.length ? `What you've learned for THIS chapter:\n${learnings.map((l) => `- ${l}`).join("\n")}\n` : "") +
+        `\n`
+      : (learnings.length ? `What you've learned so far:\n${learnings.map((l) => `- ${l}`).join("\n")}\n\n` : "");
     const thoughtPrompt =
       `User question:\n"""${opts.userText.slice(0, 800)}"""\n\n` +
       problemBanner +
       `History so far:\n${renderHistory()}\n\n` +
-      `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations.\n` +
-      `Write your next reasoning step now, FOCUSED on the current sub-problem. TOPIC line + 1-2 SHORT complete sentences (≤28 words total).`;
+      `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations.\n\n` +
+      `Write your next reasoning step now, FOCUSED on the CURRENT chapter. ` +
+      `Build on what you already learned for this chapter — do NOT restate earlier thoughts. ` +
+      `If the chapter is sufficiently covered, signal you'll move to the next one. ` +
+      `TOPIC line + 1-2 SHORT complete sentences (≤28 words total).`;
+
 
     let thoughtText = "";
     let topicBuf = "";
@@ -1319,34 +1375,42 @@ async function runReactLoop(opts: {
     const canNextProblem = hasMoreProblems && problemSatisfied;
 
     const iterTools = baseTools.slice();
-    if (canNextProblem) iterTools.push(`{"tool":"next_problem","args":{}}  // current sub-problem covered, move to the next one`);
-    iterTools.push(`{"tool":"finish","args":{}}  // ALL sub-problems covered, ready to answer`);
+    if (canNextProblem) iterTools.push(`{"tool":"next_problem","args":{}}  // current chapter covered, move to the next one`);
+    iterTools.push(`{"tool":"finish","args":{}}  // ALL chapters covered, ready to answer`);
 
     const actionSys = `You decide the NEXT action of a ReAct agent. Reply with STRICT JSON only — no prose, no markdown, no preamble. Just the JSON object.`;
+    const curUsedQueries = queriesByProblem[currentProblemIdx] || [];
+    const curLearnings = learningsByProblem[currentProblemIdx] || [];
     const actionPrompt =
       `User question:\n"""${opts.userText.slice(0, 600)}"""\n\n` +
       (problems.length > 1
-        ? `Sub-problem plan: ${problems.map((p, i) => `${i + 1}. ${p}`).join(" | ")}\n` +
-          `CURRENT sub-problem (${currentProblemIdx + 1}/${problems.length}): "${problems[currentProblemIdx]}"\n` +
-          `Tool calls done for this sub-problem: ${toolCallsForCurrentProblem} / min ${MIN_PER_PROBLEM}.\n\n`
+        ? `Reasoning plan:\n${problems.map((p, i) => {
+            const mark = i < currentProblemIdx ? "✓" : i === currentProblemIdx ? "▶" : "·";
+            return `${mark} ${i + 1}. ${p.title}${p.focus ? ` — ${p.focus}` : ""}`;
+          }).join("\n")}\n` +
+          `CURRENT chapter (${currentProblemIdx + 1}/${problems.length}): "${problems[currentProblemIdx].title}"\n` +
+          `Tool calls done for this chapter: ${toolCallsForCurrentProblem} / min ${MIN_PER_PROBLEM}.\n` +
+          (curUsedQueries.length ? `Queries already used here (DO NOT repeat or paraphrase): ${curUsedQueries.map((q) => `"${q}"`).join(", ")}.\n` : "") +
+          (curLearnings.length ? `Already learned for this chapter:\n${curLearnings.map((l) => `- ${l}`).join("\n")}\n` : "") +
+          `\n`
         : "") +
       `History:\n${renderHistory()}\n\n` +
       `Your latest thought: ${thoughtText}\n\n` +
       `Available actions:\n${iterTools.join("\n")}\n\n` +
       `Progress: ${toolCallCount} total tool calls. Remaining iterations: ${MAX_ITER - iter - 1}.\n\n` +
       `Rules:\n` +
-      `- Focus your next action on the CURRENT sub-problem only.\n` +
+      `- Stay strictly on the CURRENT chapter. Do NOT jump ahead to a later chapter's angle.\n` +
       (canNextProblem
-        ? `- Once the current sub-problem is reasonably covered (≥${MIN_PER_PROBLEM} tool calls), call {"tool":"next_problem","args":{}} to move on.\n`
+        ? `- Once the chapter is reasonably covered (≥${MIN_PER_PROBLEM} tool calls), prefer {"tool":"next_problem","args":{}} over another redundant search.\n`
         : "") +
       (canFinish
-        ? `- You MAY return {"tool":"finish","args":{}} only if ALL sub-problems are covered and you can write a thorough answer.\n`
-        : `- You MUST NOT finish yet — you still need to cover ${isLastProblem ? "this sub-problem deeper" : `${problems.length - currentProblemIdx - 1} more sub-problem(s)`}.\n`) +
-      `- NEVER repeat an action with identical args (check history).\n` +
-      `- Vary angles: different queries, sub-topics, counter-arguments, primary sources.\n` +
+        ? `- You MAY return {"tool":"finish","args":{}} only if ALL chapters are covered and you can write a thorough answer.\n`
+        : `- You MUST NOT finish yet — you still need to cover ${isLastProblem ? "this chapter deeper" : `${problems.length - currentProblemIdx - 1} more chapter(s)`}.\n`) +
+      `- NEVER repeat or paraphrase a query already used in this chapter — pick a clearly NEW angle (different facet, sub-topic, counter-argument, primary source, time range, region).\n` +
       `- Prefer web_search for fresh facts; web_fetch only when you have a specific URL worth reading in full.\n` +
       `- Match the search query to the user's language.\n\n` +
       `Reply with STRICT JSON ONLY.`;
+
 
     // Build allowed tools enum for responseSchema
     const allowedTools: string[] = [];
@@ -1399,7 +1463,7 @@ async function runReactLoop(opts: {
       console.error("[react] action parse failed", e, "— falling back to web_search");
       consecutiveFailures++;
       if (hasSearch && consecutiveFailures < 4) {
-        action = { tool: "web_search", args: { query: problems[currentProblemIdx] || opts.userText.slice(0, 120) } };
+        action = { tool: "web_search", args: { query: problems[currentProblemIdx]?.title || opts.userText.slice(0, 120) } };
       } else if (consecutiveFailures >= 4) {
         break;
       } else {
@@ -1408,32 +1472,55 @@ async function runReactLoop(opts: {
     }
     if (action) consecutiveFailures = 0;
 
-    // Block premature finish: if model tries to finish before all sub-problems covered, redirect.
+    // Block premature finish: if model tries to finish before all chapters covered, redirect.
     if (action?.tool === "finish" && !canFinish) {
       if (canNextProblem) {
         console.log(`[react] redirecting premature finish → next_problem (${currentProblemIdx + 1}/${problems.length})`);
         action = { tool: "next_problem", args: {} };
       } else if (hasSearch) {
-        console.log(`[react] blocking premature finish — forcing search on current sub-problem`);
-        action = { tool: "web_search", args: { query: problems[currentProblemIdx] || opts.userText.slice(0, 80) } };
+        console.log(`[react] blocking premature finish — forcing search on current chapter`);
+        action = { tool: "web_search", args: { query: problems[currentProblemIdx]?.title || opts.userText.slice(0, 80) } };
       }
     }
 
-    // Handle next_problem: advance to next sub-problem, reset per-problem counter.
+    // Anti-repeat: if web_search picks a query already used (or near-duplicate)
+    // for the current chapter, either auto-advance (if chapter is covered) or
+    // force the agent to retry with a fresh angle next iteration.
+    if (action?.tool === "web_search" && typeof action.args?.query === "string") {
+      const q = String(action.args.query).trim();
+      if (isDuplicateQuery(currentProblemIdx, q)) {
+        if (canNextProblem) {
+          console.log(`[react] duplicate query "${q}" — auto-advancing to next chapter`);
+          action = { tool: "next_problem", args: {} };
+        } else {
+          console.log(`[react] duplicate query "${q}" — skipping iteration to force new angle`);
+          history.push({
+            thought: thoughtText,
+            action,
+            observation: { ok: false, summary: `Skipped — query "${q}" too similar to one already used in this chapter. Pick a NEW angle.` },
+          });
+          historyProblemIdx.push(currentProblemIdx);
+          continue;
+        }
+      }
+    }
+
+    // Handle next_problem: advance to next chapter, reset per-chapter counter.
     if (action?.tool === "next_problem") {
       if (hasMoreProblems) {
         currentProblemIdx++;
         toolCallsForCurrentProblem = 0;
         const advIdx = stepIndex++;
         const newProblem = problems[currentProblemIdx];
-        const label = `→ ${newProblem.slice(0, 60)}`;
+        const label = `→ ${newProblem.title.slice(0, 60)}`;
         opts.callbacks.onStepStart(advIdx, "plan", label, "");
-        const advNarration = `Sub-problem ${currentProblemIdx + 1}/${problems.length}: ${newProblem}`;
+        const advNarration = `Chapter ${currentProblemIdx + 1}/${problems.length}: ${newProblem.title}${newProblem.focus ? ` — ${newProblem.focus}` : ""}`;
         opts.callbacks.onThoughtChunk(advIdx, advNarration);
         opts.callbacks.onThoughtDone(advIdx);
         opts.callbacks.onStepDone(advIdx, "plan", label, "");
         collectedSteps.push({ index: advIdx, kind: "plan", label, intent: "", status: "done", narration: advNarration });
-        history.push({ thought: thoughtText, action: { tool: "next_problem" }, observation: { ok: true, summary: `Moving to sub-problem ${currentProblemIdx + 1}: ${newProblem}` } });
+        history.push({ thought: thoughtText, action: { tool: "next_problem" }, observation: { ok: true, summary: `Moving to chapter ${currentProblemIdx + 1}: ${newProblem.title}` } });
+        historyProblemIdx.push(currentProblemIdx); // tagged to the NEW chapter
         continue;
       }
       // No more problems → treat as finish.
@@ -1446,8 +1533,10 @@ async function runReactLoop(opts: {
       opts.callbacks.onStepDone(finishIdx, "finish", "", "");
       collectedSteps.push({ index: finishIdx, kind: "finish", label: "", intent: "", status: "done" });
       history.push({ thought: thoughtText, action: { tool: "finish" }, observation: { ok: true, summary: "ending loop" } });
+      historyProblemIdx.push(currentProblemIdx);
       break;
     }
+
 
     // ---- 3. Execute action ----
     const tool: ReactToolName = action.tool;
@@ -1523,9 +1612,23 @@ async function runReactLoop(opts: {
       if (consecutiveFailures >= 2) break;
     }
 
-    if (observation.ok) { toolCallCount++; toolCallsForCurrentProblem++; }
+    if (observation.ok) {
+      toolCallCount++;
+      toolCallsForCurrentProblem++;
+      // Track queries used for the current chapter (to prevent repeats).
+      if (action.tool === "web_search" && typeof action.args?.query === "string") {
+        queriesByProblem[currentProblemIdx].push(String(action.args.query).slice(0, 150).trim());
+      }
+      // Track a short learning bullet for the current chapter, derived from the
+      // observation summary (so future thoughts can build on it instead of restating).
+      const summarySnippet = observation.summary.slice(0, 140);
+      const arr = learningsByProblem[currentProblemIdx];
+      if (summarySnippet && arr.length < 6) arr.push(summarySnippet);
+    }
     history.push({ thought: thoughtText, action, observation });
+    historyProblemIdx.push(currentProblemIdx);
     tokensUsed += Math.ceil(observation.summary.length / 4);
+
   }
 
   return {
