@@ -1472,32 +1472,55 @@ async function runReactLoop(opts: {
     }
     if (action) consecutiveFailures = 0;
 
-    // Block premature finish: if model tries to finish before all sub-problems covered, redirect.
+    // Block premature finish: if model tries to finish before all chapters covered, redirect.
     if (action?.tool === "finish" && !canFinish) {
       if (canNextProblem) {
         console.log(`[react] redirecting premature finish → next_problem (${currentProblemIdx + 1}/${problems.length})`);
         action = { tool: "next_problem", args: {} };
       } else if (hasSearch) {
-        console.log(`[react] blocking premature finish — forcing search on current sub-problem`);
-        action = { tool: "web_search", args: { query: problems[currentProblemIdx] || opts.userText.slice(0, 80) } };
+        console.log(`[react] blocking premature finish — forcing search on current chapter`);
+        action = { tool: "web_search", args: { query: problems[currentProblemIdx]?.title || opts.userText.slice(0, 80) } };
       }
     }
 
-    // Handle next_problem: advance to next sub-problem, reset per-problem counter.
+    // Anti-repeat: if web_search picks a query already used (or near-duplicate)
+    // for the current chapter, either auto-advance (if chapter is covered) or
+    // force the agent to retry with a fresh angle next iteration.
+    if (action?.tool === "web_search" && typeof action.args?.query === "string") {
+      const q = String(action.args.query).trim();
+      if (isDuplicateQuery(currentProblemIdx, q)) {
+        if (canNextProblem) {
+          console.log(`[react] duplicate query "${q}" — auto-advancing to next chapter`);
+          action = { tool: "next_problem", args: {} };
+        } else {
+          console.log(`[react] duplicate query "${q}" — skipping iteration to force new angle`);
+          history.push({
+            thought: thoughtText,
+            action,
+            observation: { ok: false, summary: `Skipped — query "${q}" too similar to one already used in this chapter. Pick a NEW angle.` },
+          });
+          historyProblemIdx.push(currentProblemIdx);
+          continue;
+        }
+      }
+    }
+
+    // Handle next_problem: advance to next chapter, reset per-chapter counter.
     if (action?.tool === "next_problem") {
       if (hasMoreProblems) {
         currentProblemIdx++;
         toolCallsForCurrentProblem = 0;
         const advIdx = stepIndex++;
         const newProblem = problems[currentProblemIdx];
-        const label = `→ ${newProblem.slice(0, 60)}`;
+        const label = `→ ${newProblem.title.slice(0, 60)}`;
         opts.callbacks.onStepStart(advIdx, "plan", label, "");
-        const advNarration = `Sub-problem ${currentProblemIdx + 1}/${problems.length}: ${newProblem}`;
+        const advNarration = `Chapter ${currentProblemIdx + 1}/${problems.length}: ${newProblem.title}${newProblem.focus ? ` — ${newProblem.focus}` : ""}`;
         opts.callbacks.onThoughtChunk(advIdx, advNarration);
         opts.callbacks.onThoughtDone(advIdx);
         opts.callbacks.onStepDone(advIdx, "plan", label, "");
         collectedSteps.push({ index: advIdx, kind: "plan", label, intent: "", status: "done", narration: advNarration });
-        history.push({ thought: thoughtText, action: { tool: "next_problem" }, observation: { ok: true, summary: `Moving to sub-problem ${currentProblemIdx + 1}: ${newProblem}` } });
+        history.push({ thought: thoughtText, action: { tool: "next_problem" }, observation: { ok: true, summary: `Moving to chapter ${currentProblemIdx + 1}: ${newProblem.title}` } });
+        historyProblemIdx.push(currentProblemIdx); // tagged to the NEW chapter
         continue;
       }
       // No more problems → treat as finish.
@@ -1510,8 +1533,10 @@ async function runReactLoop(opts: {
       opts.callbacks.onStepDone(finishIdx, "finish", "", "");
       collectedSteps.push({ index: finishIdx, kind: "finish", label: "", intent: "", status: "done" });
       history.push({ thought: thoughtText, action: { tool: "finish" }, observation: { ok: true, summary: "ending loop" } });
+      historyProblemIdx.push(currentProblemIdx);
       break;
     }
+
 
     // ---- 3. Execute action ----
     const tool: ReactToolName = action.tool;
