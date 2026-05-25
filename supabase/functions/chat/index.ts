@@ -1285,6 +1285,12 @@ async function runReactLoop(opts: {
     const currentProblem = problems[currentProblemIdx];
     const usedQueries = queriesByProblem[currentProblemIdx] || [];
     const learnings = learningsByProblem[currentProblemIdx] || [];
+    // Previous thoughts written for THIS chapter — used to forbid repetition.
+    const priorThoughtsForChapter = history
+      .map((h, i) => ({ h, p: historyProblemIdx[i] }))
+      .filter((x) => x.p === currentProblemIdx && x.h.thought)
+      .map((x) => x.h.thought.replace(/^\s*TOPIC\s*[:\-][^\n]*\n?/i, "").trim())
+      .filter(Boolean);
     const planList = problems.map((p, i) => {
       const mark = i < currentProblemIdx ? "✓" : i === currentProblemIdx ? "▶" : "·";
       return `${mark} ${i + 1}. ${p.title}`;
@@ -1296,16 +1302,19 @@ async function runReactLoop(opts: {
         `Tool calls done for this chapter: ${toolCallsForCurrentProblem} / min ${MIN_PER_PROBLEM}.\n` +
         (usedQueries.length ? `Queries already used here: ${usedQueries.map((q) => `"${q}"`).join(", ")}.\n` : "") +
         (learnings.length ? `What you've learned for THIS chapter:\n${learnings.map((l) => `- ${l}`).join("\n")}\n` : "") +
+        (priorThoughtsForChapter.length ? `Your PREVIOUS thoughts on this chapter (DO NOT repeat or paraphrase any of these — say something NEW):\n${priorThoughtsForChapter.map((t) => `- "${t.slice(0, 160)}"`).join("\n")}\n` : "") +
         `\n`
-      : (learnings.length ? `What you've learned so far:\n${learnings.map((l) => `- ${l}`).join("\n")}\n\n` : "");
+      : (learnings.length ? `What you've learned so far:\n${learnings.map((l) => `- ${l}`).join("\n")}\n\n` : "") +
+        (priorThoughtsForChapter.length ? `Your PREVIOUS thoughts (DO NOT repeat — bring a NEW angle):\n${priorThoughtsForChapter.map((t) => `- "${t.slice(0, 160)}"`).join("\n")}\n\n` : "");
     const thoughtPrompt =
       `User question:\n"""${opts.userText.slice(0, 800)}"""\n\n` +
       problemBanner +
       `History so far:\n${renderHistory()}\n\n` +
       `Budget left: ${BUDGET - tokensUsed} tokens, ${MAX_ITER - iter} iterations.\n\n` +
-      `Write your next reasoning step now, FOCUSED on the CURRENT chapter. ` +
-      `Build on what you already learned for this chapter — do NOT restate earlier thoughts. ` +
-      `If the chapter is sufficiently covered, signal you'll move to the next one. ` +
+      `Write your next reasoning step now, FOCUSED on the CURRENT chapter "${currentProblem.title}". ` +
+      `Your thought MUST advance the chapter — introduce a NEW sub-angle, fact, contrast, or decision criterion not already mentioned above. ` +
+      `If you cannot find anything new to add, the chapter is COVERED: explicitly say "${problems.length > 1 && currentProblemIdx < problems.length - 1 ? "passons au chapitre suivant" : "j'ai assez d'éléments pour répondre"}" and pick the corresponding action. ` +
+      `Forbidden: paraphrasing a previous thought, restating the chapter title, generic filler ("je vais chercher", "je continue"). ` +
       `TOPIC line + 1-2 SHORT complete sentences (≤28 words total).`;
 
 
