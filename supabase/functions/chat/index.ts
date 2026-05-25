@@ -3197,11 +3197,12 @@ Deno.serve(async (req) => {
                     type: "agent_step", index: idx, kind, label, intent, status: "running",
                   }));
                 },
-                onStepDone: (idx, kind, label, intent, foundCount, failed) => {
+                onStepDone: (idx, kind, label, intent, foundCount, failed, stepSources) => {
                   controller.enqueue(enc({
                     type: "agent_step", index: idx, kind, label, intent,
                     status: failed ? "failed" : "done",
                     ...(typeof foundCount === "number" ? { foundCount } : {}),
+                    ...(stepSources && stepSources.length ? { stepSources } : {}),
                   }));
                 },
                 onThoughtChunk: (idx, text) => {
