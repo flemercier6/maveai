@@ -263,7 +263,7 @@ async function* streamAnthropic(apiKey: string, model: string, messages: Msg[]):
     },
     body: JSON.stringify({
       model,
-      max_tokens: 1500,
+      max_tokens: 8000,
       stream: true,
       system: systemPayload,
       messages: conv.map((m) => {
