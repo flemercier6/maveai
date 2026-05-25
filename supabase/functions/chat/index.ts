@@ -1188,10 +1188,18 @@ async function runReactLoop(opts: {
       const planSys = `You decompose the user's question into ordered CHAPTERS of a reasoning plan, each covering a distinct angle. Reply STRICTLY in the USER's language.`;
       const planPrompt =
         `User question:\n"""${opts.userText.slice(0, 1200)}"""\n\n` +
-        `Decompose into 1 to ${MAX_PROBLEMS} ORDERED, NON-OVERLAPPING chapters. Each has:\n` +
+        `Decompose into ${MIN_PROBLEMS === MAX_PROBLEMS ? `EXACTLY ${MAX_PROBLEMS}` : `${MIN_PROBLEMS} to ${MAX_PROBLEMS}`} ORDERED, NON-OVERLAPPING chapters. Each has:\n` +
         `- title: short noun phrase (≤8 words), names the angle\n` +
         `- focus: one short sentence (≤20 words) stating exactly what must be uncovered to close this chapter\n\n` +
-        `Rules: chapters must be SEMANTICALLY DISTINCT (different facets, not rephrasings). Ordered logically (foundations → specifics → synthesis). If the question is simple/atomic, return a single chapter. Use the user's language.`;
+        `CRITICAL DECOMPOSITION RULES:\n` +
+        `- If the user asked MULTIPLE distinct sub-questions (e.g. "comment X ? quels Y ? quels Z ?"), each sub-question becomes its OWN chapter. NEVER merge them.\n` +
+        `- A chapter title must NEVER be a near-copy of the full user question. Each chapter is ONE specific facet.\n` +
+        `- Chapters must be SEMANTICALLY DISTINCT (different facets, not rephrasings of each other).\n` +
+        `- Ordered logically: foundations → specifics → pitfalls/synthesis.\n` +
+        `- Only return a single chapter if the question is truly atomic (one narrow factual ask). A question with commas, multiple "?" or multiple interrogative words ("quels/comment/pourquoi") is NEVER atomic.\n` +
+        `- Use the user's language.\n\n` +
+        `Example — user asks "Comment gagner à un jeu en difficulté max ? quelles étapes ? quels choix ? quels pièges ?":\n` +
+        `→ 4 chapters: (1) "Stratégie globale de victoire", (2) "Étapes & ordre d'exécution", (3) "Choix critiques (build, unités, tech)", (4) "Pièges courants à éviter".`;
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${opts.googleKey}`,
         {
