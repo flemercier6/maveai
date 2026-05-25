@@ -1208,13 +1208,12 @@ async function runReactLoop(opts: {
     }
     // Strip the TOPIC line from the persisted narration so the trace shows only the prose.
     const cleanNarration = thoughtText.replace(/^\s*TOPIC\s*[:\-][^\n]*\n?/i, "").trim();
-    opts.callbacks.onThoughtDone(thoughtIdx);
-    // Re-emit the done event with the final topic as label so persisted state has it.
-    opts.callbacks.onStepDone(thoughtIdx, "thought", (collectedSteps as any).__lastTopic ?? "", "");
     const finalTopic = (() => {
       const m = thoughtText.match(/^\s*TOPIC\s*[:\-]\s*(.+?)\s*$/im);
       return m ? m[1].trim().slice(0, 80) : "";
     })();
+    opts.callbacks.onThoughtDone(thoughtIdx);
+    opts.callbacks.onStepDone(thoughtIdx, "thought", finalTopic, "");
     collectedSteps.push({
       index: thoughtIdx, kind: "thought", label: finalTopic, intent: "",
       status: "done", narration: cleanNarration,
