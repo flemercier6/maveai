@@ -640,7 +640,7 @@ function StepSourcesTag({ count, sources }: { count: number; sources?: Source[] 
               );
             })}
           </span>
-          <span className="whitespace-nowrap">{count === 1 ? "Source" : `${count} Sources`}</span>
+          <span className="whitespace-nowrap">Sources</span>
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80 p-2">
