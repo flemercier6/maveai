@@ -1612,9 +1612,23 @@ async function runReactLoop(opts: {
       if (consecutiveFailures >= 2) break;
     }
 
-    if (observation.ok) { toolCallCount++; toolCallsForCurrentProblem++; }
+    if (observation.ok) {
+      toolCallCount++;
+      toolCallsForCurrentProblem++;
+      // Track queries used for the current chapter (to prevent repeats).
+      if (action.tool === "web_search" && typeof action.args?.query === "string") {
+        queriesByProblem[currentProblemIdx].push(String(action.args.query).slice(0, 150).trim());
+      }
+      // Track a short learning bullet for the current chapter, derived from the
+      // observation summary (so future thoughts can build on it instead of restating).
+      const summarySnippet = observation.summary.slice(0, 140);
+      const arr = learningsByProblem[currentProblemIdx];
+      if (summarySnippet && arr.length < 6) arr.push(summarySnippet);
+    }
     history.push({ thought: thoughtText, action, observation });
+    historyProblemIdx.push(currentProblemIdx);
     tokensUsed += Math.ceil(observation.summary.length / 4);
+
   }
 
   return {
