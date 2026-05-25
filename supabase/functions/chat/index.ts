@@ -2013,7 +2013,6 @@ Deno.serve(async (req) => {
       return items.find((x) => normalizeVoyagerText(`${x?.first_name ?? ""} ${x?.last_name ?? ""}`) === term) ?? null;
     };
     const linkupKey = Deno.env.get("LINKUP_API_KEY");
-    const linkupKey = Deno.env.get("LINKUP_API_KEY");
     let webContext:
       | { kind: "scrape" | "search"; label: string; content: string; sources?: WebSource[]; images?: WebImage[] }
       | null = null;
