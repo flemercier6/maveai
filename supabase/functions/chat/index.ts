@@ -1107,35 +1107,62 @@ async function runReactLoop(opts: {
   const hasFetch = !!opts.linkupKey;
   const hasMemory = opts.memRows.length > 0;
 
-  // Sub-problem decomposition: at the start, identify ordered sub-problems
-  // to investigate one by one. Each effort tier allows more sub-problems.
+  // Chapter decomposition: at the start, identify ordered chapters (sub-problems)
+  // to investigate one by one. Each effort tier allows more chapters.
   const MAX_PROBLEMS = opts.effort === "low" ? 1 : opts.effort === "high" ? 4 : 3;
-  const MIN_PER_PROBLEM = opts.effort === "low" ? 1 : 2;
+  const MIN_PER_PROBLEM = opts.effort === "low" ? 1 : opts.effort === "high" ? 3 : 2;
 
   const baseTools: string[] = [];
   if (hasSearch) baseTools.push(`{"tool":"web_search","args":{"query":"<short query in user's language, ≤12 words>"}}  // search the web for fresh facts`);
   if (hasFetch) baseTools.push(`{"tool":"web_fetch","args":{"url":"https://..."}}  // read a specific webpage`);
   if (hasMemory) baseTools.push(`{"tool":"memory_recall","args":{"query":"<short phrase>"}}  // search the user's personal memory`);
 
+  // Per-chapter tracking: queries used + learnings collected so we never repeat
+  // angles and each chapter clearly builds toward its focus.
+  type Problem = { title: string; focus: string };
+  let problems: Problem[] = [];
+  const historyProblemIdx: number[] = []; // parallel to `history`
+  const queriesByProblem: string[][] = [];
+  const learningsByProblem: string[][] = [];
+
+  const normalizeQuery = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
+  const isDuplicateQuery = (pIdx: number, q: string) => {
+    const n = normalizeQuery(q);
+    if (!n) return true;
+    const prev = queriesByProblem[pIdx] || [];
+    return prev.some((p) => {
+      const pn = normalizeQuery(p);
+      if (!pn) return false;
+      if (pn === n) return true;
+      const a = new Set(n.split(" ").filter((w) => w.length > 2));
+      const b = new Set(pn.split(" ").filter((w) => w.length > 2));
+      if (!a.size || !b.size) return false;
+      let inter = 0;
+      for (const w of a) if (b.has(w)) inter++;
+      return inter / Math.min(a.size, b.size) >= 0.7;
+    });
+  };
+
   const renderHistory = () => history.length === 0
     ? "(no actions yet — write your opening thought and choose the first action)"
-    : history.map((h, i) =>
-        `### Iteration ${i + 1}\nThought: ${h.thought}\nAction: ${JSON.stringify(h.action)}\nObservation: ${h.observation.summary}`,
-      ).join("\n\n");
+    : history.map((h, i) => {
+        const pIdx = historyProblemIdx[i] ?? 0;
+        const tag = problems.length > 1 ? ` [ch.${pIdx + 1}]` : "";
+        return `### Iter ${i + 1}${tag}\nThought: ${h.thought}\nAction: ${JSON.stringify(h.action)}\nObs: ${h.observation.summary}`;
+      }).join("\n\n");
 
-  // ---- Phase 0: decompose the question into ordered sub-problems ----
-  let problems: string[] = [];
+  // ---- Phase 0: decompose the question into ordered chapters ----
   if (MAX_PROBLEMS > 1) {
     const planIdx = stepIndex++;
     opts.callbacks.onStepStart(planIdx, "plan", "", "");
     try {
-      const planSys = `You decompose the user's question into ordered sub-problems to investigate one by one. Reply STRICTLY in the USER's language.`;
+      const planSys = `You decompose the user's question into ordered CHAPTERS of a reasoning plan, each covering a distinct angle. Reply STRICTLY in the USER's language.`;
       const planPrompt =
         `User question:\n"""${opts.userText.slice(0, 1200)}"""\n\n` +
-        `Decompose into 1 to ${MAX_PROBLEMS} concise, ORDERED sub-problems. ` +
-        `If the question is simple/atomic, return a single sub-problem. ` +
-        `Each sub-problem is a short noun phrase (≤10 words), not a full sentence, in the user's language. ` +
-        `Sub-problems must be distinct (no overlap) and cover the question end-to-end.`;
+        `Decompose into 1 to ${MAX_PROBLEMS} ORDERED, NON-OVERLAPPING chapters. Each has:\n` +
+        `- title: short noun phrase (≤8 words), names the angle\n` +
+        `- focus: one short sentence (≤20 words) stating exactly what must be uncovered to close this chapter\n\n` +
+        `Rules: chapters must be SEMANTICALLY DISTINCT (different facets, not rephrasings). Ordered logically (foundations → specifics → synthesis). If the question is simple/atomic, return a single chapter. Use the user's language.`;
       const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${opts.googleKey}`,
         {
@@ -1149,12 +1176,19 @@ async function runReactLoop(opts: {
               responseSchema: {
                 type: "object",
                 properties: {
-                  problems: { type: "array", items: { type: "string" } },
+                  chapters: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: { title: { type: "string" }, focus: { type: "string" } },
+                      required: ["title", "focus"],
+                    },
+                  },
                 },
-                required: ["problems"],
+                required: ["chapters"],
               },
               temperature: 0.4,
-              maxOutputTokens: 400,
+              maxOutputTokens: 600,
             },
           }),
         },
@@ -1162,28 +1196,36 @@ async function runReactLoop(opts: {
       const j = await r.json();
       const raw = j.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ?? "";
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed.problems)) {
-        problems = parsed.problems.map((p: any) => String(p).trim()).filter(Boolean).slice(0, MAX_PROBLEMS);
+      if (Array.isArray(parsed.chapters)) {
+        problems = parsed.chapters
+          .map((c: any) => ({ title: String(c?.title || "").trim(), focus: String(c?.focus || "").trim() }))
+          .filter((c: Problem) => c.title)
+          .slice(0, MAX_PROBLEMS);
       }
       tokensUsed += Math.ceil((planPrompt.length + raw.length) / 4);
     } catch (e) {
       console.error("[react] plan decomposition failed", e);
     }
-    if (problems.length === 0) problems = [opts.userText.slice(0, 100)];
-    const planLabel = problems.length === 1
-      ? problems[0].slice(0, 60)
-      : `${problems.length} sub-problems`;
-    const planNarration = problems.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    if (problems.length === 0) problems = [{ title: opts.userText.slice(0, 80), focus: "" }];
+    const planLabel = problems.length === 1 ? problems[0].title.slice(0, 60) : `${problems.length} chapters`;
+    const planNarration = problems
+      .map((p, i) => p.focus ? `${i + 1}. ${p.title} — ${p.focus}` : `${i + 1}. ${p.title}`)
+      .join("\n");
     opts.callbacks.onThoughtChunk(planIdx, planNarration);
     opts.callbacks.onThoughtDone(planIdx);
     opts.callbacks.onStepDone(planIdx, "plan", planLabel, "");
     collectedSteps.push({ index: planIdx, kind: "plan", label: planLabel, intent: "", status: "done", narration: planNarration });
   } else {
-    problems = [opts.userText.slice(0, 100)];
+    problems = [{ title: opts.userText.slice(0, 80), focus: "" }];
+  }
+  for (let i = 0; i < problems.length; i++) {
+    queriesByProblem.push([]);
+    learningsByProblem.push([]);
   }
 
   let currentProblemIdx = 0;
   let toolCallsForCurrentProblem = 0;
+
 
   for (let iter = 0; iter < MAX_ITER; iter++) {
     if (tokensUsed >= BUDGET) break;
