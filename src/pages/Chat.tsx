@@ -2309,7 +2309,7 @@ export default function Chat() {
                   reflexion={m.reflexion}
                   attachments={m.attachments}
                   page={m.page}
-                  onOpenPage={m.page ? () => { setActivePage(m.page!); setActivePageKey(m.id ?? `${convId ?? "new"}:${i}`); setPageOpen(true); } : undefined}
+                  onOpenPage={m.page ? () => { setActivePage(m.page!); setActivePageKey(m.id ?? `${activeId ?? "new"}:${i}`); setPageOpen(true); } : undefined}
                   hasNote={m.hasNote}
                   onOpenNote={m.hasNote ? () => setNoteOpen(true) : undefined}
                   streaming={streaming && i === messages.length - 1 && m.role === "assistant"}
