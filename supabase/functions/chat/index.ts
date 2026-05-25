@@ -1294,6 +1294,7 @@ async function runReactLoop(opts: {
       const res = await linkupSearch(opts.linkupKey, query);
       if (res) {
         searchCount += 1;
+        const stepSources: WebSource[] = res.sources.slice();
         for (const s of res.sources) if (!sources.find((x) => x.url === s.url)) sources.push(s);
         for (const im of res.images) if (!images.find((x) => x.url === im.url)) images.push(im);
         contextBlocks.push(`## Web search — "${query}"\n\n${res.content}`);
@@ -1302,9 +1303,9 @@ async function runReactLoop(opts: {
           summary: `Found ${res.sources.length} sources. Top titles: ${res.sources.slice(0, 3).map((s) => s.title).join(" | ")}`,
           foundCount: res.sources.length,
         };
-        opts.callbacks.onStepDone(actionIdx, "search", query, "", res.sources.length);
+        opts.callbacks.onStepDone(actionIdx, "search", query, "", res.sources.length, false, stepSources);
         opts.callbacks.onSources(sources);
-        collectedSteps.push({ index: actionIdx, kind: "search", label: query, intent: "", status: "done", foundCount: res.sources.length });
+        collectedSteps.push({ index: actionIdx, kind: "search", label: query, intent: "", status: "done", foundCount: res.sources.length, sources: stepSources } as any);
       } else {
         observation = { ok: false, summary: `No results for "${query}"` };
         opts.callbacks.onStepDone(actionIdx, "search", query, "", 0, true);
@@ -1316,12 +1317,13 @@ async function runReactLoop(opts: {
       opts.callbacks.onStepStart(actionIdx, "scrape", url, "");
       const md = await linkupFetch(opts.linkupKey, url);
       if (md) {
+        const stepSources: WebSource[] = [{ title: url, url }];
         if (!sources.find((x) => x.url === url)) sources.push({ title: url, url });
         contextBlocks.push(`## Page fetch — ${url}\n\n${md}`);
         observation = { ok: true, summary: `Retrieved page (${md.length} chars).`, foundCount: 1 };
-        opts.callbacks.onStepDone(actionIdx, "scrape", url, "", 1);
+        opts.callbacks.onStepDone(actionIdx, "scrape", url, "", 1, false, stepSources);
         opts.callbacks.onSources(sources);
-        collectedSteps.push({ index: actionIdx, kind: "scrape", label: url, intent: "", status: "done", foundCount: 1 });
+        collectedSteps.push({ index: actionIdx, kind: "scrape", label: url, intent: "", status: "done", foundCount: 1, sources: stepSources } as any);
       } else {
         observation = { ok: false, summary: `Fetch failed for ${url} (blocked or empty).` };
         opts.callbacks.onStepDone(actionIdx, "scrape", url, "", 0, true);
